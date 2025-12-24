@@ -25,6 +25,9 @@ export interface CartItem {
   name_ar: string;
   name_en: string;
   name_fr: string;
+  description_ar?: string | null;
+  description_en?: string | null;
+  description_fr?: string | null;
   price: number;
   currency?: string;
   quantity: number;
@@ -185,6 +188,9 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
           name_ar: item.name_ar,
           name_en: item.name_en,
           name_fr: item.name_fr,
+          description_ar: item.description_ar,
+          description_en: item.description_en,
+          description_fr: item.description_fr,
           price: item.price,
           currency: item.currency,
           quantity,

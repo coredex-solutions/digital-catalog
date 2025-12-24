@@ -50,6 +50,14 @@ export function SaasCartDrawer({
       default: return item.name_en;
     }
   };
+  
+  const getItemDescription = (item: CartItem) => {
+    switch (lang) {
+      case "ar": return item.description_ar;
+      case "fr": return item.description_fr;
+      default: return item.description_en;
+    }
+  };
 
   // Labels
   const labels = {
@@ -140,6 +148,11 @@ export function SaasCartDrawer({
                   <h3 className="font-medium text-slate-900 dark:text-white line-clamp-1">
                     {getItemName(item)}
                   </h3>
+                  {getItemDescription(item) && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+                      {getItemDescription(item)}
+                    </p>
+                  )}
                   <p className="text-sm mt-1" style={{ color: colorPrimary }}>
                     {formatPrice(item.price, item.currency || "USD", lang)}
                   </p>

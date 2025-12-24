@@ -32,7 +32,9 @@ interface Item {
   name_ar: string;
   name_en: string;
   name_fr: string;
+  description_ar: string | null;
   description_en: string | null;
+  description_fr: string | null;
   price: number;
   currency: string;
   image_url: string | null;
@@ -52,7 +54,7 @@ export default function ItemsPage() {
   const [saving, setSaving] = useState(false);
   
   const [filterCategory, setFilterCategory] = useState<string>("");
-  const [isMultiLang, setIsMultiLang] = useState(false);
+  const [isMultiLang, setIsMultiLang] = useState(true);
   const [activeLang, setActiveLang] = useState<'en' | 'ar' | 'fr'>('en');
 
   const [formData, setFormData] = useState({
@@ -60,7 +62,9 @@ export default function ItemsPage() {
     name_ar: "",
     name_en: "",
     name_fr: "",
+    description_ar: "",
     description_en: "",
+    description_fr: "",
     price: "",
     currency: "USD",
     image_url: "",
@@ -126,7 +130,9 @@ export default function ItemsPage() {
       name_ar: "",
       name_en: "",
       name_fr: "",
+      description_ar: "",
       description_en: "",
+      description_fr: "",
       price: "",
       currency: "USD",
       image_url: "",
@@ -144,7 +150,9 @@ export default function ItemsPage() {
       name_ar: item.name_ar,
       name_en: item.name_en,
       name_fr: item.name_fr,
+      description_ar: item.description_ar || "",
       description_en: item.description_en || "",
+      description_fr: item.description_fr || "",
       price: item.price.toString(),
       currency: item.currency,
       image_url: item.image_url || "",
@@ -167,6 +175,8 @@ export default function ItemsPage() {
       price: parseFloat(formData.price),
       name_ar: isMultiLang ? formData.name_ar : formData.name_en,
       name_fr: isMultiLang ? formData.name_fr : formData.name_en,
+      description_ar: isMultiLang ? formData.description_ar : formData.description_en,
+      description_fr: isMultiLang ? formData.description_fr : formData.description_en,
     };
 
     try {
@@ -531,24 +541,53 @@ export default function ItemsPage() {
                 </div>
               )}
 
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description_en}
-                  onChange={(e) =>
-                    setFormData((p) => ({
-                      ...p,
-                      description_en: e.target.value,
-                    }))
-                  }
-                  rows={2}
-                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none resize-none"
-                  placeholder="Optional description"
-                />
-              </div>
+              {/* Description Fields */}
+              {isMultiLang ? (
+                <>
+                  <div className={activeLang === 'en' ? 'block' : 'hidden'}>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Description (English)</label>
+                    <textarea
+                      value={formData.description_en}
+                      onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                      rows={2}
+                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none resize-none"
+                      placeholder="Optional description"
+                    />
+                  </div>
+                  <div className={activeLang === 'ar' ? 'block' : 'hidden'}>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Description (Arabic)</label>
+                    <textarea
+                      value={formData.description_ar}
+                      onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                      rows={2}
+                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none resize-none text-right"
+                      dir="rtl"
+                      placeholder="وصف اختياري"
+                    />
+                  </div>
+                  <div className={activeLang === 'fr' ? 'block' : 'hidden'}>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Description (French)</label>
+                    <textarea
+                      value={formData.description_fr}
+                      onChange={(e) => setFormData({ ...formData, description_fr: e.target.value })}
+                      rows={2}
+                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none resize-none"
+                      placeholder="Description optionnelle"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
+                  <textarea
+                    value={formData.description_en}
+                    onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                    rows={2}
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none resize-none"
+                    placeholder="Optional description"
+                  />
+                </div>
+              )}
 
               {/* Price */}
               <div className="grid grid-cols-2 gap-4">
