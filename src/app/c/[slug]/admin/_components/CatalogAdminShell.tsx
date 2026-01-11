@@ -70,8 +70,14 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--color-primary)" }} />
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-6">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border border-primary/20 animate-ping absolute inset-0" />
+          <Loader2 className="w-16 h-16 text-primary animate-spin relative z-10" />
+        </div>
+        <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] animate-pulse">
+          Establishing Secure Uplink...
+        </p>
       </div>
     );
   }
@@ -81,9 +87,15 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-[#050505] selection:bg-primary selection:text-white">
+      {/* Background Intelligence Glows */}
+      <div className="fixed top-0 -left-1/4 w-1/2 h-1/2 bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
+      <div className="fixed bottom-0 -right-1/4 w-1/2 h-1/2 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
+      
       <CatalogAdminSidebar catalog={catalog} features={features} />
-      <div className="flex-1 ml-64">{children}</div>
+      <div className="flex-1 ml-72 relative min-h-screen">
+        {children}
+      </div>
     </div>
   );
 }

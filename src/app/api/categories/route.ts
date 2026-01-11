@@ -23,7 +23,10 @@ export async function GET() {
     }));
 
     return NextResponse.json(categories);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message?.includes('no such table: categories')) {
+      return NextResponse.json([]);
+    }
     console.error("Error fetching categories:", error);
     return NextResponse.json(
       { error: "Internal server error" },

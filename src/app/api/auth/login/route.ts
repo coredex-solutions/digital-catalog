@@ -19,8 +19,8 @@ export async function POST(request: NextRequest) {
 
     // Get user from database
     const result = await getDb().execute({
-      sql: "SELECT id, username, password_hash FROM admin_users WHERE username = ?",
-      args: [username],
+      sql: "SELECT id, email as username, password_hash FROM super_admins WHERE email = ?",
+      args: [username.toLowerCase().trim()],
     });
 
     // If user exists in database, verify against database
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
       // Update last login
       await getDb().execute({
-        sql: "UPDATE admin_users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
+        sql: "UPDATE super_admins SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
         args: [user.id],
       });
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     // Fallback: Check if database is empty and env vars are configured
     // This is a secure fallback for first-time setup only
     const adminCountResult = await getDb().execute({
-      sql: "SELECT COUNT(*) as count FROM admin_users",
+      sql: "SELECT COUNT(*) as count FROM super_admins",
       args: [],
     });
     const adminCount = (adminCountResult.rows[0]?.count as number) || 0;
@@ -86,9 +86,10 @@ export async function POST(request: NextRequest) {
           const passwordHash = await hashPassword(envPassword);
 
           await getDb().execute({
-            sql: "INSERT INTO admin_users (id, username, password_hash, last_login) VALUES (?, ?, ?, CURRENT_TIMESTAMP)",
-            args: [userId, envUsername, passwordHash],
+            sql: "INSERT INTO super_admins (id, email, password_hash, name, last_login) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)",
+            args: [userId, envUsername.toLowerCase().trim(), passwordHash, 'Initial Admin'],
           });
+
 
           // Generate token
           const token = signToken({

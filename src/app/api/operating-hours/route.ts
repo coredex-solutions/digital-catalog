@@ -19,7 +19,10 @@ export async function GET() {
     }));
 
     return NextResponse.json(hours);
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message?.includes('no such table: operating_hours')) {
+      return NextResponse.json([]);
+    }
     console.error('Error fetching operating hours:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

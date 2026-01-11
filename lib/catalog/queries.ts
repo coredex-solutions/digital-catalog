@@ -148,7 +148,7 @@ export async function getCatalogItems(catalogId: string): Promise<MenuItem[]> {
 export async function getCatalogOperatingHours(catalogId: string): Promise<OperatingHours[]> {
   const db = getDb();
   const result = await db.execute({
-    sql: 'SELECT * FROM catalog_operating_hours WHERE catalog_id = ? ORDER BY id ASC',
+    sql: 'SELECT * FROM operating_hours WHERE catalog_id = ? ORDER BY id ASC',
     args: [catalogId],
   });
 

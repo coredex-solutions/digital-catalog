@@ -50,41 +50,43 @@ export default function SuperAdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo/Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mb-4 shadow-lg shadow-emerald-500/20">
-            <Shield className="w-8 h-8 text-white" />
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-primary to-purple-500 mb-6 shadow-[0_0_40px_-10px_rgba(124,58,237,0.5)]">
+            <Shield className="w-10 h-10 text-white fill-white/20" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Super Admin</h1>
-          <p className="text-slate-400 mt-1">Digital Catalog Platform</p>
+          <h1 className="text-4xl font-bold text-white tracking-tighter mb-2">Access Portal</h1>
+          <p className="text-white/40 font-medium tracking-wide">Coredex Infrastructure</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 shadow-xl border border-slate-700/50">
+        <div className="glass backdrop-blur-2xl rounded-[2rem] p-10 border border-white/10 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3 text-red-400 text-sm">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm font-medium flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email
+              <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-3 ml-1">
+                Identity
               </label>
               <input
                 ref={emailRef}
                 type="email"
                 name="email"
                 autoComplete="email"
-                className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
-                placeholder="admin@example.com"
+                className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all focus:bg-black/60"
+                placeholder="admin@coredex.digital"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Password
+              <label className="block text-xs font-bold text-white/40 uppercase tracking-widest mb-3 ml-1">
+                Security Key
               </label>
               <div className="relative">
                 <input
@@ -92,14 +94,14 @@ export default function SuperAdminLoginPage() {
                   type={showPassword ? "text" : "password"}
                   name="password"
                   autoComplete="current-password"
-                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all pr-12"
+                  className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all pr-12 focus:bg-black/60"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -109,22 +111,22 @@ export default function SuperAdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 px-6 bg-white text-black font-bold rounded-2xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-3 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]"
             >
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing in...
+                  AUTHENTICATING...
                 </>
               ) : (
-                "Sign In"
+                "INITIALIZE SESSION"
               )}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-slate-500 text-sm mt-6">
-          Platform Management Portal
+        <p className="text-center text-white/30 text-xs mt-8 font-mono tracking-widest uppercase">
+          SECURE CONNECTION • ENCRYPTED
         </p>
       </div>
     </div>

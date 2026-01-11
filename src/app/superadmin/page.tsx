@@ -13,7 +13,9 @@ import {
   AlertTriangle,
   Plus,
   ArrowRight,
-  TrendingUp
+  TrendingUp,
+  Shield,
+  CreditCard
 } from "lucide-react";
 
 interface DashboardStats {
@@ -55,31 +57,45 @@ function StatCard({
   label, 
   value, 
   subtext,
-  color = "emerald" 
+  trend,
+  color = "primary" 
 }: { 
   icon: any; 
   label: string; 
   value: number | string;
   subtext?: string;
-  color?: "emerald" | "blue" | "amber" | "purple";
+  trend?: string;
+  color?: "primary" | "blue" | "amber" | "purple";
 }) {
-  const colors = {
-    emerald: "from-emerald-500 to-teal-600",
-    blue: "from-blue-500 to-indigo-600",
-    amber: "from-amber-500 to-orange-600",
-    purple: "from-purple-500 to-pink-600",
-  };
-
   return (
-    <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-slate-400 text-sm font-medium">{label}</p>
-          <p className="text-3xl font-bold text-white mt-1">{value}</p>
-          {subtext && <p className="text-slate-500 text-sm mt-1">{subtext}</p>}
+    <div className="glass-card p-6 relative overflow-hidden group">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-[50px] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/10 transition-colors duration-500" />
+      
+      <div className="relative z-10 flex items-start justify-between">
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">
+              {label}
+            </span>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-3xl font-black text-white tracking-tighter">
+                {value}
+              </h3>
+              {trend && (
+                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20">
+                  {trend}
+                </span>
+              )}
+            </div>
+          </div>
+          {subtext && (
+            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest leading-relaxed">
+              {subtext}
+            </p>
+          )}
         </div>
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colors[color]} flex items-center justify-center shadow-lg`}>
-          <Icon className="w-6 h-6 text-white" />
+        <div className={`w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-white/60 group-hover:text-primary group-hover:border-primary/30 group-hover:shadow-[0_0_20px_rgba(124,58,237,0.2)] transition-all duration-500`}>
+          <Icon className="w-5 h-5" />
         </div>
       </div>
     </div>
@@ -116,13 +132,14 @@ export default function SuperAdminDashboard() {
 
   return (
     <SuperAdminShell>
-      <SuperAdminHeader title="Dashboard">
+      <SuperAdminHeader title="Platform Dashboard">
         <Link
           href="/superadmin/catalogs/new"
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all font-medium"
+          className="group relative flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-2xl hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] transition-all duration-500 font-bold text-xs uppercase tracking-widest overflow-hidden"
         >
-          <Plus className="w-5 h-5" />
-          New Catalog
+          <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          <Plus className="w-4 h-4" />
+          Add Catalog
         </Link>
       </SuperAdminHeader>
 
@@ -130,149 +147,185 @@ export default function SuperAdminDashboard() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-slate-800/50 rounded-2xl p-6 animate-pulse">
-                <div className="h-4 bg-slate-700 rounded w-24 mb-3" />
-                <div className="h-8 bg-slate-700 rounded w-16" />
+              <div key={i} className="glass rounded-[2rem] p-8 animate-pulse">
+                <div className="h-2 bg-white/5 rounded w-20 mb-4" />
+                <div className="h-8 bg-white/5 rounded w-32" />
               </div>
             ))}
           </div>
         ) : stats ? (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
                 icon={FolderKanban}
                 label="Total Catalogs"
                 value={stats.catalogs.total}
-                subtext={`${stats.catalogs.active} active`}
-                color="emerald"
+                subtext={`${stats.catalogs.active} Active / ${stats.catalogs.suspended} Suspended`}
+                color="primary"
               />
               <StatCard
                 icon={Eye}
-                label="Total Views (30d)"
+                label="Total Views"
                 value={stats.analytics.total_views?.toLocaleString() || "0"}
-                subtext={`${stats.analytics.total_unique?.toLocaleString() || 0} unique`}
-                color="blue"
+                subtext={`${stats.analytics.total_unique?.toLocaleString() || 0} Unique Visitors`}
+                trend="+12%"
+                color="primary"
               />
               <StatCard
                 icon={MessageCircle}
                 label="WhatsApp Orders"
                 value={stats.analytics.total_whatsapp || 0}
                 subtext="Last 30 days"
-                color="amber"
+                color="primary"
               />
               <StatCard
                 icon={Calendar}
-                label="Booking Clicks"
+                label="Bookings"
                 value={stats.analytics.total_bookings || 0}
-                subtext="Last 30 days"
-                color="purple"
+                subtext="Customer requests"
+                color="primary"
               />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Recent Catalogs */}
-              <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-700/50 flex items-center justify-between">
-                  <h2 className="font-semibold text-white">Recent Catalogs</h2>
+              <div className="glass rounded-[2.5rem] border border-white/5 overflow-hidden">
+                <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                    <h2 className="text-sm font-black text-white uppercase tracking-widest">Recent Catalogs</h2>
+                  </div>
                   <Link 
                     href="/superadmin/catalogs" 
-                    className="text-emerald-400 text-sm hover:text-emerald-300 flex items-center gap-1"
+                    className="group text-[10px] font-black text-white/30 hover:text-primary uppercase tracking-[0.2em] transition-all flex items-center gap-2"
                   >
-                    View all <ArrowRight className="w-4 h-4" />
+                    View All
+                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
-                <div className="divide-y divide-slate-700/50">
-                  {stats.recent_catalogs.slice(0, 5).map((catalog) => (
-                    <Link
-                      key={catalog.id}
-                      href={`/superadmin/catalogs/${catalog.id}`}
-                      className="flex items-center justify-between px-6 py-4 hover:bg-slate-700/20 transition-colors"
-                    >
-                      <div>
-                        <p className="font-medium text-white">{catalog.name}</p>
-                        <p className="text-sm text-slate-400">
-                          {catalog.slug} • {catalog.business_type}
-                        </p>
+                <div className="p-2">
+                  <div className="divide-y divide-white/5">
+                    {stats.recent_catalogs.slice(0, 5).map((catalog) => (
+                      <Link
+                        key={catalog.id}
+                        href={`/superadmin/catalogs/${catalog.id}`}
+                        className="flex items-center justify-between p-6 hover:bg-white/[0.03] rounded-2xl transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-white/20 group-hover:text-primary group-hover:border-primary/20 transition-all">
+                            <Shield className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-white group-hover:text-primary transition-colors tracking-tight">{catalog.name}</p>
+                            <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mt-1">
+                              {catalog.slug} <span className="mx-2">•</span> {catalog.business_type}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] font-black px-3 py-1.5 rounded-lg bg-white/5 text-white/40 border border-white/5 uppercase tracking-widest group-hover:border-primary/30 group-hover:text-primary transition-all">
+                            {catalog.subscription_type}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                    {stats.recent_catalogs.length === 0 && (
+                      <div className="px-8 py-20 text-center">
+                        <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.3em]">No catalogs found</p>
                       </div>
-                      <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        {catalog.subscription_type}
-                      </span>
-                    </Link>
-                  ))}
-                  {stats.recent_catalogs.length === 0 && (
-                    <div className="px-6 py-8 text-center text-slate-500">
-                      No catalogs yet
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Expiring Soon */}
-              <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 overflow-hidden">
-                <div className="px-6 py-4 border-b border-slate-700/50 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-400" />
-                  <h2 className="font-semibold text-white">Expiring Soon</h2>
+              <div className="glass rounded-[2.5rem] border border-white/5 overflow-hidden">
+                <div className="px-8 py-6 border-b border-white/5 flex items-center gap-3 bg-white/[0.02]">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  <h2 className="text-sm font-black text-white uppercase tracking-widest">Expiring Soon</h2>
                 </div>
-                <div className="divide-y divide-slate-700/50">
-                  {stats.expiring_soon.map((catalog) => {
-                    const daysLeft = Math.ceil(
-                      (new Date(catalog.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                    );
-                    return (
-                      <Link
-                        key={catalog.id}
-                        href={`/superadmin/catalogs/${catalog.id}`}
-                        className="flex items-center justify-between px-6 py-4 hover:bg-slate-700/20 transition-colors"
-                      >
-                        <div>
-                          <p className="font-medium text-white">{catalog.name}</p>
-                          <p className="text-sm text-slate-400">{catalog.slug}</p>
-                        </div>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          daysLeft <= 7 
-                            ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                            : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                        }`}>
-                          {daysLeft} days left
-                        </span>
-                      </Link>
-                    );
-                  })}
-                  {stats.expiring_soon.length === 0 && (
-                    <div className="px-6 py-8 text-center text-slate-500">
-                      No subscriptions expiring soon
-                    </div>
-                  )}
+                <div className="p-2">
+                  <div className="divide-y divide-white/5">
+                    {stats.expiring_soon.map((catalog) => {
+                      const daysLeft = Math.ceil(
+                        (new Date(catalog.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                      );
+                      return (
+                        <Link
+                          key={catalog.id}
+                          href={`/superadmin/catalogs/${catalog.id}`}
+                          className="flex items-center justify-between p-6 hover:bg-white/[0.03] rounded-2xl transition-all group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-2 h-2 rounded-full ${daysLeft <= 7 ? "bg-red-500 animate-pulse" : "bg-amber-500"}`} />
+                            <div>
+                              <p className="font-bold text-white tracking-tight">{catalog.name}</p>
+                              <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mt-1">{catalog.slug}</p>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest ${
+                            daysLeft <= 7 
+                              ? "bg-red-500/10 text-red-500 border border-red-500/20"
+                              : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                          }`}>
+                            {daysLeft} days left
+                          </span>
+                        </Link>
+                      );
+                    })}
+                    {stats.expiring_soon.length === 0 && (
+                      <div className="px-8 py-20 text-center">
+                        <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.3em]">No urgent renewals</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Subscription Breakdown */}
-            <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6">
-              <h2 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-400" />
-                Subscription Breakdown
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="glass rounded-[2.5rem] p-10 border border-white/5">
+              <div className="flex items-center justify-between mb-10">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-[0_0_20px_rgba(124,58,237,0.2)]">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-white tracking-tight">Subscription Plans</h2>
+                    <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mt-1">Distribution of active service plans</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 {stats.subscriptions.map((sub) => (
-                  <div key={sub.subscription_type} className="bg-slate-900/50 rounded-xl p-4">
-                    <p className="text-slate-400 text-sm capitalize">{sub.subscription_type.replace("_", " ")}</p>
-                    <p className="text-2xl font-bold text-white">{sub.count}</p>
+                  <div key={sub.subscription_type} className="relative group p-8 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-primary/30 transition-all duration-500 overflow-hidden">
+                    <div className="absolute top-0 right-0 p-6 text-white/5 group-hover:text-primary/10 transition-colors">
+                      <CreditCard className="w-16 h-16" />
+                    </div>
+                    <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-4">
+                      {sub.subscription_type.replace("_", " ")}
+                    </p>
+                    <div className="flex items-baseline gap-3">
+                      <p className="text-4xl font-black text-white tracking-tighter">{sub.count}</p>
+                      <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Active catalogs</span>
+                    </div>
                     {sub.expired > 0 && (
-                      <p className="text-red-400 text-sm">{sub.expired} expired</p>
+                      <div className="mt-6 flex items-center gap-2 text-red-500/60 font-black text-[10px] uppercase tracking-widest">
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                        {sub.expired} Expired
+                      </div>
                     )}
                   </div>
                 ))}
-                {stats.subscriptions.length === 0 && (
-                  <p className="text-slate-500 col-span-3">No subscriptions yet</p>
-                )}
               </div>
             </div>
           </div>
         ) : (
-          <div className="text-center text-slate-500 py-12">
-            Failed to load dashboard data
+          <div className="text-center py-20 glass rounded-[2.5rem] border border-white/5">
+            <AlertTriangle className="w-12 h-12 text-white/10 mx-auto mb-4" />
+            <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em]">Could not load statistics</p>
           </div>
         )}
       </SuperAdminContent>

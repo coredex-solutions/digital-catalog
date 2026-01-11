@@ -27,7 +27,10 @@ export async function GET() {
       address_en: settings.address_en,
       address_fr: settings.address_fr,
     });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message?.includes('no such table: restaurant_settings')) {
+      return NextResponse.json({});
+    }
     console.error('Error fetching restaurant settings:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

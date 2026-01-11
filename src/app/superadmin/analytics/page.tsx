@@ -151,7 +151,7 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-3 gap-6">
               <StatCard
                 icon={Eye}
-                label="Total Page Views"
+                label="Total Views"
                 value={stats.total_views}
                 change={stats.views_change}
                 color="emerald"
@@ -165,7 +165,7 @@ export default function AnalyticsPage() {
               />
               <StatCard
                 icon={CalendarIcon}
-                label="Reservations"
+                label="Bookings"
                 value={stats.total_bookings}
                 change={stats.bookings_change}
                 color="purple"
@@ -258,7 +258,7 @@ export default function AnalyticsPage() {
             <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
               <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-emerald-500" />
-                Daily Metrics
+                Daily Performance
               </h3>
               <div className="h-64 flex items-center justify-center text-slate-500">
                 <p>Chart visualization would go here</p>

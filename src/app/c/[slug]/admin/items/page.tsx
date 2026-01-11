@@ -17,7 +17,9 @@ import {
   Upload,
   Package,
   Star,
-  Globe
+  Globe,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 interface Category {
@@ -72,6 +74,11 @@ export default function ItemsPage() {
   });
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  
+  // AI Image Enhancement
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhanceLimit, setEnhanceLimit] = useState({ remaining: 10, limit: 10 });
+  const [catalogId, setCatalogId] = useState<string>("");
 
   const fetchData = async () => {
     const token = localStorage.getItem(`catalog_admin_token_${slug}`);
@@ -114,6 +121,20 @@ export default function ItemsPage() {
            const data = await res.json();
            if (data.features?.multi_language_enabled || data.settings?.multi_language_enabled) {
              setIsMultiLang(true);
+           }
+           // Get catalog ID for AI limits
+           if (data.catalog?.id) {
+             setCatalogId(data.catalog.id);
+             // Fetch AI enhancement limits
+             try {
+               const limitRes = await fetch(`/api/ai/enhance-image?catalogId=${data.catalog.id}`);
+               if (limitRes.ok) {
+                 const limitData = await limitRes.json();
+                 setEnhanceLimit({ remaining: limitData.remaining, limit: limitData.limit });
+               }
+             } catch (err) {
+               console.error("Failed to fetch AI limits:", err);
+             }
            }
         }
       } catch (err) {
@@ -169,7 +190,6 @@ export default function ItemsPage() {
     setSaving(true);
     const token = localStorage.getItem(`catalog_admin_token_${slug}`);
 
-    // Prepare body with fallbacks if multi-lang is disabled
     const body = {
       ...formData,
       price: parseFloat(formData.price),
@@ -246,13 +266,70 @@ export default function ItemsPage() {
         setFormData((prev) => ({ ...prev, image_url: data.url }));
       } else {
         setUploadError(data.error || "Failed to upload image");
-        console.error("Upload error:", data);
       }
     } catch (error) {
       setUploadError("Failed to upload image. Please try again.");
-      console.error("Failed to upload image:", error);
     } finally {
       setUploading(false);
+    }
+  };
+
+  // AI Image Enhancement
+  const handleAIEnhance = async () => {
+    if (!formData.image_url || enhancing) return;
+    
+    setEnhancing(true);
+    setUploadError(null);
+
+    try {
+      // Call AI enhancement API - send URL, server will fetch it
+      const res = await fetch("/api/ai/enhance-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: formData.image_url,
+          style: "professional",
+          productType: "food",
+          catalogId: catalogId
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // Upload the enhanced image
+        const token = localStorage.getItem(`catalog_admin_token_${slug}`);
+        const enhancedBlob = await fetch(`data:${data.enhancedImage.mimeType};base64,${data.enhancedImage.base64}`).then(r => r.blob());
+        const enhancedFile = new File([enhancedBlob], "enhanced-image.jpg", { type: data.enhancedImage.mimeType });
+        
+        const uploadForm = new FormData();
+        uploadForm.append("file", enhancedFile);
+        
+        const uploadRes = await fetch(`/api/c/${slug}/admin/upload`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: uploadForm,
+        });
+        
+        const uploadData = await uploadRes.json();
+        
+        if (uploadRes.ok) {
+          setFormData((prev) => ({ ...prev, image_url: uploadData.url }));
+          setEnhanceLimit({ remaining: data.remaining, limit: data.limit });
+        } else {
+          setUploadError(uploadData.error || "فشل رفع الصورة المحسنة");
+        }
+      } else {
+        setUploadError(data.error || "فشل تحسين الصورة");
+        if (data.remaining !== undefined) {
+          setEnhanceLimit({ remaining: data.remaining, limit: data.limit });
+        }
+      }
+    } catch (error: any) {
+      console.error("AI enhance error:", error);
+      setUploadError("فشل تحسين الصورة. حاول مرة أخرى.");
+    } finally {
+      setEnhancing(false);
     }
   };
 
@@ -262,119 +339,124 @@ export default function ItemsPage() {
 
   return (
     <CatalogAdminShell>
-      <CatalogAdminHeader title="Products">
+      <CatalogAdminHeader title="Product Manager">
         <button
           onClick={openAddModal}
-          className="flex items-center gap-2 px-4 py-2 text-white rounded-xl font-medium transition-all"
-          style={{
-            background: `linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)`,
-          }}
+          className="group relative flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-2xl hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] transition-all duration-500 font-black text-[11px] uppercase tracking-widest overflow-hidden shadow-lg shadow-primary/10"
         >
-          <Plus className="w-5 h-5" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+          <Plus className="w-4 h-4" />
           Add Product
         </button>
       </CatalogAdminHeader>
 
       <CatalogAdminContent>
-        {/* Filter */}
-        <div className="mb-6">
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none"
-          >
-            <option value="">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name_en}
-              </option>
-            ))}
-          </select>
+        {/* Context Filter */}
+        <div className="mb-10 flex flex-wrap items-center gap-6">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="relative px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white/60 focus:outline-none focus:border-primary/50 transition-all appearance-none pr-12 cursor-pointer"
+            >
+              <option value="">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id} className="bg-[#0a0a0a]">
+                  {cat.name_en.toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] font-mono">
+            Status: {filteredItems.length} Products Found
+          </p>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[...Array(6)].map((_, i) => (
               <div
                 key={i}
-                className="bg-slate-800/50 rounded-2xl p-4 animate-pulse h-40"
+                className="glass rounded-[2.5rem] p-8 animate-pulse h-40"
               />
             ))}
           </div>
         ) : filteredItems.length === 0 ? (
-          <div className="text-center py-12">
-            <Package className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400">No products yet</p>
+          <div className="text-center py-32 glass rounded-[3rem] border border-white/5">
+            <Package className="w-16 h-16 text-white/5 mx-auto mb-6" />
+            <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">Your product list is currently empty</p>
             <button
               onClick={openAddModal}
-              className="mt-4 text-sm font-medium"
-              style={{ color: "var(--color-primary)" }}
+              className="mt-8 text-[11px] font-black text-primary uppercase tracking-widest hover:scale-105 transition-transform"
             >
               Add your first product
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredItems.map((item) => (
               <div
                 key={item.id}
-                className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden group"
+                className="glass-card group relative overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1"
               >
-                <div className="flex gap-4 p-4">
-                  {/* Image */}
-                  <div className="relative w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
+                <div className="flex gap-6 p-6">
+                  {/* Entity Core (Image) */}
+                  <div className="relative w-24 h-24 rounded-[2rem] overflow-hidden flex-shrink-0 group-hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-all">
                     {item.image_url ? (
                       <Image
                         src={item.image_url}
                         alt={item.name_en}
                         fill
-                        className="object-cover"
+                        className="object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                     ) : (
-                      <div
-                        className="w-full h-full flex items-center justify-center"
-                        style={{ backgroundColor: "var(--color-surface)" }}
-                      >
-                        <Package className="w-8 h-8 text-slate-500" />
+                      <div className="w-full h-full flex items-center justify-center bg-white/[0.02]">
+                        <Package className="w-8 h-8 text-white/10" />
                       </div>
                     )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505]/40 to-transparent" />
                     {item.is_featured ? (
-                      <div className="absolute top-1 left-1 p-1 bg-yellow-500 rounded-full">
-                        <Star className="w-3 h-3 text-white" />
+                      <div className="absolute top-2 left-2 p-1.5 bg-primary rounded-xl shadow-[0_0_15px_var(--color-primary)]">
+                        <Star className="w-3 h-3 text-white fill-white" />
                       </div>
                     ) : null}
                   </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-white truncate">
-                      {item.name_en}
-                    </h3>
-                    <p className="text-sm text-slate-400 truncate">
-                      {item.category_name}
-                    </p>
-                    <p
-                      className="font-bold mt-1"
-                      style={{ color: "var(--color-primary)" }}
-                    >
-                      {item.currency} {item.price.toFixed(2)}
-                    </p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => openEditModal(item)}
-                      className="p-2 bg-slate-700/50 rounded-lg hover:bg-slate-600 transition-colors"
-                    >
-                      <Edit2 className="w-4 h-4 text-white" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(item.id)}
-                      className="p-2 bg-red-500/50 rounded-lg hover:bg-red-500 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4 text-white" />
-                    </button>
+                  {/* Telemetry Data */}
+                  <div className="flex-1 min-w-0 py-2">
+                    <div className="flex items-start justify-between gap-4">
+                       <div className="min-w-0">
+                          <h3 className="text-lg font-black text-white tracking-tighter truncate group-hover:text-primary transition-colors">
+                            {item.name_en}
+                          </h3>
+                          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-1 truncate">
+                            {item.category_name}
+                          </p>
+                       </div>
+                       <div className="flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="w-8 h-8 bg-white/5 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/10 hover:bg-white/10 transition-all"
+                        >
+                          <Edit2 className="w-3.5 h-3.5 text-white" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="w-8 h-8 bg-red-500/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-red-500/20 hover:bg-red-500/30 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-white" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 flex items-center justify-between">
+                      <p className="text-xl font-black text-white/90 tracking-tighter tabular-nums">
+                        <span className="text-[10px] text-primary mr-1">{item.currency}</span>
+                        {item.price.toFixed(2)}
+                      </p>
+                      <div className={`w-1.5 h-1.5 rounded-full ${item.is_active ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-white/10'}`} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -383,288 +465,267 @@ export default function ItemsPage() {
         )}
       </CatalogAdminContent>
 
-      {/* Modal */}
+      {/* Configuration Matrix (Modal) */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-lg border border-slate-700/50 my-8">
-            <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
-              <h2 className="text-xl font-semibold text-white">
-                {editingItem ? "Edit Product" : "Add Product"}
-              </h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:p-8 bg-[#050505]/60 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto custom-scrollbar">
+          <div className="glass-card w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-500 border-white/10 my-auto">
+            <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.01]">
+              <div>
+                <h2 className="text-xl font-black text-white tracking-tighter uppercase">
+                  {editingItem ? "Edit Product" : "Add New Product"}
+                </h2>
+                <div className="h-0.5 w-8 bg-primary mt-2 rounded-full opacity-50" />
+              </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
               >
-                <X className="w-5 h-5 text-slate-400" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-              {/* Category */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Category *
-                </label>
-                <select
-                  value={formData.category_id}
-                  onChange={(e) =>
-                    setFormData((p) => ({ ...p, category_id: e.target.value }))
-                  }
-                  className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name_en}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Image Upload */}
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Image
-                </label>
-                <div className="relative">
-                  {formData.image_url ? (
-                    <div className="relative h-32 rounded-xl overflow-hidden">
-                      <Image
-                        src={formData.image_url}
-                        alt="Product"
-                        fill
-                        className="object-cover"
-                      />
-                      <button
-                        onClick={() =>
-                          setFormData((p) => ({ ...p, image_url: "" }))
-                        }
-                        className="absolute top-2 right-2 p-1 bg-red-500 rounded-full"
-                      >
-                        <X className="w-4 h-4 text-white" />
-                      </button>
-                    </div>
-                  ) : uploading ? (
-                    <div className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-slate-600 rounded-xl bg-slate-900/30">
-                      <Loader2 className="w-6 h-6 text-slate-400 mb-1 animate-spin" />
-                      <span className="text-sm text-slate-400">
-                        Uploading...
-                      </span>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center h-24 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:border-slate-500 transition-colors">
-                      <Upload className="w-6 h-6 text-slate-400 mb-1" />
-                      <span className="text-sm text-slate-400">
-                        Upload image
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
+            <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Visual Interface Component */}
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-4">
+                      Product Image
                     </label>
-                  )}
-                </div>
-                {uploadError && (
-                  <p className="text-sm text-red-400 mt-2">{uploadError}</p>
-                )}
-              </div>
+                    <div className="relative group/upload">
+                      {formData.image_url ? (
+                        <div className="relative h-64 rounded-[2.5rem] overflow-hidden border border-white/10">
+                          <Image
+                            src={formData.image_url}
+                            alt="Entity"
+                            fill
+                            className="object-cover"
+                          />
+                          {/* Action buttons overlay */}
+                          <div className="absolute top-4 right-4 flex gap-2">
+                            {/* AI Enhance Button */}
+                            <button
+                              onClick={handleAIEnhance}
+                              disabled={enhancing || enhanceLimit.remaining <= 0}
+                              className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={`تحسين بالذكاء الاصطناعي (${enhanceLimit.remaining}/${enhanceLimit.limit})`}
+                            >
+                              {enhancing ? (
+                                <Loader2 className="w-4 h-4 text-white animate-spin" />
+                              ) : (
+                                <Sparkles className="w-4 h-4 text-white" />
+                              )}
+                            </button>
+                            {/* Delete Button */}
+                            <button
+                              onClick={() => setFormData((p) => ({ ...p, image_url: "" }))}
+                              className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+                            >
+                              <X className="w-4 h-4 text-white" />
+                            </button>
+                          </div>
+                          {/* AI Enhancement indicator */}
+                          {enhancing && (
+                            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center backdrop-blur-sm">
+                              <Loader2 className="w-10 h-10 text-purple-400 animate-spin mb-3" />
+                              <span className="text-xs font-bold text-white">جاري التحسين بالذكاء الاصطناعي...</span>
+                            </div>
+                          )}
+                          {/* Limit indicator */}
+                          <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-black/60 rounded-lg backdrop-blur-sm">
+                            <span className="text-[10px] font-bold text-white/70">
+                              ✨ {enhanceLimit.remaining}/{enhanceLimit.limit}
+                            </span>
+                          </div>
+                        </div>
+                      ) : uploading ? (
+                        <div className="flex flex-col items-center justify-center h-64 rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/[0.01] animate-pulse">
+                          <Loader2 className="w-8 h-8 text-primary mb-4 animate-spin" />
+                          <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Uploading...</span>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center h-64 rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/[0.01] cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all duration-500">
+                          <Upload className="w-8 h-8 text-white/10 mb-4" />
+                          <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Upload Image</span>
+                          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                        </label>
+                      )}
+                    </div>
+                  </div>
 
-              {/* Language Tabs */}
-              {isMultiLang && (
-                <div className="flex p-1 bg-slate-900/50 rounded-xl mb-4">
-                  {(['en', 'ar', 'fr'] as const).map((lang) => (
-                    <button
-                      key={lang}
-                      type="button"
-                      onClick={() => setActiveLang(lang)}
-                      className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
-                        activeLang === lang
-                          ? "bg-slate-700 text-white shadow-sm"
-                          : "text-slate-400 hover:text-white"
-                      }`}
+                  {/* Context Assignment */}
+                  <div>
+                    <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Product Category</label>
+                    <select
+                      value={formData.category_id}
+                      onChange={(e) => setFormData((p) => ({ ...p, category_id: e.target.value }))}
+                      className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all appearance-none uppercase text-xs"
                     >
-                      {lang.toUpperCase()}
-                    </button>
-                  ))}
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id} className="bg-[#0a0a0a]">{cat.name_en}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              )}
 
-              {/* Name Fields */}
-              {isMultiLang ? (
-                <>
-                  <div className={activeLang === 'en' ? 'block' : 'hidden'}>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Name (English) *</label>
-                    <input
-                      type="text"
-                      value={formData.name_en}
-                      onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                      required
-                    />
-                  </div>
-                  <div className={activeLang === 'ar' ? 'block' : 'hidden'}>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Name (Arabic)</label>
-                    <input
-                      type="text"
-                      value={formData.name_ar}
-                      onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-right"
-                      dir="rtl"
-                    />
-                  </div>
-                  <div className={activeLang === 'fr' ? 'block' : 'hidden'}>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Name (French)</label>
-                    <input
-                      type="text"
-                      value={formData.name_fr}
-                      onChange={(e) => setFormData({ ...formData, name_fr: e.target.value })}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                    />
-                  </div>
-                </>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Name *</label>
-                  <input
-                    type="text"
-                    value={formData.name_en}
-                    onChange={(e) => {
-                       setFormData({ 
-                         ...formData, 
-                         name_en: e.target.value,
-                       })
-                    }}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                    required
-                  />
-                </div>
-              )}
+                {/* Data Configuration Component */}
+                <div className="space-y-6">
+                   {/* Locale Selection */}
+                   {isMultiLang && (
+                    <div className="flex p-1.5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                      {(['en', 'ar', 'fr'] as const).map((lang) => (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => setActiveLang(lang)}
+                          className={`flex-1 py-3 text-[10px] font-black transition-all rounded-xl uppercase tracking-widest ${
+                            activeLang === lang ? "bg-white text-black shadow-lg" : "text-white/30 hover:text-white"
+                          }`}
+                        >
+                          {lang === 'ar' ? 'العربية' : lang.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
-              {/* Description Fields */}
-              {isMultiLang ? (
-                <>
-                  <div className={activeLang === 'en' ? 'block' : 'hidden'}>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Description (English)</label>
-                    <textarea
-                      value={formData.description_en}
-                      onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
-                      rows={2}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none resize-none"
-                      placeholder="Optional description"
-                    />
+                  {/* Variable Input Matrix */}
+                  <div className="space-y-4">
+                    {activeLang === 'en' ? (
+                      <>
+                        <div>
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Product Name (EN)</label>
+                          <input
+                            type="text"
+                            value={formData.name_en}
+                            onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Product Description (EN)</label>
+                          <textarea
+                            value={formData.description_en}
+                            onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                            rows={3}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all resize-none"
+                          />
+                        </div>
+                      </>
+                    ) : activeLang === 'ar' ? (
+                      <>
+                        <div>
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2 text-right">اسم المنتج (AR)</label>
+                          <input
+                            type="text"
+                            value={formData.name_ar}
+                            onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all text-right"
+                            dir="rtl"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2 text-right">وصف المنتج (AR)</label>
+                          <textarea
+                            value={formData.description_ar}
+                            onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                            rows={3}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all text-right resize-none"
+                            dir="rtl"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Nom du produit (FR)</label>
+                          <input
+                            type="text"
+                            value={formData.name_fr}
+                            onChange={(e) => setFormData({ ...formData, name_fr: e.target.value })}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Description du produit (FR)</label>
+                          <textarea
+                            value={formData.description_fr}
+                            onChange={(e) => setFormData({ ...formData, description_fr: e.target.value })}
+                            rows={3}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all resize-none"
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className={activeLang === 'ar' ? 'block' : 'hidden'}>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Description (Arabic)</label>
-                    <textarea
-                      value={formData.description_ar}
-                      onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
-                      rows={2}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none resize-none text-right"
-                      dir="rtl"
-                      placeholder="وصف اختياري"
-                    />
-                  </div>
-                  <div className={activeLang === 'fr' ? 'block' : 'hidden'}>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">Description (French)</label>
-                    <textarea
-                      value={formData.description_fr}
-                      onChange={(e) => setFormData({ ...formData, description_fr: e.target.value })}
-                      rows={2}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none resize-none"
-                      placeholder="Description optionnelle"
-                    />
-                  </div>
-                </>
-              ) : (
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">Description</label>
-                  <textarea
-                    value={formData.description_en}
-                    onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
-                    rows={2}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none resize-none"
-                    placeholder="Optional description"
-                  />
-                </div>
-              )}
 
-              {/* Price */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Price *
+                  {/* Financial Parameters */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Price</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={formData.price}
+                        onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))}
+                        className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 shadow-inner"
+                        placeholder="0.00"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Currency</label>
+                      <select
+                        value={formData.currency}
+                        onChange={(e) => setFormData((p) => ({ ...p, currency: e.target.value }))}
+                        className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all appearance-none uppercase text-xs"
+                      >
+                        {['USD', 'EUR', 'GBP', 'AED', 'SAR', 'LBP'].map(cur => (
+                          <option key={cur} value={cur} className="bg-[#0a0a0a]">{cur}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Behavioral Flags */}
+                  <label className="flex items-center gap-4 cursor-pointer group/flag">
+                    <div className={`w-6 h-6 rounded-lg border border-white/10 flex items-center justify-center transition-all ${formData.is_featured ? 'bg-primary border-primary shadow-[0_0_15px_var(--color-primary)]' : 'bg-white/5 group-hover:bg-white/10'}`}>
+                      {formData.is_featured && <Star className="w-3.5 h-3.5 text-white fill-white" />}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={formData.is_featured}
+                      onChange={(e) => setFormData((p) => ({ ...p, is_featured: e.target.checked }))}
+                      className="hidden"
+                    />
+                    <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] group-hover:text-white transition-colors">Featured Product</span>
                   </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, price: e.target.value }))
-                    }
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Currency
-                  </label>
-                  <select
-                    value={formData.currency}
-                    onChange={(e) =>
-                      setFormData((p) => ({ ...p, currency: e.target.value }))
-                    }
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none"
-                  >
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                    <option value="AED">AED</option>
-                    <option value="SAR">SAR</option>
-                  </select>
                 </div>
               </div>
-
-              {/* Featured */}
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.is_featured}
-                  onChange={(e) =>
-                    setFormData((p) => ({
-                      ...p,
-                      is_featured: e.target.checked,
-                    }))
-                  }
-                  className="w-5 h-5 rounded border-slate-600 bg-slate-900/50 text-yellow-500"
-                />
-                <span className="text-slate-300">Featured product</span>
-              </label>
             </div>
 
-            <div className="flex gap-3 p-6 border-t border-slate-700/50">
+            <div className="flex gap-4 p-8 border-t border-white/5 bg-white/[0.01]">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-xl hover:bg-slate-600 transition-colors"
+                className="flex-1 px-8 py-4 bg-white/5 text-white/40 rounded-2xl hover:text-white hover:bg-white/10 transition-all text-[11px] font-black uppercase tracking-widest"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving || !formData.name_en || !formData.price}
-                className="flex-1 px-4 py-3 text-white rounded-xl font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-                style={{
-                  background: `linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)`,
-                }}
+                className="flex-1 px-8 py-4 bg-primary text-white rounded-2xl font-black text-[11px] uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all flex items-center justify-center gap-3 group/save"
               >
                 {saving ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                     Saving...
                   </>
                 ) : (
-                  "Save"
+                  <>
+                    Save Product
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover/save:translate-x-1" />
+                  </>
                 )}
               </button>
             </div>

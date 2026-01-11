@@ -60,6 +60,11 @@ CREATE TABLE IF NOT EXISTS catalog_subscriptions (
   analytics_enabled INTEGER DEFAULT 1,
   custom_domain_enabled INTEGER DEFAULT 0,
   
+  -- AI Features
+  ai_image_enhancement_limit INTEGER DEFAULT 10, -- Max AI image enhancements per month
+  ai_image_enhancement_used INTEGER DEFAULT 0,   -- Used this month
+  ai_enhancement_reset_date TEXT,                -- YYYY-MM format for monthly reset
+  
   -- Payment tracking (manual, no Stripe)
   amount_paid REAL,
   currency TEXT DEFAULT 'USD',

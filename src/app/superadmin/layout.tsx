@@ -12,7 +12,8 @@ export default function SuperAdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-black text-white selection:bg-primary/30">
+      <div className="fixed inset-0 bg-[url('/grid.svg')] opacity-20 pointer-events-none" />
       {children}
     </div>
   );

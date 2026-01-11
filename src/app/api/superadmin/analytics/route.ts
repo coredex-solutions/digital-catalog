@@ -21,10 +21,9 @@ export async function GET(request: NextRequest) {
     // Get total views for current period
     const viewsResult = await db.execute({
       sql: `
-        SELECT COUNT(*) as total
+        SELECT SUM(page_views) as total
         FROM catalog_analytics
-        WHERE event_type = 'page_view'
-          AND DATE(created_at) >= DATE('now', ?)
+        WHERE date >= DATE('now', ?)
       `,
       args: [`-${daysBack} days`],
     });
@@ -32,11 +31,10 @@ export async function GET(request: NextRequest) {
     // Get views for previous period (for comparison)
     const prevViewsResult = await db.execute({
       sql: `
-        SELECT COUNT(*) as total
+        SELECT SUM(page_views) as total
         FROM catalog_analytics
-        WHERE event_type = 'page_view'
-          AND DATE(created_at) >= DATE('now', ?)
-          AND DATE(created_at) < DATE('now', ?)
+        WHERE date >= DATE('now', ?)
+          AND date < DATE('now', ?)
       `,
       args: [`-${daysBack * 2} days`, `-${daysBack} days`],
     });
@@ -44,21 +42,19 @@ export async function GET(request: NextRequest) {
     // Get WhatsApp clicks
     const whatsappResult = await db.execute({
       sql: `
-        SELECT COUNT(*) as total
+        SELECT SUM(whatsapp_order_clicks) as total
         FROM catalog_analytics
-        WHERE event_type = 'whatsapp_click'
-          AND DATE(created_at) >= DATE('now', ?)
+        WHERE date >= DATE('now', ?)
       `,
       args: [`-${daysBack} days`],
     });
 
     const prevWhatsappResult = await db.execute({
       sql: `
-        SELECT COUNT(*) as total
+        SELECT SUM(whatsapp_order_clicks) as total
         FROM catalog_analytics
-        WHERE event_type = 'whatsapp_click'
-          AND DATE(created_at) >= DATE('now', ?)
-          AND DATE(created_at) < DATE('now', ?)
+        WHERE date >= DATE('now', ?)
+          AND date < DATE('now', ?)
       `,
       args: [`-${daysBack * 2} days`, `-${daysBack} days`],
     });
@@ -66,21 +62,19 @@ export async function GET(request: NextRequest) {
     // Get bookings
     const bookingsResult = await db.execute({
       sql: `
-        SELECT COUNT(*) as total
+        SELECT SUM(booking_confirm_clicks) as total
         FROM catalog_analytics
-        WHERE event_type = 'booking_confirm'
-          AND DATE(created_at) >= DATE('now', ?)
+        WHERE date >= DATE('now', ?)
       `,
       args: [`-${daysBack} days`],
     });
 
     const prevBookingsResult = await db.execute({
       sql: `
-        SELECT COUNT(*) as total
+        SELECT SUM(booking_confirm_clicks) as total
         FROM catalog_analytics
-        WHERE event_type = 'booking_confirm'
-          AND DATE(created_at) >= DATE('now', ?)
-          AND DATE(created_at) < DATE('now', ?)
+        WHERE date >= DATE('now', ?)
+          AND date < DATE('now', ?)
       `,
       args: [`-${daysBack * 2} days`, `-${daysBack} days`],
     });
@@ -92,12 +86,12 @@ export async function GET(request: NextRequest) {
           c.id,
           c.name,
           c.slug,
-          COUNT(CASE WHEN ca.event_type = 'page_view' THEN 1 END) as views,
-          COUNT(CASE WHEN ca.event_type = 'whatsapp_click' THEN 1 END) as whatsapp_clicks,
-          COUNT(CASE WHEN ca.event_type = 'booking_confirm' THEN 1 END) as bookings
+          COALESCE(SUM(ca.page_views), 0) as views,
+          COALESCE(SUM(ca.whatsapp_order_clicks), 0) as whatsapp_clicks,
+          COALESCE(SUM(ca.booking_confirm_clicks), 0) as bookings
         FROM catalogs c
         LEFT JOIN catalog_analytics ca ON c.id = ca.catalog_id
-          AND DATE(ca.created_at) >= DATE('now', ?)
+          AND ca.date >= DATE('now', ?)
         GROUP BY c.id
         ORDER BY views DESC
         LIMIT 10

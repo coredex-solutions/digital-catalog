@@ -33,16 +33,16 @@ export function SuperAdminSidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-slate-900/80 backdrop-blur-xl border-r border-slate-700/50 flex flex-col z-40">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-black/60 backdrop-blur-2xl border-r border-white/5 flex flex-col z-40">
       {/* Header */}
-      <div className="p-6 border-b border-slate-700/50">
+      <div className="p-6 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-purple-400 flex items-center justify-center shadow-lg shadow-primary/20">
             <Shield className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-white">Super Admin</h1>
-            <p className="text-xs text-slate-400">Platform Control</p>
+            <h1 className="font-bold text-white tracking-tight">Super Admin</h1>
+            <p className="text-xs text-white/40 font-medium tracking-widest uppercase">Platform Control</p>
           </div>
         </div>
       </div>
@@ -58,10 +58,10 @@ export function SuperAdminSidebar() {
               key={item.href}
               href={item.href}
               className={clsx(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all",
+                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
                 isActive
-                  ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+                  ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_20px_-5px_rgba(124,58,237,0.3)]"
+                  : "text-white/40 hover:text-white hover:bg-white/5 border border-transparent"
               )}
             >
               <item.icon className="w-5 h-5" />
@@ -72,10 +72,10 @@ export function SuperAdminSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-700/50">
+      <div className="p-4 border-t border-white/5">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all w-full"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all w-full border border-transparent hover:border-red-500/20"
         >
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Sign Out</span>
@@ -87,9 +87,9 @@ export function SuperAdminSidebar() {
 
 export function SuperAdminHeader({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
-    <header className="bg-slate-900/50 backdrop-blur-xl border-b border-slate-700/50 px-8 py-6">
+    <header className="bg-black/20 backdrop-blur-xl border-b border-white/5 px-8 py-6 sticky top-0 z-30">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">{title}</h1>
+        <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
         {children}
       </div>
     </header>

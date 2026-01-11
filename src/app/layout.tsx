@@ -1,91 +1,66 @@
 import type { Metadata } from "next";
-import { Cairo, Inter, Aref_Ruqaa } from "next/font/google";
+import { Cairo, Inter, Outfit } from "next/font/google";
 import { AppProvider } from "../providers/AppProvider";
 import { GlobalModalsWrapper } from "./_components/GlobalModalsWrapper";
 import { TopLoadingBar } from "../components/TopLoadingBar";
 import "./globals.css";
 
-// Optimize Google Fonts with next/font
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
   weight: ["300", "400", "600", "700"],
   variable: "--font-cairo",
   display: "swap",
-  preload: true,
 });
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-inter",
   display: "swap",
-  preload: true,
 });
 
-const arefRuqaa = Aref_Ruqaa({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "700"],
-  variable: "--font-handwriting",
+const outfit = Outfit({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-outfit",
   display: "swap",
-  preload: false, // Not used above fold
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://mtabal.m.dynamicord.com"
+    process.env.NEXT_PUBLIC_SITE_URL || "https://coredex.digital"
   ),
   title: {
-    default: "Mtabal Restaurant - Authentic Middle Eastern Cuisine",
-    template: "%s | Mtabal Restaurant",
+    default: "Coredex | Next-Gen Multi-Tenant Digital Catalog Platform",
+    template: "%s | Coredex",
   },
   description:
-    "Experience authentic Middle Eastern cuisine at Mtabal Restaurant. Explore our menu of grilled specialties, traditional dishes, and more.",
+    "The world's most advanced digital catalog infrastructure. Multi-tenant SaaS with hyper-dynamic interfaces, AI optimization, and enterprise-grade scalability.",
   keywords: [
-    "Mtabal Restaurant",
-    "Middle Eastern food",
-    "Arabic cuisine",
-    "Grilled chicken",
-    "Mansaf",
-    "Lebanese food",
-    "Restaurant menu",
+    "Digital Catalog SaaS",
+    "Multi-tenant Platform",
+    "Digital Menu",
+    "QR Menu",
+    "Retail Catalog",
+    "Enterprise SEO Catalog",
   ],
-  authors: [{ name: "Mtabal Restaurant" }],
-  creator: "Mtabal Restaurant",
-  publisher: "Mtabal Restaurant",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
+  authors: [{ name: "Coredex Engineering" }],
+  creator: "Coredex",
+  publisher: "Coredex",
   openGraph: {
     type: "website",
     locale: "en_US",
-    alternateLocale: ["ar_SA", "fr_FR"],
     url: "/",
-    title: "Mtabal Restaurant - Authentic Middle Eastern Cuisine",
-    description:
-      "Experience authentic Middle Eastern cuisine at Mtabal Restaurant",
-    siteName: "Mtabal Restaurant",
+    title: "Coredex | Next-Gen Digital Catalog Platform",
+    description: "Multi-tenant SaaS for the next era of commerce.",
+    siteName: "Coredex",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mtabal Restaurant",
-    description: "Experience authentic Middle Eastern cuisine",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
+    title: "Coredex",
+    description: "The infrastructure for digital catalogs.",
   },
   icons: {
     icon: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
   },
 };
 
@@ -98,12 +73,14 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${cairo.variable} ${arefRuqaa.variable}`}
+      className={`${inter.variable} ${cairo.variable} ${outfit.variable}`}
     >
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-black antialiased`}>
         <AppProvider>
           <TopLoadingBar />
-          {children}
+          <div className="relative min-h-screen">
+            {children}
+          </div>
           <GlobalModalsWrapper />
         </AppProvider>
       </body>

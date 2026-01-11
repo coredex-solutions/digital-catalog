@@ -21,6 +21,10 @@ export async function GET(
   const settings = await getCatalogSettings(catalog.id);
 
   return NextResponse.json({
+    catalog: {
+      name: catalog.name,
+      business_type: catalog.business_type,
+    },
     about: {
       about_content_ar: settings?.about_content_ar || "",
       about_content_en: settings?.about_content_en || "",

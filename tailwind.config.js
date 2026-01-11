@@ -5,11 +5,45 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        cairo: ["Cairo", "sans-serif"],
-        inter: ["Inter", "sans-serif"],
-        handwriting: ["Aref Ruqaa", "serif"],
+        cairo: ["var(--font-cairo)", "sans-serif"],
+        inter: ["var(--font-inter)", "sans-serif"],
+        outfit: ["var(--font-outfit)", "sans-serif"],
+        handwriting: ["var(--font-handwriting)", "serif"],
       },
       colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        accent: {
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
+        },
+        popover: {
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
         // Dynamic colors via CSS variables (for SaaS theming)
         'dynamic-primary': 'var(--color-primary, #fead1d)',
         'dynamic-secondary': 'var(--color-secondary, #b14288)',

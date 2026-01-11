@@ -12,7 +12,11 @@ import {
   ShoppingBag,
   Scissors,
   Package,
-  MoreHorizontal
+  MoreHorizontal,
+  ChevronRight,
+  ShieldCheck,
+  Zap,
+  Globe
 } from "lucide-react";
 import Link from "next/link";
 
@@ -22,6 +26,9 @@ const businessTypes = [
   { id: "retail", label: "Retail Shop", icon: ShoppingBag },
   { id: "salon", label: "Salon / Spa", icon: Scissors },
   { id: "bakery", label: "Bakery", icon: Package },
+  { id: "supermarket", label: "Supermarket", icon: Store },
+  { id: "gym", label: "Gym / Fitness", icon: Zap },
+  { id: "medical", label: "Medical / Clinic", icon: ShieldCheck },
   { id: "other", label: "Other", icon: MoreHorizontal },
 ];
 
@@ -130,89 +137,109 @@ export default function NewCatalogPage() {
 
   return (
     <SuperAdminShell>
-      <SuperAdminHeader title="Create New Catalog">
+      <SuperAdminHeader title="System Manifest">
         <Link
           href="/superadmin/catalogs"
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+          className="group flex items-center gap-2 px-3 py-1.5 text-white/40 hover:text-white transition-all bg-white/5 border border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
           Back
         </Link>
       </SuperAdminHeader>
 
       <SuperAdminContent>
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           {/* Progress Steps */}
-          <div className="flex items-center gap-2 mb-8">
-            {[1, 2, 3].map((s) => (
-              <div key={s} className="flex-1 flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center font-medium text-sm ${
-                    step >= s
-                      ? "bg-emerald-500 text-white"
-                      : "bg-slate-700 text-slate-400"
-                  }`}
-                >
-                  {s}
-                </div>
-                {s < 3 && (
+          <div className="flex items-center gap-4 mb-12">
+            {[
+              { id: 1, label: "Identity" },
+              { id: 2, label: "Subscription" },
+              { id: 3, label: "Security" }
+            ].map((s, i) => (
+              <div key={s.id} className="flex-1 flex flex-col gap-3">
+                <div className="flex items-center">
                   <div
-                    className={`flex-1 h-1 mx-2 rounded ${
-                      step > s ? "bg-emerald-500" : "bg-slate-700"
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm transition-all duration-500 border ${
+                      step >= s.id
+                        ? "bg-primary border-primary shadow-[0_0_20px_rgba(124,58,237,0.4)] text-white"
+                        : "bg-white/5 border-white/5 text-white/20"
                     }`}
-                  />
-                )}
+                  >
+                    {step > s.id ? <ShieldCheck className="w-5 h-5" /> : s.id}
+                  </div>
+                  {i < 2 && (
+                    <div className="flex-1 px-4">
+                      <div
+                        className={`h-px transition-all duration-500 rounded-full ${
+                          step > s.id ? "bg-primary" : "bg-white/5"
+                        }`}
+                      />
+                    </div>
+                  )}
+                </div>
+                <span className={`text-[10px] uppercase font-bold tracking-widest transition-colors duration-500 ${
+                  step >= s.id ? "text-primary" : "text-white/20"
+                }`}>
+                  {s.label}
+                </span>
               </div>
             ))}
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 mb-6">
-              {error}
+            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-5 py-4 text-red-400 mb-8 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <p className="text-sm font-medium">{error}</p>
             </div>
           )}
 
           {/* Step 1: Basic Info */}
           {step === 1 && (
-            <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 border border-slate-700/50">
-              <h2 className="text-xl font-semibold text-white mb-6">Catalog Information</h2>
+            <div className="glass rounded-[2rem] p-10 border border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-2xl font-bold text-white mb-8 tracking-tight flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Zap className="w-5 h-5" />
+                </div>
+                Brand Profile
+              </h2>
               
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Business Name *
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                    Entity Name *
                   </label>
                   <input
                     type="text"
+                    autoFocus
                     value={formData.name}
                     onChange={(e) => updateFormData("name", e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                    placeholder="e.g., Pizza Palace"
+                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    placeholder="e.g., Nexus Gastronomy"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    URL Slug *
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                    Route Signature *
                   </label>
-                  <div className="flex items-center">
-                    <span className="text-slate-500 mr-2">/c/</span>
+                  <div className="relative group">
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 font-bold pointer-events-none transition-colors group-focus-within:text-primary/40">coredex.digital/c/</span>
                     <input
                       type="text"
                       value={formData.slug}
                       onChange={(e) => updateFormData("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                      className="flex-1 px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                      placeholder="pizza-palace"
+                      className="w-full pl-36 pr-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
+                      placeholder="nexus-gastronomy"
                     />
                   </div>
-                  <p className="text-slate-500 text-sm mt-1">
-                    This will be the public URL for the catalog
+                  <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest mt-3 ml-1">
+                    This is your permanent system identifier.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3">
-                    Business Type *
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-4 ml-1">
+                    Market Sector *
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {businessTypes.map((type) => (
@@ -220,29 +247,35 @@ export default function NewCatalogPage() {
                         key={type.id}
                         type="button"
                         onClick={() => updateFormData("business_type", type.id)}
-                        className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                        className={`group flex flex-col items-center gap-3 p-5 rounded-[1.5rem] border transition-all duration-300 ${
                           formData.business_type === type.id
-                            ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400"
-                            : "bg-slate-900/50 border-slate-600/50 text-slate-400 hover:border-slate-500"
+                            ? "bg-primary border-primary shadow-[0_10px_30px_-10px_rgba(124,58,237,0.5)] text-white"
+                            : "bg-white/[0.03] border-white/5 text-white/40 hover:border-white/20 hover:bg-white/[0.05]"
                         }`}
                       >
-                        <type.icon className="w-5 h-5" />
-                        <span className="font-medium">{type.label}</span>
+                        <div className={`p-3 rounded-2xl transition-colors ${
+                          formData.business_type === type.id
+                            ? "bg-white/20"
+                            : "bg-white/5 group-hover:bg-white/10"
+                        }`}>
+                          <type.icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest">{type.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Description (optional)
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                    Manifesto / Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => updateFormData("description", e.target.value)}
-                    rows={3}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
-                    placeholder="Brief description of the business..."
+                    rows={4}
+                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+                    placeholder="Vision and mission of this entity..."
                   />
                 </div>
               </div>
@@ -251,41 +284,48 @@ export default function NewCatalogPage() {
 
           {/* Step 2: Subscription */}
           {step === 2 && (
-            <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 border border-slate-700/50">
-              <h2 className="text-xl font-semibold text-white mb-6">Subscription Details</h2>
+            <div className="glass rounded-[2rem] p-10 border border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-2xl font-bold text-white mb-8 tracking-tight flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Package className="w-5 h-5" />
+                </div>
+                Access Tiering
+              </h2>
               
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-3">
-                    Subscription Type *
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-4 ml-1">
+                    Select Plan Type *
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-4">
                     {subscriptionTypes.map((type) => (
                       <button
                         key={type.id}
                         type="button"
                         onClick={() => updateFormData("subscription_type", type.id)}
-                        className={`p-4 rounded-xl border text-center transition-all ${
+                        className={`p-6 rounded-[1.5rem] border text-center transition-all duration-300 group ${
                           formData.subscription_type === type.id
-                            ? "bg-emerald-500/20 border-emerald-500/50"
-                            : "bg-slate-900/50 border-slate-600/50 hover:border-slate-500"
+                            ? "bg-primary border-primary shadow-[0_10px_30px_-10px_rgba(124,58,237,0.5)]"
+                            : "bg-white/[0.03] border-white/5"
                         }`}
                       >
-                        <p className={`font-semibold ${
-                          formData.subscription_type === type.id ? "text-emerald-400" : "text-white"
+                        <p className={`font-bold tracking-tight text-lg transition-colors ${
+                          formData.subscription_type === type.id ? "text-white" : "text-white/40 group-hover:text-white"
                         }`}>
                           {type.label}
                         </p>
-                        <p className="text-slate-500 text-sm mt-1">{type.description}</p>
+                        <p className={`text-[10px] font-bold uppercase tracking-widest mt-2 transition-colors ${
+                          formData.subscription_type === type.id ? "text-white/60" : "text-white/20"
+                        }`}>{type.description}</p>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {formData.subscription_type === "custom_years" && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Number of Years
+                  <div className="animate-in slide-in-from-top-2 duration-300">
+                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                      Override Duration (Years)
                     </label>
                     <input
                       type="number"
@@ -293,91 +333,82 @@ export default function NewCatalogPage() {
                       max="10"
                       value={formData.custom_years}
                       onChange={(e) => updateFormData("custom_years", parseInt(e.target.value) || 1)}
-                      className="w-32 px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      className="w-32 px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
                     />
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Amount Paid
+                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                      Finalized Quantum
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       value={formData.amount_paid}
                       onChange={(e) => updateFormData("amount_paid", e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Currency
+                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                      Currency Unit
                     </label>
                     <select
                       value={formData.currency}
                       onChange={(e) => updateFormData("currency", e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
                     >
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
-                      <option value="AED">AED</option>
-                      <option value="SAR">SAR</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="GBP">GBP (£)</option>
+                      <option value="AED">AED (د.إ)</option>
+                      <option value="SAR">SAR (ر.س)</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Payment Method
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                    Settlement Method
                   </label>
                   <select
                     value={formData.payment_method}
                     onChange={(e) => updateFormData("payment_method", e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
                   >
-                    <option value="">Select method...</option>
-                    <option value="cash">Cash</option>
-                    <option value="bank_transfer">Bank Transfer</option>
-                    <option value="mobile_payment">Mobile Payment</option>
-                    <option value="other">Other</option>
+                    <option value="">Select Protocol...</option>
+                    <option value="cash">Direct Cash</option>
+                    <option value="bank_transfer">Bank Settlement</option>
+                    <option value="mobile_payment">Mobile Link</option>
+                    <option value="other">Alternative</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Payment Notes
+                <div className="pt-8 border-t border-white/5">
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-6 ml-1">
+                    System Permissions
                   </label>
-                  <textarea
-                    value={formData.payment_notes}
-                    onChange={(e) => updateFormData("payment_notes", e.target.value)}
-                    rows={2}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none"
-                    placeholder="Any notes about the payment..."
-                  />
-                </div>
-
-                <div className="border-t border-slate-700/50 pt-6">
-                  <label className="block text-sm font-medium text-slate-300 mb-4">
-                    Features
-                  </label>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
-                      { key: "booking_enabled", label: "Booking / Reservation feature" },
-                      { key: "analytics_enabled", label: "Analytics dashboard" },
+                      { key: "booking_enabled", label: "Reservation Matrix", icon: ChevronRight },
+                      { key: "analytics_enabled", label: "Hyper-Analytics", icon: ChevronRight },
+                      { key: "multi_language_enabled", label: "Multilingual Engine", icon: Globe },
                     ].map((feature) => (
-                      <label key={feature.key} className="flex items-center gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData[feature.key as keyof typeof formData] as boolean}
-                          onChange={(e) => updateFormData(feature.key, e.target.checked)}
-                          className="w-5 h-5 rounded border-slate-600 bg-slate-900/50 text-emerald-500 focus:ring-emerald-500/50"
-                        />
-                        <span className="text-slate-300">{feature.label}</span>
-                      </label>
+                      <div key={feature.key} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-colors">
+                        <span className="text-white font-bold tracking-tight text-sm">{feature.label}</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer"
+                            checked={formData[feature.key as keyof typeof formData] as boolean}
+                            onChange={(e) => updateFormData(feature.key, e.target.checked)}
+                          />
+                          <div className="w-10 h-5 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                        </label>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -387,70 +418,77 @@ export default function NewCatalogPage() {
 
           {/* Step 3: Admin Account */}
           {step === 3 && (
-            <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-8 border border-slate-700/50">
-              <h2 className="text-xl font-semibold text-white mb-2">Admin Account</h2>
-              <p className="text-slate-400 mb-6">
-                Create an admin account for this catalog. This is optional - you can add admins later.
+            <div className="glass rounded-[2rem] p-10 border border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-2xl font-bold text-white mb-2 tracking-tight flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                Security Protocol
+              </h2>
+              <p className="text-white/40 mb-8 font-medium">
+                Provision default administrative credentials for this catalog.
               </p>
               
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Admin Name
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                    Operative Identity
                   </label>
                   <input
                     type="text"
+                    autoFocus
                     value={formData.admin_name}
                     onChange={(e) => updateFormData("admin_name", e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                    placeholder="John Doe"
+                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
+                    placeholder="e.g., Operative 01"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Admin Email
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                    System Email
                   </label>
                   <input
                     type="email"
                     value={formData.admin_email}
                     onChange={(e) => updateFormData("admin_email", e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                    placeholder="admin@business.com"
+                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
+                    placeholder="admin@entity.digital"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Password {formData.admin_email && "(min 8 characters)"}
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
+                    Access Key {formData.admin_email && "(Min 8 Bits)"}
                   </label>
                   <input
                     type="password"
                     value={formData.admin_password}
                     onChange={(e) => updateFormData("admin_password", e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
                     placeholder="••••••••"
                   />
                 </div>
 
                 {formData.admin_email && formData.admin_password && formData.admin_password.length < 8 && (
-                  <p className="text-amber-400 text-sm">
-                    Password must be at least 8 characters
-                  </p>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-amber-500 text-[10px] font-bold uppercase tracking-widest animate-pulse">
+                    Security Policy Violation: Access Key Too Short
+                  </div>
                 )}
               </div>
             </div>
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-12 px-2">
             {step > 1 ? (
               <button
                 type="button"
                 onClick={() => setStep(step - 1)}
-                className="px-6 py-3 text-slate-400 hover:text-white transition-colors"
+                className="px-8 py-4 text-white/40 font-bold uppercase tracking-[0.2em] text-[10px] hover:text-white transition-colors"
               >
-                Back
+                Previous Stage
               </button>
             ) : (
               <div />
@@ -461,24 +499,28 @@ export default function NewCatalogPage() {
                 type="button"
                 onClick={() => setStep(step + 1)}
                 disabled={!canProceed()}
-                className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="px-10 py-5 bg-white text-black font-bold rounded-2xl hover:scale-105 active:scale-95 disabled:opacity-20 disabled:scale-100 transition-all shadow-[0_10px_30px_rgba(255,255,255,0.2)] flex items-center gap-2 group"
               >
-                Continue
+                PROCEED TO PHASE {step + 1}
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading || !canProceed()}
-                className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
+                className="px-10 py-5 bg-primary text-white font-bold rounded-2xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all shadow-[0_10px_40px_-5px_rgba(124,58,237,0.6)] flex items-center gap-3 group"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Creating...
+                    INITIALIZING...
                   </>
                 ) : (
-                  "Create Catalog"
+                  <>
+                    DEPLOY CATALOG
+                    <Zap className="w-4 h-4 fill-current group-hover:scale-125 transition-transform" />
+                  </>
                 )}
               </button>
             )}

@@ -1,34 +1,112 @@
-/* Fonts are now optimized with next/font in layout.tsx */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --card: 240 10% 5.9%;
+  --card-foreground: 0 0% 98%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --primary: 263.4 70% 50.4%;
+  --primary-foreground: 210 20% 98%;
+  --secondary: 240 4.8% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --muted: 240 4.8% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --accent: 240 4.8% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 4.8% 15.9%;
+  --input: 240 4.8% 15.9%;
+  --ring: 263.4 70% 50.4%;
+  --radius: 1rem;
+}
+
 @layer base {
+  * {
+    @apply border-border;
+  }
+
   body {
-    font-family: var(--font-inter), sans-serif;
-  }
-  
-  .font-cairo {
-    font-family: var(--font-cairo), sans-serif;
-  }
-  
-  .font-handwriting {
-    font-family: var(--font-handwriting), serif;
+    @apply bg-background text-foreground selection:bg-primary/30 selection:text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background: radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 0% 50%, rgba(29, 78, 216, 0.05) 0%, transparent 25%),
+      radial-gradient(circle at 100% 50%, rgba(124, 58, 237, 0.05) 0%, transparent 25%),
+      #020202;
+    min-height: 100vh;
   }
 }
 
-@layer utilities {
-  .bg-wood-pattern {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5 0.02' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E");
-  }
-  
-  .bg-wood-pattern-light {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8 0.01' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.1'/%3E%3C/svg%3E");
+@layer components {
+  .glass {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] shadow-2xl;
   }
 
-  .bg-wood-pattern-dense {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9 0.05' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.2'/%3E%3C/svg%3E");
+  .glass-card {
+    @apply glass rounded-3xl transition-all duration-500 hover:bg-white/[0.05] hover:border-white/[0.15] hover:shadow-primary/5;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(124, 58, 237, 0.5);
+  }
+
+  .neon-border {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .neon-border::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.3), transparent);
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .neon-border:hover::before {
+    opacity: 1;
   }
 }
 
+/* Animations */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.mesh-gradient {
+  background:
+    radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+    radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+}
