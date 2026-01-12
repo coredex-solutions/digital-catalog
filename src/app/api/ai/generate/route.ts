@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { parseAIJson, AI_CONSTRAINTS } from "@/lib/ai-utils";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = "llama-3.1-8b-instant";
@@ -102,15 +103,10 @@ ${business.specialty ? `- Specialty: ${business.specialty}` : ""}
 Return only the JSON array.`;
 
       const result = await callGroq(prompt, systemPrompt);
+      const parsedKeywords = parseAIJson(result);
       
-      try {
-        const jsonMatch = result.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const parsedKeywords = JSON.parse(jsonMatch[0]);
-          return NextResponse.json({ keywords: parsedKeywords });
-        }
-      } catch {
-        console.error("Failed to parse keywords JSON");
+      if (parsedKeywords && Array.isArray(parsedKeywords)) {
+        return NextResponse.json({ keywords: parsedKeywords });
       }
       
       // Smart fallback based on business type
@@ -144,7 +140,7 @@ Return ONLY a valid JSON object with exactly three fields:
   "fr": "French content here (European French)..."
 }
 
-No markdown, no explanation, no code blocks - just the JSON object.`;
+${AI_CONSTRAINTS}`;
 
       const keywordList = keywords?.length ? keywords.slice(0, 5).join(", ") : "";
       
@@ -165,32 +161,13 @@ Remember: Use the ACTUAL business name "${business.name}" and city "${business.c
 Generate the content in English, Arabic, and French. Return only the JSON object.`;
 
       const result = await callGroq(prompt, systemPrompt);
-      
-      try {
-        // Try to extract JSON from the response
-        const jsonMatch = result.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const content = JSON.parse(jsonMatch[0]);
-          
-          // Validate we have all three languages
-          if (content.en && content.ar && content.fr) {
-            // Double-check for any remaining placeholders and remove them
-            const cleanContent = {
-              en: content.en.replace(/\[[^\]]+\]/g, business.city || ""),
-              ar: content.ar.replace(/\[[^\]]+\]/g, business.city || ""),
-              fr: content.fr.replace(/\[[^\]]+\]/g, business.city || ""),
-            };
-            return NextResponse.json({ content: cleanContent });
-          }
-        }
-      } catch (e) {
-        console.error("Failed to parse generated content:", e, result);
+      const parsedContent = parseAIJson(result);
+
+      if (parsedContent && typeof parsedContent === 'object') {
+        return NextResponse.json({ content: parsedContent });
       }
-      
-      return NextResponse.json(
-        { error: "AI failed to generate valid content. Please try again." },
-        { status: 500 }
-      );
+
+      throw new Error("Failed to generate or parse AI content");
     }
 
     if (action === "enhance_content") {
@@ -218,7 +195,8 @@ RULES:
 4. Remove any placeholder text like [city] or [name]
 5. Return ONLY the improved text, nothing else
 
-Do not add any explanation or quotes - just the enhanced text.`;
+Do not add any explanation or quotes - just the enhanced text.
+${AI_CONSTRAINTS}`;
 
       const keywordList = keywords?.join(", ") || "";
       const prompt = `Improve this ${langName} business description for ${business.name} (${business.type} in ${business.city}):
@@ -288,7 +266,8 @@ OUTPUT FORMAT - Return ONLY a valid JSON object:
   "fr": { "title": "...", "description": "..." }
 }
 
-Include only the languages requested. No markdown, no explanation.`;
+Include only the languages requested. No markdown, no explanation.
+${AI_CONSTRAINTS}`;
 
       const languagesText = targetLanguages.map(l => {
         const langName = l === "ar" ? "Arabic" : l === "fr" ? "French" : "English";
@@ -311,30 +290,13 @@ Generate SEO for these languages: ${targetLanguages.join(", ").toUpperCase()}
 Return only the JSON object with title and description for each language.`;
 
       const result = await callGroq(prompt, systemPrompt);
+      const seoData = parseAIJson(result);
 
-      try {
-        const jsonMatch = result.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const seoData = JSON.parse(jsonMatch[0]);
-          
-          // Clean any placeholders
-          for (const lang of targetLanguages) {
-            if (seoData[lang]) {
-              seoData[lang].title = seoData[lang].title?.replace(/\[[^\]]+\]/g, business.city || "") || "";
-              seoData[lang].description = seoData[lang].description?.replace(/\[[^\]]+\]/g, business.city || "") || "";
-            }
-          }
-          
-          return NextResponse.json({ seo: seoData });
-        }
-      } catch (e) {
-        console.error("Failed to parse SEO JSON:", e, result);
+      if (seoData && typeof seoData === 'object') {
+        return NextResponse.json({ seo: seoData });
       }
 
-      return NextResponse.json(
-        { error: "AI failed to generate SEO. Please try again." },
-        { status: 500 }
-      );
+      throw new Error("Failed to generate or parse SEO data");
     }
 
     return NextResponse.json(

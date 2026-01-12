@@ -69,6 +69,7 @@ export interface CatalogSettingsData {
   cta_order_label_fr?: string;
   default_language?: Language;
   enabled_languages?: string;
+  ai_waiter_enabled?: boolean;
 }
 
 // Full catalog data for SaaS pages

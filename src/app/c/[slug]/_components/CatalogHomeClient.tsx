@@ -6,6 +6,7 @@ import { DynamicHomePage } from "@/views/DynamicHomePage";
 import { DynamicInfoModal } from "@/views/DynamicInfoModal";
 import { SaasReservationModal } from "./SaasReservationModal";
 import { SaasChatWidget } from "./SaasChatWidget";
+import { AIWaiterBubble } from "./AIWaiterBubble";
 import { motion, AnimatePresence } from "framer-motion";
 import type { LocalizedString } from "@/types";
 
@@ -28,6 +29,8 @@ export function CatalogHomeClient() {
     isReservationOpen,
     setIsReservationOpen,
   } = useCatalog();
+
+  const aiWaiterEnabled = settings?.ai_waiter_enabled ?? false;
 
   // Show loading screen while theme is loading
   if (!isThemeLoaded) {
@@ -129,6 +132,8 @@ export function CatalogHomeClient() {
         colorSecondary={colorSecondary}
         whatsappNumber={contact?.phone_whatsapp || undefined}
       />
+
+      {aiWaiterEnabled && <AIWaiterBubble />}
     </>
   );
 }

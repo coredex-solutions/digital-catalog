@@ -131,6 +131,11 @@ export interface CatalogSettings {
   default_language: Language;
   enabled_languages: string; // comma-separated
   
+  // AI Waiter
+  ai_waiter_enabledX?: boolean; // Note: added via migration as ai_waiter_enabled
+  ai_waiter_name?: string;
+  ai_waiter_persona?: string;
+
   updated_at: string;
 }
 
@@ -262,6 +267,18 @@ export interface FAQ {
   answer_en: string;
   answer_fr: string;
   display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIKnowledge {
+  id: string;
+  catalog_id: string;
+  question: string;
+  answer: string;
+  source_type: 'manual' | 'ai_generated' | 'item_scrape';
+  category: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

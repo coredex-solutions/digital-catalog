@@ -15,6 +15,7 @@ import {
   QrCode,
   Clock,
   MessageCircle,
+  Brain,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -55,6 +56,7 @@ export function CatalogAdminSidebar({
     { href: `${basePath}/about`, label: "About & SEO", icon: FileText },
     { href: `${basePath}/hours`, label: "Business Hours", icon: Clock },
     { href: `${basePath}/faqs`, label: "FAQs", icon: MessageCircle },
+    { href: `${basePath}/ai-waiter`, label: "AI Waiter", icon: Brain },
     ...(features?.analytics_enabled
       ? [{ href: `${basePath}/analytics`, label: "Analytics", icon: BarChart3 }]
       : []),

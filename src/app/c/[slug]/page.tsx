@@ -64,6 +64,7 @@ export default async function CatalogHomePage({
       cta_order_label_fr: settings.cta_order_label_fr,
       default_language: settings.default_language,
       enabled_languages: settings.enabled_languages,
+      ai_waiter_enabled: (settings as any).ai_waiter_enabled === 1,
     } : null,
     contact: contact ? {
       phone_primary: contact.phone_primary,
