@@ -100,6 +100,7 @@ export function CatalogHomeClient() {
         bookingEnabled={bookingEnabled}
         colorPrimary={colorPrimary}
         colorSecondary={colorSecondary}
+        setIsInfoOpen={setIsInfoOpen}
       />
 
       <AnimatePresence>
