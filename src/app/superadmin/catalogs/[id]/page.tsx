@@ -76,6 +76,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         booking_enabled: Boolean(result.catalog.booking_enabled),
         analytics_enabled: Boolean(result.catalog.analytics_enabled),
         custom_domain_enabled: Boolean(result.catalog.custom_domain_enabled),
+        ai_image_enhancement_limit: result.catalog.ai_image_enhancement_limit || 10,
       });
     } catch (err: any) {
       setError(err.message);
@@ -335,6 +336,37 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                       )}
                     </div>
                   ))}
+                  
+                  {/* AI Usage Display */}
+                  <div className="mt-6 p-6 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-[2rem]">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+                           <BarChart3 className="w-4 h-4" />
+                        </div>
+                        <p className="text-white font-bold text-sm tracking-tight">AI Image Enhancement</p>
+                      </div>
+                      <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Monthly Credits</span>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-end">
+                        <p className="text-2xl font-black text-white leading-none">
+                          {catalog.ai_image_enhancement_used || 0}
+                          <span className="text-white/20 text-sm font-bold ml-1">/ {catalog.ai_image_enhancement_limit || 10}</span>
+                        </p>
+                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+                          {Math.round(((catalog.ai_image_enhancement_used || 0) / (catalog.ai_image_enhancement_limit || 10)) * 100)}% Used
+                        </p>
+                      </div>
+                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-1000"
+                          style={{ width: `${Math.min(100, ((catalog.ai_image_enhancement_used || 0) / (catalog.ai_image_enhancement_limit || 10)) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -388,6 +420,22 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                     <option value="medical">Medical / Clinic</option>
                     <option value="other">Other</option>
                   </select>
+                </div>
+
+                <div className="pt-4 border-t border-white/5">
+                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">AI Enhancement Limit</label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="number"
+                      value={editForm.ai_image_enhancement_limit}
+                      onChange={(e) => setEditForm({ ...editForm, ai_image_enhancement_limit: parseInt(e.target.value) || 0 })}
+                      className="flex-1 px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-bold text-xl"
+                    />
+                    <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
+                      <BarChart3 className="w-6 h-6 text-purple-400" />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-white/20 mt-3 ml-1">Number of monthly professional image enhancements allowed.</p>
                 </div>
               </div>
             </div>

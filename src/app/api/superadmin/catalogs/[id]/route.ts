@@ -31,6 +31,8 @@ export async function GET(
         cs.currency,
         cs.payment_method,
         cs.payment_notes,
+        cs.ai_image_enhancement_limit,
+        cs.ai_image_enhancement_used,
         cs.is_active as subscription_active
       FROM catalogs c
       LEFT JOIN catalog_subscriptions cs ON cs.catalog_id = c.id
@@ -167,7 +169,8 @@ export async function PUT(
   const subArgs: (string | number | null)[] = [];
   const allowedSubFields = [
     'subscription_type', 'expires_at', 
-    'multi_language_enabled', 'booking_enabled', 'analytics_enabled', 'custom_domain_enabled'
+    'multi_language_enabled', 'booking_enabled', 'analytics_enabled', 'custom_domain_enabled',
+    'ai_image_enhancement_limit'
   ];
 
   for (const field of allowedSubFields) {
