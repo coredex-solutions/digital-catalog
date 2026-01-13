@@ -132,7 +132,7 @@ export interface CatalogSettings {
   enabled_languages: string; // comma-separated
   
   // AI Waiter
-  ai_waiter_enabledX?: boolean; // Note: added via migration as ai_waiter_enabled
+  ai_waiter_enabled: boolean;
   ai_waiter_name?: string;
   ai_waiter_persona?: string;
 
@@ -365,6 +365,7 @@ export interface UpdateCatalogSettingsInput {
   json_ld_custom?: string;
   default_language?: Language;
   enabled_languages?: string;
+  ai_waiter_enabled?: boolean;
 }
 
 // ============================================

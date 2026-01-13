@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useParams } from "next/navigation";
 import { CatalogAdminShell } from "../_components/CatalogAdminShell";
 import {
@@ -26,6 +27,7 @@ interface Question {
   id: string;
   question_en: string;
   question_ar: string;
+  question_fr: string;
   category: "menu" | "policy" | "about";
   priority: number;
   context: string;
@@ -43,6 +45,10 @@ export default function AIWaiterTraining() {
   const [isRecording, setIsRecording] = useState(false);
   const [progress, setProgress] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const [recordingLang, setRecordingLang] = useState<"ar-SA" | "en-US" | "fr-FR">("ar-SA");
+  const [interimAnswer, setInterimAnswer] = useState("");
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   // For Speech-to-Text
   const recognitionRef = useRef<any>(null);
@@ -51,33 +57,87 @@ export default function AIWaiterTraining() {
     fetchQuestions();
 
     // Initialize Web Speech API if supported
-    if (typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)) {
+    if (typeof window !== "undefined") {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = "ar-SA"; // Default to Arabic
+      if (SpeechRecognition) {
+        setIsSpeechSupported(true);
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
 
-      recognitionRef.current.onresult = (event: any) => {
-        let interimTranscript = "";
-        let finalTranscript = "";
+        recognitionRef.current.onresult = (event: any) => {
+          let interimText = "";
+          let finalTranscript = "";
 
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          } else {
-            interimTranscript += event.results[i][0].transcript;
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript;
+            } else {
+              interimText += event.results[i][0].transcript;
+            }
           }
-        }
-        setAnswer((prev) => prev + finalTranscript);
-      };
+          
+          if (finalTranscript) {
+            setAnswer((prev) => prev + (prev ? " " : "") + finalTranscript);
+          }
+          setInterimAnswer(interimText);
+        };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
-        setIsRecording(false);
-      };
+        recognitionRef.current.onerror = (event: any) => {
+          if (event.error !== "no-speech") {
+            console.error("Speech recognition error:", event.error);
+          }
+          setIsRecording(false);
+          setInterimAnswer("");
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsRecording(false);
+          setInterimAnswer("");
+        };
+      }
     }
   }, []);
+
+  // Update language when it changes
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = recordingLang;
+    }
+  }, [recordingLang]);
+
+  const playQuestion = () => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+    }
+    
+    const questionText = recordingLang === "ar-SA" ? currentQuestion.question_ar : 
+                        recordingLang === "fr-FR" ? currentQuestion.question_fr : 
+                        currentQuestion.question_en;
+
+    const utterance = new SpeechSynthesisUtterance(questionText);
+    
+    // Select voice based on current language
+    const voices = window.speechSynthesis.getVoices();
+    if (recordingLang === "ar-SA") {
+      utterance.voice = voices.find(v => v.lang.startsWith("ar")) || null;
+      utterance.lang = "ar-SA";
+    } else if (recordingLang === "fr-FR") {
+      utterance.voice = voices.find(v => v.lang.startsWith("fr")) || null;
+      utterance.lang = "fr-FR";
+    } else {
+      utterance.voice = voices.find(v => v.lang.startsWith("en")) || null;
+      utterance.lang = "en-US";
+    }
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    
+    window.speechSynthesis.speak(utterance);
+  };
 
   const fetchQuestions = async () => {
     setLoading(true);
@@ -88,12 +148,41 @@ export default function AIWaiterTraining() {
       });
       if (res.ok) {
         const data = await res.json();
-        setQuestions(data.questions || []);
+        const pendingQuestions = data.questions || [];
+        setQuestions(pendingQuestions);
+        setProgress(0);
+        setCurrentIndex(0);
       }
     } catch (error) {
       console.error("Failed to fetch questions:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const [generating, setGenerating] = useState(false);
+  const handleGenerateQuestions = async () => {
+    setGenerating(true);
+    try {
+      const token = localStorage.getItem(`catalog_admin_token_${slug}`);
+      const res = await fetch(`/api/c/${slug}/admin/ai/waiter/train`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "generate" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setQuestions(data.questions || []);
+        setCurrentIndex(0);
+        setProgress(0);
+      }
+    } catch (error) {
+      console.error("Failed to generate questions:", error);
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -110,7 +199,9 @@ export default function AIWaiterTraining() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          question: currentQuestion.question_en,
+          action: "answer",
+          question_id: currentQuestion.id,
+          question_en: currentQuestion.question_en,
           answer: answer,
           category: currentQuestion.category,
         }),
@@ -118,12 +209,13 @@ export default function AIWaiterTraining() {
 
       if (res.ok) {
         setAnswer("");
-        if (currentIndex < questions.length - 1) {
-          setCurrentIndex((prev) => prev + 1);
-          setProgress(((currentIndex + 1) / questions.length) * 100);
-        } else {
+        setQuestions(prev => prev.filter(q => q.id !== currentQuestion.id));
+        if (questions.length <= 1) {
           setCompleted(true);
           setProgress(100);
+        } else {
+          // Stay on the same index as the next question will shift into it
+          setProgress(((currentIndex + 1) / (questions.length)) * 100);
         }
       }
     } catch (error) {
@@ -137,8 +229,13 @@ export default function AIWaiterTraining() {
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
+      setInterimAnswer("");
     } else {
-      setAnswer("");
+      if (!isSpeechSupported) {
+        alert("Your browser does not support voice input. Please use Chrome or Safari.");
+        return;
+      }
+      setInterimAnswer("");
       recognitionRef.current?.start();
       setIsRecording(true);
     }
@@ -157,7 +254,15 @@ export default function AIWaiterTraining() {
               <div className="w-20 h-20 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
               <Brain className="w-8 h-8 text-purple-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-pulse" />
             </div>
-            <p className="mt-6 text-white/40 font-medium animate-pulse">Analyzing menu data...</p>
+            <p className="mt-6 text-white/40 font-medium animate-pulse">Loading training session...</p>
+          </div>
+        ) : generating ? (
+          <div className="flex flex-col items-center justify-center h-[60vh]">
+            <div className="relative">
+              <div className="w-20 h-20 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
+              <Sparkles className="w-8 h-8 text-pink-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-bounce" />
+            </div>
+            <p className="mt-6 text-white/40 font-medium animate-pulse">Gemini is analyzing your menu to craft specific questions...</p>
           </div>
         ) : completed ? (
           <div className="max-w-2xl mx-auto text-center space-y-8 py-12">
@@ -196,13 +301,23 @@ export default function AIWaiterTraining() {
                 <div className="relative group">
                   <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-[2.5rem] opacity-20 blur group-hover:opacity-30 transition duration-1000"></div>
                   <div className="relative bg-[#0a0a0c]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12">
-                    <div className="flex items-center gap-4 mb-8">
-                      <div className="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center">
-                        <ChefHat className="w-6 h-6 text-purple-400" />
+                    <div className="flex items-center justify-between gap-4 mb-8">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center">
+                          <ChefHat className="w-6 h-6 text-purple-400" />
+                        </div>
+                        <span className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em]">
+                          Training Task {currentIndex + 1} of {questions.length}
+                        </span>
                       </div>
-                      <span className="text-[10px] font-black text-purple-400 uppercase tracking-[0.2em]">
-                        Training Task {currentIndex + 1} of {questions.length}
-                      </span>
+                      
+                      <button 
+                        onClick={playQuestion}
+                        disabled={isSpeaking}
+                        className={`w-12 h-12 rounded-xl border border-white/5 flex items-center justify-center transition-all ${isSpeaking ? 'bg-purple-500 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'}`}
+                      >
+                        {isSpeaking ? <Loader2 className="w-5 h-5 animate-spin" /> : <Volume2 className="w-5 h-5" />}
+                      </button>
                     </div>
 
                     <div className="space-y-6">
@@ -211,6 +326,9 @@ export default function AIWaiterTraining() {
                       </h2>
                       <p className="text-xl text-white/40 italic">
                         {currentQuestion.question_en}
+                      </p>
+                      <p className="text-xl text-white/40 italic">
+                        {currentQuestion.question_fr}
                       </p>
                       
                       {currentQuestion.context && (
@@ -226,24 +344,56 @@ export default function AIWaiterTraining() {
                     <div className="mt-12 space-y-6">
                       <div className="relative">
                         <textarea
-                          value={answer}
+                          value={isRecording ? answer + (interimAnswer ? (answer ? " " : "") + interimAnswer : "") : answer}
                           onChange={(e) => setAnswer(e.target.value)}
-                          placeholder="Your answer here (Arabic or English)..."
+                          placeholder="Your answer here (Arabic, English or French)..."
                           className="w-full h-48 bg-white/[0.02] border border-white/10 rounded-3xl p-6 text-white text-lg focus:outline-none focus:border-purple-500/50 transition-all resize-none custom-scrollbar"
                         />
-                        <div className="absolute bottom-4 right-4 flex items-center gap-2">
+                        <div className="absolute bottom-4 right-4 flex flex-col gap-3">
+                          {/* Language Toggle */}
+                          <div className="flex p-1 bg-white/5 border border-white/10 rounded-xl backdrop-blur-md">
+                            <button
+                              onClick={() => setRecordingLang("ar-SA")}
+                              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${recordingLang === "ar-SA" ? 'bg-white text-black shadow-lg' : 'text-white/40 hover:text-white'}`}
+                            >
+                              AR
+                            </button>
+                            <button
+                              onClick={() => setRecordingLang("en-US")}
+                              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${recordingLang === "en-US" ? 'bg-white text-black shadow-lg' : 'text-white/40 hover:text-white'}`}
+                            >
+                              EN
+                            </button>
+                            <button
+                              onClick={() => setRecordingLang("fr-FR")}
+                              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${recordingLang === "fr-FR" ? 'bg-white text-black shadow-lg' : 'text-white/40 hover:text-white'}`}
+                            >
+                              FR
+                            </button>
+                          </div>
                           <button
                             onClick={toggleRecording}
-                            className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${
+                            className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all self-end ${
                               isRecording
-                                ? "bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] animate-pulse"
+                                ? "bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-110"
                                 : "bg-white/5 hover:bg-white/10 text-white"
                             }`}
                           >
-                            {isRecording ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                            {isRecording ? <div className="relative"><div className="absolute -inset-2 bg-white/10 rounded-full animate-ping" /><MicOff className="w-6 h-6 relative z-10" /></div> : <Mic className="w-6 h-6" />}
                           </button>
                         </div>
                       </div>
+
+                      {isRecording && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex items-center gap-3 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full w-fit"
+                        >
+                          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                          <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Listening...</span>
+                        </motion.div>
+                      )}
 
                       <div className="flex items-center justify-between pt-4">
                         <button
@@ -284,13 +434,22 @@ export default function AIWaiterTraining() {
               <h3 className="text-xl font-bold text-white">No questions needed right now</h3>
               <p className="text-white/40">Your AI Waiter seems to have enough knowledge for your current menu.</p>
             </div>
-            <button
-               onClick={fetchQuestions}
-               className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Check Again
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={fetchQuestions}
+                className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh Queue
+              </button>
+              <button
+                onClick={handleGenerateQuestions}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-bold transition-all shadow-lg shadow-purple-500/10"
+              >
+                <Brain className="w-4 h-4" />
+                Generate New Questions
+              </button>
+            </div>
           </div>
         )}
       </CatalogAdminContent>

@@ -54,6 +54,7 @@ export async function GET(
       booking_enabled: settings?.booking_enabled,
       whatsapp_order_enabled: settings?.whatsapp_order_enabled,
       live_chat_enabled: settings?.live_chat_enabled,
+      ai_waiter_enabled: Boolean(settings?.ai_waiter_enabled),
       // multi_language_enabled removed - column doesn't exist in database
     },
     cta: {

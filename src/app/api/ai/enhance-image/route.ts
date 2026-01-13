@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db/client";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 // Nano Banana model for image generation/editing
-const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
+const GEMINI_IMAGE_MODEL = "gemini-2.0-flash";
 
 interface EnhanceRequest {
   imageBase64?: string;
@@ -143,7 +143,7 @@ The final image should look like a ${productType === "food" ? "restaurant menu p
 
     // Call Nano Banana (Gemini) API for image generation/editing
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`,
       {
         method: "POST",
         headers: {

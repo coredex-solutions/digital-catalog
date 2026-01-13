@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db/client";
 import { transcribeAudio, synthesizeSpeech } from "@/lib/ai-voice";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const MODEL = "gemini-1.5-flash";
+const MODEL = "gemini-2.0-flash";
 
 export async function POST(
   request: NextRequest,
@@ -104,7 +104,9 @@ STRICT RULE: Do not make up information that is not in the knowledge base or men
     );
 
     if (!aiRes.ok) {
-      throw new Error(`AI API error: ${aiRes.statusText}`);
+      const errorBody = await aiRes.text();
+      console.error(`Gemini API Error [${aiRes.status}]:`, errorBody);
+      throw new Error(`AI API error: ${aiRes.statusText} - ${errorBody}`);
     }
 
     const aiData = await aiRes.json();

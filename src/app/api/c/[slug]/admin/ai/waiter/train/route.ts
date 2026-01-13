@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db/client";
 import { parseAIJson, AI_CONSTRAINTS } from "@/lib/ai-utils";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const MODEL = "gemini-1.5-flash";
+const MODEL = "gemini-2.0-flash";
 
 export async function GET(
   request: NextRequest,
@@ -13,7 +13,40 @@ export async function GET(
   const db = getDb();
 
   try {
-    // 1. Get catalog info
+    const catalogRes = await db.execute({
+      sql: "SELECT id FROM catalogs WHERE slug = ?",
+      args: [slug]
+    });
+
+    if (catalogRes.rows.length === 0) {
+      return NextResponse.json({ error: "Catalog not found" }, { status: 404 });
+    }
+
+    const catalogId = catalogRes.rows[0].id as string;
+
+    // Fetch existing questions in the training queue
+    const queueRes = await db.execute({
+      sql: "SELECT * FROM catalog_ai_training_queue WHERE catalog_id = ? ORDER BY created_at ASC",
+      args: [catalogId]
+    });
+
+    return NextResponse.json({ questions: queueRes.rows });
+  } catch (error: any) {
+    console.error("Fetch Training Queue Error:", error);
+    return NextResponse.json({ error: error.message || "Failed to fetch training queue" }, { status: 500 });
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
+  const db = getDb();
+  const body = await request.json();
+  const { action = 'answer', question_id, question_en, answer, category, source_type = 'manual' } = body;
+
+  try {
     const catalogRes = await db.execute({
       sql: "SELECT id, name, business_type FROM catalogs WHERE slug = ?",
       args: [slug]
@@ -27,128 +60,145 @@ export async function GET(
     const businessName = catalogRes.rows[0].name as string;
     const businessType = catalogRes.rows[0].business_type as string;
 
-    // 2. Fetch all items and categories
-    const categoriesRes = await db.execute({
-      sql: "SELECT id, name_en, name_ar FROM categories WHERE catalog_id = ? AND is_active = 1",
-      args: [catalogId]
-    });
+    if (action === 'generate') {
+      // 1. Fetch current context to avoid duplicates and be specific
+      const categoriesRes = await db.execute({
+        sql: "SELECT id, name_en, name_ar FROM categories WHERE catalog_id = ? AND is_active = 1",
+        args: [catalogId]
+      });
 
-    const itemsRes = await db.execute({
-      sql: "SELECT id, category_id, name_en, name_ar, description_en, description_ar, price FROM menu_items WHERE catalog_id = ? AND is_active = 1",
-      args: [catalogId]
-    });
+      const itemsRes = await db.execute({
+        sql: "SELECT id, category_id, name_en, name_ar, description_en, description_ar, price FROM menu_items WHERE catalog_id = ? AND is_active = 1",
+        args: [catalogId]
+      });
 
-    // 3. Fetch existing knowledge to avoid duplicates
-    const existingKnowledgeRes = await db.execute({
-      sql: "SELECT question FROM catalog_ai_knowledge WHERE catalog_id = ?",
-      args: [catalogId]
-    });
+      const existingKnowledgeRes = await db.execute({
+        sql: "SELECT question FROM catalog_ai_knowledge WHERE catalog_id = ?",
+        args: [catalogId]
+      });
 
-    const categories = categoriesRes.rows;
-    const items = itemsRes.rows;
-    const existingQuestions = existingKnowledgeRes.rows.map(r => r.question);
+      const existingQueueRes = await db.execute({
+        sql: "SELECT question_en FROM catalog_ai_training_queue WHERE catalog_id = ?",
+        args: [catalogId]
+      });
 
-    // 4. Use AI to analyze and generate gaps
-    const menuSummary = items.map(item => ({
-      name: item.name_en,
-      category: categories.find(c => c.id === item.category_id)?.name_en || "Unknown",
-      description: item.description_en || "No description",
-      price: item.price
-    }));
+      const categories = categoriesRes.rows;
+      const items = itemsRes.rows;
+      const existingQuestions = [
+        ...existingKnowledgeRes.rows.map(r => r.question),
+        ...existingQueueRes.rows.map(r => r.question_en)
+      ];
 
-    const systemPrompt = `You are an AI Waiter Specialist. Your goal is to interview a business owner to fill knowledge gaps for an AI Waiter.
-Analyze the provided menu data and identify what's missing to provide a premium service (e.g., ingredients, spiciness, pairings, prep time, popularity).
+      const menuSummary = items.map(item => ({
+        name: item.name_en,
+        category: categories.find(c => c.id === item.category_id)?.name_en || "Unknown",
+        description: item.description_en || "No description",
+        price: item.price
+      }));
+
+      const systemPrompt = `You are an expert Restaurant Consultant training an AI Waiter. 
+Analyze the provided menu data and identify specific knowledge gaps for individual items.
+
+STRICT RULES:
+1. BE SPECIFIC: Never ask broad questions like "list all ingredients" or "what are the allergens for all dishes".
+2. NAME DROPPING: You MUST mention at least 4 specific dish names from the provided menu in your questions.
+3. QUALITY OVER QUANTITY: Ask about unique selling points, spiciness levels, preparation methods, or recommended pairings for SPECIFIC items you see in the data.
+4. ANALYZE DESCRIPTIONS: If a dish description is short, ask for missing details (e.g., "What comes inside the [Dish Name] sandwich?").
 
 ${AI_CONSTRAINTS}
 
-Return exactly 10 high-value questions as a JSON array of objects:
+Return exactly 8 high-value, item-specific questions as a JSON array of objects.
 [
   {
     "id": "generated_id",
-    "question_en": "Question in English",
+    "question_en": "Question mentioning [Item Name]",
     "question_ar": "Question in Arabic",
-    "category": "menu" | "policy" | "about",
+    "question_fr": "Question in French",
+    "category": "menu",
     "priority": 1-5,
-    "context": "Why this is important"
+    "context": "Context for why this item needs more detail"
   }
 ]`;
 
-    const prompt = `Business: ${businessName} (${businessType})
-Existing Knowledge Base Questions: ${JSON.stringify(existingQuestions)}
+      const prompt = `Business: ${businessName} (${businessType})
+Existing Knowledge/Queue: ${JSON.stringify(existingQuestions.slice(-20))}
 Menu Data: ${JSON.stringify(menuSummary.slice(0, 50))}
 
-Based on this, what are the most important things a waiter needs to know to sell these items effectively and answer customer questions? 
-Generate 10 questions the owner should answer to train the AI.`;
+Based on this, what are the most important things a waiter needs to know to sell these items effectively? Generate 8 questions.`;
 
-    if (!GOOGLE_API_KEY) {
-      return NextResponse.json({ error: "Google API key not configured" }, { status: 500 });
-    }
-
-    const aiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2000,
-          }
-        })
+      if (!GOOGLE_API_KEY) {
+        throw new Error("Gemini API key not configured");
       }
-    );
 
-    if (!aiRes.ok) {
-      throw new Error(`AI API error: ${aiRes.statusText}`);
+      const aiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 8192,
+            }
+          })
+        }
+      );
+
+      if (!aiRes.ok) {
+        const errorBody = await aiRes.text();
+        throw new Error(`AI API error: ${aiRes.statusText} - ${errorBody}`);
+      }
+
+      const aiData = await aiRes.json();
+      const aiText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const questions = parseAIJson(aiText);
+
+      if (!questions || !Array.isArray(questions)) {
+        throw new Error("Failed to parse AI-generated questions");
+      }
+
+      // 2. Save new questions to queue
+      for (const q of questions) {
+        const id = `tq_${Math.random().toString(36).substring(2, 11)}`;
+        await db.execute({
+          sql: "INSERT INTO catalog_ai_training_queue (id, catalog_id, question_en, question_ar, question_fr, category, priority, context) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          args: [id, catalogId, q.question_en, q.question_ar, q.question_fr || '', q.category || 'menu', q.priority || 3, q.context || '']
+        });
+      }
+
+      // Return the updated queue
+      const finalQueueRes = await db.execute({
+        sql: "SELECT * FROM catalog_ai_training_queue WHERE catalog_id = ? ORDER BY created_at ASC",
+        args: [catalogId]
+      });
+
+      return NextResponse.json({ questions: finalQueueRes.rows });
     }
 
-    const aiData = await aiRes.json();
-    const aiText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    const questions = parseAIJson(aiText);
+    // Default: Save answer and remove from queue
+    if (action === 'answer') {
+      const knowledgeId = `ak_${Math.random().toString(36).substring(2, 11)}`;
 
-    if (!questions || !Array.isArray(questions)) {
-      throw new Error("Failed to parse AI-generated questions");
+      await db.execute({
+        sql: "INSERT INTO catalog_ai_knowledge (id, catalog_id, question, answer, category, source_type) VALUES (?, ?, ?, ?, ?, ?)",
+        args: [knowledgeId, catalogId, question_en, answer, category || 'menu', source_type]
+      });
+
+      // Remove from queue
+      if (question_id) {
+        await db.execute({
+          sql: "DELETE FROM catalog_ai_training_queue WHERE id = ? OR question_en = ?",
+          args: [question_id, question_en]
+        });
+      }
+
+      return NextResponse.json({ success: true, id: knowledgeId });
     }
 
-    return NextResponse.json({ questions });
-
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error: any) {
-    console.error("AI Trainer Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to generate training questions" }, { status: 500 });
-  }
-}
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
-  const { slug } = await params;
-  const db = getDb();
-  const body = await request.json();
-  const { question, answer, category, source_type = 'manual' } = body;
-
-  try {
-    const catalogRes = await db.execute({
-      sql: "SELECT id FROM catalogs WHERE slug = ?",
-      args: [slug]
-    });
-
-    if (catalogRes.rows.length === 0) {
-      return NextResponse.json({ error: "Catalog not found" }, { status: 404 });
-    }
-
-    const catalogId = catalogRes.rows[0].id as string;
-    const knowledgeId = `ak_${Math.random().toString(36).substring(2, 11)}`;
-
-    await db.execute({
-      sql: "INSERT INTO catalog_ai_knowledge (id, catalog_id, question, answer, category, source_type) VALUES (?, ?, ?, ?, ?, ?)",
-      args: [knowledgeId, catalogId, question, answer, category, source_type]
-    });
-
-    return NextResponse.json({ success: true, id: knowledgeId });
-  } catch (error: any) {
-    console.error("Save Knowledge Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to save knowledge" }, { status: 500 });
+    console.error("AI Training Action Error:", error);
+    return NextResponse.json({ error: error.message || "Failed to process training action" }, { status: 500 });
   }
 }

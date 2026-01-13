@@ -55,7 +55,7 @@ export function parseAIJson(text: string): any {
         }
       }
       
-      console.error("Could not find JSON structures in AI response:", text);
+      console.error(`Could not find JSON structures in AI response. Length: ${text.length}. End snippet: ${text.substring(text.length - 50)}`);
       return null;
     }
   }

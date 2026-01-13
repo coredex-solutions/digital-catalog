@@ -48,6 +48,7 @@ interface Settings {
     booking_enabled: boolean;
     whatsapp_order_enabled: boolean;
     live_chat_enabled: boolean;
+    ai_waiter_enabled: boolean;
   };
   cta: {
     cta_menu_label_en: string;
@@ -556,6 +557,12 @@ export default function SettingsPage() {
                       description="Display a live chat widget on your catalog"
                       checked={settings.features.live_chat_enabled}
                       onChange={(v) => updateSettings("features", "live_chat_enabled", v)}
+                    />
+                    <ToggleSwitch
+                      label="AI Waiter Assistant"
+                      description="Enable the AI Waiter to help customers with menu questions"
+                      checked={settings.features.ai_waiter_enabled}
+                      onChange={(v) => updateSettings("features", "ai_waiter_enabled", v)}
                     />
                   </div>
 

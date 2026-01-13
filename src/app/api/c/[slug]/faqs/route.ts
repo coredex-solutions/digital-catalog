@@ -26,7 +26,7 @@ export async function GET(
     // Get FAQs
     const result = await db.execute({
       sql: `
-        SELECT * FROM catalog_faqs 
+        SELECT * FROM faqs 
         WHERE catalog_id = ? 
         ORDER BY display_order ASC
       `,
