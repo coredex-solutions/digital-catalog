@@ -203,10 +203,15 @@ export default function AIWaiterBubble() {
   useEffect(() => {
     // Initial greeting based on catalog language
     if (isOpen && messages.length === 0) {
+      const greeting = t.greeting;
       setMessages([{
         role: "assistant",
-        content: t.greeting
+        content: greeting
       }]);
+      // Play greeting automatically
+      if (!isMuted) {
+        playMessage(greeting, catalogLang || "en");
+      }
     }
   }, [isOpen, t.greeting]);
 
@@ -262,8 +267,8 @@ export default function AIWaiterBubble() {
           }
         }
 
-        // Auto-play if voice was used
-        if (voiceUsed && !isMuted) {
+        // Auto-play AI response
+        if (!isMuted) {
           playMessage(data.text, data.detectedLang);
         }
       }
