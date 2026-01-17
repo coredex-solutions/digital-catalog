@@ -11,6 +11,28 @@ const RATE_LIMIT_REQUESTS = 30;
 const RATE_LIMIT_WINDOW = 60000;
 const MAX_TEXT_LENGTH = 1000;
 
+async function tryStreamElementsTTS(text: string, lang: string) {
+  try {
+    const voiceMap: Record<string, string> = {
+      ar: "Maged", // Maged is a high-quality Arabic voice
+      en: "Brian",
+      fr: "Mathieu"
+    };
+    const voice = voiceMap[lang] || "Brian";
+    const url = `https://api.streamelements.com/static/savers/voice?voice=${voice}&text=${encodeURIComponent(text)}`;
+
+    const res = await fetch(url);
+    if (res.ok) {
+      return new Response(await res.arrayBuffer(), {
+        headers: { "Content-Type": "audio/mpeg", "Cache-Control": "public, max-age=3600" }
+      });
+    }
+  } catch (e) {
+    console.error("StreamElements TTS Error:", e);
+  }
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const text = searchParams.get("text");
@@ -31,11 +53,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const cleanText = text.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "").replace(/[^\w\s\u0600-\u06FF,.!?]/g, "");
+    // 1. Try Primary Hack (Bing)
+    const bingRes = await tryUnlimitedHack(text, lang);
+    if (bingRes) return bingRes;
 
-    const ttsResult = await tryUnlimitedHack(cleanText, lang);
-    if (ttsResult) return ttsResult;
+    // 2. Try Secondary Hack (StreamElements) - Very robust in production
+    const seRes = await tryStreamElementsTTS(text, lang);
+    if (seRes) return seRes;
 
+    // 3. Paid Fallbacks
     if (GOOGLE_API_KEY) {
       const googleRes = await tryGoogleTTS(text, lang);
       if (googleRes) return googleRes;
@@ -54,7 +80,8 @@ export async function GET(request: NextRequest) {
 }
 
 async function tryUnlimitedHack(text: string, lang: string) {
-  const cleanForBing = text.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "").replace(/ـ/g, "");
+  // Clean Arabic for Bing but keep some diacritics if they don't break it
+  const cleanForBing = text.replace(/[^\w\s\u0600-\u06FF,.!?]/g, "").replace(/ـ/g, "");
 
   const voices: Record<string, string[]> = {
     ar: ["ar-SA-HamedNeural", "ar-SA-NaayfNeural", "ar-JO-TaimNeural", "ar-EG-ShakirNeural"],
@@ -64,11 +91,10 @@ async function tryUnlimitedHack(text: string, lang: string) {
 
   const selectedVoices = voices[lang] || voices.en;
   const chunks = splitText(cleanForBing, 180);
-  const audioChunks: Buffer[] = [];
 
   for (const voice of selectedVoices) {
     try {
-      audioChunks.length = 0;
+      const audioChunks: Buffer[] = [];
       for (const chunk of chunks) {
         const url = `https://www.bing.com/tfettts?is_print_tts=1&locale=${lang === 'ar' ? 'ar-SA' : lang === 'fr' ? 'fr-FR' : 'en-US'}`;
         const res = await fetch(url, {
@@ -91,7 +117,7 @@ async function tryUnlimitedHack(text: string, lang: string) {
             throw new Error("Small buffer");
           }
         } else {
-          throw new Error("Bing API error");
+          throw new Error(`Bing API error: ${res.status}`);
         }
       }
 
@@ -99,6 +125,7 @@ async function tryUnlimitedHack(text: string, lang: string) {
         headers: { "Content-Type": "audio/mpeg", "Cache-Control": "public, max-age=3600" }
       });
     } catch (e) {
+      console.warn(`Bing TTS Voice ${voice} failed:`, e);
       continue;
     }
   }
@@ -140,8 +167,9 @@ async function tryGoogleTTS(text: string, lang: string) {
       });
     }
   } catch (e) {
-    return null;
+    console.error("Google TTS Error:", e);
   }
+  return null;
 }
 
 async function tryOpenAITTS(text: string) {
@@ -164,6 +192,7 @@ async function tryOpenAITTS(text: string) {
       });
     }
   } catch (e) {
-    return null;
+    console.error("OpenAI TTS Error:", e);
   }
+  return null;
 }
