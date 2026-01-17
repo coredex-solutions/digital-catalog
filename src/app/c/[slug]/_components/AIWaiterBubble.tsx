@@ -249,21 +249,25 @@ export default function AIWaiterBubble() {
         setMessages(prev => [...prev, assistantMessage]);
 
         // HANDLE ACTIONS
-        if (data.action) {
-          const { type, itemId, quantity } = data.action;
+        if (data.actions && Array.isArray(data.actions)) {
+          data.actions.forEach((action: any) => {
+            const { type, itemId, quantity } = action;
 
-          if (type === "ADD_TO_CART") {
-            const item = (menuItems || []).find((i: any) => i.id === itemId);
-            if (item) {
-              addToCart(item, quantity || 1);
-              setTimeout(() => setIsCartOpen(true), 1000);
+            if (type === "ADD_TO_CART") {
+              const item = (menuItems || []).find((i: any) => i.id === itemId);
+              if (item) {
+                addToCart(item, quantity || 1);
+              }
+            } else if (type === "UPDATE_CART") {
+              updateQuantity(itemId, quantity);
+            } else if (type === "REMOVE_FROM_CART") {
+              removeFromCart(itemId);
             }
-          } else if (type === "UPDATE_CART") {
-            updateQuantity(itemId, quantity);
-            setTimeout(() => setIsCartOpen(true), 500);
-          } else if (type === "REMOVE_FROM_CART") {
-            removeFromCart(itemId);
-            setTimeout(() => setIsCartOpen(true), 500);
+          });
+
+          // Open cart once if any actions were performed
+          if (data.actions.length > 0) {
+            setTimeout(() => setIsCartOpen(true), 800);
           }
         }
 

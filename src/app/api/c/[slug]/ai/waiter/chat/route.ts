@@ -137,17 +137,24 @@ LANGUAGE: Respond in the language of the latest message. For ARABIC, use full di
     let aiResponse = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "I apologize, I missed that. Could you repeat?";
 
     // Action detection & Cleaning
-    let action = null;
-    const addMatch = aiResponse.match(/\[ACTION:.*?ADD_TO_CART.*?ID:.*?([^,\]\s]+).*?QTY:.*?(\d+).*?\]/i);
-    const updateMatch = aiResponse.match(/\[ACTION:.*?UPDATE_CART.*?ID:.*?([^,\]\s]+).*?QTY:.*?(\d+).*?\]/i);
-    const removeMatch = aiResponse.match(/\[ACTION:.*?REMOVE_FROM_CART.*?ID:.*?([^,\]\s]+).*?\]/i);
+    const actions: any[] = [];
 
-    if (addMatch) {
-      action = { type: "ADD_TO_CART", itemId: addMatch[1].trim(), quantity: parseInt(addMatch[2]) || 1 };
-    } else if (updateMatch) {
-      action = { type: "UPDATE_CART", itemId: updateMatch[1].trim(), quantity: parseInt(updateMatch[2]) || 1 };
-    } else if (removeMatch) {
-      action = { type: "REMOVE_FROM_CART", itemId: removeMatch[1].trim() };
+    // Global regex to find all actions
+    const allActionsRegex = /\[ACTION:.*?\]/gi;
+    const foundActionTags = aiResponse.match(allActionsRegex) || [];
+
+    for (const tag of foundActionTags) {
+      const addMatch = tag.match(/ADD_TO_CART.*?ID:.*?([^,\]\s]+).*?QTY:.*?(\d+)/i);
+      const updateMatch = tag.match(/UPDATE_CART.*?ID:.*?([^,\]\s]+).*?QTY:.*?(\d+)/i);
+      const removeMatch = tag.match(/REMOVE_FROM_CART.*?ID:.*?([^,\]\s]+)/i);
+
+      if (addMatch) {
+        actions.push({ type: "ADD_TO_CART", itemId: addMatch[1].trim(), quantity: parseInt(addMatch[2]) || 1 });
+      } else if (updateMatch) {
+        actions.push({ type: "UPDATE_CART", itemId: updateMatch[1].trim(), quantity: parseInt(updateMatch[2]) || 1 });
+      } else if (removeMatch) {
+        actions.push({ type: "REMOVE_FROM_CART", itemId: removeMatch[1].trim() });
+      }
     }
 
     aiResponse = aiResponse.replace(/\[ACTION:.*?\]/gi, "").trim();
@@ -157,7 +164,7 @@ LANGUAGE: Respond in the language of the latest message. For ARABIC, use full di
       text: aiResponse,
       userText: userText,
       detectedLang,
-      action
+      actions // Now returning plural actions
     });
 
   } catch (error: any) {
