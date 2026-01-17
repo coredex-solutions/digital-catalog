@@ -70,6 +70,23 @@ export interface CatalogSettingsData {
   default_language?: Language;
   enabled_languages?: string;
   ai_waiter_enabled?: boolean;
+  ai_waiter_name?: string;
+  ai_waiter_persona?: string;
+
+  // SEO Fields
+  seo_title_ar?: string | null;
+  seo_title_en?: string | null;
+  seo_title_fr?: string | null;
+  seo_description_ar?: string | null;
+  seo_description_en?: string | null;
+  seo_description_fr?: string | null;
+  seo_keywords?: string | null;
+  json_ld_custom?: string | null;
+
+  // About Fields
+  about_content_ar?: string | null;
+  about_content_en?: string | null;
+  about_content_fr?: string | null;
 }
 
 // Full catalog data for SaaS pages

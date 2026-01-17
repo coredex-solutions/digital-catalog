@@ -55,15 +55,34 @@ export async function GET(
       whatsapp_order_enabled: settings?.whatsapp_order_enabled,
       live_chat_enabled: settings?.live_chat_enabled,
       ai_waiter_enabled: Boolean(settings?.ai_waiter_enabled),
-      // multi_language_enabled removed - column doesn't exist in database
+      ai_waiter_name: settings?.ai_waiter_name,
+      ai_waiter_persona: settings?.ai_waiter_persona,
     },
     cta: {
       cta_menu_label_en: settings?.cta_menu_label_en,
       cta_menu_label_ar: settings?.cta_menu_label_ar,
+      cta_menu_label_fr: settings?.cta_menu_label_fr,
       cta_booking_label_en: settings?.cta_booking_label_en,
       cta_booking_label_ar: settings?.cta_booking_label_ar,
+      cta_booking_label_fr: settings?.cta_booking_label_fr,
       cta_order_label_en: settings?.cta_order_label_en,
       cta_order_label_ar: settings?.cta_order_label_ar,
+      cta_order_label_fr: settings?.cta_order_label_fr,
+    },
+    seo: {
+      seo_title_en: settings?.seo_title_en,
+      seo_title_ar: settings?.seo_title_ar,
+      seo_title_fr: settings?.seo_title_fr,
+      seo_description_en: settings?.seo_description_en,
+      seo_description_ar: settings?.seo_description_ar,
+      seo_description_fr: settings?.seo_description_fr,
+      seo_keywords: settings?.seo_keywords,
+      json_ld_custom: settings?.json_ld_custom,
+    },
+    about: {
+      about_content_en: settings?.about_content_en,
+      about_content_ar: settings?.about_content_ar,
+      about_content_fr: settings?.about_content_fr,
     },
     contact: {
       phone_primary: contact?.phone_primary,
@@ -71,8 +90,10 @@ export async function GET(
       email: contact?.email,
       address_en: contact?.address_en,
       address_ar: contact?.address_ar,
+      address_fr: contact?.address_fr,
       city_en: contact?.city_en,
       city_ar: contact?.city_ar,
+      city_fr: contact?.city_fr,
       google_map_iframe_url: contact?.google_map_iframe_url,
     },
   });
@@ -95,7 +116,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { catalog: catalogData, appearance, features, cta, contact } = body;
+    const { catalog: catalogData, appearance, features, cta, contact, seo, about } = body;
 
     const db = getDb();
 
@@ -135,6 +156,8 @@ export async function PUT(
       ...(appearance || {}),
       ...(features || {}),
       ...(cta || {}),
+      ...(seo || {}),
+      ...(about || {}),
     };
 
     for (const [key, value] of Object.entries(settingsFields)) {

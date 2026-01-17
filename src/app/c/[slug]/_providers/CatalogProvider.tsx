@@ -264,15 +264,33 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
   // Update theme in localStorage and DOM
   useEffect(() => {
     if (isThemeLoaded) {
+      const root = document.documentElement;
+
+      // Inject Colors
+      root.style.setProperty("--primary", colorPrimary);
+      root.style.setProperty("--secondary", colorSecondary);
+      root.style.setProperty("--accent", colorAccent);
+      root.style.setProperty("--background-hex", settings?.color_background || "#0a0a0c");
+      root.style.setProperty("--surface", settings?.color_surface || "#121215");
+      root.style.setProperty("--text-primary", settings?.color_text || "#ffffff");
+      root.style.setProperty("--text-muted", settings?.color_text_muted || "rgba(255,255,255,0.4)");
+
+      // Inject Pattern
+      if (settings?.bg_pattern_enabled) {
+        root.setAttribute("data-pattern", settings.bg_pattern_type || "geometric");
+      } else {
+        root.removeAttribute("data-pattern");
+      }
+
       if (isDarkMode) {
-        document.documentElement.classList.add("dark");
+        root.classList.add("dark");
         localStorage.setItem(`${storagePrefix}theme`, "dark");
       } else {
-        document.documentElement.classList.remove("dark");
+        root.classList.remove("dark");
         localStorage.setItem(`${storagePrefix}theme`, "light");
       }
     }
-  }, [isDarkMode, isThemeLoaded, storagePrefix]);
+  }, [isDarkMode, isThemeLoaded, storagePrefix, colorPrimary, colorSecondary, colorAccent, settings]);
 
   const value: CatalogContextType = {
     catalog,

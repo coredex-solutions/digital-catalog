@@ -9,36 +9,59 @@
   --card-foreground: 0 0% 98%;
   --popover: 240 10% 3.9%;
   --popover-foreground: 0 0% 98%;
-  --primary: 263.4 70% 50.4%;
-  --primary-foreground: 210 20% 98%;
-  --secondary: 240 4.8% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 4.8% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --accent: 240 4.8% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 4.8% 15.9%;
-  --input: 240 4.8% 15.9%;
-  --ring: 263.4 70% 50.4%;
+  --primary: #fead1d;
+  --secondary: #b14288;
+  --accent: #F7C948;
+  --surface: #121215;
+  --background-hex: #020202;
+  --text-primary: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --ring: var(--primary);
   --radius: 1rem;
 }
 
 @layer base {
   * {
-    @apply border-border;
+    border-color: rgba(255, 255, 255, 0.08);
   }
 
   body {
-    @apply bg-background text-foreground selection:bg-primary/30 selection:text-primary;
+    background: var(--background-hex);
+    color: var(--text-primary);
     font-feature-settings: "rlig" 1, "calt" 1;
-    background: radial-gradient(circle at 50% 0%, rgba(124, 58, 237, 0.08) 0%, transparent 40%),
-      radial-gradient(circle at 0% 50%, rgba(29, 78, 216, 0.05) 0%, transparent 25%),
-      radial-gradient(circle at 100% 50%, rgba(124, 58, 237, 0.05) 0%, transparent 25%),
-      #020202;
     min-height: 100vh;
+    transition: background 0.5s ease;
   }
+}
+
+/* Dynamic Patterns */
+html[data-pattern="geometric"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  z-index: -1;
+  pointer-events: none;
+}
+
+html[data-pattern="dots"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 30px 30px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+html[data-pattern="lines"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 100% 40px;
+  z-index: -1;
+  pointer-events: none;
 }
 
 @layer components {

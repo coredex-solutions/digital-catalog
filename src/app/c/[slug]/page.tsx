@@ -2,6 +2,30 @@ import { notFound } from 'next/navigation';
 import { getFullCatalogData } from '@/lib/catalog/queries';
 import { CatalogHomeClient } from './_components/CatalogHomeClient';
 import { CatalogAnalyticsTracker } from './_components/AnalyticsTracker';
+import { Metadata } from 'next';
+
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ slug: string }>, searchParams: Promise<{ lang?: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const { lang = 'en' } = await searchParams;
+  const data = await getFullCatalogData(slug);
+
+  if (!data) return { title: "Not Found" };
+
+  const { settings, catalog } = data;
+  const title = (settings as any)?.[`seo_title_${lang}`] || catalog.name;
+  const description = (settings as any)?.[`seo_description_${lang}`] || catalog.description;
+
+  return {
+    title,
+    description,
+    keywords: settings?.seo_keywords || "",
+    openGraph: {
+      title,
+      description,
+      images: [settings?.hero_image_url || ""],
+    }
+  };
+}
 
 export default async function CatalogHomePage({
   params,

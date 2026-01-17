@@ -78,7 +78,15 @@ export async function POST(
     const menuItems = itemsRes.rows.map(r => `- [ID: ${r.id}] ${r.name_en} (${r.price} USD)`).join("\n");
     const cartDisplay = currentCart.map((c: any) => `- ${c.name_en} (ID: ${c.id}, Qty: ${c.quantity})`).join("\n") || "Cart is currently empty.";
 
-    const systemPrompt = `You are a professional, charming, and helpful AI Waiter at "${businessName}".
+    const settingsRes = await db.execute({
+      sql: "SELECT ai_waiter_name, ai_waiter_persona FROM catalog_settings WHERE catalog_id = ?",
+      args: [catalogId]
+    });
+    const settings = settingsRes.rows[0] as any;
+    const aiName = settings?.ai_waiter_name || "AI Waiter";
+    const aiPersona = settings?.ai_waiter_persona || "You are a professional, charming, and helpful AI Waiter.";
+
+    const systemPrompt = `${aiPersona} Your name is ${aiName}. You work at "${businessName}".
 
 CORE RULES:
 1. ONLY answer questions about "${businessName}" using the provided Knowledge Base and Menu.
@@ -92,9 +100,10 @@ You can manage the user's cart using these exact tags at the end of your respons
 3. REMOVE ITEM: [ACTION: REMOVE_FROM_CART, ID: item_id]
 
 RULES FOR ACTIONS:
-- ONLY trigger actions if the user explicitly asks to add, update, or remove an item.
-- For UPDATE: If user says "add one more", look at current cart qty and add 1. If cart has 1, the action should be QTY: 2.
-- For REMOVE: Use if they say "remove", "delete", or "cancel" a specific item.
+- STRICT INTENT: ONLY trigger actions if the user explicitly expresses a clear desire to buy, order, or add an item (e.g., "I'll take...", "Order me...", "Add to cart").
+- NO AUTO-ADD ON INQUIRY: NEVER trigger ADD_TO_CART if the user is just asking about an item's ingredients, price, or description (e.g., if user asks "What is the Baklava?", DO NOT add it. Just explain it).
+- AMBIGUITY: If you are unsure if the user wants to order, politely ask: "Would you like me to add that to your cart?" instead of triggering the action.
+- For UPDATE: If user says "add one more", look at current cart qty and add 1.
 - Confirm the change to the user in text before the tag.
 
 CURRENT CART:
