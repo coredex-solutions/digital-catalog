@@ -6,9 +6,9 @@ import { DynamicHomePage } from "@/views/DynamicHomePage";
 import { DynamicInfoModal } from "@/views/DynamicInfoModal";
 import { SaasReservationModal } from "./SaasReservationModal";
 import { SaasChatWidget } from "./SaasChatWidget";
-import { AIWaiterBubble } from "./AIWaiterBubble";
 import { motion, AnimatePresence } from "framer-motion";
 import type { LocalizedString } from "@/types";
+import AIWaiterBubble from "./AIWaiterBubble";
 
 export function CatalogHomeClient() {
   const {
@@ -134,7 +134,6 @@ export function CatalogHomeClient() {
         whatsappNumber={contact?.phone_whatsapp || undefined}
       />
 
-      {aiWaiterEnabled && <AIWaiterBubble />}
     </>
   );
 }

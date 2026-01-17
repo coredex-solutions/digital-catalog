@@ -1,8 +1,8 @@
 import { getDb } from '../db/client';
-import type { 
-  Catalog, 
-  CatalogSettings, 
-  CatalogContact, 
+import type {
+  Catalog,
+  CatalogSettings,
+  CatalogContact,
   CatalogSubscription,
   Category,
   MenuItem,
@@ -202,7 +202,7 @@ export async function getFullCatalogData(slug: string) {
   const catalog = await getCatalogBySlug(slug);
   if (!catalog) return null;
 
-  const [settings, contact, subscription, categories, operatingHours, socialMedia, faqs] = await Promise.all([
+  const [settings, contact, subscription, categories, operatingHours, socialMedia, faqs, menuItems] = await Promise.all([
     getCatalogSettings(catalog.id),
     getCatalogContact(catalog.id),
     getCatalogSubscription(catalog.id),
@@ -210,11 +210,12 @@ export async function getFullCatalogData(slug: string) {
     getCatalogOperatingHours(catalog.id),
     getCatalogSocialMedia(catalog.id),
     getCatalogFAQs(catalog.id),
+    getCatalogItems(catalog.id),
   ]);
 
   // Check if subscription is expired
-  const isExpired = subscription?.expires_at 
-    ? new Date(subscription.expires_at) < new Date() 
+  const isExpired = subscription?.expires_at
+    ? new Date(subscription.expires_at) < new Date()
     : false;
 
   return {
@@ -226,6 +227,7 @@ export async function getFullCatalogData(slug: string) {
     operatingHours,
     socialMedia,
     faqs,
+    menuItems,
     isExpired,
   };
 }

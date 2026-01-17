@@ -56,6 +56,7 @@ interface CatalogContextType {
   contact: CatalogContactData | null;
   operatingHours: OperatingHoursData[];
   socialMedia: SocialMediaLink[];
+  menuItems: MenuItem[];
 
   // Derived data
   supportedLanguages: LanguageOption[];
@@ -74,7 +75,7 @@ interface CatalogContextType {
   setIsInfoOpen: (open: boolean) => void;
   isReservationOpen: boolean;
   setIsReservationOpen: (open: boolean) => void;
-  
+
   // Search
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -130,7 +131,7 @@ function parseEnabledLanguages(enabledLangs?: string): LanguageOption[] {
 }
 
 export function CatalogProvider({ children, data }: CatalogProviderProps) {
-  const { catalog, settings, contact, operatingHours, socialMedia } = data;
+  const { catalog, settings, contact, operatingHours, socialMedia, menuItems } = data;
 
   // Client state
   const [lang, setLang] = useState<Language | null>(null);
@@ -279,6 +280,7 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
     contact,
     operatingHours,
     socialMedia,
+    menuItems: menuItems || [],
     supportedLanguages,
     colorPrimary,
     colorSecondary,

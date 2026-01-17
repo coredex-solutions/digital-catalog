@@ -49,6 +49,7 @@ export default function AIWaiterTraining() {
   const [recordingLang, setRecordingLang] = useState<"ar-SA" | "en-US" | "fr-FR">("ar-SA");
   const [interimAnswer, setInterimAnswer] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [hasMicrophone, setHasMicrophone] = useState(false);
 
   // For Speech-to-Text
   const recognitionRef = useRef<any>(null);
@@ -58,6 +59,16 @@ export default function AIWaiterTraining() {
 
     // Initialize Web Speech API if supported
     if (typeof window !== "undefined") {
+      // Check for microphone hardware availability
+      if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+        navigator.mediaDevices.enumerateDevices()
+          .then(devices => {
+            const hasAudioInput = devices.some(device => device.kind === "audioinput");
+            setHasMicrophone(hasAudioInput);
+          })
+          .catch(() => setHasMicrophone(false));
+      }
+
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         setIsSpeechSupported(true);
@@ -76,7 +87,7 @@ export default function AIWaiterTraining() {
               interimText += event.results[i][0].transcript;
             }
           }
-          
+
           if (finalTranscript) {
             setAnswer((prev) => prev + (prev ? " " : "") + finalTranscript);
           }
@@ -84,7 +95,8 @@ export default function AIWaiterTraining() {
         };
 
         recognitionRef.current.onerror = (event: any) => {
-          if (event.error !== "no-speech") {
+          // "not-allowed" usually means no mic or permission denied - handle silently
+          if (event.error !== "no-speech" && event.error !== "not-allowed") {
             console.error("Speech recognition error:", event.error);
           }
           setIsRecording(false);
@@ -108,17 +120,17 @@ export default function AIWaiterTraining() {
 
   const playQuestion = () => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
-    
+
     if (isSpeaking) {
       window.speechSynthesis.cancel();
     }
-    
-    const questionText = recordingLang === "ar-SA" ? currentQuestion.question_ar : 
-                        recordingLang === "fr-FR" ? currentQuestion.question_fr : 
-                        currentQuestion.question_en;
+
+    const questionText = recordingLang === "ar-SA" ? currentQuestion.question_ar :
+      recordingLang === "fr-FR" ? currentQuestion.question_fr :
+        currentQuestion.question_en;
 
     const utterance = new SpeechSynthesisUtterance(questionText);
-    
+
     // Select voice based on current language
     const voices = window.speechSynthesis.getVoices();
     if (recordingLang === "ar-SA") {
@@ -135,7 +147,7 @@ export default function AIWaiterTraining() {
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
-    
+
     window.speechSynthesis.speak(utterance);
   };
 
@@ -235,9 +247,18 @@ export default function AIWaiterTraining() {
         alert("Your browser does not support voice input. Please use Chrome or Safari.");
         return;
       }
+      if (!hasMicrophone) {
+        alert("No microphone detected on your device.");
+        return;
+      }
       setInterimAnswer("");
-      recognitionRef.current?.start();
-      setIsRecording(true);
+      try {
+        recognitionRef.current?.start();
+        setIsRecording(true);
+      } catch (err) {
+        console.warn("Speech start failed:", err);
+        setIsRecording(false);
+      }
     }
   };
 
@@ -310,8 +331,8 @@ export default function AIWaiterTraining() {
                           Training Task {currentIndex + 1} of {questions.length}
                         </span>
                       </div>
-                      
-                      <button 
+
+                      <button
                         onClick={playQuestion}
                         disabled={isSpeaking}
                         className={`w-12 h-12 rounded-xl border border-white/5 flex items-center justify-center transition-all ${isSpeaking ? 'bg-purple-500 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'}`}
@@ -330,7 +351,7 @@ export default function AIWaiterTraining() {
                       <p className="text-xl text-white/40 italic">
                         {currentQuestion.question_fr}
                       </p>
-                      
+
                       {currentQuestion.context && (
                         <div className="flex items-start gap-3 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
                           <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
@@ -373,11 +394,14 @@ export default function AIWaiterTraining() {
                           </div>
                           <button
                             onClick={toggleRecording}
-                            className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all self-end ${
-                              isRecording
-                                ? "bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-110"
-                                : "bg-white/5 hover:bg-white/10 text-white"
-                            }`}
+                            disabled={!hasMicrophone && !isRecording}
+                            title={!hasMicrophone ? "No microphone detected" : "Voice input"}
+                            className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${isRecording
+                                ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+                                : !hasMicrophone
+                                  ? 'bg-white/5 text-white/20 cursor-not-allowed'
+                                  : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white'
+                              }`}
                           >
                             {isRecording ? <div className="relative"><div className="absolute -inset-2 bg-white/10 rounded-full animate-ping" /><MicOff className="w-6 h-6 relative z-10" /></div> : <Mic className="w-6 h-6" />}
                           </button>
@@ -385,7 +409,7 @@ export default function AIWaiterTraining() {
                       </div>
 
                       {isRecording && (
-                        <motion.div 
+                        <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="flex items-center gap-3 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full w-fit"

@@ -37,6 +37,7 @@ const translations = {
     greeting: "Hello! I'm your Coredex AI Waiter. I'm here to help you choose the perfect meal. How can I assist you today? 😊",
     noMicAlert: "No microphone detected on your device.",
     noSpeechAlert: "Voice recognition is not supported in your browser.",
+    noHttpsAlert: "Voice features require a secure connection (HTTPS). Please use HTTPS to enable the microphone.",
   },
   ar: {
     title: "نادل كورديكس الذكي",
@@ -48,6 +49,7 @@ const translations = {
     greeting: "مرحباً! أنا نادل كورديكس الذكي. أنا هنا لمساعدتك في اختيار الوجبة المثالية. كيف يمكنني مساعدتك اليوم؟ 😊",
     noMicAlert: "لم يتم اكتشاف ميكروفون على جهازك.",
     noSpeechAlert: "التعرف على الصوت غير مدعوم في متصفحك.",
+    noHttpsAlert: "ميزات الصوت تتطلب اتصالاً آمناً (HTTPS). يرجى استخدام HTTPS لتفعيل الميكروفون.",
   },
   fr: {
     title: "Serveur IA Coredex",
@@ -59,13 +61,23 @@ const translations = {
     greeting: "Bonjour! Je suis votre serveur IA Coredex. Je suis là pour vous aider à choisir le repas parfait. Comment puis-je vous aider aujourd'hui? 😊",
     noMicAlert: "Aucun microphone détecté sur votre appareil.",
     noSpeechAlert: "La reconnaissance vocale n'est pas prise en charge par votre navigateur.",
+    noHttpsAlert: "Les fonctions vocales nécessitent une connexion sécurisée (HTTPS). Veuillez utiliser HTTPS pour activer le microphone.",
   },
 };
 
-export function AIWaiterBubble() {
+export default function AIWaiterBubble() {
   const params = useParams();
   const slug = params.slug as string;
-  const { lang: catalogLang, colorPrimary } = useCatalog();
+  const {
+    lang: catalogLang,
+    colorPrimary,
+    addToCart,
+    updateQuantity,
+    removeFromCart,
+    setIsCartOpen,
+    menuItems,
+    cart
+  } = useCatalog();
 
   // Get translations for current language
   const t = translations[catalogLang as keyof typeof translations] || translations.en;
@@ -77,7 +89,8 @@ export function AIWaiterBubble() {
   const [isRecording, setIsRecording] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeechSupported, setIsSpeechSupported] = useState(false);
-  const [hasMicrophone, setHasMicrophone] = useState(false);
+  const [hasMicrophone, setHasMicrophone] = useState(true);
+  const [isSecureContext, setIsSecureContext] = useState(true);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceUsed, setVoiceUsed] = useState(false);
   const [activeVoiceLang, setActiveVoiceLang] = useState<string>("en-US");
@@ -94,14 +107,22 @@ export function AIWaiterBubble() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      setIsSecureContext(window.isSecureContext);
+
       // Check for microphone hardware availability
       if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
         navigator.mediaDevices.enumerateDevices()
           .then(devices => {
-            const hasAudioInput = devices.some(device => device.kind === "audioinput");
-            setHasMicrophone(hasAudioInput);
+            const mics = devices.filter(d => d.kind === 'audioinput');
+            // Only set to false if we explicitly see devices but none are mics
+            if (devices.length > 0 && mics.length === 0) {
+              setHasMicrophone(false);
+            }
           })
-          .catch(() => setHasMicrophone(false));
+          .catch(() => {
+            // If enumeration fails, we stay optimistic to allow permission prompt
+            setHasMicrophone(true);
+          });
       }
 
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -149,8 +170,29 @@ export function AIWaiterBubble() {
         // Try to get voices immediately (works in Firefox/Safari)
         window.speechSynthesis.getVoices();
       }
+      // Load speech synthesis voices
+      if (window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          window.speechSynthesis.getVoices();
+        };
+        window.speechSynthesis.getVoices();
+      }
     }
   }, []);
+
+  // Stop talking immediately when muted
+  useEffect(() => {
+    if (isMuted && isSpeaking) {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setIsSpeaking(false);
+    }
+  }, [isMuted]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -188,6 +230,7 @@ export function AIWaiterBubble() {
       if (currentText) formData.append("message", currentText);
       if (audioBlob) formData.append("audio", audioBlob);
       formData.append("history", JSON.stringify(currentMessages));
+      formData.append("cart", JSON.stringify(cart));
 
       const res = await fetch(`/api/c/${slug}/ai/waiter/chat`, {
         method: "POST",
@@ -200,9 +243,28 @@ export function AIWaiterBubble() {
         const assistantMessage: ChatMessage = { role: "assistant", content: data.text };
         setMessages(prev => [...prev, assistantMessage]);
 
+        // HANDLE ACTIONS
+        if (data.action) {
+          const { type, itemId, quantity } = data.action;
+
+          if (type === "ADD_TO_CART") {
+            const item = (menuItems || []).find((i: any) => i.id === itemId);
+            if (item) {
+              addToCart(item, quantity || 1);
+              setTimeout(() => setIsCartOpen(true), 1000);
+            }
+          } else if (type === "UPDATE_CART") {
+            updateQuantity(itemId, quantity);
+            setTimeout(() => setIsCartOpen(true), 500);
+          } else if (type === "REMOVE_FROM_CART") {
+            removeFromCart(itemId);
+            setTimeout(() => setIsCartOpen(true), 500);
+          }
+        }
+
         // Auto-play if voice was used
         if (voiceUsed && !isMuted) {
-          playMessage(data.text);
+          playMessage(data.text, data.detectedLang);
         }
       }
     } catch (error) {
@@ -213,9 +275,7 @@ export function AIWaiterBubble() {
     }
   };
 
-
-
-  const playMessage = (text: string) => {
+  const playMessage = (text: string, forcedLang?: string) => {
     // Stop any current audio or speech
     if (isSpeaking) {
       if (typeof window !== "undefined" && window.speechSynthesis) {
@@ -228,11 +288,14 @@ export function AIWaiterBubble() {
     }
     setIsSpeaking(false);
 
-    // For Arabic, use our reliable internal TTS proxy
-    if (activeVoiceLang === "ar-SA") {
+    // Smart language detection for TTS
+    const hasArabic = /[\u0600-\u06FF]/.test(text);
+    const audioLang = forcedLang || (hasArabic ? "ar" : "en");
+
+    // For primary supported languages, use our reliable internal TTS proxy
+    if (["ar", "en", "fr"].includes(audioLang)) {
       setIsSpeaking(true);
 
-      const audioLang = activeVoiceLang.split('-')[0]; // 'ar'
       const url = `/api/ai/tts?lang=${audioLang}&text=${encodeURIComponent(text)}`;
 
       const audio = new Audio(url);
@@ -303,6 +366,10 @@ export function AIWaiterBubble() {
         handleSendMessage(undefined, inputText);
       }
     } else {
+      if (!isSecureContext && window.location.hostname !== "localhost") {
+        alert(t.noHttpsAlert);
+        return;
+      }
       if (!isSpeechSupported) {
         alert(t.noSpeechAlert);
         return;
@@ -311,13 +378,13 @@ export function AIWaiterBubble() {
         alert(t.noMicAlert);
         return;
       }
+
       setInputText("");
       recognitionRef.current.lang = activeVoiceLang;
       try {
         recognitionRef.current.start();
         setIsRecording(true);
       } catch (e) {
-        // Recognition may already be running
         setIsRecording(false);
       }
     }
@@ -328,7 +395,7 @@ export function AIWaiterBubble() {
       {/* Floating Bubble */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 left-6 w-16 h-16 rounded-full shadow-[0_0_30px_-5px_rgba(147,51,234,0.5)] flex items-center justify-center z-50 hover:scale-110 active:scale-90 transition-all duration-300 group ${isOpen ? 'scale-0' : 'scale-100'}`}
+        className={`fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-[0_0_30px_-5px_rgba(147,51,234,0.5)] flex items-center justify-center z-50 hover:scale-110 active:scale-90 transition-all duration-300 group ${isOpen ? 'scale-0' : 'scale-100'}`}
         style={{
           background: `linear-gradient(135deg, ${colorPrimary}, ${colorPrimary}dd)`,
           boxShadow: `0 0 30px ${colorPrimary}40`
@@ -339,7 +406,7 @@ export function AIWaiterBubble() {
       </button>
 
       {/* Chat Interface */}
-      <div className={`fixed inset-0 md:inset-auto md:bottom-24 md:left-8 md:w-[400px] md:h-[600px] z-[60] flex flex-col transition-all duration-500 ease-out origin-bottom-left ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-10 pointer-events-none'}`}>
+      <div className={`fixed inset-0 md:inset-auto md:bottom-24 md:right-8 md:w-[400px] md:h-[600px] z-[60] flex flex-col transition-all duration-500 ease-out origin-bottom-right ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-10 pointer-events-none'}`}>
 
         {/* Header */}
         <div className="bg-[#0a0a0c] md:rounded-t-[2rem] p-6 border-b border-white/10 flex items-center justify-between">
@@ -355,7 +422,18 @@ export function AIWaiterBubble() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={() => {
+                const newMuted = !isMuted;
+                setIsMuted(newMuted);
+                if (newMuted && isSpeaking) {
+                  window.speechSynthesis?.cancel();
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current = null;
+                  }
+                  setIsSpeaking(false);
+                }
+              }}
               className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 transition-colors"
             >
               {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
@@ -430,7 +508,18 @@ export function AIWaiterBubble() {
             </div>
 
             <button
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={() => {
+                const newMuted = !isMuted;
+                setIsMuted(newMuted);
+                if (newMuted && isSpeaking) {
+                  window.speechSynthesis?.cancel();
+                  if (audioRef.current) {
+                    audioRef.current.pause();
+                    audioRef.current = null;
+                  }
+                  setIsSpeaking(false);
+                }
+              }}
               className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/20 hover:text-white/60 transition-colors"
             >
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -469,13 +558,10 @@ export function AIWaiterBubble() {
 
             <button
               onClick={toggleRecording}
-              disabled={!hasMicrophone && !isRecording}
-              title={!hasMicrophone ? t.noMicTitle : t.voiceInputTitle}
+              title={t.voiceInputTitle}
               className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-300 ${isRecording
                 ? 'bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] scale-105'
-                : !hasMicrophone
-                  ? 'bg-white/5 text-white/20 cursor-not-allowed'
-                  : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white'
+                : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white'
                 }`}
             >
               {isRecording ? (

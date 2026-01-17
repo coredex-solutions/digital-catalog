@@ -89,12 +89,19 @@ export async function POST(
         ...existingQueueRes.rows.map(r => r.question_en)
       ];
 
-      const menuSummary = items.map(item => ({
+      // Shuffle items for better menu coverage in large catalogs
+      const shuffledItems = [...items].sort(() => Math.random() - 0.5);
+
+      const menuSummary = shuffledItems.map(item => ({
         name: item.name_en,
         category: categories.find(c => c.id === item.category_id)?.name_en || "Unknown",
         description: item.description_en || "No description",
         price: item.price
       }));
+
+      // Calculate how many questions to generate based on item count
+      // Min 8 questions, max 20 per batch for better performance/quality
+      const targetCount = Math.min(Math.max(8, Math.ceil(items.length * 1.5)), 20);
 
       const systemPrompt = `You are an expert Restaurant Consultant training an AI Waiter. 
 Analyze the provided menu data and identify specific knowledge gaps for individual items.
@@ -104,10 +111,11 @@ STRICT RULES:
 2. NAME DROPPING: You MUST mention at least 4 specific dish names from the provided menu in your questions.
 3. QUALITY OVER QUANTITY: Ask about unique selling points, spiciness levels, preparation methods, or recommended pairings for SPECIFIC items you see in the data.
 4. ANALYZE DESCRIPTIONS: If a dish description is short, ask for missing details (e.g., "What comes inside the [Dish Name] sandwich?").
+5. FOCUS ON NEW: Avoid items mentioned in the "Existing Knowledge" list. Focus on unexplored parts of the menu.
 
 ${AI_CONSTRAINTS}
 
-Return exactly 8 high-value, item-specific questions as a JSON array of objects.
+Return exactly ${targetCount} high-value, item-specific questions as a JSON array of objects.
 [
   {
     "id": "generated_id",
@@ -121,10 +129,10 @@ Return exactly 8 high-value, item-specific questions as a JSON array of objects.
 ]`;
 
       const prompt = `Business: ${businessName} (${businessType})
-Existing Knowledge/Queue: ${JSON.stringify(existingQuestions.slice(-20))}
-Menu Data: ${JSON.stringify(menuSummary.slice(0, 50))}
+Existing Knowledge/Queue: ${JSON.stringify(existingQuestions.slice(-100))}
+Menu Data Samples: ${JSON.stringify(menuSummary.slice(0, 150))}
 
-Based on this, what are the most important things a waiter needs to know to sell these items effectively? Generate 8 questions.`;
+Based on this data, find the biggest knowledge gaps. Focus on items NOT in the existing knowledge. Generate exactly ${targetCount} questions.`;
 
       if (!GOOGLE_API_KEY) {
         throw new Error("Gemini API key not configured");
