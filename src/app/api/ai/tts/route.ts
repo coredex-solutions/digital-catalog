@@ -33,6 +33,25 @@ async function tryStreamElementsTTS(text: string, lang: string) {
   return null;
 }
 
+async function tryGoogleTranslateHack(text: string, lang: string) {
+  try {
+    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      }
+    });
+    if (res.ok) {
+      return new Response(await res.arrayBuffer(), {
+        headers: { "Content-Type": "audio/mpeg", "Cache-Control": "public, max-age=3600" }
+      });
+    }
+  } catch (e) {
+    console.error("GoogleTranslate Hack Error:", e);
+  }
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const text = searchParams.get("text");
@@ -52,57 +71,61 @@ export async function GET(request: NextRequest) {
     return new Response("Forbidden", { status: 403 });
   }
 
+  // Clean text for generic hacks
+  const cleanText = text.replace(/[^\w\s\u0600-\u06FF,.!?]/g, "").trim();
+
   try {
-    // 1. Try Primary Hack (Bing)
-    const bingRes = await tryUnlimitedHack(text, lang);
+    // 1. Bing Hack (High Quality Neural)
+    const bingRes = await tryUnlimitedHack(cleanText, lang);
     if (bingRes) return bingRes;
 
-    // 2. Try Secondary Hack (StreamElements) - Very robust in production
-    const seRes = await tryStreamElementsTTS(text, lang);
+    // 2. StreamElements (Robust)
+    const seRes = await tryStreamElementsTTS(cleanText, lang);
     if (seRes) return seRes;
 
-    // 3. Paid Fallbacks
+    // 3. Google Translate Legend (Last Resort Hack)
+    const gtRes = await tryGoogleTranslateHack(cleanText, lang);
+    if (gtRes) return gtRes;
+
+    // 4. Paid Providers
     if (GOOGLE_API_KEY) {
-      const googleRes = await tryGoogleTTS(text, lang);
-      if (googleRes) return googleRes;
+      const gRes = await tryGoogleTTS(text, lang);
+      if (gRes) return gRes;
     }
 
     if (OPENAI_API_KEY) {
-      const openaiRes = await tryOpenAITTS(text);
-      if (openaiRes) return openaiRes;
+      const oRes = await tryOpenAITTS(text);
+      if (oRes) return oRes;
     }
 
+    console.error("All TTS Providers failed for text:", text.substring(0, 50));
     return new Response("TTS Failed", { status: 500 });
   } catch (error) {
-    console.error("TTS Proxy Error:", error);
+    console.error("Global TTS Error:", error);
     return new Response("Internal Server Error", { status: 500 });
   }
 }
 
 async function tryUnlimitedHack(text: string, lang: string) {
-  // Clean Arabic for Bing but keep some diacritics if they don't break it
-  const cleanForBing = text.replace(/[^\w\s\u0600-\u06FF,.!?]/g, "").replace(/ـ/g, "");
-
   const voices: Record<string, string[]> = {
-    ar: ["ar-SA-HamedNeural", "ar-SA-NaayfNeural", "ar-JO-TaimNeural", "ar-EG-ShakirNeural"],
+    ar: ["ar-SA-HamedNeural", "ar-SA-NaayfNeural", "ar-EG-ShakirNeural"],
     en: ["en-US-AndrewNeural", "en-US-BrianNeural"],
-    fr: ["fr-FR-HenriNeural", "fr-FR-AlainNeural"]
+    fr: ["fr-FR-HenriNeural"]
   };
 
   const selectedVoices = voices[lang] || voices.en;
-  const chunks = splitText(cleanForBing, 180);
+  const chunks = splitText(text, 150);
 
   for (const voice of selectedVoices) {
     try {
       const audioChunks: Buffer[] = [];
       for (const chunk of chunks) {
-        const url = `https://www.bing.com/tfettts?is_print_tts=1&locale=${lang === 'ar' ? 'ar-SA' : lang === 'fr' ? 'fr-FR' : 'en-US'}`;
+        const url = `https://www.bing.com/tfettts?is_print_tts=1&locale=${lang === 'ar' ? 'ar-SA' : 'en-US'}`;
         const res = await fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": "https://www.bing.com/translator"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
           },
           body: new URLSearchParams({
             "ssml": `<speak version='1.0' xml:lang='${lang}'><voice name='${voice}'>${chunk}</voice></speak>`
@@ -111,41 +134,31 @@ async function tryUnlimitedHack(text: string, lang: string) {
 
         if (res.ok) {
           const buffer = Buffer.from(await res.arrayBuffer());
-          if (buffer.byteLength > 500) {
-            audioChunks.push(buffer);
-          } else {
-            throw new Error("Small buffer");
-          }
-        } else {
-          throw new Error(`Bing API error: ${res.status}`);
+          if (buffer.length > 200) audioChunks.push(buffer);
         }
       }
-
-      return new Response(Buffer.concat(audioChunks), {
-        headers: { "Content-Type": "audio/mpeg", "Cache-Control": "public, max-age=3600" }
-      });
-    } catch (e) {
-      console.warn(`Bing TTS Voice ${voice} failed:`, e);
-      continue;
-    }
+      if (audioChunks.length > 0) {
+        return new Response(Buffer.concat(audioChunks), {
+          headers: { "Content-Type": "audio/mpeg", "Cache-Control": "public, max-age=3600" }
+        });
+      }
+    } catch (e) { continue; }
   }
   return null;
 }
 
 function splitText(text: string, maxLength: number): string[] {
   const chunks: string[] = [];
-  let current = "";
-  const sentences = text.split(/([.!?]+)/);
-
-  for (const part of sentences) {
-    if ((current + part).length > maxLength) {
-      if (current) chunks.push(current.trim());
-      current = part;
-    } else {
-      current += part;
+  let start = 0;
+  while (start < text.length) {
+    let end = start + maxLength;
+    if (end < text.length) {
+      const lastSpace = text.lastIndexOf(" ", end);
+      if (lastSpace > start) end = lastSpace;
     }
+    chunks.push(text.substring(start, end).trim());
+    start = end;
   }
-  if (current) chunks.push(current.trim());
   return chunks;
 }
 
@@ -166,33 +179,27 @@ async function tryGoogleTTS(text: string, lang: string) {
         headers: { "Content-Type": "audio/mpeg" }
       });
     }
-  } catch (e) {
-    console.error("Google TTS Error:", e);
-  }
-  return null;
+  } catch (e) { return null; }
 }
 
 async function tryOpenAITTS(text: string) {
   try {
     const res = await fetch("https://api.openai.com/v1/audio/speech", {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "tts-1",
+        model: 'tts-1',
         voice: OPENAI_VOICE,
-        input: text
-      })
+        input: text,
+      }),
     });
     if (res.ok) {
       return new Response(await res.arrayBuffer(), {
         headers: { "Content-Type": "audio/mpeg" }
       });
     }
-  } catch (e) {
-    console.error("OpenAI TTS Error:", e);
-  }
-  return null;
+  } catch (e) { return null; }
 }
