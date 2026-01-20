@@ -35,7 +35,7 @@ export function CatalogHomeClient() {
   // Show loading screen while theme is loading
   if (!isThemeLoaded) {
     return (
-      <div className="fixed inset-0 bg-white dark:bg-navy-900 flex items-center justify-center z-50">
+      <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'var(--background-hex)' }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -45,7 +45,7 @@ export function CatalogHomeClient() {
             className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin"
             style={{ borderColor: `${colorPrimary} transparent transparent transparent` }}
           />
-          <p className="text-slate-600 dark:text-slate-400 font-medium">
+          <p className="font-medium" style={{ color: 'var(--text-muted)' }}>
             Loading...
           </p>
         </motion.div>

@@ -64,20 +64,26 @@ export function SaasNavbar({
   const currentLang = supportedLanguages.find((l) => l.code === lang) || supportedLanguages[0];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-navy-900/95 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-700/50 shadow-sm transition-colors duration-300">
+    <nav
+      className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl border-b shadow-sm transition-colors duration-300"
+      style={{
+        backgroundColor: 'var(--navbar-bg)',
+        borderColor: 'var(--surface)'
+      }}
+    >
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Home Button */}
           {showHomeButton && (
             <Link
               href={homeUrl || `/c/${catalogSlug}`}
-              className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 flex items-center justify-center hover:shadow-md transition-all group flex-shrink-0"
-              style={{ borderColor: `${colorPrimary}30` }}
+              className="w-10 h-10 rounded-full flex items-center justify-center hover:shadow-md transition-all group flex-shrink-0 border"
+              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--surface)' }}
             >
               <Home
                 size={18}
-                className="text-slate-700 dark:text-slate-200 group-hover:text-orange-500 transition-colors"
-                style={{ color: isDarkMode ? undefined : colorPrimary }}
+                className="transition-colors"
+                style={{ color: isDarkMode ? 'var(--text-primary)' : colorPrimary }}
               />
             </Link>
           )}
@@ -109,18 +115,19 @@ export function SaasNavbar({
 
           {/* Search Bar */}
           {onSearch && (
-            <div className="bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-full px-4 py-2.5 flex items-center gap-2 flex-1 min-w-[120px] max-w-md transition-all focus-within:shadow-lg group"
-              style={{ borderColor: `${colorPrimary}20` }}
+            <div className="border rounded-full px-4 py-2.5 flex items-center gap-2 flex-1 min-w-[120px] max-w-md transition-all focus-within:shadow-lg group"
+              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--surface)' }}
             >
               <Search
                 size={16}
-                className="text-slate-400 group-focus-within:text-orange-500 transition-colors flex-shrink-0"
-                style={{ color: isLangDropdownOpen ? colorPrimary : undefined }}
+                className="transition-colors flex-shrink-0"
+                style={{ color: isLangDropdownOpen ? colorPrimary : 'var(--text-muted)' }}
               />
               <input
                 type="text"
                 placeholder={lang === "ar" ? "بحث..." : lang === "fr" ? "Rechercher..." : "Search..."}
-                className="bg-transparent border-none outline-none text-sm w-full text-slate-700 dark:text-slate-200 placeholder:text-slate-400"
+                style={{ color: 'var(--text-primary)' }}
+                className="bg-transparent border-none outline-none text-sm w-full placeholder:text-muted-foreground/40"
                 onChange={(e) => onSearch(e.target.value)}
               />
             </div>
@@ -133,12 +140,13 @@ export function SaasNavbar({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onToggleTheme}
-            className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 flex items-center justify-center hover:shadow-md transition-all group"
+            className="w-10 h-10 rounded-full flex items-center justify-center hover:shadow-md transition-all group border"
+            style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--surface)' }}
           >
             {isDarkMode ? (
-              <Sun size={18} className="text-orange-500 group-hover:rotate-180 transition-transform duration-500" />
+              <Sun size={18} style={{ color: colorPrimary }} className="group-hover:rotate-180 transition-transform duration-500" />
             ) : (
-              <Moon size={18} className="text-purple-600 group-hover:rotate-12 transition-transform duration-500" />
+              <Moon size={18} style={{ color: colorPrimary }} className="group-hover:rotate-12 transition-transform duration-500" />
             )}
           </motion.button>
 
@@ -146,13 +154,14 @@ export function SaasNavbar({
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-              className="h-10 px-3 rounded-full bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 flex items-center justify-center gap-1 hover:shadow-md transition-all group"
+              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--surface)' }}
+              className="h-10 px-3 rounded-full border flex items-center justify-center gap-1 hover:shadow-md transition-all group"
             >
-              <Globe size={16} className="text-slate-500" />
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase">
+              <Globe size={16} style={{ color: 'var(--text-muted)' }} />
+              <span className="text-xs font-bold uppercase" style={{ color: 'var(--text-primary)' }}>
                 {currentLang.code}
               </span>
-              <ChevronDown size={14} className={cn("text-slate-400 transition-transform", isLangDropdownOpen && "rotate-180")} />
+              {/* <ChevronDown size={14} className={cn("transition-transform opacity-30", isLangDropdownOpen && "rotate-180")} /> */}
             </button>
 
             <AnimatePresence>
@@ -161,8 +170,9 @@ export function SaasNavbar({
                   initial={{ opacity: 0, y: -10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}
                   className={cn(
-                    "absolute top-full mt-2 py-2 bg-white dark:bg-navy-800 rounded-xl border border-slate-200 dark:border-navy-700 shadow-xl min-w-[130px] overflow-hidden z-50",
+                    "absolute top-full mt-2 py-2 rounded-xl border shadow-xl min-w-[130px] overflow-hidden z-50",
                     dir === "rtl" ? "left-0" : "right-0"
                   )}
                 >
@@ -174,13 +184,18 @@ export function SaasNavbar({
                         setIsLangDropdownOpen(false);
                       }}
                       className={cn(
-                        "w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-slate-100 dark:hover:bg-navy-700 transition-colors",
-                        l.code === lang && "bg-slate-100 dark:bg-navy-700",
+                        "w-full px-4 py-2.5 text-left flex items-center gap-3 transition-colors",
+                        l.code === lang ? "opacity-100" : "opacity-60 hover:opacity-100",
                         l.font
                       )}
+                      style={{
+                        backgroundColor: l.code === lang ? 'rgba(var(--pattern-rgb), 0.05)' : 'transparent',
+                      }}
+                      onMouseEnter={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = 'rgba(var(--pattern-rgb), 0.03)' }}
+                      onMouseLeave={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = 'transparent' }}
                     >
-                      <span className="text-xs font-bold text-slate-400 uppercase w-6">{l.code}</span>
-                      <span className="text-sm text-slate-700 dark:text-slate-200">{l.label}</span>
+                      <span className="text-xs font-bold uppercase w-6 opacity-30" style={{ color: 'var(--text-primary)' }}>{l.code}</span>
+                      <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{l.label}</span>
                     </button>
                   ))}
                 </motion.div>

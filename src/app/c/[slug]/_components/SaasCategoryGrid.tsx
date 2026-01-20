@@ -72,12 +72,11 @@ export function SaasCategoryGrid({
             >
               <Link
                 href={`/c/${catalogSlug}/menu/${cat.id}`}
-                style={
-                  hasImage
-                    ? { borderColor: "transparent" } 
-                    : {}
-                }
-                className="relative bg-white dark:bg-navy-800 rounded-2xl shadow-sm border border-transparent overflow-hidden hover:shadow-lg transition-all group block"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  ...(hasImage ? { borderColor: "transparent" } : {})
+                }}
+                className="relative rounded-xl shadow-sm border border-transparent overflow-hidden hover:shadow-lg transition-all group block"
               >
                 {hasImage ? (
                   <div className="aspect-square relative">
@@ -118,9 +117,9 @@ export function SaasCategoryGrid({
                     >
                       <Icon size={26} strokeWidth={1.5} />
                     </div>
-                    <span 
-                      className="font-bold text-sm text-slate-700 dark:text-slate-200 transition-colors text-center"
-                      style={{ color: undefined }} // Reset style if needed, or apply dynamic hover color via global CSS or just stick to slate-700 for simpler legacy match
+                    <span
+                      className="font-bold text-sm transition-colors text-center"
+                      style={{ color: 'var(--text-primary)' }}
                     >
                       {getCategoryName(cat)}
                     </span>

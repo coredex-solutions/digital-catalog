@@ -79,12 +79,12 @@ export interface CatalogAdmin {
 
 export interface CatalogSettings {
   catalog_id: string;
-  
+
   // Appearance
   hero_image_url: string | null;
   bg_pattern_enabled: boolean;
   bg_pattern_type: 'geometric' | 'dots' | 'lines' | 'none';
-  
+
   // Color palette
   color_primary: string;
   color_secondary: string;
@@ -93,7 +93,13 @@ export interface CatalogSettings {
   color_surface: string;
   color_text: string;
   color_text_muted: string;
-  
+
+  // Dark palette
+  color_background_dark: string;
+  color_surface_dark: string;
+  color_text_dark: string;
+  color_text_muted_dark: string;
+
   // CTA Labels
   cta_menu_label_ar: string;
   cta_menu_label_en: string;
@@ -104,12 +110,12 @@ export interface CatalogSettings {
   cta_order_label_ar: string;
   cta_order_label_en: string;
   cta_order_label_fr: string;
-  
+
   // Features
   booking_enabled: boolean;
   whatsapp_order_enabled: boolean;
   live_chat_enabled: boolean;
-  
+
   // SEO
   seo_title_ar: string | null;
   seo_title_en: string | null;
@@ -118,19 +124,19 @@ export interface CatalogSettings {
   seo_description_en: string | null;
   seo_description_fr: string | null;
   seo_keywords: string | null;
-  
+
   // About content
   about_content_ar: string | null;
   about_content_en: string | null;
   about_content_fr: string | null;
-  
+
   // Custom JSON-LD
   json_ld_custom: string | null;
-  
+
   // Languages
   default_language: Language;
   enabled_languages: string; // comma-separated
-  
+
   // AI Waiter
   ai_waiter_enabled: boolean;
   ai_waiter_name?: string;
@@ -340,6 +346,10 @@ export interface UpdateCatalogSettingsInput {
   color_surface?: string;
   color_text?: string;
   color_text_muted?: string;
+  color_background_dark?: string;
+  color_surface_dark?: string;
+  color_text_dark?: string;
+  color_text_muted_dark?: string;
   cta_menu_label_ar?: string;
   cta_menu_label_en?: string;
   cta_menu_label_fr?: string;

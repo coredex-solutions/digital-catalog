@@ -55,8 +55,8 @@ export function SaasChatWidget({
       // We need a PUBLIC route for fetching FAQs.
       // Let's create a public one or use server prop passing.
       // For MVP, we'll try fetching from a new public route we'll create: /api/c/[slug]/faqs
-      
-      const res = await fetch(`/api/c/${catalogSlug}/faqs`); 
+
+      const res = await fetch(`/api/c/${catalogSlug}/faqs`);
       if (res.ok) {
         const data = await res.json();
         setFaqs(data.faqs || []);
@@ -97,7 +97,8 @@ export function SaasChatWidget({
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="pointer-events-auto bg-white dark:bg-slate-900 rounded-3xl shadow-2xl mb-4 w-80 sm:w-96 overflow-hidden border border-slate-100 dark:border-slate-800"
+            className="pointer-events-auto rounded-3xl shadow-2xl mb-4 w-80 sm:w-96 overflow-hidden border"
+            style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}
             dir={dir}
           >
             {/* Header */}
@@ -124,39 +125,40 @@ export function SaasChatWidget({
             </div>
 
             {/* Content */}
-            <div className="h-96 overflow-y-auto bg-slate-50 dark:bg-slate-900/50">
+            <div className="h-96 overflow-y-auto" style={{ backgroundColor: 'rgba(var(--pattern-rgb), 0.03)' }}>
               {view === "list" ? (
                 <div className="p-4 space-y-4">
                   {/* WhatsApp Button */}
                   {whatsappNumber && (
                     <button
                       onClick={handleWhatsappClick}
-                      className="w-full p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:shadow-md transition-all group"
+                      className="w-full p-4 rounded-xl shadow-sm border flex items-center gap-4 hover:shadow-md transition-all group"
+                      style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}
                     >
                       <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
                         <MessageCircle size={20} />
                       </div>
                       <div className="flex-1 text-left rtl:text-right">
-                        <h4 className="font-bold text-slate-900 dark:text-white text-sm">WhatsApp</h4>
-                        <p className="text-xs text-slate-500">{labels.startChat[lang]}</p>
+                        <h4 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>WhatsApp</h4>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{labels.startChat[lang]}</p>
                       </div>
-                      {isAr ? <ChevronLeft size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
+                      {isAr ? <ChevronLeft size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />}
                     </button>
                   )}
 
                   {/* FAQs List */}
                   <div>
-                    <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 px-2 tracking-wider">
+                    <h4 className="text-xs font-bold uppercase mb-3 px-2 tracking-wider" style={{ color: 'var(--text-muted)' }}>
                       {labels.faqs[lang]}
                     </h4>
-                    
+
                     {loading ? (
                       <div className="space-y-2 p-2">
-                        <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
-                        <div className="h-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+                        <div className="h-10 opacity-20 bg-current rounded animate-pulse" />
+                        <div className="h-10 opacity-20 bg-current rounded animate-pulse" />
                       </div>
                     ) : faqs.length === 0 ? (
-                      <p className="text-center text-slate-400 text-sm py-4">
+                      <p className="text-center opacity-40 text-sm py-4">
                         No questions available
                       </p>
                     ) : (
@@ -166,13 +168,14 @@ export function SaasChatWidget({
                             key={faq.id}
                             //@ts-ignore
                             onClick={() => { setSelectedFaq(faq); setView("detail"); }}
-                            className="w-full p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left rtl:text-right"
+                            className="w-full p-3 rounded-xl border flex items-center justify-between hover:bg-black/5 transition-colors text-left rtl:text-right"
+                            style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}
                           >
-                            <span className="text-sm font-medium text-slate-700 dark:text-slate-200 line-clamp-1">
+                            <span className="text-sm font-medium line-clamp-1" style={{ color: 'var(--text-primary)' }}>
                               {/* @ts-ignore */}
                               {faq[`question_${lang}`] || faq.question_en}
                             </span>
-                            {isAr ? <ChevronLeft size={16} className="text-slate-400 flex-shrink-0" /> : <ChevronRight size={16} className="text-slate-400 flex-shrink-0" />}
+                            {isAr ? <ChevronLeft size={16} className="flex-shrink-0" style={{ color: 'var(--text-muted)' }} /> : <ChevronRight size={16} className="flex-shrink-0" style={{ color: 'var(--text-muted)' }} />}
                           </button>
                         ))}
                       </div>
@@ -181,21 +184,24 @@ export function SaasChatWidget({
                 </div>
               ) : (
                 <div className="flex flex-col h-full">
-                  <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 sticky top-0">
+                  <div className="p-4 border-b sticky top-0" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}>
                     <button
                       onClick={() => setView("list")}
-                      className="text-sm text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center gap-1 font-medium"
+                      className="text-sm flex items-center gap-1 font-medium transition-colors"
+                      style={{ color: 'var(--text-muted)' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
                     >
                       {isAr ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
                       {labels.back[lang]}
                     </button>
                   </div>
                   <div className="p-6">
-                    <h4 className="font-bold text-lg text-slate-900 dark:text-white mb-4">
+                    <h4 className="font-bold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>
                       {/* @ts-ignore */}
                       {selectedFaq?.[`question_${lang}`] || selectedFaq?.question_en}
                     </h4>
-                    <div className="prose prose-sm dark:prose-invert text-slate-600 dark:text-slate-300">
+                    <div className="prose prose-sm dark:prose-invert" style={{ color: 'var(--text-muted)' }}>
                       {/* @ts-ignore */}
                       {selectedFaq?.[`answer_${lang}`] || selectedFaq?.answer_en}
                     </div>

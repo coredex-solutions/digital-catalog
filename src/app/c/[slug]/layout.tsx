@@ -165,23 +165,11 @@ export default async function CatalogLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
+      {/* Background with CSS variable injection controlled by CatalogProvider */}
       <div
-        className="fixed inset-0 -z-10"
-        style={{ backgroundColor: settings?.color_background || '#1a1a2e' }}
-      >
-        {settings?.bg_pattern_enabled && (
-          <div
-            className="absolute inset-0 opacity-5"
-            style={{
-              backgroundImage: settings.bg_pattern_type === 'dots'
-                ? 'radial-gradient(circle, currentColor 1px, transparent 1px)'
-                : 'none',
-              backgroundSize: '20px 20px',
-              color: settings.color_primary || '#FF6B35',
-            }}
-          />
-        )}
-      </div>
+        className="fixed inset-0 -z-10 transition-colors duration-700"
+        style={{ backgroundColor: 'var(--background-hex)' }}
+      />
 
       <CatalogProvider data={catalogUIData}>
         {children}

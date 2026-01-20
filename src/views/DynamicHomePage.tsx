@@ -54,7 +54,7 @@ export function DynamicHomePage({
   return (
     <div
       className={cn(
-        "fixed inset-0 bg-[#0a0a0c] text-white overflow-hidden",
+        "fixed inset-0 bg-[var(--background-hex)] text-[var(--text-primary)] overflow-hidden",
         font
       )}
       dir={dir}
@@ -109,7 +109,7 @@ export function DynamicHomePage({
             />
           </div>
           <div className="space-y-2">
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 block">Welcome To</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] block opacity-40">Welcome To</span>
             <h1 className={cn(
               "text-4xl md:text-6xl font-black tracking-tight",
               lang === "ar" ? "font-cairo leading-tight" : "italic tracking-tighter"
@@ -146,9 +146,9 @@ export function DynamicHomePage({
           >
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="p-4 rounded-full bg-white/5 backdrop-blur-3xl border border-white/5">
-                <Utensils className="w-8 h-8 text-white/40" />
+                <Utensils className="w-8 h-8 opacity-40" />
               </div>
-              <p className="text-white/30 text-xs font-bold uppercase tracking-widest max-w-[200px]">
+              <p className="opacity-30 text-xs font-bold uppercase tracking-widest max-w-[200px]">
                 {lang === 'ar' ? 'اكتشف عالمنا من النكهات المتميزة' : 'Discover our world of premium flavors'}
               </p>
             </div>
@@ -167,14 +167,17 @@ export function DynamicHomePage({
               className="absolute inset-0 bg-gradient-to-r transition-all duration-500 group-hover:rotate-180"
               style={{ backgroundImage: `linear-gradient(to right, ${colorPrimary}, ${colorSecondary})` }}
             />
-            <div className="relative bg-[#0a0a0c] rounded-[2rem] px-8 py-5 flex items-center justify-between">
+            <div
+              className="relative rounded-[2rem] px-8 py-5 flex items-center justify-between transition-colors duration-500"
+              style={{ backgroundColor: 'var(--surface)' }}
+            >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center">
                   <BookOpen className="w-5 h-5" style={{ color: colorPrimary }} />
                 </div>
                 <span className="text-xl font-black italic tracking-tighter uppercase">{ctaMenuLabel[lang]}</span>
               </div>
-              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-black group-hover:translate-x-1 transition-transform">
+              <div className="w-10 h-10 rounded-full bg-[var(--text-primary)] flex items-center justify-center text-[var(--background-hex)] group-hover:translate-x-1 transition-transform">
                 <ChevronRight className={cn("w-5 h-5", dir === 'rtl' && 'rotate-180')} />
               </div>
             </div>
@@ -188,40 +191,42 @@ export function DynamicHomePage({
               className="w-full relative group p-5 bg-white/[0.04] backdrop-blur-3xl border border-white/10 rounded-[2rem] flex items-center justify-between hover:bg-white/[0.08] transition-all"
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-white/40" />
+                <div className="w-10 h-10 rounded-xl bg-black/5 dark:bg-white/5 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 opacity-40" />
                 </div>
-                <span className="text-lg font-bold tracking-tight text-white/80">{ctaBookingLabel[lang]}</span>
+                <span className="text-lg font-bold tracking-tight opacity-80">{ctaBookingLabel[lang]}</span>
               </div>
-              <ArrowRight className={cn("w-5 h-5 text-white/20 group-hover:text-white transition-all", dir === 'rtl' && 'rotate-180')} />
+              <ArrowRight className={cn("w-5 h-5 opacity-20 group-hover:opacity-100 transition-all", dir === 'rtl' && 'rotate-180')} />
             </motion.button>
           )}
 
           {/* Social / Info Footer */}
           <div className="flex items-center justify-center gap-6 pt-4">
-            <div className="h-[1px] flex-1 bg-white/5" />
+            <div className="h-[1px] flex-1 opacity-10 bg-[var(--text-primary)]" />
             <div className="flex gap-4">
               <div
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all cursor-pointer"
+                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border hover:shadow-lg"
+                style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.1)' }}
                 onClick={() => setIsInfoOpen?.(true)}
               >
                 <Info className="w-4 h-4" />
               </div>
               <Link
                 href={`${baseUrl}/about?lang=${lang}`}
-                className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white hover:text-black transition-all cursor-pointer"
+                className="w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer border hover:shadow-lg"
+                style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.1)' }}
               >
                 <Sparkles className="w-4 h-4" />
               </Link>
             </div>
-            <div className="h-[1px] flex-1 bg-white/5" />
+            <div className="h-[1px] flex-1 opacity-10 bg-[var(--text-primary)]" />
           </div>
         </div>
       </div>
 
       {/* Peripheral Design elements */}
-      <div className="absolute -top-20 -left-20 w-80 h-80 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-secondary/5 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full blur-[100px] pointer-events-none" style={{ backgroundColor: `${colorPrimary}10` }} />
+      <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full blur-[100px] pointer-events-none" style={{ backgroundColor: `${colorSecondary || colorPrimary}10` }} />
     </div>
   );
 }

@@ -53,12 +53,12 @@ export function SaasFooter({
     const currentDay = days[now.getDay()];
     // Calculate current hour as decimal (e.g. 14:30 -> 14.5)
     const currentHour = now.getHours() + now.getMinutes() / 60;
-    
+
     // Find today's hours
     const todayHours = operatingHours.find((h) => h.day_name === currentDay);
-    
+
     if (!todayHours || todayHours.is_closed) return false;
-    
+
     // Check if current time is within open hours
     return currentHour >= todayHours.open_hour && currentHour < todayHours.close_hour;
   })();
@@ -74,10 +74,11 @@ export function SaasFooter({
   return (
     <footer
       className={cn(
-        "bg-white dark:bg-navy-950 text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-navy-800 relative overflow-hidden",
+        "bg-[var(--background-hex)] text-[var(--text-muted)] border-t relative overflow-hidden",
         font,
         dir === "rtl" ? "rtl" : "ltr"
       )}
+      style={{ borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}
       dir={dir}
     >
       {/* Subtle Pattern to match legacy wood feel or clean pro look */}
@@ -91,37 +92,41 @@ export function SaasFooter({
               <img
                 src={logoUrl || RESTAURANT_CONFIG.logo}
                 alt={catalogName}
-                className="h-24 w-auto object-contain drop-shadow-[0_0_10px_rgba(254,173,29,0.8)]"
+                className="h-24 w-auto object-contain"
+                style={{ filter: `drop-shadow(0 0 10px ${colorPrimary}80)` }}
               />
-              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 {lang === "ar"
                   ? "نقدم تجربة طعام استثنائية تمزج بين الأصالة واللمسة العصرية. زورونا لتذوق الفرق."
                   : lang === "fr"
-                  ? "Une expérience culinaire exceptionnelle alliant authenticité et modernité."
-                  : "Delivering an exceptional dining experience blending authenticity with a modern touch. Visit us to taste the difference."}
+                    ? "Une expérience culinaire exceptionnelle alliant authenticité et modernité."
+                    : "Delivering an exceptional dining experience blending authenticity with a modern touch. Visit us to taste the difference."}
               </p>
             </div>
             <div className="flex gap-3">
               {/* Social Media Links */}
               {socialMedia.filter((s) => s.url).map((s, i) => {
-                 let Icon: any = ExternalLink;
-                 if (s.platform.toLowerCase() === "instagram") Icon = Instagram;
-                 else if (s.platform.toLowerCase() === "facebook") Icon = Facebook;
-                 else if (s.platform.toLowerCase() === "tiktok") Icon = TikTokIcon;
+                let Icon: any = ExternalLink;
+                if (s.platform.toLowerCase() === "instagram") Icon = Instagram;
+                else if (s.platform.toLowerCase() === "facebook") Icon = Facebook;
+                else if (s.platform.toLowerCase() === "tiktok") Icon = TikTokIcon;
 
-                 return (
-                    <a
-                      key={i}
-                      href={s.url || undefined}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 shadow-sm flex items-center justify-center hover:scale-110 transition-transform hover:text-orange-500"
-                    >
+                return (
+                  <a
+                    key={i}
+                    href={s.url || undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.05)' }}
+                    className="w-10 h-10 rounded-full shadow-sm flex items-center justify-center hover:scale-110 transition-transform group/social border"
+                  >
+                    <div className="transition-colors group-hover/social:scale-110" style={{ color: colorPrimary }}>
                       <Icon size={18} />
-                    </a>
-                 );
+                    </div>
+                  </a>
+                );
               })}
-              
+
               {/* WhatsApp Button */}
               {whatsappNumber && (
                 <a
@@ -136,7 +141,7 @@ export function SaasFooter({
                     className="w-5 h-5 fill-white"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
                   </svg>
                 </a>
               )}
@@ -145,18 +150,18 @@ export function SaasFooter({
 
           {/* 2. Contact Info - Address */}
           <div className="space-y-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+            <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
               {lang === "ar" ? "العنوان" : "Address"}
             </h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <MapPin size={18} className="text-orange-500 mt-1 shrink-0" />
+                <MapPin size={18} style={{ color: colorPrimary }} className="mt-1 shrink-0" />
                 <div>
-                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                     {(() => {
-                        const addr = (lang === "ar" ? contact?.address_ar : contact?.address_en) || contact?.address_en;
-                        return addr || (lang === "ar" ? "العنوان غير متوفر" : "Address not available");
-                     })()}
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                    {(() => {
+                      const addr = (lang === "ar" ? contact?.address_ar : contact?.address_en) || contact?.address_en;
+                      return addr || (lang === "ar" ? "العنوان غير متوفر" : "Address not available");
+                    })()}
                   </p>
                 </div>
               </div>
@@ -165,7 +170,11 @@ export function SaasFooter({
                   {contact?.phone_primary && (
                     <a
                       href={`tel:${contact.phone_primary.replace(/\s/g, "")}`}
-                      className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-3 py-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors font-mono flex items-center gap-1.5"
+                      className="text-xs px-3 py-1.5 rounded-lg transition-colors font-mono flex items-center gap-1.5"
+                      style={{
+                        backgroundColor: `${colorPrimary}15`,
+                        color: colorPrimary
+                      }}
                       dir="ltr"
                     >
                       <Phone size={12} />
@@ -179,14 +188,14 @@ export function SaasFooter({
 
           {/* 3. Operating Hours */}
           <div className="space-y-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
               {lang === "ar" ? "ساعات العمل" : "Opening Hours"}
               <span
                 className={cn(
                   "text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider",
                   isOpen
-                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                    ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                    : "bg-red-500/15 text-red-600 dark:text-red-400"
                 )}
               >
                 {isOpen
@@ -194,8 +203,8 @@ export function SaasFooter({
                     ? "مفتوح"
                     : "Open"
                   : lang === "ar"
-                  ? "مغلق"
-                  : "Closed"}
+                    ? "مغلق"
+                    : "Closed"}
               </span>
             </h3>
             <div className="space-y-2">
@@ -208,12 +217,16 @@ export function SaasFooter({
                   <div
                     key={day}
                     className={cn(
-                      "flex justify-between text-sm py-1 border-b border-dashed border-slate-200 dark:border-navy-800 last:border-0",
-                      isToday ? "font-bold text-slate-900 dark:text-white" : ""
+                      "flex justify-between text-sm py-1 last:border-0",
+                      isToday ? "font-bold" : ""
                     )}
+                    style={{
+                      borderBottom: '1px solid rgba(var(--pattern-rgb), 0.08)',
+                      color: isToday ? 'var(--text-primary)' : 'var(--text-muted)'
+                    }}
                   >
                     <span>{dayLabels[idx]}</span>
-                    <span dir="ltr" className="font-mono text-xs">
+                    <span dir="ltr" className="font-mono text-xs" style={{ color: isToday ? colorPrimary : 'var(--text-muted)' }}>
                       {isClosed
                         ? lang === "ar"
                           ? "مغلق"
@@ -227,7 +240,10 @@ export function SaasFooter({
           </div>
 
           {/* 4. Map */}
-          <div className="h-[200px] sm:h-[250px] lg:h-[300px] w-full rounded-2xl overflow-hidden shadow-lg border-4 border-white dark:border-navy-800 relative group sm:col-span-2 lg:col-span-1 order-first sm:order-last lg:order-none bg-slate-100 dark:bg-slate-800">
+          <div
+            className="h-[200px] sm:h-[250px] lg:h-[300px] w-full rounded-2xl overflow-hidden shadow-lg border relative group sm:col-span-2 lg:col-span-1 order-first sm:order-last lg:order-none"
+            style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}
+          >
             {(() => {
               const mapUrl = extractMapUrl(contact?.google_map_iframe_url);
               return mapUrl ? (
@@ -239,17 +255,17 @@ export function SaasFooter({
                     style={{ border: 0 }}
                     allowFullScreen={true}
                     loading="lazy"
-                    className="relative z-10 grayscale hover:grayscale-0 transition-all duration-700 w-full h-full"
+                    className="relative z-10 hover:opacity-100 transition-all duration-700 w-full h-full opacity-60 mix-blend-luminosity hover:mix-blend-normal contrast-[0.9] brightness-[1.1] dark:brightness-[0.8]"
                   />
                   {/* Minimalistic Caption Overlay */}
                   <div className="absolute top-3 left-3 z-20">
-                    <div className="bg-white/90 dark:bg-navy-900/90 backdrop-blur-md px-2.5 py-1 rounded-lg shadow-sm border border-white/20">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    <div className="backdrop-blur-md px-2.5 py-1 rounded-lg shadow-sm border" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(255,255,255,0.08)' }}>
+                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
                         {lang === "ar"
                           ? "موقعنا"
                           : lang === "fr"
-                          ? "Notre Emplacement"
-                          : "Our Location"}
+                            ? "Notre Emplacement"
+                            : "Our Location"}
                       </span>
                     </div>
                   </div>
@@ -259,9 +275,10 @@ export function SaasFooter({
                   <div className="text-center p-4">
                     <MapPin
                       size={32}
-                      className="mx-auto text-slate-400 dark:text-slate-500 mb-2"
+                      className="mx-auto mb-2"
+                      style={{ color: 'var(--text-muted)' }}
                     />
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                       {lang === "ar" ? "خريطة غير متوفرة" : "Map not available"}
                     </p>
                   </div>
@@ -271,15 +288,15 @@ export function SaasFooter({
           </div>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-slate-200 dark:border-navy-800 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 dark:text-slate-500 gap-4">
+        <div className="mt-16 pt-8 border-t flex flex-col md:flex-row items-center justify-between text-xs gap-4" style={{ borderColor: 'var(--surface)', color: 'var(--text-muted)' }}>
           <p>
             © {new Date().getFullYear()}{" "}
             {catalogName}.{" "}
             {lang === "ar"
               ? "جميع الحقوق محفوظة"
               : lang === "fr"
-              ? "Tous droits réservés"
-              : "All rights reserved"}
+                ? "Tous droits réservés"
+                : "All rights reserved"}
             .
           </p>
           <div className="flex items-center gap-1.5">
@@ -287,20 +304,21 @@ export function SaasFooter({
               {lang === "ar"
                 ? "القائمة بواسطة"
                 : lang === "fr"
-                ? "Menu par"
-                : "Menu By"}
+                  ? "Menu par"
+                  : "Menu By"}
             </span>
             <a
               href="https://coredex.solutions"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-bold text-slate-600 dark:text-slate-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors underline decoration-slate-300 dark:decoration-slate-600 hover:decoration-orange-500 underline-offset-2"
+              className="font-bold transition-colors underline underline-offset-2"
+              style={{ color: 'var(--text-primary)', "--tw-decoration-color": colorPrimary } as any}
             >
               Coredex Solutions
             </a>
           </div>
         </div>
       </div>
-    </footer>
+    </footer >
   );
 }

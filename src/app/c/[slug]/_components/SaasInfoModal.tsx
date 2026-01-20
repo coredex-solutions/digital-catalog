@@ -124,18 +124,20 @@ export function SaasInfoModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         className={cn(
-          "relative w-full max-w-2xl bg-white dark:bg-navy-900 rounded-3xl shadow-2xl overflow-hidden pointer-events-auto max-h-[90vh] flex flex-col",
+          "relative w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden pointer-events-auto max-h-[90vh] flex flex-col",
           font,
           dir === "rtl" ? "rtl" : "ltr"
         )}
+        style={{ backgroundColor: 'var(--surface)' }}
         dir={dir}
       >
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 dark:border-navy-800 flex justify-between items-center bg-slate-50/50 dark:bg-navy-900">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{labels.title}</h2>
+        <div className="p-6 border-b flex justify-between items-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{labels.title}</h2>
           <button
             onClick={onClose}
-            className="p-2 bg-slate-100 dark:bg-navy-800 rounded-full hover:bg-slate-200 transition-colors text-slate-600 dark:text-slate-300"
+            className="p-2 rounded-full transition-colors text-[var(--text-primary)]"
+            style={{ backgroundColor: 'rgba(var(--pattern-rgb), 0.05)' }}
           >
             <X size={20} />
           </button>
@@ -153,7 +155,7 @@ export function SaasInfoModal({
                 style={{ border: 0 }}
                 allowFullScreen
                 loading="lazy"
-                className="grayscale hover:grayscale-0 transition-all duration-700"
+                className="transition-all duration-700 opacity-80 hover:opacity-100 mix-blend-luminosity hover:mix-blend-normal"
               />
             </div>
           )}
@@ -161,37 +163,37 @@ export function SaasInfoModal({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Contact */}
             <div className="space-y-4">
-              <h3 className="font-bold text-slate-900 dark:text-white text-xl border-b border-slate-100 dark:border-navy-800 pb-2">
+              <h3 className="font-bold text-xl border-b pb-2" style={{ color: 'var(--text-primary)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}>
                 {labels.contact}
               </h3>
-              <div className="bg-slate-50 dark:bg-navy-800/50 p-4 rounded-2xl space-y-4">
+              <div className="p-4 rounded-2xl space-y-4" style={{ backgroundColor: 'rgba(var(--pattern-rgb), 0.03)', border: '1px solid rgba(var(--pattern-rgb), 0.08)' }}>
                 {getAddress() && (
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${colorPrimary}20`, color: colorPrimary }}>
                       <MapPin size={20} />
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-900 dark:text-white mb-1">{labels.address}</h4>
-                      <p className="text-sm text-slate-600 dark:text-slate-400">{getAddress()}</p>
+                      <h4 className="font-bold mb-1" style={{ color: 'var(--text-primary)' }}>{labels.address}</h4>
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{getAddress()}</p>
                     </div>
                   </div>
                 )}
                 {contact?.phone_primary && (
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-green-100 text-green-600">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border" style={{ backgroundColor: `rgba(0, 255, 0, 0.05)`, color: '#22c55e', borderColor: 'rgba(34, 197, 94, 0.2)' }}>
                       <Phone size={20} />
                     </div>
-                    <a href={`tel:${contact.phone_primary}`} className="text-slate-600 dark:text-slate-400 hover:underline">
+                    <a href={`tel:${contact.phone_primary}`} className="hover:underline" style={{ color: 'var(--text-muted)' }}>
                       {contact.phone_primary}
                     </a>
                   </div>
                 )}
                 {contact?.email && (
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-blue-100 text-blue-600">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border" style={{ backgroundColor: `rgba(0, 0, 255, 0.05)`, color: '#3b82f6', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
                       <Mail size={20} />
                     </div>
-                    <a href={`mailto:${contact.email}`} className="text-slate-600 dark:text-slate-400 hover:underline">
+                    <a href={`mailto:${contact.email}`} className="hover:underline" style={{ color: 'var(--text-muted)' }}>
                       {contact.email}
                     </a>
                   </div>
@@ -222,30 +224,30 @@ export function SaasInfoModal({
 
             {/* Hours */}
             <div className="space-y-4">
-              <h3 className="font-bold text-slate-900 dark:text-white text-xl border-b border-slate-100 dark:border-navy-800 pb-2 flex items-center gap-2">
+              <h3 className="font-bold text-xl border-b pb-2 flex items-center gap-2" style={{ color: 'var(--text-primary)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}>
                 <Clock size={20} style={{ color: colorPrimary }} />
                 {labels.hours}
               </h3>
 
               <div className={cn(
                 "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium",
-                isOpen ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                isOpen ? "bg-green-500/15 text-green-600" : "bg-red-500/15 text-red-600"
               )}>
                 <span className={cn("w-2 h-2 rounded-full", isOpen ? "bg-green-500" : "bg-red-500")} />
                 {isOpen ? labels.openNow : labels.closedNow}
               </div>
 
-              <div className="bg-slate-50 dark:bg-navy-800/50 p-4 rounded-2xl space-y-2">
+              <div className="p-4 rounded-2xl space-y-2" style={{ backgroundColor: 'rgba(var(--pattern-rgb), 0.03)', border: '1px solid rgba(var(--pattern-rgb), 0.08)' }}>
                 {days.map((day, index) => {
                   const hours = operatingHours.find((h) => h.day_name === day);
                   const isClosed = !hours || hours.is_closed;
                   const isToday = new Date().getDay() === index;
                   return (
-                    <div key={day} className={cn("flex justify-between items-center py-2 px-3 rounded-lg", isToday && "bg-orange-50 dark:bg-orange-900/10")} style={isToday ? { backgroundColor: `${colorPrimary}10` } : {}}>
-                      <span className={cn("font-medium", isToday ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400")}>
+                    <div key={day} className={cn("flex justify-between items-center py-2 px-3 rounded-lg border-b last:border-0 border-white/5")} style={isToday ? { backgroundColor: `${colorPrimary}15`, borderColor: 'transparent' } : { borderColor: 'rgba(var(--pattern-rgb), 0.05)' }}>
+                      <span className={cn("font-medium")} style={{ color: isToday ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                         {dayLabels[index]}
                       </span>
-                      <span className={isClosed ? "text-red-500" : "text-slate-700 dark:text-slate-300"}>
+                      <span style={{ color: isClosed ? '#ef4444' : (isToday ? 'var(--text-primary)' : 'var(--text-muted)') }}>
                         {isClosed ? labels.closed : `${formatHours(hours.open_hour)} - ${formatHours(hours.close_hour)}`}
                       </span>
                     </div>

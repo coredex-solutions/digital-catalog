@@ -25,7 +25,7 @@ interface SaasReservationModalProps {
 export function SaasReservationModal({
   lang,
   onClose,
-  colorPrimary = "#f97316", // Default orange-500
+  colorPrimary = "#fead1d", // Default primary
 }: SaasReservationModalProps) {
   const [step, setStep] = useState<"form" | "success">("form");
   const [loading, setLoading] = useState(false);
@@ -115,18 +115,20 @@ export function SaasReservationModal({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl pointer-events-auto max-h-[90vh] flex flex-col pointer-events-auto"
+        className="relative w-full max-w-lg rounded-t-[2.5rem] sm:rounded-[2.5rem] overflow-hidden shadow-2xl pointer-events-auto max-h-[90vh] flex flex-col pointer-events-auto"
+        style={{ backgroundColor: 'var(--surface)' }}
         dir={dir}
       >
-        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+        <div className="p-6 border-b flex justify-between items-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}>
+          <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
             {labels.title[lang]}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            className="p-2 rounded-full transition-colors"
+            style={{ backgroundColor: 'rgba(var(--pattern-rgb), 0.05)' }}
           >
-            <X size={20} className="text-slate-600 dark:text-slate-300" />
+            <X size={20} className="text-[var(--text-primary)]" />
           </button>
         </div>
 
@@ -144,11 +146,11 @@ export function SaasReservationModal({
                 {/* Name & Phone */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
                       {labels.name[lang]} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <User className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 text-slate-400" />
+                      <User className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 opacity-40" />
                       <input
                         required
                         type="text"
@@ -156,8 +158,11 @@ export function SaasReservationModal({
                         onChange={(e) =>
                           setFormData({ ...formData, name: e.target.value })
                         }
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-none focus:ring-2 focus:ring-opacity-50 transition-all outline-none text-slate-900 dark:text-white"
+                        className="w-full pl-10 pr-4 py-3 bg-transparent border rounded-xl focus:ring-2 focus:ring-opacity-50 transition-all outline-none"
                         style={{
+                          backgroundColor: 'rgba(var(--pattern-rgb), 0.03)',
+                          borderColor: 'rgba(var(--pattern-rgb), 0.08)',
+                          color: 'var(--text-primary)',
                           // @ts-ignore
                           "--tw-ring-color": colorPrimary,
                         }}
@@ -166,11 +171,11 @@ export function SaasReservationModal({
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
                       {labels.phone[lang]} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <Phone className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 text-slate-400 dark:text-slate-500" />
+                      <Phone className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 opacity-40" />
                       <input
                         required
                         type="tel"
@@ -178,8 +183,11 @@ export function SaasReservationModal({
                         onChange={(e) =>
                           setFormData({ ...formData, phone: e.target.value })
                         }
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-none focus:ring-2 focus:ring-opacity-50 transition-all outline-none text-slate-900 dark:text-white"
+                        className="w-full pl-10 pr-4 py-3 bg-transparent border rounded-xl focus:ring-2 focus:ring-opacity-50 transition-all outline-none"
                         style={{
+                          backgroundColor: 'rgba(var(--pattern-rgb), 0.03)',
+                          borderColor: 'rgba(var(--pattern-rgb), 0.08)',
+                          color: 'var(--text-primary)',
                           // @ts-ignore
                           "--tw-ring-color": colorPrimary,
                         }}
@@ -191,11 +199,11 @@ export function SaasReservationModal({
                 {/* Date & Time */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
                       {labels.date[lang]} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <Calendar className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 text-slate-400 dark:text-slate-500" />
+                      <Calendar className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 opacity-40" />
                       <input
                         required
                         type="date"
@@ -204,8 +212,11 @@ export function SaasReservationModal({
                         onChange={(e) =>
                           setFormData({ ...formData, date: e.target.value })
                         }
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-none focus:ring-2 focus:ring-opacity-50 transition-all outline-none text-slate-900 dark:text-white [color-scheme:dark]"
+                        className="w-full pl-10 pr-4 py-3 bg-transparent border rounded-xl focus:ring-2 focus:ring-opacity-50 transition-all outline-none [color-scheme:dark]"
                         style={{
+                          backgroundColor: 'rgba(var(--pattern-rgb), 0.03)',
+                          borderColor: 'rgba(var(--pattern-rgb), 0.08)',
+                          color: 'var(--text-primary)',
                           // @ts-ignore
                           "--tw-ring-color": colorPrimary,
                         }}
@@ -214,7 +225,7 @@ export function SaasReservationModal({
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
                       {labels.time[lang]} <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -225,8 +236,11 @@ export function SaasReservationModal({
                         onChange={(e) =>
                           setFormData({ ...formData, time: e.target.value })
                         }
-                        className="w-full pl-10 pr-8 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-none focus:ring-2 focus:ring-opacity-50 transition-all outline-none appearance-none text-slate-900 dark:text-white"
+                        className="w-full pl-10 pr-8 py-3 bg-transparent border rounded-xl focus:ring-2 focus:ring-opacity-50 transition-all outline-none appearance-none"
                         style={{
+                          backgroundColor: 'rgba(0,0,0,0.03)',
+                          borderColor: 'rgba(255,255,255,0.08)',
+                          color: 'var(--text-primary)',
                           // @ts-ignore
                           "--tw-ring-color": colorPrimary,
                         }}
@@ -245,48 +259,54 @@ export function SaasReservationModal({
 
                 {/* Guests */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
                     {labels.guests[lang]} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <Users className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 text-slate-400 dark:text-slate-500" />
+                    <Users className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 opacity-40" />
                     <select
                       required
                       value={formData.guests}
                       onChange={(e) =>
                         setFormData({ ...formData, guests: e.target.value })
                       }
-                      className="w-full pl-10 pr-8 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-none focus:ring-2 focus:ring-opacity-50 transition-all outline-none appearance-none text-slate-900 dark:text-white"
+                      className="w-full pl-10 pr-8 py-3 bg-transparent border rounded-xl focus:ring-2 focus:ring-opacity-50 transition-all outline-none appearance-none"
                       style={{
+                        backgroundColor: 'rgba(var(--pattern-rgb), 0.03)',
+                        borderColor: 'rgba(var(--pattern-rgb), 0.08)',
+                        color: 'var(--text-primary)',
                         // @ts-ignore
                         "--tw-ring-color": colorPrimary,
                       }}
                     >
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, "10+"].map((n) => (
-                        <option key={n} value={n} className="dark:bg-slate-900">
+                        <option key={n} value={n} className="bg-[var(--surface)] text-[var(--text-primary)]">
                           {n} {lang === "ar" ? "أشخاص" : "People"}
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <ChevronDown className="absolute top-1/2 -translate-y-1/2 right-3 w-4 h-4 opacity-40 pointer-events-none" />
                   </div>
                 </div>
 
                 {/* Notes */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
                     {labels.notes[lang]}
                   </label>
                   <div className="relative">
-                    <MessageSquare className="absolute top-3 left-3 w-5 h-5 text-slate-400 dark:text-slate-500" />
+                    <MessageSquare className="absolute top-3 left-3 w-5 h-5 opacity-40" />
                     <textarea
                       rows={3}
                       value={formData.notes}
                       onChange={(e) =>
                         setFormData({ ...formData, notes: e.target.value })
                       }
-                      className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-xl border-none focus:ring-2 focus:ring-opacity-50 transition-all outline-none resize-none text-slate-900 dark:text-white"
+                      className="w-full pl-10 pr-4 py-3 bg-transparent border rounded-xl focus:ring-2 focus:ring-opacity-50 transition-all outline-none resize-none"
                       style={{
+                        backgroundColor: 'rgba(var(--pattern-rgb), 0.03)',
+                        borderColor: 'rgba(var(--pattern-rgb), 0.08)',
+                        color: 'var(--text-primary)',
                         // @ts-ignore
                         "--tw-ring-color": colorPrimary,
                       }}
@@ -327,15 +347,16 @@ export function SaasReservationModal({
                     style={{ color: colorPrimary }}
                   />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+                <h3 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                   {labels.successTitle[lang]}
                 </h3>
-                <p className="text-slate-600 dark:text-slate-400 mb-8 max-w-xs mx-auto">
+                <p className="text-sm mb-8 max-w-xs mx-auto" style={{ color: 'var(--text-muted)' }}>
                   {labels.successMsg[lang]}
                 </p>
                 <button
                   onClick={onClose}
-                  className="px-8 py-3 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  className="px-8 py-3 rounded-xl font-bold transition-colors border"
+                  style={{ backgroundColor: 'rgba(var(--pattern-rgb), 0.05)', borderColor: 'rgba(var(--pattern-rgb), 0.1)', color: 'var(--text-primary)' }}
                 >
                   {labels.close[lang]}
                 </button>

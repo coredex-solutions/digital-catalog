@@ -45,7 +45,7 @@ export function CatalogCategoriesPageClient({ categories }: CatalogCategoriesPag
   // Loading state
   if (!isThemeLoaded) {
     return (
-      <div className="fixed inset-0 bg-white dark:bg-navy-900 flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: 'var(--background-hex)' }}>
         <div
           className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
           style={{ borderColor: `${colorPrimary} transparent transparent transparent` }}
@@ -78,7 +78,7 @@ export function CatalogCategoriesPageClient({ categories }: CatalogCategoriesPag
   return (
     <div
       className={cn(
-        'min-h-screen bg-white dark:bg-navy-900 text-slate-900 dark:text-white transition-colors duration-300 relative bg-wood-pattern',
+        'min-h-screen bg-[var(--background-hex)] text-[var(--text-primary)] transition-colors duration-300 relative bg-wood-pattern',
         font,
         dir === 'rtl' ? 'rtl' : 'ltr'
       )}
@@ -100,9 +100,9 @@ export function CatalogCategoriesPageClient({ categories }: CatalogCategoriesPag
 
       <main className="pt-20 pb-24 px-4 max-w-md mx-auto md:max-w-2xl lg:max-w-4xl relative z-10">
         <h1 className="text-2xl font-bold mb-6">{labels.categories}</h1>
-        
+
         {categories.length === 0 ? (
-          <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+          <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>
             {labels.noCategories}
           </div>
         ) : (

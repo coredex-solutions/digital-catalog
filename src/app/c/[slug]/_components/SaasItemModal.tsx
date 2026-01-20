@@ -84,10 +84,11 @@ export function SaasItemModal({
         exit={{ y: "100%", opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className={cn(
-          "relative w-full max-w-lg bg-white dark:bg-navy-900 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden pointer-events-auto max-h-[90vh] flex flex-col",
+          "relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden pointer-events-auto max-h-[90vh] flex flex-col",
           font,
           dir === "rtl" ? "rtl" : "ltr"
         )}
+        style={{ backgroundColor: 'var(--surface)' }}
         dir={dir}
       >
         {/* Close Button */}
@@ -115,7 +116,7 @@ export function SaasItemModal({
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
           {/* Name & Price */}
           <div className="flex justify-between items-start gap-4">
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+            <h2 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
               {getItemName()}
             </h2>
             <span
@@ -128,14 +129,13 @@ export function SaasItemModal({
 
           {/* Description */}
           {getItemDescription() && (
-            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
               {getItemDescription()}
             </p>
           )}
 
-          {/* Quantity Selector */}
-          <div className="flex items-center justify-between py-4 border-t border-slate-100 dark:border-navy-700">
-            <span className="font-medium text-slate-700 dark:text-slate-300">
+          <div className="flex items-center justify-between py-4 border-t" style={{ borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}>
+            <span className="font-medium" style={{ color: 'var(--text-muted)' }}>
               {labels.quantity}
             </span>
             <div className="flex items-center gap-3">
@@ -143,11 +143,12 @@ export function SaasItemModal({
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                className="w-10 h-10 rounded-full bg-slate-100 dark:bg-navy-700 flex items-center justify-center text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-navy-600 transition-colors"
+                style={{ backgroundColor: 'var(--surface)' }}
+                className="w-10 h-10 rounded-full flex items-center justify-center border transition-colors"
               >
-                <Minus size={18} />
+                <Minus size={18} style={{ color: 'var(--text-primary)' }} />
               </motion.button>
-              <span className="text-xl font-bold w-8 text-center text-slate-900 dark:text-white">
+              <span className="text-xl font-bold w-8 text-center" style={{ color: 'var(--text-primary)' }}>
                 {quantity}
               </span>
               <motion.button
@@ -164,7 +165,7 @@ export function SaasItemModal({
         </div>
 
         {/* Add to Cart Button */}
-        <div className="p-6 border-t border-slate-100 dark:border-navy-700 bg-slate-50/50 dark:bg-navy-800/50">
+        <div className="p-6 border-t" style={{ borderColor: 'rgba(var(--pattern-rgb), 0.08)', backgroundColor: 'rgba(var(--pattern-rgb), 0.03)' }}>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

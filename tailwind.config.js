@@ -17,12 +17,12 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "var(--primary, #fead1d)",
+          foreground: "var(--primary-foreground, #ffffff)",
         },
         secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
+          DEFAULT: "var(--secondary, #b14288)",
+          foreground: "var(--secondary-foreground, #ffffff)",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -33,8 +33,8 @@ export default {
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "var(--accent, #F7C948)",
+          foreground: "var(--accent-foreground, #000000)",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -66,7 +66,7 @@ export default {
           900: "#7c4312",
         },
         purple: {
-          DEFAULT: "#b14288",              
+          DEFAULT: "#b14288",
           50: "#fbf5f9",
           100: "#f6eaf2",
           200: "#edcee3",
@@ -79,7 +79,7 @@ export default {
           900: "#551d40",
         },
         navy: {
-          DEFAULT: "#170F2C",
+          DEFAULT: "var(--background-hex, #0a0a0c)",
           50: "#f3f2f6",
           100: "#e4e2eb",
           200: "#ccc8da",
@@ -88,9 +88,9 @@ export default {
           500: "#685689",
           600: "#534270",
           700: "#44355b",
-          800: "#392d4a",
-          900: "#170F2C", // Main Dark Bg
-          950: "#0d081a",
+          800: "var(--surface, #121215)",
+          900: "var(--background-hex, #0a0a0c)", // Main Dark Bg
+          950: "#020202",
         },
       },
     },

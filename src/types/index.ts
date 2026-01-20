@@ -56,6 +56,12 @@ export interface CatalogSettingsData {
   color_surface?: string;
   color_text?: string;
   color_text_muted?: string;
+
+  // Dark Mode specific colors
+  color_background_dark?: string;
+  color_surface_dark?: string;
+  color_text_dark?: string;
+  color_text_muted_dark?: string;
   booking_enabled?: boolean;
   whatsapp_order_enabled?: boolean;
   cta_menu_label_ar?: string;

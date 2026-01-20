@@ -146,7 +146,7 @@ export function CatalogCategoriesClient({
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          
+
           {logoUrl && (
             <Image
               src={logoUrl}
@@ -156,7 +156,7 @@ export function CatalogCategoriesClient({
               className="rounded-lg"
             />
           )}
-          
+
           <div className="flex-1">
             <h1 className="font-bold">{catalogName}</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">{labels.menu}</p>
@@ -212,7 +212,7 @@ export function CatalogCategoriesClient({
                       <div
                         className="absolute inset-0"
                         style={{
-                          background: `linear-gradient(135deg, ${colorPrimary} 0%, ${settings?.color_secondary || '#b14288'} 100%)`,
+                          background: `linear-gradient(135deg, ${colorPrimary} 0%, ${settings?.color_secondary || colorPrimary} 100%)`,
                           opacity: 0.3,
                         }}
                       />

@@ -77,35 +77,35 @@ export function SaasCheckoutForm({
   // Build WhatsApp message
   const buildWhatsAppMessage = () => {
     let message = `🛒 *${lang === "ar" ? "طلب جديد من" : "New Order from"} ${catalogName}*\n\n`;
-    
+
     message += `👤 *${labels.name}:* ${name}\n`;
     message += `📱 *${labels.phone}:* ${phone}\n\n`;
-    
+
     message += `📋 *${labels.yourOrder}:*\n`;
     cart.forEach((item) => {
       message += `• ${getItemName(item)} x${item.quantity} - ${formatPrice(item.price * item.quantity, item.currency || "USD", lang)}\n`;
     });
-    
+
     message += `\n💰 *${labels.total}:* ${formatPrice(cartTotal, "USD", lang)}`;
-    
+
     if (notes) {
       message += `\n\n📝 *${labels.notes}:* ${notes}`;
     }
-    
+
     return encodeURIComponent(message);
   };
 
   const handleSubmit = () => {
     if (!name.trim() || !phone.trim() || !whatsappNumber) return;
-    
+
     setIsSending(true);
-    
+
     const message = buildWhatsAppMessage();
     const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\D/g, "")}?text=${message}`;
-    
+
     // Open WhatsApp
     window.open(whatsappUrl, "_blank");
-    
+
     setTimeout(() => {
       setIsSending(false);
       onSuccess();
@@ -127,14 +127,15 @@ export function SaasCheckoutForm({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         className={cn(
-          "relative w-full max-w-lg bg-white dark:bg-navy-900 rounded-3xl shadow-2xl overflow-hidden pointer-events-auto max-h-[90vh] flex flex-col",
+          "relative w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden pointer-events-auto max-h-[90vh] flex flex-col",
           font,
           dir === "rtl" ? "rtl" : "ltr"
         )}
+        style={{ backgroundColor: 'var(--surface)' }}
         dir={dir}
       >
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 dark:border-navy-800 flex justify-between items-center">
+        <div className="p-6 border-b flex justify-between items-center" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -142,11 +143,12 @@ export function SaasCheckoutForm({
             >
               <ShoppingBag size={20} />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{labels.title}</h2>
+            <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{labels.title}</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 bg-slate-100 dark:bg-navy-800 rounded-full hover:bg-slate-200 transition-colors text-slate-600 dark:text-slate-300"
+            className="p-2 rounded-full transition-colors text-[var(--text-primary)]"
+            style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
           >
             <X size={20} />
           </button>
@@ -156,14 +158,14 @@ export function SaasCheckoutForm({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Order Summary */}
           <div>
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+            <h3 className="font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
               <ShoppingBag size={18} style={{ color: colorPrimary }} />
               {labels.yourOrder}
             </h3>
-            <div className="bg-slate-50 dark:bg-navy-800 rounded-2xl p-4 space-y-2 max-h-40 overflow-y-auto">
+            <div className="rounded-2xl p-4 space-y-2 max-h-40 overflow-y-auto" style={{ backgroundColor: 'rgba(128,128,128,0.08)', border: '1px solid rgba(128,128,128,0.1)' }}>
               {cart.map((item) => (
                 <div key={item.id} className="flex justify-between items-center text-sm">
-                  <span className="text-slate-700 dark:text-slate-300">
+                  <span style={{ color: 'var(--text-muted)' }}>
                     {getItemName(item)} x{item.quantity}
                   </span>
                   <span className="font-medium" style={{ color: colorPrimary }}>
@@ -171,8 +173,8 @@ export function SaasCheckoutForm({
                   </span>
                 </div>
               ))}
-              <div className="border-t border-slate-200 dark:border-navy-700 pt-2 mt-2 flex justify-between items-center font-bold">
-                <span className="text-slate-900 dark:text-white">{labels.total}</span>
+              <div className="border-t pt-2 mt-2 flex justify-between items-center font-bold" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                <span style={{ color: 'var(--text-primary)' }}>{labels.total}</span>
                 <span style={{ color: colorPrimary }}>{formatPrice(cartTotal, "USD", lang)}</span>
               </div>
             </div>
@@ -180,13 +182,13 @@ export function SaasCheckoutForm({
 
           {/* Customer Details Form */}
           <div>
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+            <h3 className="font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
               <User size={18} style={{ color: colorPrimary }} />
               {labels.yourDetails}
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-4 rounded-2xl p-4" style={{ backgroundColor: 'rgba(128,128,128,0.08)', border: '1px solid rgba(128,128,128,0.1)' }}>
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
                   {labels.name} *
                 </label>
                 <div className="relative">
@@ -196,14 +198,19 @@ export function SaasCheckoutForm({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={labels.namePlaceholder}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
-                    style={{ "--tw-ring-color": colorPrimary } as any}
+                    className="w-full pl-10 pr-4 py-3 bg-transparent border rounded-xl focus:outline-none focus:ring-2"
+                    style={{
+                      backgroundColor: 'rgba(0,0,0,0.02)',
+                      borderColor: 'rgba(255,255,255,0.05)',
+                      color: 'var(--text-primary)',
+                      "--tw-ring-color": colorPrimary
+                    } as any}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
                   {labels.phone} *
                 </label>
                 <div className="relative">
@@ -213,14 +220,19 @@ export function SaasCheckoutForm({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder={labels.phonePlaceholder}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2"
-                    style={{ "--tw-ring-color": colorPrimary } as any}
+                    className="w-full pl-10 pr-4 py-3 bg-transparent border rounded-xl focus:outline-none focus:ring-2"
+                    style={{
+                      backgroundColor: 'rgba(0,0,0,0.02)',
+                      borderColor: 'rgba(255,255,255,0.05)',
+                      color: 'var(--text-primary)',
+                      "--tw-ring-color": colorPrimary
+                    } as any}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-muted)' }}>
                   {labels.notes}
                 </label>
                 <div className="relative">
@@ -230,8 +242,13 @@ export function SaasCheckoutForm({
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder={labels.notesPlaceholder}
                     rows={3}
-                    className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 resize-none"
-                    style={{ "--tw-ring-color": colorPrimary } as any}
+                    className="w-full pl-10 pr-4 py-3 bg-transparent border rounded-xl focus:outline-none focus:ring-2 resize-none"
+                    style={{
+                      backgroundColor: 'rgba(0,0,0,0.02)',
+                      borderColor: 'rgba(255,255,255,0.05)',
+                      color: 'var(--text-primary)',
+                      "--tw-ring-color": colorPrimary
+                    } as any}
                   />
                 </div>
               </div>
@@ -240,7 +257,7 @@ export function SaasCheckoutForm({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-100 dark:border-navy-800 bg-slate-50/50 dark:bg-navy-800/50">
+        <div className="p-6 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)', backgroundColor: 'rgba(0,0,0,0.02)' }}>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

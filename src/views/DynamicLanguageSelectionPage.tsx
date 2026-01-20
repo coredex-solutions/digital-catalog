@@ -32,7 +32,7 @@ export function DynamicLanguageSelectionPage({
     : "hover:border-orange-500 hover:text-orange-500";
 
   return (
-    <div className="fixed inset-0 bg-navy-900 text-white flex flex-col items-center justify-center p-6 z-50">
+    <div className="fixed inset-0 flex flex-col items-center justify-center p-6 z-50 text-[var(--text-primary)]" style={{ backgroundColor: 'var(--background-hex)' }}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -49,28 +49,27 @@ export function DynamicLanguageSelectionPage({
               whileTap={{ scale: 0.98 }}
               onClick={() => onSelect(l.code)}
               className={cn(
-                "py-4 px-8 border border-white/20 rounded-xl text-xl transition-all duration-300",
-                "hover:bg-white/10",
+                "py-4 px-8 border rounded-xl text-xl transition-all duration-300",
                 l.font
               )}
-              style={
-                colorPrimary
-                  ? {
-                      // Dynamic hover border color via CSS custom properties
-                      "--hover-color": colorPrimary,
-                    } as React.CSSProperties
-                  : undefined
-              }
+              style={{
+                backgroundColor: 'var(--surface)',
+                color: 'var(--text-primary)',
+                borderColor: 'rgba(255,255,255,0.08)',
+                ...(colorPrimary ? { "--hover-color": colorPrimary } : {})
+              } as React.CSSProperties}
               onMouseEnter={(e) => {
                 if (colorPrimary) {
                   e.currentTarget.style.borderColor = colorPrimary;
                   e.currentTarget.style.color = colorPrimary;
+                  e.currentTarget.style.backgroundColor = `${colorPrimary}10`;
                 }
               }}
               onMouseLeave={(e) => {
                 if (colorPrimary) {
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-                  e.currentTarget.style.color = "white";
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                  e.currentTarget.style.color = "var(--text-primary)";
+                  e.currentTarget.style.backgroundColor = "var(--surface)";
                 }
               }}
             >

@@ -49,6 +49,10 @@ export async function GET(
       color_surface: settings?.color_surface,
       color_text: settings?.color_text,
       color_text_muted: settings?.color_text_muted,
+      color_background_dark: settings?.color_background_dark,
+      color_surface_dark: settings?.color_surface_dark,
+      color_text_dark: settings?.color_text_dark,
+      color_text_muted_dark: settings?.color_text_muted_dark,
     },
     features: {
       booking_enabled: settings?.booking_enabled,

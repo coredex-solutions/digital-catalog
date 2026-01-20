@@ -116,6 +116,12 @@ CREATE TABLE IF NOT EXISTS catalog_settings (
   color_text TEXT DEFAULT '#ffffff',
   color_text_muted TEXT DEFAULT '#a0aec0',
   
+  -- Dark palette
+  color_background_dark TEXT DEFAULT '#0f172a',
+  color_surface_dark TEXT DEFAULT '#1e293b',
+  color_text_dark TEXT DEFAULT '#f8fafc',
+  color_text_muted_dark TEXT DEFAULT '#94a3b8',
+  
   -- CTA Labels (multilingual)
   cta_menu_label_ar TEXT DEFAULT 'عرض القائمة',
   cta_menu_label_en TEXT DEFAULT 'View Menu',

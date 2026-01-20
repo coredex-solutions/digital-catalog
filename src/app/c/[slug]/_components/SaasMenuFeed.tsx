@@ -70,7 +70,7 @@ export function SaasMenuFeed({
 
   if (filteredItems.length === 0) {
     return (
-      <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+      <div className="text-center py-12" style={{ color: 'var(--text-muted)' }}>
         {labels.noResults}
       </div>
     );
@@ -87,7 +87,8 @@ export function SaasMenuFeed({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.05 }}
           onClick={() => onItemClick(item)}
-          className="group flex flex-col bg-white dark:bg-navy-800 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-navy-700 hover:shadow-lg transition-all cursor-pointer overflow-hidden"
+          className="group flex flex-col rounded-xl p-4 shadow-sm transition-all cursor-pointer overflow-hidden border"
+          style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}
         >
           {/* Image Section (Optional, but looks good) */}
           {item.image_url && (
@@ -100,12 +101,13 @@ export function SaasMenuFeed({
               />
               {item.is_featured && (
                 <div className="absolute top-2 right-2">
-                    <span 
-                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-bold shadow-sm backdrop-blur-md bg-white/90 text-slate-900"
-                    >
-                      <Star className="w-3 h-3 fill-current text-orange-500" />
-                      {labels.featured}
-                    </span>
+                  <span
+                    className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-bold shadow-sm backdrop-blur-md"
+                    style={{ backgroundColor: 'var(--surface)', color: 'var(--text-primary)', border: '1px solid rgba(var(--pattern-rgb), 0.1)' }}
+                  >
+                    <Star className="w-3 h-3 fill-current" style={{ color: colorPrimary }} />
+                    {labels.featured}
+                  </span>
                 </div>
               )}
             </div>
@@ -113,38 +115,38 @@ export function SaasMenuFeed({
 
           {/* Content Section */}
           <div className="flex-1 flex flex-col gap-3">
-             <div className="flex-1">
-                <div className="flex justify-between items-start gap-2">
-                   <h3 className="font-bold text-lg text-slate-900 dark:text-white leading-tight">
-                      {getItemName(item)}
-                   </h3>
-                </div>
-                {getItemDescription(item) && (
-                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">
-                      {getItemDescription(item)}
-                   </p>
-                )}
-             </div>
-             
-             {/* Footer logic matched to Legacy ItemCard */}
-             <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-navy-700 mt-2">
-                <span 
-                  className="font-bold text-xl"
-                  style={{ color: colorPrimary }}
-                >
-                   {formatPrice(item.price, item.currency || "USD", lang)}
-                </span>
-                <button
-                   onClick={(e) => {
-                      e.stopPropagation();
-                      onItemClick(item);
-                   }}
-                   className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
-                   style={{ backgroundColor: colorPrimary }}
-                >
-                   <Plus size={20} strokeWidth={2.5} />
-                </button>
-             </div>
+            <div className="flex-1">
+              <div className="flex justify-between items-start gap-2">
+                <h3 className="font-bold text-lg leading-tight" style={{ color: 'var(--text-primary)' }}>
+                  {getItemName(item)}
+                </h3>
+              </div>
+              {getItemDescription(item) && (
+                <p className="text-sm mt-2 line-clamp-2" style={{ color: 'var(--text-muted)' }}>
+                  {getItemDescription(item)}
+                </p>
+              )}
+            </div>
+
+            {/* Footer logic matched to Legacy ItemCard */}
+            <div className="flex justify-between items-center pt-3 border-t mt-2" style={{ borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}>
+              <span
+                className="font-bold text-xl"
+                style={{ color: colorPrimary }}
+              >
+                {formatPrice(item.price, item.currency || "USD", lang)}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onItemClick(item);
+                }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                style={{ backgroundColor: colorPrimary }}
+              >
+                <Plus size={20} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
         </motion.div>
       ))}

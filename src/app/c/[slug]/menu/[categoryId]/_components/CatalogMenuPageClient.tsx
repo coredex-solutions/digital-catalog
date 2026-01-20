@@ -83,7 +83,7 @@ export function CatalogMenuPageClient({
   // Loading state
   if (!isThemeLoaded) {
     return (
-      <div className="fixed inset-0 bg-white dark:bg-navy-900 flex items-center justify-center">
+      <div className="fixed inset-0 flex items-center justify-center" style={{ backgroundColor: 'var(--background-hex)' }}>
         <div
           className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin"
           style={{ borderColor: `${colorPrimary} transparent transparent transparent` }}
@@ -119,10 +119,11 @@ export function CatalogMenuPageClient({
   return (
     <div
       className={cn(
-        'min-h-screen bg-white dark:bg-navy-900 text-slate-900 dark:text-white transition-colors duration-300 relative bg-wood-pattern',
+        'min-h-screen transition-colors duration-300 relative bg-wood-pattern',
         font,
         dir === 'rtl' ? 'rtl' : 'ltr'
       )}
+      style={{ backgroundColor: 'var(--background-hex)', color: 'var(--text-primary)' }}
       dir={dir}
     >
       <SaasNavbar
@@ -141,13 +142,24 @@ export function CatalogMenuPageClient({
       />
 
       {/* Sticky Category Tabs (Legacy Style) */}
-      <div className="fixed top-[64px] left-0 right-0 z-30 bg-white/95 dark:bg-navy-900/95 backdrop-blur-lg border-b border-slate-100 dark:border-navy-800 shadow-sm transition-all duration-300">
-        <div className="max-w-4xl mx-auto flex items-center">
+      <div
+        className="fixed top-[64px] left-0 right-0 z-30 backdrop-blur-xl border-b shadow-sm transition-all duration-300"
+        style={{
+          backgroundColor: 'var(--navbar-bg)',
+          borderColor: 'var(--surface)'
+        }}
+      >
+        <div className="max-w-4xl mx-auto px-0.5 flex items-center">
           {/* Back Button */}
           <Link
             href={`/c/${catalog.slug}/categories`}
-            className="flex-shrink-0 w-12 h-12 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white border-e border-slate-100 dark:border-navy-800 bg-white dark:bg-navy-900 z-10"
-            style={{ [dir === "rtl" ? "borderLeft" : "borderRight"]: "1px solid rgba(0,0,0,0.05)" }}
+            className="flex-shrink-0 w-10 h-10 mx-1 flex items-center justify-center rounded-full border-e z-10"
+            style={{
+              backgroundColor: 'var(--surface)',
+              color: 'var(--text-muted)',
+              borderColor: 'rgba(var(--pattern-rgb), 0.08)',
+              [dir === "rtl" ? "borderLeft" : "borderRight"]: "1px solid rgba(var(--pattern-rgb), 0.08)"
+            }}
           >
             <ChevronLeft size={24} className={dir === "rtl" ? "rotate-180" : ""} />
           </Link>
@@ -155,7 +167,7 @@ export function CatalogMenuPageClient({
           {/* Scrollable Categories */}
           <div
             ref={categoryTabsRef}
-            className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3 items-center"
+            className="flex-1 flex gap-2 overflow-x-auto scrollbar-hide px-4 py-2 items-center"
           >
             {allCategories.map((cat) => {
               const isActive = cat.id === currentCategory.id;
@@ -168,9 +180,13 @@ export function CatalogMenuPageClient({
                     'flex-shrink-0 px-5 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap border',
                     isActive
                       ? 'text-white border-transparent shadow-md transform scale-105'
-                      : 'bg-white dark:bg-navy-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-navy-700 hover:border-slate-300 dark:hover:border-navy-600 hover:bg-slate-50 dark:hover:bg-navy-700'
+                      : 'hover:opacity-80'
                   )}
-                  style={isActive ? { backgroundColor: colorPrimary } : {}}
+                  style={isActive ? { backgroundColor: colorPrimary } : {
+                    backgroundColor: 'var(--surface)',
+                    color: 'var(--text-muted)',
+                    borderColor: 'rgba(var(--pattern-rgb), 0.08)'
+                  }}
                 >
                   {getCategoryName(cat)}
                 </Link>
@@ -181,8 +197,10 @@ export function CatalogMenuPageClient({
       </div>
 
       <main className="pt-32 pb-32 px-4 max-w-md mx-auto md:max-w-2xl lg:max-w-4xl relative z-10">
-        <h1 className="text-2xl font-bold mb-6">{getCategoryName(currentCategory)}</h1>
-        
+        <h1 className="text-2xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>
+          {getCategoryName(currentCategory)}
+        </h1>
+
         <SaasMenuFeed
           items={menuItems}
           lang={lang}

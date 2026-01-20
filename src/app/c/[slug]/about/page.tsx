@@ -56,7 +56,7 @@ export default async function AboutPage({ params, searchParams }: Props) {
     };
 
     return (
-        <div className={cn("min-h-screen bg-[#050505] text-white", font)} dir={dir}>
+        <div className={cn("min-h-screen bg-[var(--background-hex)] text-[var(--text-primary)]", font)} dir={dir}>
             {/* Visual background layers */}
             <div className="fixed inset-0 z-0 opacity-40 pointer-events-none">
                 <div className="absolute top-0 right-0 w-[80%] h-[40%] bg-gradient-to-l from-primary/10 to-transparent blur-3xl" style={{ '--tw-gradient-from': `${primaryColor}1a` } as any} />
@@ -68,12 +68,13 @@ export default async function AboutPage({ params, searchParams }: Props) {
                 <header className="flex items-center justify-between py-2">
                     <Link
                         href={`/c/${slug}?lang=${lang}`}
-                        className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white hover:text-black transition-all"
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all border hover:shadow-lg"
+                        style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.1)' }}
                     >
                         <ArrowLeft className={cn("w-5 h-5", lang === 'ar' && 'rotate-180')} />
                     </Link>
                     <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 leading-none mb-1">Brand Identity</span>
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] leading-none mb-1 opacity-30">Brand Identity</span>
                         <p className="font-bold text-sm tracking-tight">{catalog.name}</p>
                     </div>
                 </header>
@@ -99,10 +100,10 @@ export default async function AboutPage({ params, searchParams }: Props) {
                     <div className="space-y-6 px-1">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-[2px] bg-primary" style={{ backgroundColor: primaryColor }} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Our Story</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40">Our Story</span>
                         </div>
                         <div
-                            className="text-lg leading-[1.6] font-medium text-white/80 whitespace-pre-wrap"
+                            className="text-lg leading-[1.6] font-medium opacity-80 whitespace-pre-wrap"
                             style={{ fontFamily: 'inherit' }}
                         >
                             {aboutContent}
@@ -132,28 +133,30 @@ export default async function AboutPage({ params, searchParams }: Props) {
                     <div className="grid grid-cols-2 gap-4">
                         <a
                             href={`tel:${contact?.phone_primary}`}
-                            className="flex flex-col p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] hover:bg-white/[0.06] transition-all"
+                            className="flex flex-col p-6 rounded-[2rem] hover:shadow-lg transition-all border"
+                            style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.05)' }}
                         >
                             <Phone className="w-8 h-8 text-primary mb-4" style={{ color: primaryColor }} />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">{t.call[lang as keyof typeof t.call]}</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-30">{t.call[lang as keyof typeof t.call]}</span>
                             <p className="font-bold text-sm truncate">{contact?.phone_primary || '...'}</p>
                         </a>
                         <div
-                            className="flex flex-col p-6 bg-white/[0.03] border border-white/5 rounded-[2rem]"
+                            className="flex flex-col p-6 rounded-[2rem] border"
+                            style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.05)' }}
                         >
                             <Clock className="w-8 h-8 text-primary mb-4" style={{ color: primaryColor }} />
-                            <span className="text-[9px] font-black uppercase tracking-widest text-white/30 mb-1">{t.hours[lang as keyof typeof t.hours]}</span>
-                            <p className="font-bold text-sm text-emerald-400">Open Daily</p>
+                            <span className="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-30">{t.hours[lang as keyof typeof t.hours]}</span>
+                            <p className="font-bold text-sm text-emerald-500">Open Daily</p>
                         </div>
                     </div>
 
                     {/* Location Card */}
-                    <div className="flex items-center gap-6 p-6 bg-white/[0.03] border border-white/5 rounded-[2rem]">
+                    <div className="flex items-center gap-6 p-6 rounded-[2rem] border" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.05)' }}>
                         <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                             <MapPin className="w-6 h-6 text-primary" style={{ color: primaryColor }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-white/30 block mb-1">{t.location[lang as keyof typeof t.location]}</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest opacity-30 block mb-1">{t.location[lang as keyof typeof t.location]}</span>
                             <p className="font-bold text-sm truncate">{(contact as any)?.[`address_${lang}`] || catalog.name}</p>
                         </div>
                     </div>
@@ -161,13 +164,13 @@ export default async function AboutPage({ params, searchParams }: Props) {
 
                 {/* Dynamic CTA Footer */}
                 <footer className="pt-8 pb-12 flex flex-col items-center gap-8">
-                    <div className="flex items-center gap-4 text-white/10 uppercase font-black text-[9px] tracking-[0.6em]">
-                        <div className="h-[1px] w-8 bg-white/10" />
+                    <div className="flex items-center gap-4 opacity-10 uppercase font-black text-[9px] tracking-[0.6em]">
+                        <div className="h-[1px] w-8 bg-current" />
                         {catalog.name}
-                        <div className="h-[1px] w-8 bg-white/10" />
+                        <div className="h-[1px] w-8 bg-current" />
                     </div>
 
-                    <p className="text-[10px] text-white/20 font-medium">© 2026 Crafted with Passion</p>
+                    <p className="text-[10px] opacity-20 font-medium">© 2026 Crafted with Passion</p>
                 </footer>
             </main>
         </div>

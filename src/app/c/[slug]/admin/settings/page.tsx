@@ -24,6 +24,14 @@ import {
   Sparkles as SparklesIcon,
   Brain,
   Info as InfoIcon,
+  Moon,
+  Sun,
+  Smartphone,
+  Layout,
+  Home,
+  Utensils,
+  ChevronRight,
+  Globe,
 } from "lucide-react";
 import {
   compressImage,
@@ -49,6 +57,11 @@ interface Settings {
     color_surface: string;
     color_text: string;
     color_text_muted: string;
+    // Dark Mode specific colors
+    color_background_dark: string;
+    color_surface_dark: string;
+    color_text_dark: string;
+    color_text_muted_dark: string;
   };
   features: {
     booking_enabled: boolean;
@@ -110,34 +123,61 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<
     "appearance" | "contact" | "features" | "seo" | "about" | "ai"
   >("appearance");
+  const [previewMode, setPreviewMode] = useState<"light" | "dark">("dark");
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
 
-  useEffect(() => {
-    const fetchSettings = async () => {
-      const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-      if (!token) return;
+  const fetchSettings = async () => {
+    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
+    if (!token) return;
 
-      try {
-        const res = await fetch(`/api/c/${slug}/admin/settings`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    try {
+      const res = await fetch(`/api/c/${slug}/admin/settings`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        if (res.ok) {
-          const data = await res.json();
-          setSettings(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch settings:", error);
-      } finally {
-        setLoading(false);
+      if (res.ok) {
+        const data = await res.json();
+        setSettings(data);
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchSettings();
   }, [slug]);
+
+  // Live Preview Theme Injection
+  useEffect(() => {
+    if (!settings) return;
+    const root = document.documentElement;
+    const isDark = previewMode === "dark";
+
+    root.style.setProperty("--primary", settings.appearance.color_primary);
+    root.style.setProperty("--secondary", settings.appearance.color_secondary);
+    root.style.setProperty("--accent", settings.appearance.color_accent);
+
+    if (isDark) {
+      root.style.setProperty("--background-hex", settings.appearance.color_background_dark || "#0a0a0c");
+      root.style.setProperty("--surface", settings.appearance.color_surface_dark || "#121215");
+      root.style.setProperty("--text-primary", settings.appearance.color_text_dark || "#ffffff");
+      root.style.setProperty("--text-muted", settings.appearance.color_text_muted_dark || "rgba(255,255,255,0.4)");
+      root.classList.add("dark");
+    } else {
+      root.style.setProperty("--background-hex", settings.appearance.color_background || "#ffffff");
+      root.style.setProperty("--surface", settings.appearance.color_surface || "#f8fafc");
+      root.style.setProperty("--text-primary", settings.appearance.color_text || "#0f172a");
+      root.style.setProperty("--text-muted", settings.appearance.color_text_muted || "#64748b");
+      root.classList.remove("dark");
+    }
+  }, [settings, previewMode]);
+
 
   const handleSave = async () => {
     if (!settings) return;
@@ -426,103 +466,286 @@ export default function SettingsPage() {
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
               {/* Appearance Array */}
               {activeTab === "appearance" && (
-                <div className="space-y-8">
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-1">
-                      <ProImageUpload
-                        label="Catalog Logo"
-                        url={settings.catalog.logo_url}
-                        onUpload={(e) => handleImageUpload(e, "catalog", "logo_url")}
-                        onRemove={() => updateSettings("catalog", "logo_url", "")}
-                        hint="SVG / PNG"
-                      />
-                    </div>
-                    <div className="lg:col-span-2">
-                      <ProImageUpload
-                        label="Hero Cover"
-                        url={settings.appearance.hero_image_url}
-                        onUpload={(e) => handleImageUpload(e, "appearance", "hero_image_url")}
-                        onRemove={() => updateSettings("appearance", "hero_image_url", "")}
-                        aspect="video"
-                        hint="2048 x 1024 PX"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="glass-card p-10">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-10 opacity-50">Brand Colors</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                      <ColorInput
-                        label="Primary Color"
-                        value={settings.appearance.color_primary}
-                        onChange={(v) => updateSettings("appearance", "color_primary", v)}
-                      />
-                      <ColorInput
-                        label="Secondary Color"
-                        value={settings.appearance.color_secondary}
-                        onChange={(v) => updateSettings("appearance", "color_secondary", v)}
-                      />
-                      <ColorInput
-                        label="Accent Color"
-                        value={settings.appearance.color_accent}
-                        onChange={(v) => updateSettings("appearance", "color_accent", v)}
-                      />
-                      <ColorInput
-                        label="Background Color"
-                        value={settings.appearance.color_background}
-                        onChange={(v) => updateSettings("appearance", "color_background", v)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="glass-card p-10">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-10 opacity-50">Typography & Interface Colors</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                      <ColorInput
-                        label="Surface (Cards/Modals)"
-                        value={settings.appearance.color_surface}
-                        onChange={(v) => updateSettings("appearance", "color_surface", v)}
-                      />
-                      <ColorInput
-                        label="Primary Text"
-                        value={settings.appearance.color_text}
-                        onChange={(v) => updateSettings("appearance", "color_text", v)}
-                      />
-                      <ColorInput
-                        label="Muted Text"
-                        value={settings.appearance.color_text_muted}
-                        onChange={(v) => updateSettings("appearance", "color_text_muted", v)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="glass-card p-10">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-8 opacity-50">Background Pattern</h3>
-                    <ToggleSwitch
-                      label="Enable Pattern"
-                      description="Display a subtle geometric pattern on the background"
-                      checked={settings.appearance.bg_pattern_enabled}
-                      onChange={(v) => updateSettings("appearance", "bg_pattern_enabled", v)}
-                    />
-                    {settings.appearance.bg_pattern_enabled && (
-                      <div className="mt-8 animate-in slide-in-from-top-4">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-4 ml-2">Pattern Style</label>
-                        <div className="flex gap-4">
-                          {['geometric', 'dots', 'lines'].map(type => (
-                            <button
-                              key={type}
-                              onClick={() => updateSettings("appearance", "bg_pattern_type", type)}
-                              className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${settings.appearance.bg_pattern_type === type
-                                ? 'bg-primary border-primary text-white'
-                                : 'bg-white/5 border-white/5 text-white/30 hover:border-white/20'
-                                }`}
-                            >
-                              {type}
-                            </button>
-                          ))}
+                <div className="grid lg:grid-cols-12 gap-12 items-start">
+                  <div className="lg:col-span-8 space-y-8">
+                    {/* Theme Preview Switcher */}
+                    <div className="flex items-center justify-between p-8 bg-white/[0.03] border border-white/10 rounded-[2.5rem] mb-12">
+                      <div className="flex items-center gap-6">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 scale-110 shadow-2xl ${previewMode === 'dark' ? 'bg-indigo-500 text-white shadow-indigo-500/20' : 'bg-primary text-white shadow-primary/20'}`}>
+                          {previewMode === 'dark' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
+                        </div>
+                        <div>
+                          <h4 className="text-[12px] font-black text-white uppercase tracking-[0.3em]">Theme Preview</h4>
+                          <p className="text-white/30 text-[10px] font-medium uppercase tracking-widest mt-1">Currently viewing: {previewMode} mode</p>
                         </div>
                       </div>
-                    )}
+                      <div className="flex p-2 bg-black/20 rounded-2xl border border-white/5">
+                        <button
+                          onClick={() => setPreviewMode("light")}
+                          className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${previewMode === 'light' ? 'bg-white text-black shadow-xl' : 'text-white/40 hover:text-white'}`}
+                        >
+                          Light
+                        </button>
+                        <button
+                          onClick={() => setPreviewMode("dark")}
+                          className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${previewMode === 'dark' ? 'bg-white text-black shadow-xl' : 'text-white/40 hover:text-white'}`}
+                        >
+                          Dark
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      <div className="lg:col-span-1">
+                        <ProImageUpload
+                          label="Catalog Logo"
+                          url={settings.catalog.logo_url}
+                          onUpload={(e) => handleImageUpload(e, "catalog", "logo_url")}
+                          onRemove={() => updateSettings("catalog", "logo_url", "")}
+                          hint="SVG / PNG"
+                        />
+                      </div>
+                      <div className="lg:col-span-2">
+                        <ProImageUpload
+                          label="Hero Cover"
+                          url={settings.appearance.hero_image_url}
+                          onUpload={(e) => handleImageUpload(e, "appearance", "hero_image_url")}
+                          onRemove={() => updateSettings("appearance", "hero_image_url", "")}
+                          aspect="video"
+                          hint="2048 x 1024 PX"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="glass-card p-10">
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-10 opacity-50">Brand Colors</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <ColorInput
+                          label="Primary Color"
+                          value={settings.appearance.color_primary}
+                          onChange={(v) => updateSettings("appearance", "color_primary", v)}
+                        />
+                        <ColorInput
+                          label="Secondary Color"
+                          value={settings.appearance.color_secondary}
+                          onChange={(v) => updateSettings("appearance", "color_secondary", v)}
+                        />
+                        <ColorInput
+                          label="Accent Color"
+                          value={settings.appearance.color_accent}
+                          onChange={(v) => updateSettings("appearance", "color_accent", v)}
+                        />
+                        <ColorInput
+                          label="Background Color"
+                          value={settings.appearance.color_background}
+                          onChange={(v) => updateSettings("appearance", "color_background", v)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="glass-card p-10">
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-10 opacity-50">Typography & Interface Colors</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <ColorInput
+                          label="Surface (Cards/Modals)"
+                          value={settings.appearance.color_surface}
+                          onChange={(v) => updateSettings("appearance", "color_surface", v)}
+                        />
+                        <ColorInput
+                          label="Primary Text"
+                          value={settings.appearance.color_text}
+                          onChange={(v) => updateSettings("appearance", "color_text", v)}
+                        />
+                        <ColorInput
+                          label="Muted Text"
+                          value={settings.appearance.color_text_muted}
+                          onChange={(v) => updateSettings("appearance", "color_text_muted", v)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="glass-card p-10 border-indigo-500/20 bg-indigo-500/[0.02]">
+                      <div className="flex items-center gap-3 mb-10">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                          <Moon className="w-4 h-4 text-indigo-400" />
+                        </div>
+                        <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Dark Mode Specific Colors</h3>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <ColorInput
+                          label="Dark Background"
+                          value={settings.appearance.color_background_dark}
+                          onChange={(v) => updateSettings("appearance", "color_background_dark", v)}
+                        />
+                        <ColorInput
+                          label="Dark Surface"
+                          value={settings.appearance.color_surface_dark}
+                          onChange={(v) => updateSettings("appearance", "color_surface_dark", v)}
+                        />
+                        <ColorInput
+                          label="Dark Primary Text"
+                          value={settings.appearance.color_text_dark}
+                          onChange={(v) => updateSettings("appearance", "color_text_dark", v)}
+                        />
+                        <ColorInput
+                          label="Dark Muted Text"
+                          value={settings.appearance.color_text_muted_dark}
+                          onChange={(v) => updateSettings("appearance", "color_text_muted_dark", v)}
+                        />
+                      </div>
+                    </div>
+
+
+                    <div className="glass-card p-10">
+                      <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-8 opacity-50">Background Pattern</h3>
+                      <ToggleSwitch
+                        label="Enable Pattern"
+                        description="Display a subtle geometric pattern on the background"
+                        checked={settings.appearance.bg_pattern_enabled}
+                        onChange={(v) => updateSettings("appearance", "bg_pattern_enabled", v)}
+                      />
+                      {settings.appearance.bg_pattern_enabled && (
+                        <div className="mt-8 animate-in slide-in-from-top-4">
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-4 ml-2">Pattern Style</label>
+                          <div className="flex gap-4">
+                            {['geometric', 'dots', 'lines'].map(type => (
+                              <button
+                                key={type}
+                                onClick={() => updateSettings("appearance", "bg_pattern_type", type)}
+                                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${settings.appearance.bg_pattern_type === type
+                                  ? 'bg-primary border-primary text-white'
+                                  : 'bg-white/5 border-white/5 text-white/30 hover:border-white/20'
+                                  }`}
+                              >
+                                {type}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RIGHT COLUMN: Mobile Preview Mockup */}
+                  <div className="lg:col-span-4 sticky top-12 z-20 hidden lg:block">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                        <Smartphone className="w-4 h-4 text-emerald-400" />
+                      </div>
+                      <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] opacity-50">Real-time Preview</h3>
+                    </div>
+
+                    <div className="relative mx-auto w-full max-w-[320px] aspect-[9/19.5] rounded-[3.5rem] border-[10px] border-black shadow-2xl overflow-hidden ring-1 ring-white/10 bg-black">
+                      {/* Notch */}
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-b-2xl z-50 shadow-xl" />
+
+                      {/* Mockup Screen Content */}
+                      <div
+                        className={cn(
+                          "absolute inset-0 transition-colors duration-700 overflow-y-auto hide-scrollbar relative",
+                          settings.appearance.bg_pattern_enabled && "bg-wood-pattern"
+                        )}
+                        style={{ backgroundColor: previewMode === 'dark' ? settings.appearance.color_background_dark : settings.appearance.color_background }}
+                      >
+                        {/* Navbar Mockup - High Fidelity RTL */}
+                        <div
+                          className="sticky top-0 z-40 p-4 flex items-center justify-between backdrop-blur-md border-b"
+                          dir="rtl"
+                          style={{
+                            backgroundColor: previewMode === 'dark' ? `${settings.appearance.color_background_dark}F2` : `${settings.appearance.color_background}F2`,
+                            borderColor: 'rgba(255,255,255,0.05)'
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 px-2 rounded-full border flex items-center justify-center gap-1" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(255,255,255,0.05)' }}>
+                              <Globe size={10} className="text-white/40" />
+                              <span className="text-[8px] font-black text-white/40">AR</span>
+                            </div>
+                            <div className="w-8 h-8 rounded-full border flex items-center justify-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(255,255,255,0.05)' }}>
+                              {previewMode === 'dark' ? <Sun size={12} style={{ color: settings.appearance.color_primary }} /> : <Moon size={12} style={{ color: settings.appearance.color_primary }} />}
+                            </div>
+                          </div>
+
+                          <div className="h-10 w-auto">
+                            {settings.catalog.logo_url ? (
+                              <img src={settings.catalog.logo_url} className="h-full w-auto object-contain" style={{ filter: `drop-shadow(0 0 5px ${settings.appearance.color_primary}80)` }} />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: settings.appearance.color_primary }}>
+                                <InfoIcon size={14} className="text-white" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="w-8 h-8 rounded-full border flex items-center justify-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(255,255,255,0.05)' }}>
+                            <Home size={14} style={{ color: settings.appearance.color_primary }} />
+                          </div>
+                        </div>
+
+                        {/* Content Mockup - Category Grid Fidelity */}
+                        <div className="p-6 space-y-6" dir="rtl">
+                          <h1 className="text-2xl font-black text-right pr-2" style={{ color: previewMode === 'dark' ? settings.appearance.color_text_dark : settings.appearance.color_text }}>الأقسام</h1>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            {[
+                              { name: 'الأطباق الرئيسية' },
+                              { name: 'المقبلات' },
+                              { name: 'الحلويات' },
+                              { name: 'المشروبات' }
+                            ].map((cat, i) => (
+                              <div
+                                key={i}
+                                className="p-8 rounded-[2rem] flex flex-col items-center gap-5 border transition-all shadow-sm group"
+                                style={{
+                                  backgroundColor: previewMode === 'dark' ? settings.appearance.color_surface_dark : settings.appearance.color_surface,
+                                  borderColor: 'rgba(255,255,255,0.05)'
+                                }}
+                              >
+                                <div
+                                  className="w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-md"
+                                  style={{
+                                    backgroundColor: `${settings.appearance.color_primary}15`,
+                                    color: settings.appearance.color_primary,
+                                  }}
+                                >
+                                  <Utensils size={22} strokeWidth={1.5} />
+                                </div>
+                                <span
+                                  className="font-black text-[11px] text-center tracking-tight"
+                                  style={{ color: previewMode === 'dark' ? settings.appearance.color_text_dark : settings.appearance.color_text }}
+                                >
+                                  {cat.name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Footer Simulation */}
+                          <div
+                            className="mt-12 p-8 rounded-[3rem] border text-center space-y-5"
+                            style={{
+                              backgroundColor: previewMode === 'dark' ? settings.appearance.color_surface_dark : settings.appearance.color_surface,
+                              borderColor: 'rgba(255,255,255,0.05)'
+                            }}
+                          >
+                            <div className="w-3/4 h-2.5 rounded-full opacity-20 mx-auto" style={{ backgroundColor: previewMode === 'dark' ? settings.appearance.color_text_dark : settings.appearance.color_text }} />
+                            <div className="w-1/2 h-2.5 rounded-full opacity-10 mx-auto" style={{ backgroundColor: previewMode === 'dark' ? settings.appearance.color_text_dark : settings.appearance.color_text }} />
+                            <div className="pt-4 flex justify-center gap-4">
+                              {[1, 2, 3].map(i => (
+                                <div key={i} className="w-10 h-10 rounded-full border shadow-sm flex items-center justify-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(255,255,255,0.05)' }}>
+                                  <div className="w-5 h-5 rounded-full bg-white/5" />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 p-6 bg-white/[0.03] border border-white/10 rounded-3xl">
+                      <p className="text-[9px] font-black text-white/30 uppercase tracking-widest leading-relaxed text-center">
+                        This is a simulated preview. Actual rendering may vary slightly per device but will strictly follow your brand colors.
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
