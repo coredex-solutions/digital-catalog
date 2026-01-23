@@ -25,12 +25,12 @@ const PLATFORMS = [
     id: "instagram",
     name: "Instagram",
     icon: Instagram,
-    color: "bg-gradient-to-r from-purple-500 to-pink-500",
+    color: "bg-gradient-to-r from-purple-500 to-purple-500",
   },
-  { id: "facebook", name: "Facebook", icon: Facebook, color: "bg-blue-600" },
-  { id: "twitter", name: "Twitter", icon: Twitter, color: "bg-sky-500" },
-  { id: "youtube", name: "YouTube", icon: Youtube, color: "bg-red-600" },
-  { id: "linkedin", name: "LinkedIn", icon: Linkedin, color: "bg-blue-700" },
+  { id: "facebook", name: "Facebook", icon: Facebook, color: "bg-violet-600" },
+  { id: "twitter", name: "Twitter", icon: Twitter, color: "bg-purple-500" },
+  { id: "youtube", name: "YouTube", icon: Youtube, color: "bg-purple-600" },
+  { id: "linkedin", name: "LinkedIn", icon: Linkedin, color: "bg-violet-700" },
 ];
 
 export default function SocialMediaPage() {

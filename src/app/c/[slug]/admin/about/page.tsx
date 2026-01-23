@@ -476,7 +476,7 @@ export default function AboutSEOPage() {
         </div>
         <div className="bg-white rounded-xl p-4">
           <p className="text-xs text-gray-500 truncate mb-0.5">example.com/c/{slug}</p>
-          <h3 className="text-lg text-blue-700 hover:underline cursor-pointer truncate" style={{ fontFamily: "arial" }}>
+          <h3 className="text-lg text-violet-700 hover:underline cursor-pointer truncate" style={{ fontFamily: "arial" }}>
             {String(title).slice(0, 60)}
           </h3>
           <p className="text-sm text-gray-600 line-clamp-2 mt-1" style={{ fontFamily: "arial" }}>
@@ -506,7 +506,7 @@ export default function AboutSEOPage() {
             {/* Message */}
             {message && (
               <div className={`p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top ${
-                message.type === "success" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                message.type === "success" ? "bg-violet-500/10 text-violet-400" : "bg-purple-500/10 text-purple-400"
               }`}>
                 <CheckCircle2 className="w-5 h-5" />
                 <span className="text-sm font-medium">{message.text}</span>
@@ -568,7 +568,7 @@ export default function AboutSEOPage() {
                     <button
                       onClick={openAIWizard}
                       disabled={aiLoading}
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold hover:border-purple-400 transition-all"
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold hover:border-purple-400 transition-all"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       Generate with AI
@@ -607,7 +607,7 @@ export default function AboutSEOPage() {
                       <button 
                         onClick={() => !aiLoading && setShowSeoDropdown(!showSeoDropdown)}
                         disabled={aiLoading}
-                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-pink-500/10 text-purple-400 border border-purple-500/20 rounded-lg text-xs font-bold hover:border-purple-400 transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg text-xs font-bold hover:border-purple-400 transition-all disabled:opacity-50"
                       >
                         {aiLoading ? (
                           <>
@@ -637,7 +637,7 @@ export default function AboutSEOPage() {
                                 onClick={() => generateSEO([activeLang])}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                               >
-                                <div className="w-6 h-6 rounded bg-amber-500/20 flex items-center justify-center text-amber-400 text-xs font-bold">
+                                <div className="w-6 h-6 rounded bg-purple-500/20 flex items-center justify-center text-purple-400 text-xs font-bold">
                                   {activeLang.toUpperCase()}
                                 </div>
                                 <span>Current language only</span>
@@ -646,11 +646,11 @@ export default function AboutSEOPage() {
                                 onClick={() => generateSEO(["en", "ar", "fr"])}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
                               >
-                                <div className="w-6 h-6 rounded bg-gradient-to-r from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                                <div className="w-6 h-6 rounded bg-gradient-to-r from-purple-500/20 to-purple-500/20 flex items-center justify-center">
                                   <Globe className="w-3.5 h-3.5 text-purple-400" />
                                 </div>
                                 <span>All 3 languages</span>
-                                <span className="ml-auto text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">PRO</span>
+                                <span className="ml-auto text-[10px] text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">PRO</span>
                               </button>
                             </div>
                             <div className="p-1 border-t border-white/5">
@@ -751,7 +751,7 @@ export default function AboutSEOPage() {
                       </div>
                     </div>
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase"><Phone className="w-4 h-4" /> Contact</div>
+                      <div className="flex items-center gap-2 text-violet-400 text-xs font-bold uppercase"><Phone className="w-4 h-4" /> Contact</div>
                       <input type="text" value={schemaData.phone} onChange={(e) => updateSchema("phone", e.target.value)} className="w-full px-4 py-2.5 bg-white/[0.02] border border-white/5 rounded-lg text-white text-sm focus:outline-none focus:border-primary/50" placeholder="Phone Number" />
                       <div className="grid grid-cols-2 gap-3">
                         <select value={schemaData.priceRange} onChange={(e) => updateSchema("priceRange", e.target.value)} className="w-full px-4 py-2.5 bg-white/[0.02] border border-white/5 rounded-lg text-white text-sm focus:outline-none">
@@ -769,7 +769,7 @@ export default function AboutSEOPage() {
                     value={data.seo.json_ld_custom || ""}
                     onChange={(e) => updateSEO("json_ld_custom", e.target.value)}
                     rows={12}
-                    className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-emerald-500 font-mono text-xs focus:outline-none resize-none"
+                    className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-violet-500 font-mono text-xs focus:outline-none resize-none"
                     placeholder='{"@context": "https://schema.org", ...}'
                   />
                 )}
@@ -782,7 +782,7 @@ export default function AboutSEOPage() {
                 <div className="absolute top-0 left-0 right-0 bottom-0 w-full h-full bg-black/90 backdrop-blur-sm" onClick={closeWizard} />
                 <div className="glass w-full max-w-2xl rounded-2xl border border-white/10 relative z-10 shadow-2xl overflow-hidden animate-in zoom-in-95" dir="rtl">
                   {/* Header */}
-                  <div className="p-5 border-b border-white/5 bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+                  <div className="p-5 border-b border-white/5 bg-gradient-to-r from-purple-500/10 to-purple-500/10">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-purple-500/20 rounded-lg">
@@ -828,7 +828,7 @@ export default function AboutSEOPage() {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-xs text-white/40 mb-1.5 block">المدينة <span className="text-red-400">*</span></label>
+                            <label className="text-xs text-white/40 mb-1.5 block">المدينة <span className="text-purple-400">*</span></label>
                             <input type="text" value={businessDetails.city} onChange={(e) => setBusinessDetails({ ...businessDetails, city: e.target.value })} className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-purple-500/50 text-right" placeholder="مثال: دبي" />
                           </div>
                           <div>
@@ -885,7 +885,7 @@ export default function AboutSEOPage() {
                                 <p className="text-xs text-white/40 mb-2">المحدد: {selectedKeywords.length}</p>
                                 <div className="flex flex-wrap gap-2">
                                   {selectedKeywords.map((kw, i) => (
-                                    <span key={i} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs flex items-center gap-1">
+                                    <span key={i} className="px-2 py-1 bg-violet-500/20 text-violet-400 rounded text-xs flex items-center gap-1">
                                       {kw}
                                       <button onClick={() => toggleKeyword(kw)}>×</button>
                                     </span>
@@ -924,7 +924,7 @@ export default function AboutSEOPage() {
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
+                            <CheckCircle2 className="w-12 h-12 text-violet-500 mx-auto mb-4" />
                             <h4 className="text-lg font-bold text-white mb-2">تم إنشاء المحتوى!</h4>
                             <p className="text-sm text-white/40 mb-6">راجع المحتوى الجديد وعدّله حسب الحاجة.</p>
                             <button onClick={closeWizard} className="px-6 py-2.5 bg-primary text-white rounded-lg font-medium hover:shadow-lg">

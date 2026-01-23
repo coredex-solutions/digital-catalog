@@ -344,7 +344,7 @@ export default function SettingsPage() {
                 </label>
                 <button
                   onClick={onRemove}
-                  className="w-14 h-14 bg-red-500 text-white rounded-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl"
+                  className="w-14 h-14 bg-purple-500 text-white rounded-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -423,8 +423,8 @@ export default function SettingsPage() {
         {message && (
           <div
             className={`mb-8 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border animate-in slide-in-from-top-4 duration-500 ${message.type === "success"
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : "bg-red-500/10 text-red-400 border-red-500/20"
+              ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
+              : "bg-purple-500/10 text-purple-400 border-purple-500/20"
               }`}
           >
             {message.text}
@@ -471,7 +471,7 @@ export default function SettingsPage() {
                     {/* Theme Preview Switcher */}
                     <div className="flex items-center justify-between p-8 bg-white/[0.03] border border-white/10 rounded-[2.5rem] mb-12">
                       <div className="flex items-center gap-6">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 scale-110 shadow-2xl ${previewMode === 'dark' ? 'bg-indigo-500 text-white shadow-indigo-500/20' : 'bg-primary text-white shadow-primary/20'}`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 scale-110 shadow-2xl ${previewMode === 'dark' ? 'bg-violet-500 text-white shadow-violet-500/20' : 'bg-primary text-white shadow-primary/20'}`}>
                           {previewMode === 'dark' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
                         </div>
                         <div>
@@ -564,10 +564,10 @@ export default function SettingsPage() {
                       </div>
                     </div>
 
-                    <div className="glass-card p-10 border-indigo-500/20 bg-indigo-500/[0.02]">
+                    <div className="glass-card p-10 border-violet-500/20 bg-violet-500/[0.02]">
                       <div className="flex items-center gap-3 mb-10">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                          <Moon className="w-4 h-4 text-indigo-400" />
+                        <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                          <Moon className="w-4 h-4 text-violet-400" />
                         </div>
                         <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Dark Mode Specific Colors</h3>
                       </div>
@@ -629,8 +629,8 @@ export default function SettingsPage() {
                   {/* RIGHT COLUMN: Mobile Preview Mockup */}
                   <div className="lg:col-span-4 sticky top-12 z-20 hidden lg:block">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                        <Smartphone className="w-4 h-4 text-emerald-400" />
+                      <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                        <Smartphone className="w-4 h-4 text-violet-400" />
                       </div>
                       <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] opacity-50">Real-time Preview</h3>
                     </div>
@@ -1020,12 +1020,12 @@ export default function SettingsPage() {
                         />
                       </div>
                     </div>
-                    <div className="p-8 bg-emerald-500/5 border border-emerald-500/10 rounded-3xl flex items-center gap-6">
-                      <div className="w-12 h-12 bg-emerald-500 rounded-2xl flex items-center justify-center text-white">
+                    <div className="p-8 bg-violet-500/5 border border-violet-500/10 rounded-3xl flex items-center gap-6">
+                      <div className="w-12 h-12 bg-violet-500 rounded-2xl flex items-center justify-center text-white">
                         <SparklesIcon className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">AI Status</p>
+                        <p className="text-[10px] font-black text-violet-400 uppercase tracking-widest">AI Status</p>
                         <p className="text-white/40 text-[10px] font-medium leading-relaxed mt-1">
                           {settings.features.ai_waiter_enabled
                             ? "Your AI assistant is currently active and helping customers."

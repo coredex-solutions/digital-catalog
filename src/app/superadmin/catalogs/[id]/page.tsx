@@ -212,13 +212,13 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         {/* Top Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="glass p-5 rounded-3xl border border-white/5 relative overflow-hidden group">
-            <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${catalog.is_suspended ? 'from-red-500' : 'from-primary'} opacity-5 blur-2xl rounded-full translate-x-1/3 -translate-y-1/3`} />
+            <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${catalog.is_suspended ? 'from-purple-500' : 'from-primary'} opacity-5 blur-2xl rounded-full translate-x-1/3 -translate-y-1/3`} />
             <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-3">Status</p>
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${catalog.is_suspended ? 'bg-red-500/10 text-red-500' : 'bg-primary/10 text-primary'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${catalog.is_suspended ? 'bg-purple-500/10 text-purple-500' : 'bg-primary/10 text-primary'}`}>
                 {catalog.is_suspended ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
               </div>
-              <span className={`text-xl font-bold tracking-tight ${catalog.is_suspended ? "text-red-400" : "text-white"}`}>
+              <span className={`text-xl font-bold tracking-tight ${catalog.is_suspended ? "text-purple-400" : "text-white"}`}>
                 {catalog.is_suspended ? "Suspended" : "Active"}
               </span>
             </div>
@@ -227,7 +227,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
           <div className="glass p-5 rounded-3xl border border-white/5">
             <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-3">Plan</p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center">
                 <CreditCard className="w-5 h-5" />
               </div>
               <span className="text-xl font-bold text-white tracking-tight capitalize">
@@ -251,7 +251,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
           <div className="glass p-5 rounded-3xl border border-white/5">
             <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-3">Product Count</p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
                 <Store className="w-5 h-5" />
               </div>
               <span className="text-2xl font-bold text-white tracking-tight">{counts?.items || 0}</span>
@@ -338,7 +338,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   ))}
                   
                   {/* AI Usage Display */}
-                  <div className="mt-6 p-6 bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-[2rem]">
+                  <div className="mt-6 p-6 bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-[2rem]">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
@@ -361,7 +361,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                       </div>
                       <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-1000"
+                          className="h-full bg-gradient-to-r from-purple-500 to-violet-500 transition-all duration-1000"
                           style={{ width: `${Math.min(100, ((catalog.ai_image_enhancement_used || 0) / (catalog.ai_image_enhancement_limit || 10)) * 100)}%` }}
                         />
                       </div>
@@ -482,38 +482,38 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
             
             <div className="lg:col-span-2 pt-10 mt-4">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
+                  <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
                     <ShieldAlert className="w-4 h-4" />
                   </div>
                   <h4 className="text-white font-bold tracking-tight">Danger Zone</h4>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between glass border border-red-500/20 p-6 rounded-[2rem] bg-red-500/[0.02]">
+                  <div className="flex items-center justify-between glass border border-purple-500/20 p-6 rounded-[2rem] bg-purple-500/[0.02]">
                     <div>
-                      <p className="text-red-400 font-bold tracking-tight">Catalog Visibility</p>
-                      <p className="text-red-400/40 text-[10px] font-bold uppercase tracking-widest">Disable or enable public access</p>
+                      <p className="text-purple-400 font-bold tracking-tight">Catalog Visibility</p>
+                      <p className="text-purple-400/40 text-[10px] font-bold uppercase tracking-widest">Disable or enable public access</p>
                     </div>
                     <button
                       onClick={() => setEditForm({ ...editForm, is_suspended: !editForm.is_suspended })}
                       className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-widest ${
                         editForm.is_suspended
                           ? "bg-primary text-white shadow-lg shadow-primary/20"
-                          : "bg-red-500/20 text-red-400 border border-red-500/20 hover:bg-red-500/30"
+                          : "bg-purple-500/20 text-purple-400 border border-purple-500/20 hover:bg-purple-500/30"
                       }`}
                     >
                       {editForm.is_suspended ? "Activate" : "Suspend"}
                     </button>
                   </div>
                   
-                  <div className="flex items-center justify-between glass border border-white/5 p-6 rounded-[2rem] hover:border-red-500/20 transition-colors group/del">
+                  <div className="flex items-center justify-between glass border border-white/5 p-6 rounded-[2rem] hover:border-purple-500/20 transition-colors group/del">
                     <div>
-                      <p className="text-white/40 group-hover:text-red-400 font-bold tracking-tight transition-colors">Delete Catalog</p>
+                      <p className="text-white/40 group-hover:text-purple-400 font-bold tracking-tight transition-colors">Delete Catalog</p>
                       <p className="text-white/20 text-[10px] font-bold uppercase tracking-widest">Permanently remove all data</p>
                     </div>
                     <button
                        onClick={handleDelete}
-                       className="p-3 rounded-xl bg-white/5 text-white/30 hover:bg-red-500 hover:text-white transition-all border border-white/5"
+                       className="p-3 rounded-xl bg-white/5 text-white/30 hover:bg-purple-500 hover:text-white transition-all border border-white/5"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -521,8 +521,8 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 {error && (
-                  <div className="mt-8 bg-red-500/10 border border-red-500/20 rounded-2xl px-5 py-4 text-red-400 text-sm font-medium flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  <div className="mt-8 bg-purple-500/10 border border-purple-500/20 rounded-2xl px-5 py-4 text-purple-400 text-sm font-medium flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
                     {error}
                   </div>
                 )}

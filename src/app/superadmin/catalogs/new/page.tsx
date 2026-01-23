@@ -187,8 +187,8 @@ export default function NewCatalogPage() {
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-5 py-4 text-red-400 mb-8 flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl px-5 py-4 text-purple-400 mb-8 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
               <p className="text-sm font-medium">{error}</p>
             </div>
           )}
@@ -471,7 +471,7 @@ export default function NewCatalogPage() {
                 </div>
 
                 {formData.admin_email && formData.admin_password && formData.admin_password.length < 8 && (
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 text-amber-500 text-[10px] font-bold uppercase tracking-widest animate-pulse">
+                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3 text-purple-500 text-[10px] font-bold uppercase tracking-widest animate-pulse">
                     Security Policy Violation: Access Key Too Short
                   </div>
                 )}

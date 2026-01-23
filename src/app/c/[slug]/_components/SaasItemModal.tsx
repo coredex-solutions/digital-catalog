@@ -32,7 +32,7 @@ export function SaasItemModal({
   lang,
   onClose,
   onAddToCart,
-  colorPrimary = "#fead1d",
+  colorPrimary = "#8b5cf6",
 }: SaasItemModalProps) {
   const [quantity, setQuantity] = useState(1);
   const dir = lang === "ar" ? "rtl" : "ltr";

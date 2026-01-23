@@ -320,7 +320,7 @@ export default function FAQsPage() {
                         </button>
                         <button
                           onClick={() => handleDelete(faq.id)}
-                          className="p-2 sm:p-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+                          className="p-2 sm:p-2.5 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg transition-colors"
                           aria-label="Delete FAQ"
                         >
                           <Trash2 size={18} />

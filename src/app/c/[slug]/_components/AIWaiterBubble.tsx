@@ -569,7 +569,7 @@ export default function AIWaiterBubble() {
               onClick={toggleRecording}
               title={t.voiceInputTitle}
               className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-300 ${isRecording
-                ? 'bg-red-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] scale-105'
+                ? 'bg-purple-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] scale-105'
                 : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white'
                 }`}
             >

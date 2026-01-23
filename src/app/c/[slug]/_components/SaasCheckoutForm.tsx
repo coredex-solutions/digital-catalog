@@ -38,7 +38,7 @@ export function SaasCheckoutForm({
   cartTotal,
   catalogName,
   contact,
-  colorPrimary = "#fead1d",
+  colorPrimary = "#8b5cf6",
 }: SaasCheckoutFormProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");

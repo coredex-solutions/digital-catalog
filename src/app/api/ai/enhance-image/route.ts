@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-// Nano Banana model for image generation/editing
-const GEMINI_IMAGE_MODEL = "gemini-2.0-flash";
+// Nano Banana (Gemini 2.0) for high-end image generation/editing
+const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
+
+const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY || "");
 
 interface EnhanceRequest {
   imageBase64?: string;
   imageUrl?: string;
   mimeType?: string;
-  style?: "professional" | "studio" | "clean" | "vibrant";
+  style?: "professional" | "vibrant" | "clean";
   productType?: string;
   catalogId: string;
 }
@@ -46,9 +49,9 @@ async function checkAndUpdateLimit(catalogId: string): Promise<{ allowed: boolea
     }
 
     if (used >= limit) {
-      return { 
-        allowed: false, 
-        remaining: 0, 
+      return {
+        allowed: false,
+        remaining: 0,
         limit,
         error: `تم استنفاد رصيد التحسين بالذكاء الاصطناعي (${limit}/${limit}). تواصل مع المسؤول لزيادة الرصيد.`
       };
@@ -82,22 +85,17 @@ export async function POST(request: NextRequest) {
     let { imageBase64, mimeType, style = "professional", productType = "food", catalogId } = body;
     const { imageUrl } = body;
 
-    // If URL provided, fetch server-side
+    // Fetch Image if URL is provided
     if (!imageBase64 && imageUrl) {
       try {
-        console.log("Fetching image from URL:", imageUrl);
         const imageRes = await fetch(imageUrl);
         if (!imageRes.ok) throw new Error(`Failed to fetch: ${imageRes.statusText}`);
         const arrayBuffer = await imageRes.arrayBuffer();
         imageBase64 = Buffer.from(arrayBuffer).toString("base64");
         mimeType = imageRes.headers.get("content-type") || "image/jpeg";
-        console.log("Image fetched successfully, type:", mimeType);
       } catch (fetchError: any) {
         console.error("Failed to fetch image:", fetchError);
-        return NextResponse.json(
-          { error: "فشل تحميل الصورة. تأكد من أن الرابط صحيح." },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: "فشل تحميل الصورة الأصلي" }, { status: 400 });
       }
     }
 
@@ -117,91 +115,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build prompt - balance between preservation and enhancement
-    const styleGuide = style === "vibrant" 
-      ? "rich saturated colors, dramatic lighting, high contrast" 
-      : style === "clean" 
-        ? "soft natural lighting, minimal shadows, clean aesthetic" 
-        : "professional studio lighting, balanced colors, commercial quality";
+    // Advanced prompt for Gemini 2.0 Commercial Photography
+    const styleGuide = style === "vibrant"
+      ? "rich saturated colors, dramatic three-point studio lighting, high contrast"
+      : style === "clean"
+        ? "soft natural daylight, minimalist high-key aesthetic, clean whites"
+        : "balanced professional studio lighting, commercial quality, neutral grading";
 
-    const prompt = `Transform this ${productType} photo into a professional ${productType === "food" ? "food photography" : "product photography"} shot.
+    const prompt = `You are a master professional ${productType} photographer.
+Task: Re-generate this amateur photo into a luxury commercial studio photograph.
 
-KEEP: The exact same ${productType === "food" ? "dish, ingredients, and plating" : "product and its features"}
-CHANGE: Everything else to make it look professional
+CRITICAL REQUIREMENTS:
+1. COMPLETION: If the item is cut off at the edges, you MUST complete it. Show the FULL object (plate, bottle, etc.) perfectly centered.
+2. FRAMING: Leave professional breathing space (padding) around the entire item. It must not touch the frame edges.
+3. ULTRA-REALISM: Result must look like an 8K high-resolution photograph taken with a medium-format camera (Hasselblad style). No cartoon/illusration textures.
+4. LIGHTING: Use high-end ${styleGuide}. Ensure realistic specular highlights and soft contact shadows.
+5. PRESERVATION: Keep the ID and core features of the item exactly as seen. Do not hallucinate new ingredients.
+6. DEPTH: Use f/1.8 aperture for a creamy, beautiful depth-of-field background blur.
 
-Improvements to make:
-- Replace the background with a clean, professional ${productType === "food" ? "restaurant/studio" : "studio"} setting
-- Add professional ${styleGuide}
-- Make it look like it was shot by a professional photographer with a high-end camera
-- Enhance the ${productType === "food" ? "food to look more appetizing and delicious" : "product to look premium and desirable"}
-- Add subtle depth of field (blur background slightly)
-- Make colors more ${style === "vibrant" ? "vibrant and rich" : "balanced and appealing"}
+The final output must be just the image.`;
 
-The final image should look like a ${productType === "food" ? "restaurant menu photo or food advertisement" : "catalog or advertisement photo"}.`;
+    console.log("Calling Nano Banana (Gemini 2.0) with @google/generative-ai library...");
 
-    console.log("Calling Nano Banana API with model:", GEMINI_IMAGE_MODEL);
-
-    // Call Nano Banana (Gemini) API for image generation/editing
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/${GEMINI_IMAGE_MODEL}:generateContent?key=${GOOGLE_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                },
-                {
-                  inlineData: {
-                    mimeType: mimeType || "image/jpeg",
-                    data: imageBase64
-                  }
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            responseModalities: ["TEXT", "IMAGE"]
-          }
-        }),
+    // Initialize the model with the correct configuration for multimodal output
+    const model = genAI.getGenerativeModel({
+      model: GEMINI_IMAGE_MODEL,
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+        // @ts-ignore - responseModalities is currently experimental/beta in the library but required for Nano Banana
+        responseModalities: ["IMAGE"]
       }
-    );
+    });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Nano Banana API error:", errorText);
-      
-      // Parse error for better message
-      try {
-        const errorJson = JSON.parse(errorText);
-        if (errorJson.error?.message) {
-          return NextResponse.json(
-            { error: `خطأ في الذكاء الاصطناعي: ${errorJson.error.message}` },
-            { status: 400 }
-          );
+    const result = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          mimeType: mimeType || "image/jpeg",
+          data: imageBase64
         }
-      } catch {}
-      
-      return NextResponse.json(
-        { error: "فشل تحسين الصورة. حاول مرة أخرى." },
-        { status: 500 }
-      );
-    }
+      }
+    ]);
 
-    const result = await response.json();
-    console.log("Nano Banana response received");
-
-    // Extract the generated image from the response
-    const candidates = result.candidates;
+    const candidates = result.response.candidates;
     if (candidates && candidates[0]?.content?.parts) {
       for (const part of candidates[0].content.parts) {
         if (part.inlineData) {
-          console.log("Enhanced image received successfully");
           return NextResponse.json({
             success: true,
             enhancedImage: {
@@ -215,15 +175,14 @@ The final image should look like a ${productType === "food" ? "restaurant menu p
       }
     }
 
-    // If no image was generated
-    console.log("No image in response:", JSON.stringify(result).slice(0, 500));
+    // Fallback if the image modality wasn't returned
     return NextResponse.json(
-      { error: "لم يتمكن الذكاء الاصطناعي من تحسين الصورة. جرب صورة مختلفة أو نمط مختلف." },
-      { status: 400 }
+      { error: "لم يتم استلام صورة من الذكاء الاصطناعي. قد تكون ميزة Nano Banana غير مفعلة لهذا المفتاح." },
+      { status: 500 }
     );
 
   } catch (error: any) {
-    console.error("Image enhancement error:", error);
+    console.error("Gemini library error:", error);
     return NextResponse.json(
       { error: error.message || "فشل تحسين الصورة. حاول مرة أخرى." },
       { status: 500 }
@@ -231,7 +190,6 @@ The final image should look like a ${productType === "food" ? "restaurant menu p
   }
 }
 
-// GET endpoint to check remaining limit
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const catalogId = searchParams.get("catalogId");
@@ -263,9 +221,9 @@ export async function GET(request: NextRequest) {
       used = 0;
     }
 
-    return NextResponse.json({ 
-      remaining: Math.max(0, limit - used), 
-      limit, 
+    return NextResponse.json({
+      remaining: Math.max(0, limit - used),
+      limit,
       used,
       resetsAt: currentMonth
     });

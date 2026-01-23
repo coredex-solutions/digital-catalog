@@ -50,7 +50,7 @@ export function CatalogCategoriesClient({
   const [isThemeLoaded, setIsThemeLoaded] = useState(false);
 
   const storagePrefix = `catalog_${slug}_`;
-  const colorPrimary = settings?.color_primary || '#fead1d';
+  const colorPrimary = settings?.color_primary || '#8b5cf6';
   const supportedLanguages = parseEnabledLanguages(settings?.enabled_languages);
 
   // Load from localStorage

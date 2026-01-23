@@ -90,7 +90,7 @@ export default function CatalogsPage() {
   const getStatusBadge = (catalog: CatalogItem) => {
     if (catalog.is_suspended) {
       return (
-        <span className="text-xs px-2 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+        <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
           Suspended
         </span>
       );
@@ -103,7 +103,7 @@ export default function CatalogsPage() {
       );
     }
     return (
-      <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_-3px_rgb(16,185,129)]">
+      <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 shadow-[0_0_10px_-3px_rgb(16,185,129)]">
         Active
       </span>
     );
@@ -170,7 +170,7 @@ export default function CatalogsPage() {
             {!search && filter === "all" && (
               <Link
                 href="/superadmin/catalogs/new"
-                className="inline-flex items-center gap-2 mt-4 text-emerald-400 hover:text-emerald-300"
+                className="inline-flex items-center gap-2 mt-4 text-violet-400 hover:text-violet-300"
               >
                 <Plus className="w-5 h-5" />
                 Create your first catalog

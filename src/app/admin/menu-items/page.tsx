@@ -332,7 +332,7 @@ export default function MenuItemsPage() {
                             )}
                           </div>
                           {!item.is_active && (
-                            <span className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg ml-2">
+                            <span className="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg ml-2">
                               Inactive
                             </span>
                           )}
@@ -351,7 +351,7 @@ export default function MenuItemsPage() {
                             </button>
                             <button
                               onClick={() => handleDelete(item.id)}
-                              className="flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                              className="flex items-center justify-center gap-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-3 py-2 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors"
                             >
                               <Trash2 size={16} />
                               <span className="hidden sm:inline">Delete</span>

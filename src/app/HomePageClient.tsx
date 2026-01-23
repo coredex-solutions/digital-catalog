@@ -37,7 +37,7 @@ export function HomePageClient({
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-600 dark:text-slate-400 font-medium">
             Loading...
           </p>

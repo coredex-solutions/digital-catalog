@@ -78,8 +78,8 @@ export function CatalogMenuClient({
   const [isThemeLoaded, setIsThemeLoaded] = useState(false);
 
   const storagePrefix = `catalog_${slug}_`;
-  const colorPrimary = settings?.color_primary || '#fead1d';
-  const colorAccent = settings?.color_accent || '#F7C948';
+  const colorPrimary = settings?.color_primary || '#8b5cf6';
+  const colorAccent = settings?.color_accent || '#c084fc';
   const supportedLanguages = parseEnabledLanguages(settings?.enabled_languages);
   const whatsappEnabled = settings?.whatsapp_order_enabled ?? true;
   const whatsappNumber = contact?.phone_whatsapp;

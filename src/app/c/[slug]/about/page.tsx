@@ -44,7 +44,7 @@ export default async function AboutPage({ params, searchParams }: Props) {
     const aboutContent = (settings as any)?.[`about_content_${lang}`] || catalog.description;
     const dir = lang === "ar" ? "rtl" : "ltr";
     const font = lang === "ar" ? "font-cairo" : "font-inter";
-    const primaryColor = settings?.color_primary || "#fead1d";
+    const primaryColor = settings?.color_primary || "#8b5cf6";
 
     const t = {
         back: { ar: 'الرجوع', en: 'Back', fr: 'Retour' },
@@ -146,7 +146,7 @@ export default async function AboutPage({ params, searchParams }: Props) {
                         >
                             <Clock className="w-8 h-8 text-primary mb-4" style={{ color: primaryColor }} />
                             <span className="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-30">{t.hours[lang as keyof typeof t.hours]}</span>
-                            <p className="font-bold text-sm text-emerald-500">Open Daily</p>
+                            <p className="font-bold text-sm text-violet-500">Open Daily</p>
                         </div>
                     </div>
 

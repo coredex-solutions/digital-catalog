@@ -82,7 +82,7 @@ function StatCard({
                 {value}
               </h3>
               {trend && (
-                <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-md border border-emerald-400/20">
+                <span className="text-[10px] font-bold text-violet-400 bg-violet-400/10 px-1.5 py-0.5 rounded-md border border-violet-400/20">
                   {trend}
                 </span>
               )}
@@ -242,7 +242,7 @@ export default function SuperAdminDashboard() {
               {/* Expiring Soon */}
               <div className="glass rounded-[2.5rem] border border-white/5 overflow-hidden">
                 <div className="px-8 py-6 border-b border-white/5 flex items-center gap-3 bg-white/[0.02]">
-                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  <AlertTriangle className="w-4 h-4 text-purple-500" />
                   <h2 className="text-sm font-black text-white uppercase tracking-widest">Expiring Soon</h2>
                 </div>
                 <div className="p-2">
@@ -258,7 +258,7 @@ export default function SuperAdminDashboard() {
                           className="flex items-center justify-between p-6 hover:bg-white/[0.03] rounded-2xl transition-all group"
                         >
                           <div className="flex items-center gap-4">
-                            <div className={`w-2 h-2 rounded-full ${daysLeft <= 7 ? "bg-red-500 animate-pulse" : "bg-amber-500"}`} />
+                            <div className={`w-2 h-2 rounded-full ${daysLeft <= 7 ? "bg-purple-500 animate-pulse" : "bg-purple-500"}`} />
                             <div>
                               <p className="font-bold text-white tracking-tight">{catalog.name}</p>
                               <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mt-1">{catalog.slug}</p>
@@ -266,8 +266,8 @@ export default function SuperAdminDashboard() {
                           </div>
                           <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest ${
                             daysLeft <= 7 
-                              ? "bg-red-500/10 text-red-500 border border-red-500/20"
-                              : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                              ? "bg-purple-500/10 text-purple-500 border border-purple-500/20"
+                              : "bg-purple-500/10 text-purple-500 border border-purple-500/20"
                           }`}>
                             {daysLeft} days left
                           </span>
@@ -312,8 +312,8 @@ export default function SuperAdminDashboard() {
                       <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Active catalogs</span>
                     </div>
                     {sub.expired > 0 && (
-                      <div className="mt-6 flex items-center gap-2 text-red-500/60 font-black text-[10px] uppercase tracking-widest">
-                        <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                      <div className="mt-6 flex items-center gap-2 text-purple-500/60 font-black text-[10px] uppercase tracking-widest">
+                        <div className="w-1.5 h-1.5 rounded-full bg-purple-500" />
                         {sub.expired} Expired
                       </div>
                     )}

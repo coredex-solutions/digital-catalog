@@ -75,7 +75,7 @@ export default function CatalogAdminLoginPage() {
           
           <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-2xl px-5 py-4 text-red-400 text-[10px] font-black uppercase tracking-widest animate-in shake duration-500">
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl px-5 py-4 text-purple-400 text-[10px] font-black uppercase tracking-widest animate-in shake duration-500">
                 {error}
               </div>
             )}

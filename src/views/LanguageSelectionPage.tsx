@@ -29,7 +29,7 @@ export function LanguageSelectionPage({ onSelect }: LanguageSelectionPageProps) 
               key={l.code}
               onClick={() => onSelect(l.code as Language)}
               className={cn(
-                "py-4 px-8 border border-white/20 rounded-xl text-xl hover:bg-white/10 transition-all duration-300 hover:border-orange-500 hover:text-orange-500",
+                "py-4 px-8 border border-white/20 rounded-xl text-xl hover:bg-white/10 transition-all duration-300 hover:border-purple-500 hover:text-purple-500",
                 l.font
               )}
             >

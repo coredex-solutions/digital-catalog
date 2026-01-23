@@ -79,10 +79,10 @@ export default function AnalyticsPage() {
     color?: "emerald" | "blue" | "amber" | "purple";
   }) => {
     const colors = {
-      emerald: "from-emerald-500 to-teal-600",
-      blue: "from-blue-500 to-indigo-600",
-      amber: "from-amber-500 to-orange-600",
-      purple: "from-purple-500 to-pink-600",
+      emerald: "from-violet-500 to-violet-600",
+      blue: "from-violet-500 to-violet-600",
+      amber: "from-purple-500 to-purple-600",
+      purple: "from-purple-500 to-purple-600",
     };
 
     const isPositive = change >= 0;
@@ -98,8 +98,8 @@ export default function AnalyticsPage() {
           <div
             className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
               isPositive
-                ? "bg-emerald-500/10 text-emerald-400"
-                : "bg-red-500/10 text-red-400"
+                ? "bg-violet-500/10 text-violet-400"
+                : "bg-purple-500/10 text-purple-400"
             }`}
           >
             {isPositive ? (
@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
                 onClick={() => setDateRange(range)}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   dateRange === range
-                    ? "bg-emerald-500 text-white"
+                    ? "bg-violet-500 text-white"
                     : "text-slate-400 hover:text-white"
                 }`}
               >
@@ -143,7 +143,7 @@ export default function AnalyticsPage() {
       <SuperAdminContent>
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
           </div>
         ) : stats ? (
           <div className="space-y-8">
@@ -176,7 +176,7 @@ export default function AnalyticsPage() {
             <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-700/50">
                 <h3 className="font-semibold text-white flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-500" />
+                  <TrendingUp className="w-5 h-5 text-violet-500" />
                   Top Performing Catalogs
                 </h3>
               </div>
@@ -218,11 +218,11 @@ export default function AnalyticsPage() {
                             <span
                               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                                 index === 0
-                                  ? "bg-amber-500 text-black"
+                                  ? "bg-purple-500 text-black"
                                   : index === 1
                                   ? "bg-slate-400 text-black"
                                   : index === 2
-                                  ? "bg-amber-700 text-white"
+                                  ? "bg-purple-700 text-white"
                                   : "bg-slate-700 text-slate-400"
                               }`}
                             >
@@ -257,7 +257,7 @@ export default function AnalyticsPage() {
             {/* Simple Chart Placeholder */}
             <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
               <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-emerald-500" />
+                <BarChart3 className="w-5 h-5 text-violet-500" />
                 Daily Performance
               </h3>
               <div className="h-64 flex items-center justify-center text-slate-500">

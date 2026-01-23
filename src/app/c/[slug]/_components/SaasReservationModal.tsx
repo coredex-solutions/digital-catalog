@@ -25,7 +25,7 @@ interface SaasReservationModalProps {
 export function SaasReservationModal({
   lang,
   onClose,
-  colorPrimary = "#fead1d", // Default primary
+  colorPrimary = "#8b5cf6", // Default primary
 }: SaasReservationModalProps) {
   const [step, setStep] = useState<"form" | "success">("form");
   const [loading, setLoading] = useState(false);
@@ -147,7 +147,7 @@ export function SaasReservationModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                      {labels.name[lang]} <span className="text-red-500">*</span>
+                      {labels.name[lang]} <span className="text-purple-500">*</span>
                     </label>
                     <div className="relative">
                       <User className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 opacity-40" />
@@ -172,7 +172,7 @@ export function SaasReservationModal({
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                      {labels.phone[lang]} <span className="text-red-500">*</span>
+                      {labels.phone[lang]} <span className="text-purple-500">*</span>
                     </label>
                     <div className="relative">
                       <Phone className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 opacity-40" />
@@ -200,7 +200,7 @@ export function SaasReservationModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                      {labels.date[lang]} <span className="text-red-500">*</span>
+                      {labels.date[lang]} <span className="text-purple-500">*</span>
                     </label>
                     <div className="relative">
                       <Calendar className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 opacity-40" />
@@ -226,7 +226,7 @@ export function SaasReservationModal({
 
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                      {labels.time[lang]} <span className="text-red-500">*</span>
+                      {labels.time[lang]} <span className="text-purple-500">*</span>
                     </label>
                     <div className="relative">
                       <Clock className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 text-slate-400 dark:text-slate-500" />
@@ -260,7 +260,7 @@ export function SaasReservationModal({
                 {/* Guests */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                    {labels.guests[lang]} <span className="text-red-500">*</span>
+                    {labels.guests[lang]} <span className="text-purple-500">*</span>
                   </label>
                   <div className="relative">
                     <Users className="absolute top-1/2 -translate-y-1/2 left-3 w-5 h-5 opacity-40" />

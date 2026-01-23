@@ -62,7 +62,7 @@ function StatCard({
                 {value}
               </h3>
               {trend && (
-                <span className="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-md border border-emerald-400/20">
+                <span className="text-[10px] font-black text-violet-400 bg-violet-400/10 px-2 py-0.5 rounded-md border border-violet-400/20">
                   {trend}
                 </span>
               )}

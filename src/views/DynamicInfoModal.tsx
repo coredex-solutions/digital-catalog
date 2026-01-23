@@ -257,7 +257,7 @@ export function DynamicInfoModal({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="w-12 h-12 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105"
-                          style={{ backgroundColor: colorPrimary || "#fead1d" }}
+                          style={{ backgroundColor: colorPrimary || "#8b5cf6" }}
                           title={social.platform}
                         >
                           <Icon size={24} />
@@ -271,7 +271,7 @@ export function DynamicInfoModal({
             {/* Operating Hours */}
             <div className="space-y-4 lg:space-y-6">
               <h3 className="font-bold text-slate-900 dark:text-white mb-4 text-xl border-b border-slate-100 dark:border-navy-800 pb-2 flex items-center gap-2">
-                <Clock size={20} style={{ color: colorPrimary || "#fead1d" }} />
+                <Clock size={20} style={{ color: colorPrimary || "#8b5cf6" }} />
                 {lang === "ar" ? "ساعات العمل" : lang === "fr" ? "Horaires" : "Working Hours"}
               </h3>
 
@@ -281,10 +281,10 @@ export function DynamicInfoModal({
                   "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium",
                   isOpen
                     ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                    : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
                 )}
               >
-                <span className={cn("w-2 h-2 rounded-full", isOpen ? "bg-green-500" : "bg-red-500")} />
+                <span className={cn("w-2 h-2 rounded-full", isOpen ? "bg-green-500" : "bg-purple-500")} />
                 {isOpen
                   ? lang === "ar"
                     ? "مفتوح الآن"
@@ -311,7 +311,7 @@ export function DynamicInfoModal({
                         key={day}
                         className={cn(
                           "flex justify-between items-center py-2 px-3 rounded-lg",
-                          isToday && "bg-orange-50 dark:bg-orange-900/10"
+                          isToday && "bg-purple-50 dark:bg-purple-900/10"
                         )}
                         style={isToday && colorPrimary ? { backgroundColor: `${colorPrimary}10` } : {}}
                       >
@@ -325,7 +325,7 @@ export function DynamicInfoModal({
                         </span>
                         <span
                           className={cn(
-                            isClosed ? "text-red-500" : "text-slate-700 dark:text-slate-300"
+                            isClosed ? "text-purple-500" : "text-slate-700 dark:text-slate-300"
                           )}
                         >
                           {isClosed

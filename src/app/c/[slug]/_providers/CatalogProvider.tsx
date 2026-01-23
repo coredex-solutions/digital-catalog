@@ -153,9 +153,9 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
     [settings?.enabled_languages]
   );
 
-  const colorPrimary = settings?.color_primary || "#fead1d";
+  const colorPrimary = settings?.color_primary || "#8b5cf6";
   const colorSecondary = settings?.color_secondary || "#b14288";
-  const colorAccent = settings?.color_accent || "#F7C948";
+  const colorAccent = settings?.color_accent || "#c084fc";
   const bookingEnabled = settings?.booking_enabled ?? true;
   const whatsappEnabled = settings?.whatsapp_order_enabled ?? true;
 

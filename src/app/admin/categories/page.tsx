@@ -602,7 +602,7 @@ export default function CategoriesPage() {
                             {category.name_en}
                           </h3>
                           {!category.is_active && (
-                            <span className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg">
+                            <span className="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg">
                               Inactive
                             </span>
                           )}
@@ -626,7 +626,7 @@ export default function CategoriesPage() {
                         </button>
                         <button
                           onClick={() => handleDelete(category.id)}
-                          className="p-2 sm:p-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+                          className="p-2 sm:p-2.5 hover:bg-purple-50 dark:hover:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg transition-colors"
                           aria-label="Delete category"
                         >
                           <Trash2 size={18} />
@@ -748,7 +748,7 @@ export default function CategoriesPage() {
                                 <button
                                   type="button"
                                   onClick={handleRemoveImage}
-                                  className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                  className="absolute top-2 right-2 p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                                   title="Remove image"
                                 >
                                   <Trash2 size={16} />

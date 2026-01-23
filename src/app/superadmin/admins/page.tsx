@@ -80,7 +80,7 @@ export default function CatalogAdminsPage() {
               placeholder="Search admins..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50 w-64"
+              className="pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/50 w-64"
             />
           </div>
         </div>
@@ -89,7 +89,7 @@ export default function CatalogAdminsPage() {
       <SuperAdminContent>
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
           </div>
         ) : (
           <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
@@ -162,13 +162,13 @@ export default function CatalogAdminsPage() {
                         <span
                           className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                             admin.is_active
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : "bg-red-500/10 text-red-400"
+                              ? "bg-violet-500/10 text-violet-400"
+                              : "bg-purple-500/10 text-purple-400"
                           }`}
                         >
                           <span
                             className={`w-1.5 h-1.5 rounded-full ${
-                              admin.is_active ? "bg-emerald-400" : "bg-red-400"
+                              admin.is_active ? "bg-violet-400" : "bg-purple-400"
                             }`}
                           />
                           {admin.is_active ? "Active" : "Inactive"}
@@ -186,19 +186,19 @@ export default function CatalogAdminsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-end gap-2">
                           <button
-                            className="p-2 text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
                             title="Reset Password"
                           >
                             <Key className="w-4 h-4" />
                           </button>
                           <button
-                            className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 hover:text-violet-400 hover:bg-violet-500/10 rounded-lg transition-colors"
                             title="Edit"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
                             title="Delete"
                           >
                             <Trash2 className="w-4 h-4" />

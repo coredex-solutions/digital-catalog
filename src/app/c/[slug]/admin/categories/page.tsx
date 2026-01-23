@@ -282,7 +282,7 @@ export default function CategoriesPage() {
                     </button>
                     <button
                       onClick={() => handleDelete(category.id)}
-                      className="w-10 h-10 bg-red-500/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-red-500/20 hover:bg-red-500/40 transition-all"
+                      className="w-10 h-10 bg-purple-500/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-purple-500/20 hover:bg-purple-500/40 transition-all"
                     >
                       <Trash2 className="w-4 h-4 text-white" />
                     </button>
@@ -346,7 +346,7 @@ export default function CategoriesPage() {
                         onClick={() =>
                           setFormData((p) => ({ ...p, image_url: "" }))
                         }
-                        className="absolute top-4 right-4 w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+                        className="absolute top-4 right-4 w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
                       >
                         <X className="w-4 h-4 text-white" />
                       </button>
@@ -374,7 +374,7 @@ export default function CategoriesPage() {
                   )}
                 </div>
                 {uploadError && (
-                  <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mt-3 text-center">{uploadError}</p>
+                  <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mt-3 text-center">{uploadError}</p>
                 )}
               </div>
 

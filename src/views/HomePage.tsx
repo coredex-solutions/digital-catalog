@@ -76,7 +76,7 @@ export function HomePage({ lang, onReservation }: HomePageProps) {
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: "100%" }}
                 transition={{ delay: 0.4, duration: 0.8 }}
-                className="h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent mx-auto max-w-xs rounded-full"
+                className="h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent mx-auto max-w-xs rounded-full"
               />
             </div>
           </div>
@@ -109,9 +109,9 @@ export function HomePage({ lang, onReservation }: HomePageProps) {
               whileTap={{ scale: 0.95 }}
               onClick={onReservation}
               className={cn(
-                "px-8 py-4 bg-orange-500 text-white rounded-full text-lg font-bold",
-                "hover:bg-orange-600 transition-all duration-300",
-                "shadow-xl shadow-orange-500/30 min-w-[200px]"
+                "px-8 py-4 bg-purple-500 text-white rounded-full text-lg font-bold",
+                "hover:bg-purple-600 transition-all duration-300",
+                "shadow-xl shadow-purple-500/30 min-w-[200px]"
               )}
             >
               {lang === "ar"
@@ -125,7 +125,7 @@ export function HomePage({ lang, onReservation }: HomePageProps) {
       </div>
 
       {/* Decorative Elements */}
-      <div className="absolute top-20 left-20 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen pointer-events-none" />
+      <div className="absolute top-20 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen pointer-events-none" />
       <div className="absolute bottom-20 right-20 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen pointer-events-none" />
     </div>
   );

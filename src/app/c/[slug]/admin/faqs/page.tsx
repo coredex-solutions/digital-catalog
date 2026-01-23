@@ -152,7 +152,7 @@ export default function FAQsPage() {
             className={`mb-6 px-4 py-3 rounded-xl ${
               message.type === "success"
                 ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                : "bg-red-500/10 text-red-400 border border-red-500/20"
+                : "bg-purple-500/10 text-purple-400 border border-purple-500/20"
             }`}
           >
             {message.text}
@@ -193,7 +193,7 @@ export default function FAQsPage() {
                     {/* Arabic */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-700 text-emerald-400">AR</span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-700 text-violet-400">AR</span>
                         <span className="text-sm text-slate-400">العربية</span>
                       </div>
                       <input
@@ -201,7 +201,7 @@ export default function FAQsPage() {
                         placeholder="السؤال"
                         value={faq.question_ar}
                         onChange={(e) => updateFaq(faq.id, "question_ar", e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white text-right focus:outline-none focus:border-blue-500"
+                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white text-right focus:outline-none focus:border-violet-500"
                         dir="rtl"
                       />
                       <textarea
@@ -209,7 +209,7 @@ export default function FAQsPage() {
                         placeholder="الجواب"
                         value={faq.answer_ar}
                         onChange={(e) => updateFaq(faq.id, "answer_ar", e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white text-right focus:outline-none focus:border-blue-500 resize-none"
+                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white text-right focus:outline-none focus:border-violet-500 resize-none"
                         dir="rtl"
                       />
                     </div>
@@ -217,7 +217,7 @@ export default function FAQsPage() {
                     {/* English */}
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-700 text-blue-400">EN</span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-700 text-violet-400">EN</span>
                         <span className="text-sm text-slate-400">English</span>
                       </div>
                       <input
@@ -225,14 +225,14 @@ export default function FAQsPage() {
                         placeholder="Question"
                         value={faq.question_en}
                         onChange={(e) => updateFaq(faq.id, "question_en", e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-violet-500"
                       />
                       <textarea
                         rows={2}
                         placeholder="Answer"
                         value={faq.answer_en}
                         onChange={(e) => updateFaq(faq.id, "answer_en", e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 resize-none"
+                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-violet-500 resize-none"
                       />
                     </div>
 
@@ -247,21 +247,21 @@ export default function FAQsPage() {
                         placeholder="Question"
                         value={faq.question_fr}
                         onChange={(e) => updateFaq(faq.id, "question_fr", e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-violet-500"
                       />
                       <textarea
                         rows={2}
                         placeholder="Réponse"
                         value={faq.answer_fr}
                         onChange={(e) => updateFaq(faq.id, "answer_fr", e.target.value)}
-                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-blue-500 resize-none"
+                        className="w-full px-4 py-2 bg-slate-900/50 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-violet-500 resize-none"
                       />
                     </div>
                   </div>
 
                   <button
                     onClick={() => removeFaq(faq.id)}
-                    className="mt-4 p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                    className="mt-4 p-2 text-slate-500 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>

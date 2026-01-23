@@ -89,7 +89,7 @@ export default function AdminLoginPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 text-red-600 dark:text-red-400 text-sm">
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-3 text-purple-600 dark:text-purple-400 text-sm">
                 {error}
               </div>
             )}

@@ -29,7 +29,7 @@ export function DynamicLanguageSelectionPage({
   // Hover color style
   const hoverColorStyle = colorPrimary
     ? `hover:border-[${colorPrimary}] hover:text-[${colorPrimary}]`
-    : "hover:border-orange-500 hover:text-orange-500";
+    : "hover:border-purple-500 hover:text-purple-500";
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center p-6 z-50 text-[var(--text-primary)]" style={{ backgroundColor: 'var(--background-hex)' }}>

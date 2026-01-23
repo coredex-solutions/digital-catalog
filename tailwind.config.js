@@ -17,11 +17,11 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "var(--primary, #fead1d)",
+          DEFAULT: "var(--primary, #8b5cf6)",
           foreground: "var(--primary-foreground, #ffffff)",
         },
         secondary: {
-          DEFAULT: "var(--secondary, #b14288)",
+          DEFAULT: "var(--secondary, #7c3aed)",
           foreground: "var(--secondary-foreground, #ffffff)",
         },
         destructive: {
@@ -33,7 +33,7 @@ export default {
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "var(--accent, #F7C948)",
+          DEFAULT: "var(--accent, #c084fc)",
           foreground: "var(--accent-foreground, #000000)",
         },
         popover: {
@@ -45,11 +45,11 @@ export default {
           foreground: "hsl(var(--card-foreground))",
         },
         // Dynamic colors via CSS variables (for SaaS theming)
-        'dynamic-primary': 'var(--color-primary, #fead1d)',
-        'dynamic-secondary': 'var(--color-secondary, #b14288)',
-        'dynamic-accent': 'var(--color-accent, #F7C948)',
-        'dynamic-bg': 'var(--color-background, #170F2C)',
-        'dynamic-surface': 'var(--color-surface, #1e1e3f)',
+        'dynamic-primary': 'var(--color-primary, #8b5cf6)',
+        'dynamic-secondary': 'var(--color-secondary, #7c3aed)',
+        'dynamic-accent': 'var(--color-accent, #c084fc)',
+        'dynamic-bg': 'var(--color-background, #020203)',
+        'dynamic-surface': 'var(--color-surface, #121215)',
         'dynamic-text': 'var(--color-text, #ffffff)',
         'dynamic-text-muted': 'var(--color-text-muted, #a0aec0)',
         orange: {

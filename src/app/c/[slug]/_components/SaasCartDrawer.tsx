@@ -37,7 +37,7 @@ export function SaasCartDrawer({
   onUpdateQuantity,
   onCheckout,
   cartTotal,
-  colorPrimary = "#fead1d",
+  colorPrimary = "#8b5cf6",
 }: SaasCartDrawerProps) {
   const dir = lang === "ar" ? "rtl" : "ltr";
   const font = lang === "ar" ? "font-cairo" : "font-inter";
@@ -183,7 +183,7 @@ export function SaasCartDrawer({
                     </div>
                     <button
                       onClick={() => onRemove(item.id)}
-                      className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+                      className="p-2 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-full transition-colors"
                     >
                       <Trash2 size={18} />
                     </button>

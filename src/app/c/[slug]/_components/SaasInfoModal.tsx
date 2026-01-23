@@ -57,7 +57,7 @@ export function SaasInfoModal({
   operatingHours = [],
   socialMedia = [],
   contact,
-  colorPrimary = "#fead1d",
+  colorPrimary = "#8b5cf6",
 }: SaasInfoModalProps) {
   const dir = lang === "ar" ? "rtl" : "ltr";
   const font = lang === "ar" ? "font-cairo" : "font-inter";
@@ -180,7 +180,7 @@ export function SaasInfoModal({
                 )}
                 {contact?.phone_primary && (
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border" style={{ backgroundColor: `rgba(0, 255, 0, 0.05)`, color: '#22c55e', borderColor: 'rgba(34, 197, 94, 0.2)' }}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border" style={{ backgroundColor: `rgba(0, 255, 0, 0.05)`, color: '#a855f7', borderColor: 'rgba(34, 197, 94, 0.2)' }}>
                       <Phone size={20} />
                     </div>
                     <a href={`tel:${contact.phone_primary}`} className="hover:underline" style={{ color: 'var(--text-muted)' }}>
@@ -190,7 +190,7 @@ export function SaasInfoModal({
                 )}
                 {contact?.email && (
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border" style={{ backgroundColor: `rgba(0, 0, 255, 0.05)`, color: '#3b82f6', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border" style={{ backgroundColor: `rgba(0, 0, 255, 0.05)`, color: '#8b5cf6', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
                       <Mail size={20} />
                     </div>
                     <a href={`mailto:${contact.email}`} className="hover:underline" style={{ color: 'var(--text-muted)' }}>
@@ -231,9 +231,9 @@ export function SaasInfoModal({
 
               <div className={cn(
                 "inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium",
-                isOpen ? "bg-green-500/15 text-green-600" : "bg-red-500/15 text-red-600"
+                isOpen ? "bg-green-500/15 text-green-600" : "bg-purple-500/15 text-purple-600"
               )}>
-                <span className={cn("w-2 h-2 rounded-full", isOpen ? "bg-green-500" : "bg-red-500")} />
+                <span className={cn("w-2 h-2 rounded-full", isOpen ? "bg-green-500" : "bg-purple-500")} />
                 {isOpen ? labels.openNow : labels.closedNow}
               </div>
 
@@ -247,7 +247,7 @@ export function SaasInfoModal({
                       <span className={cn("font-medium")} style={{ color: isToday ? 'var(--text-primary)' : 'var(--text-muted)' }}>
                         {dayLabels[index]}
                       </span>
-                      <span style={{ color: isClosed ? '#ef4444' : (isToday ? 'var(--text-primary)' : 'var(--text-muted)') }}>
+                      <span style={{ color: isClosed ? '#a855f7' : (isToday ? 'var(--text-primary)' : 'var(--text-muted)') }}>
                         {isClosed ? labels.closed : `${formatHours(hours.open_hour)} - ${formatHours(hours.close_hour)}`}
                       </span>
                     </div>

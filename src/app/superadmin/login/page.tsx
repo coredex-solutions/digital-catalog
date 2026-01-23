@@ -63,8 +63,8 @@ export default function SuperAdminLoginPage() {
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm font-medium flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3 text-purple-400 text-sm font-medium flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
                 {error}
               </div>
             )}

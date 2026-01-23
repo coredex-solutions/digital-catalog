@@ -44,7 +44,7 @@ export function SaasNavbar({
   supportedLanguages = DEFAULT_LANGUAGES,
   showHomeButton = false,
   homeUrl,
-  colorPrimary = "#fead1d",
+  colorPrimary = "#8b5cf6",
 }: SaasNavbarProps) {
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

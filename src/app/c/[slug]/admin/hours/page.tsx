@@ -201,7 +201,7 @@ export default function OperatingHoursPage() {
             className={`mb-6 px-4 py-3 rounded-xl ${
               message.type === "success"
                 ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                : "bg-red-500/10 text-red-400 border border-red-500/20"
+                : "bg-purple-500/10 text-purple-400 border border-purple-500/20"
             }`}
           >
             {message.text}
@@ -262,7 +262,7 @@ export default function OperatingHoursPage() {
                               parseTimeToHour(e.target.value)
                             )
                           }
-                          className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
                         />
                       </div>
 
@@ -278,7 +278,7 @@ export default function OperatingHoursPage() {
                               parseTimeToHour(e.target.value)
                             )
                           }
-                          className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
                         />
                       </div>
                     </div>

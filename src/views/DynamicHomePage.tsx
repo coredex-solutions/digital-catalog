@@ -43,7 +43,7 @@ export function DynamicHomePage({
   ctaMenuLabel = { ar: "عرض القائمة", en: "View Menu", fr: "Voir le Menu" },
   ctaBookingLabel = { ar: "حجز طاولة", en: "Make Reservation", fr: "Réserver" },
   bookingEnabled = true,
-  colorPrimary = "#fead1d",
+  colorPrimary = "#8b5cf6",
   colorSecondary,
   setIsInfoOpen,
 }: DynamicHomePageProps) {

@@ -32,8 +32,8 @@ export function SaasMenuFeed({
   lang,
   searchQuery = "",
   onItemClick,
-  colorPrimary = "#fead1d",
-  colorAccent = "#F7C948",
+  colorPrimary = "#8b5cf6",
+  colorAccent = "#c084fc",
 }: SaasMenuFeedProps) {
   // Filter items
   const filteredItems = items.filter((item) => {

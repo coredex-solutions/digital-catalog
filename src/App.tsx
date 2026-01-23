@@ -1296,11 +1296,11 @@ function MenuPageWrapper({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsCartOpenLocal(true)}
-              className="relative w-14 h-14 bg-slate-900/95 dark:bg-orange-500/95 backdrop-blur-lg text-white rounded-full shadow-xl shadow-slate-900/30 dark:shadow-orange-500/30 flex items-center justify-center border border-white/10 transition-all group"
+              className="relative w-14 h-14 bg-slate-900/95 dark:bg-purple-500/95 backdrop-blur-lg text-white rounded-full shadow-xl shadow-slate-900/30 dark:shadow-purple-500/30 flex items-center justify-center border border-white/10 transition-all group"
             >
               <ShoppingCart size={22} strokeWidth={2} />
               {cartLocal.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold border-2 border-white dark:border-navy-900">
+                <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold border-2 border-white dark:border-navy-900">
                   {cartLocal.length}
                 </span>
               )}
@@ -1498,7 +1498,7 @@ function AppContent() {
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-slate-600 dark:text-slate-400 font-medium">
             Loading...
           </p>
@@ -1572,7 +1572,7 @@ function FloatingReservationButton({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={onReservation}
-        className="w-14 h-14 bg-gradient-to-tr from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white rounded-full shadow-xl shadow-orange-500/30 flex items-center justify-center transition-all group"
+        className="w-14 h-14 bg-gradient-to-tr from-purple-500 to-purple-400 hover:from-purple-600 hover:to-purple-500 text-white rounded-full shadow-xl shadow-purple-500/30 flex items-center justify-center transition-all group"
         title={lang === "ar" ? "حجز طاولة" : "Make Reservation"}
       >
         <Calendar size={22} strokeWidth={2} />
@@ -1640,7 +1640,7 @@ function LanguageSelection({ onSelect }: { onSelect: (l: Language) => void }) {
               key={l.code}
               onClick={() => onSelect(l.code as Language)}
               className={cn(
-                "py-4 px-8 border border-white/20 rounded-xl text-xl hover:bg-white/10 transition-all duration-300 hover:border-orange-500 hover:text-orange-500",
+                "py-4 px-8 border border-white/20 rounded-xl text-xl hover:bg-white/10 transition-all duration-300 hover:border-purple-500 hover:text-purple-500",
                 l.font
               )}
             >
@@ -1730,7 +1730,7 @@ function LandingPage({
                 initial={{ opacity: 0, width: 0 }}
                 animate={{ opacity: 1, width: "100%" }}
                 transition={{ delay: 0.4, duration: 0.8 }}
-                className="h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent mx-auto max-w-xs rounded-full"
+                className="h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent mx-auto max-w-xs rounded-full"
               />
             </div>
           </div>
@@ -1763,9 +1763,9 @@ function LandingPage({
               whileTap={{ scale: 0.95 }}
               onClick={onReservation}
               className={cn(
-                "px-8 py-4 bg-orange-500 text-white rounded-full text-lg font-bold",
-                "hover:bg-orange-600 transition-all duration-300",
-                "shadow-xl shadow-orange-500/30 min-w-[200px]"
+                "px-8 py-4 bg-purple-500 text-white rounded-full text-lg font-bold",
+                "hover:bg-purple-600 transition-all duration-300",
+                "shadow-xl shadow-purple-500/30 min-w-[200px]"
               )}
             >
               {lang === "ar"
@@ -1779,7 +1779,7 @@ function LandingPage({
       </div>
 
       {/* Decorative Elements */}
-      <div className="absolute top-20 left-20 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen pointer-events-none" />
+      <div className="absolute top-20 left-20 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen pointer-events-none" />
       <div className="absolute bottom-20 right-20 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-screen pointer-events-none" />
     </div>
   );
@@ -1951,7 +1951,7 @@ function ReservationModal({
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
                 {lang === "ar" ? "الاسم الكامل" : "Full Name"}{" "}
-                <span className="text-orange-500">*</span>
+                <span className="text-purple-500">*</span>
               </label>
               <div className="relative">
                 <FileText
@@ -1965,7 +1965,7 @@ function ReservationModal({
                   onChange={(e) =>
                     setFormData({ ...formData, fullName: e.target.value })
                   }
-                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-orange-500/50 transition-all font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                   placeholder={
                     lang === "ar" ? "الاسم..." : "Enter your name..."
                   }
@@ -1978,7 +1978,7 @@ function ReservationModal({
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
                   {lang === "ar" ? "التاريخ" : "Date"}{" "}
-                  <span className="text-orange-500">*</span>
+                  <span className="text-purple-500">*</span>
                 </label>
                 <div className="relative">
                   <Calendar
@@ -1991,7 +1991,7 @@ function ReservationModal({
                     onChange={(e) =>
                       setFormData({ ...formData, date: e.target.value })
                     }
-                    className="w-full pl-12 pr-8 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-orange-500/50 transition-all font-medium appearance-none cursor-pointer text-slate-900 dark:text-white"
+                    className="w-full pl-12 pr-8 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-medium appearance-none cursor-pointer text-slate-900 dark:text-white"
                   >
                     <option value="">
                       {lang === "ar" ? "التاريخ" : "Select Date"}
@@ -2012,7 +2012,7 @@ function ReservationModal({
               <div className="space-y-2">
                 <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
                   {lang === "ar" ? "الوقت" : "Time"}{" "}
-                  <span className="text-orange-500">*</span>
+                  <span className="text-purple-500">*</span>
                 </label>
                 <div className="relative">
                   <Clock
@@ -2025,7 +2025,7 @@ function ReservationModal({
                     onChange={(e) =>
                       setFormData({ ...formData, time: e.target.value })
                     }
-                    className="w-full pl-12 pr-8 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-orange-500/50 transition-all font-medium appearance-none cursor-pointer text-slate-900 dark:text-white"
+                    className="w-full pl-12 pr-8 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-medium appearance-none cursor-pointer text-slate-900 dark:text-white"
                   >
                     <option value="" className="text-slate-900 dark:text-white">
                       {lang === "ar" ? "الوقت" : "Select Time"}
@@ -2052,7 +2052,7 @@ function ReservationModal({
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">
                 {lang === "ar" ? "عدد الضيوف" : "Guests"}{" "}
-                <span className="text-orange-500">*</span>
+                <span className="text-purple-500">*</span>
               </label>
               <div className="relative">
                 <Users
@@ -2065,7 +2065,7 @@ function ReservationModal({
                   onChange={(e) =>
                     setFormData({ ...formData, numberOfPeople: e.target.value })
                   }
-                  className="w-full pl-12 pr-8 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-orange-500/50 transition-all font-medium appearance-none cursor-pointer text-slate-900 dark:text-white"
+                  className="w-full pl-12 pr-8 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-medium appearance-none cursor-pointer text-slate-900 dark:text-white"
                 >
                   <option value="" className="text-slate-900 dark:text-white">
                     {lang === "ar" ? "عدد الأشخاص" : "Number of People"}
@@ -2098,7 +2098,7 @@ function ReservationModal({
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
-                className="w-full p-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-orange-500/50 transition-all font-medium resize-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                className="w-full p-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-medium resize-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 placeholder={
                   lang === "ar"
                     ? "عيد ميلاد، مناسبة خاصة..."
@@ -2116,7 +2116,7 @@ function ReservationModal({
               !formData.time ||
               !formData.numberOfPeople
             }
-            className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-orange-500/30 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-4 bg-purple-500 hover:bg-purple-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-purple-500/30 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {lang === "ar" ? "تأكيد الحجز" : "Confirm Reservation"}
             <ArrowRight size={20} />
@@ -2161,7 +2161,7 @@ function Navbar({
   const currentLang = languages.find((l) => l.code === lang) || languages[1];
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-navy-900/95 backdrop-blur-xl border-b border-orange-500/10 dark:border-purple-500/10 shadow-sm transition-colors duration-300">
+    <nav className="fixed top-0 left-0 right-0 z-40 bg-white/95 dark:bg-navy-900/95 backdrop-blur-xl border-b border-purple-500/10 dark:border-purple-500/10 shadow-sm transition-colors duration-300">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Home Button - Only show when not on home page */}
@@ -2170,12 +2170,12 @@ function Navbar({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={onNavigateHome}
-              className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 flex items-center justify-center hover:bg-white dark:hover:bg-navy-700 hover:shadow-md hover:border-orange-500/30 transition-all group flex-shrink-0"
+              className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 flex items-center justify-center hover:bg-white dark:hover:bg-navy-700 hover:shadow-md hover:border-purple-500/30 transition-all group flex-shrink-0"
               title={lang === "ar" ? "الرئيسية" : "Home"}
             >
               <Home
                 size={18}
-                className="text-slate-700 dark:text-slate-200 group-hover:text-orange-500 transition-colors"
+                className="text-slate-700 dark:text-slate-200 group-hover:text-purple-500 transition-colors"
               />
             </motion.button>
           )}
@@ -2217,12 +2217,12 @@ function Navbar({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleTheme}
-            className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 flex items-center justify-center hover:bg-white dark:hover:bg-navy-700 hover:shadow-md hover:border-orange-500/30 transition-all group"
+            className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 border border-slate-200 dark:border-navy-700 flex items-center justify-center hover:bg-white dark:hover:bg-navy-700 hover:shadow-md hover:border-purple-500/30 transition-all group"
           >
             {isDark ? (
               <Sun
                 size={18}
-                className="text-orange-500 group-hover:rotate-180 transition-transform duration-500"
+                className="text-purple-500 group-hover:rotate-180 transition-transform duration-500"
               />
             ) : (
               <Moon
@@ -2273,7 +2273,7 @@ function Navbar({
                           className={cn(
                             "w-full flex items-center gap-3 px-4 py-3 hover:bg-white dark:hover:bg-slate-700 transition-colors text-left",
                             isSelected &&
-                              "bg-orange-500/10 dark:bg-orange-500/20 border-e-2 border-orange-500",
+                              "bg-purple-500/10 dark:bg-purple-500/20 border-e-2 border-purple-500",
                             l.code === "ar" ? "font-cairo" : "font-inter"
                           )}
                         >
@@ -2284,7 +2284,7 @@ function Navbar({
                             className={cn(
                               "text-sm font-medium",
                               isSelected
-                                ? "text-orange-500 dark:text-orange-500"
+                                ? "text-purple-500 dark:text-purple-500"
                                 : "text-slate-700 dark:text-slate-300"
                             )}
                           >
@@ -2293,7 +2293,7 @@ function Navbar({
                           {isSelected && (
                             <Check
                               size={16}
-                              className="text-orange-500 dark:text-orange-500 ms-auto"
+                              className="text-purple-500 dark:text-purple-500 ms-auto"
                             />
                           )}
                         </button>
@@ -2364,7 +2364,7 @@ function CategoryGrid({ categories, lang, onSelect, isFirstLoad }: any) {
               ) : (
                 <div className="p-6 flex flex-col items-center gap-4">
                   <div className="absolute inset-0 bg-gradient-to-br -z-10 from-transparent via-transparent to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="w-14 h-14 rounded-full bg-orange-50 dark:bg-navy-700 flex items-center justify-center group-hover:bg-orange-500 text-orange-500 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-orange-500/30">
+                  <div className="w-14 h-14 rounded-full bg-purple-50 dark:bg-navy-700 flex items-center justify-center group-hover:bg-purple-500 text-purple-500 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-purple-500/30">
                     <Icon size={26} strokeWidth={1.5} />
                   </div>
                   <span className="font-bold text-sm text-slate-700 dark:text-slate-200 group-hover:text-purple-700 dark:group-hover:text-purple-300 transition-colors">
@@ -2439,7 +2439,7 @@ function ItemCard({ item, lang, onAdd }: any) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={onAdd}
-      className="group bg-white dark:bg-navy-800 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:shadow-orange-500/5 border border-slate-100 dark:border-navy-700 hover:border-orange-200/50 dark:hover:border-orange-500/30 transition-all duration-300 cursor-pointer active:scale-[0.98]"
+      className="group bg-white dark:bg-navy-800 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:shadow-purple-500/5 border border-slate-100 dark:border-navy-700 hover:border-purple-200/50 dark:hover:border-purple-500/30 transition-all duration-300 cursor-pointer active:scale-[0.98]"
     >
       {/* Content */}
       <div className="flex flex-col gap-4">
@@ -2460,7 +2460,7 @@ function ItemCard({ item, lang, onAdd }: any) {
 
         {/* Footer with Price and Add Button */}
         <div className="flex justify-between items-center pt-3 border-t border-slate-100 dark:border-navy-700">
-          <div className="font-bold text-xl text-purple-700 dark:text-orange-400">
+          <div className="font-bold text-xl text-purple-700 dark:text-purple-400">
             {formatPrice(item.price, lang)}
           </div>
           <button
@@ -2468,7 +2468,7 @@ function ItemCard({ item, lang, onAdd }: any) {
               e.stopPropagation();
               onAdd();
             }}
-            className="w-10 h-10 rounded-lg bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-md shadow-orange-500/20 active:scale-95 transition-all"
+            className="w-10 h-10 rounded-lg bg-purple-500 hover:bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-500/20 active:scale-95 transition-all"
           >
             <Plus size={18} strokeWidth={2.5} />
           </button>
@@ -2561,7 +2561,7 @@ function ItemModal({ item, lang, onClose, onConfirm }: any) {
                       className={cn(
                         "w-full flex items-center justify-between p-4 rounded-2xl border transition-all duration-300",
                         isSelected
-                          ? "bg-orange-500/10 border-orange-500/50 shadow-lg shadow-orange-500/10"
+                          ? "bg-purple-500/10 border-purple-500/50 shadow-lg shadow-purple-500/10"
                           : "bg-slate-50 dark:bg-navy-800/50 border-transparent hover:bg-slate-100 dark:hover:bg-navy-800"
                       )}
                     >
@@ -2570,7 +2570,7 @@ function ItemModal({ item, lang, onClose, onConfirm }: any) {
                           className={cn(
                             "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
                             isSelected
-                              ? "bg-orange-500 border-orange-500 text-white"
+                              ? "bg-purple-500 border-purple-500 text-white"
                               : "border-slate-300 dark:border-slate-600"
                           )}
                         >
@@ -2580,7 +2580,7 @@ function ItemModal({ item, lang, onClose, onConfirm }: any) {
                           className={cn(
                             "font-medium text-lg",
                             isSelected
-                              ? "text-orange-600 dark:text-orange-400"
+                              ? "text-purple-600 dark:text-purple-400"
                               : "text-slate-700 dark:text-slate-200"
                           )}
                         >
@@ -2627,7 +2627,7 @@ function ItemModal({ item, lang, onClose, onConfirm }: any) {
             {/* Add Button */}
             <button
               onClick={() => onConfirm(item, modifiers, quantity)}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-full font-bold text-lg shadow-lg shadow-orange-500/30 active:scale-95 transition-all flex justify-between px-6 items-center group"
+              className="flex-1 bg-purple-500 hover:bg-purple-600 text-white py-4 rounded-full font-bold text-lg shadow-lg shadow-purple-500/30 active:scale-95 transition-all flex justify-between px-6 items-center group"
             >
               <span>
                 {lang === "ar" ? "إضافة" : lang === "fr" ? "Ajouter" : "Add"}
@@ -2673,7 +2673,7 @@ function CartDrawer({ cart, total, lang, onClose, onRemove, onCheckout }: any) {
         <div className="bg-white dark:bg-navy-900 p-6 shadow-sm z-10 flex justify-between items-center border-b border-slate-100 dark:border-navy-800">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Receipt className="text-orange-500" />
+              <Receipt className="text-purple-500" />
               {lang === "ar"
                 ? "الفاتورة"
                 : lang === "fr"
@@ -2755,7 +2755,7 @@ function CartDrawer({ cart, total, lang, onClose, onRemove, onCheckout }: any) {
 
                       <button
                         onClick={() => onRemove(item.cartId)}
-                        className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1 mt-1"
+                        className="text-xs text-purple-500 hover:text-purple-600 font-medium flex items-center gap-1 mt-1"
                       >
                         <X size={12} /> {lang === "ar" ? "حذف" : "Remove"}
                       </button>
@@ -2771,14 +2771,14 @@ function CartDrawer({ cart, total, lang, onClose, onRemove, onCheckout }: any) {
                   <span className="text-xl font-bold text-slate-900 dark:text-white">
                     {lang === "ar" ? "المجموع الكلي" : "Total Amount"}
                   </span>
-                  <span className="text-2xl font-bold text-orange-500">
+                  <span className="text-2xl font-bold text-purple-500">
                     {formatPrice(total, lang)}
                   </span>
                 </div>
 
                 <button
                   onClick={onCheckout}
-                  className="w-full bg-slate-900 dark:bg-orange-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-slate-900/20 dark:shadow-orange-500/20 flex items-center justify-center gap-3 hover:translate-y-[-2px] active:translate-y-0 transition-all"
+                  className="w-full bg-slate-900 dark:bg-purple-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-slate-900/20 dark:shadow-purple-500/20 flex items-center justify-center gap-3 hover:translate-y-[-2px] active:translate-y-0 transition-all"
                 >
                   {lang === "ar" ? "تأكيد الطلب" : "Confirm Order"}
                   <ArrowRight size={20} />
@@ -2910,7 +2910,7 @@ function CheckoutForm({ cart, total, lang, onClose, settings }: any) {
               {lang === "ar" ? "ملاحظات" : "Notes"}
             </label>
             <textarea
-              className="w-full p-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-orange-500/50 transition-all text-sm resize-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+              className="w-full p-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-sm resize-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
               rows={2}
               value={formData.notes}
               onChange={(e) =>
@@ -2945,7 +2945,7 @@ const Input = ({
 }: any) => (
   <div className="space-y-2">
     <label className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-      {label} {required && <span className="text-orange-500">*</span>}
+      {label} {required && <span className="text-purple-500">*</span>}
     </label>
     <div className="relative">
       {Icon && (
@@ -2960,7 +2960,7 @@ const Input = ({
         onChange={(e) => onChange(e.target.value)}
         required={required}
         className={cn(
-          "w-full pr-4 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-orange-500/50 transition-all font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500",
+          "w-full pr-4 py-4 bg-slate-50 dark:bg-navy-800 rounded-2xl border-none outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-medium text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500",
           Icon ? "pl-12" : "pl-4"
         )}
       />
@@ -3114,7 +3114,7 @@ function Footer({
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 shadow-sm flex items-center justify-center hover:scale-110 transition-transform hover:text-orange-500"
+                      className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 shadow-sm flex items-center justify-center hover:scale-110 transition-transform hover:text-purple-500"
                     >
                       <Instagram size={18} />
                     </a>
@@ -3126,7 +3126,7 @@ function Footer({
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 shadow-sm flex items-center justify-center hover:scale-110 transition-transform hover:text-orange-500"
+                      className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 shadow-sm flex items-center justify-center hover:scale-110 transition-transform hover:text-purple-500"
                     >
                       <Facebook size={18} />
                     </a>
@@ -3138,7 +3138,7 @@ function Footer({
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 shadow-sm flex items-center justify-center hover:scale-110 transition-transform hover:text-orange-500"
+                      className="w-10 h-10 rounded-full bg-white dark:bg-navy-800 shadow-sm flex items-center justify-center hover:scale-110 transition-transform hover:text-purple-500"
                     >
                       <svg
                         viewBox="0 0 24 24"
@@ -3180,7 +3180,7 @@ function Footer({
             </h3>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <MapPin size={18} className="text-orange-500 mt-1 shrink-0" />
+                <MapPin size={18} className="text-purple-500 mt-1 shrink-0" />
                 <div>
                   <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                     {settings?.[`address_${lang}`] ||
@@ -3199,7 +3199,7 @@ function Footer({
                         /\s/g,
                         ""
                       )}`}
-                      className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-3 py-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors font-mono flex items-center gap-1.5"
+                      className="text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-3 py-1.5 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors font-mono flex items-center gap-1.5"
                       dir="ltr"
                     >
                       <Phone size={12} />
@@ -3209,7 +3209,7 @@ function Footer({
                   {settings?.phone_checkout && (
                     <a
                       href={`tel:${settings.phone_checkout.replace(/\s/g, "")}`}
-                      className="text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 px-3 py-1.5 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors font-mono flex items-center gap-1.5"
+                      className="text-xs bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 px-3 py-1.5 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors font-mono flex items-center gap-1.5"
                       dir="ltr"
                     >
                       <Phone size={12} />
@@ -3230,7 +3230,7 @@ function Footer({
                   "text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider",
                   isOpen
                     ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                    : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
                 )}
               >
                 {isOpen
@@ -3352,7 +3352,7 @@ function Footer({
               href="https://dynamicord.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-bold text-slate-600 dark:text-slate-300 hover:text-orange-500 dark:hover:text-orange-400 transition-colors underline decoration-slate-300 dark:decoration-slate-600 hover:decoration-orange-500 underline-offset-2"
+              className="font-bold text-slate-600 dark:text-slate-300 hover:text-purple-500 dark:hover:text-purple-400 transition-colors underline decoration-slate-300 dark:decoration-slate-600 hover:decoration-purple-500 underline-offset-2"
             >
               dynamicord.com
             </a>
@@ -3489,7 +3489,7 @@ function InfoModal({
 
               <div className="bg-slate-50 dark:bg-navy-800/50 p-4 rounded-2xl border border-slate-100 dark:border-navy-800">
                 <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/20 text-orange-600 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 text-purple-600 flex items-center justify-center shrink-0">
                     <MapPin size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -3513,7 +3513,7 @@ function InfoModal({
                           /\s/g,
                           ""
                         )}`}
-                        className="flex items-center gap-1.5 text-xs font-bold bg-white dark:bg-navy-900 px-3 py-1.5 rounded-lg shadow-sm hover:text-orange-500 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-1.5 text-xs font-bold bg-white dark:bg-navy-900 px-3 py-1.5 rounded-lg shadow-sm hover:text-purple-500 transition-colors whitespace-nowrap"
                         dir="ltr"
                       >
                         <Phone size={12} />
@@ -3526,7 +3526,7 @@ function InfoModal({
                           /\s/g,
                           ""
                         )}`}
-                        className="flex items-center gap-1.5 text-xs font-bold bg-white dark:bg-navy-900 px-3 py-1.5 rounded-lg shadow-sm hover:text-orange-500 transition-colors whitespace-nowrap"
+                        className="flex items-center gap-1.5 text-xs font-bold bg-white dark:bg-navy-900 px-3 py-1.5 rounded-lg shadow-sm hover:text-purple-500 transition-colors whitespace-nowrap"
                         dir="ltr"
                       >
                         <Phone size={12} />
@@ -3550,7 +3550,7 @@ function InfoModal({
                     "text-xs font-bold px-2 py-0.5 rounded-full ml-auto",
                     isOpen
                       ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                      : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
                   )}
                 >
                   {isOpen
@@ -3591,7 +3591,7 @@ function InfoModal({
                         <span className="text-slate-500 dark:text-slate-400">
                           {dayLabels[idx]}
                         </span>
-                        <span className="font-medium text-red-500 dark:text-red-400">
+                        <span className="font-medium text-purple-500 dark:text-purple-400">
                           {lang === "ar" ? "مغلق" : "Closed"}
                         </span>
                       </div>

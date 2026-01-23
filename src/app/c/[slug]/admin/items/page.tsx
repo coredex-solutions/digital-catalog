@@ -54,7 +54,7 @@ export default function ItemsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [saving, setSaving] = useState(false);
-  
+
   const [filterCategory, setFilterCategory] = useState<string>("");
   const [isMultiLang, setIsMultiLang] = useState(true);
   const [activeLang, setActiveLang] = useState<'en' | 'ar' | 'fr'>('en');
@@ -74,11 +74,12 @@ export default function ItemsPage() {
   });
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  
-  // AI Image Enhancement
+
   const [enhancing, setEnhancing] = useState(false);
   const [enhanceLimit, setEnhanceLimit] = useState({ remaining: 10, limit: 10 });
   const [catalogId, setCatalogId] = useState<string>("");
+  const [aiStyle, setAiStyle] = useState<"professional" | "vibrant" | "clean">("professional");
+  const [aiProductType, setAiProductType] = useState<"food" | "product">("food");
 
   const fetchData = async () => {
     const token = localStorage.getItem(`catalog_admin_token_${slug}`);
@@ -115,27 +116,27 @@ export default function ItemsPage() {
       try {
         const token = localStorage.getItem(`catalog_admin_token_${slug}`);
         const res = await fetch(`/api/c/${slug}/admin/settings`, {
-           headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
-           const data = await res.json();
-           if (data.features?.multi_language_enabled || data.settings?.multi_language_enabled) {
-             setIsMultiLang(true);
-           }
-           // Get catalog ID for AI limits
-           if (data.catalog?.id) {
-             setCatalogId(data.catalog.id);
-             // Fetch AI enhancement limits
-             try {
-               const limitRes = await fetch(`/api/ai/enhance-image?catalogId=${data.catalog.id}`);
-               if (limitRes.ok) {
-                 const limitData = await limitRes.json();
-                 setEnhanceLimit({ remaining: limitData.remaining, limit: limitData.limit });
-               }
-             } catch (err) {
-               console.error("Failed to fetch AI limits:", err);
-             }
-           }
+          const data = await res.json();
+          if (data.features?.multi_language_enabled || data.settings?.multi_language_enabled) {
+            setIsMultiLang(true);
+          }
+          // Get catalog ID for AI limits
+          if (data.catalog?.id) {
+            setCatalogId(data.catalog.id);
+            // Fetch AI enhancement limits
+            try {
+              const limitRes = await fetch(`/api/ai/enhance-image?catalogId=${data.catalog.id}`);
+              if (limitRes.ok) {
+                const limitData = await limitRes.json();
+                setEnhanceLimit({ remaining: limitData.remaining, limit: limitData.limit });
+              }
+            } catch (err) {
+              console.error("Failed to fetch AI limits:", err);
+            }
+          }
         }
       } catch (err) {
         console.error(err);
@@ -274,22 +275,20 @@ export default function ItemsPage() {
     }
   };
 
-  // AI Image Enhancement
   const handleAIEnhance = async () => {
     if (!formData.image_url || enhancing) return;
-    
+
     setEnhancing(true);
     setUploadError(null);
 
     try {
-      // Call AI enhancement API - send URL, server will fetch it
       const res = await fetch("/api/ai/enhance-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageUrl: formData.image_url,
-          style: "professional",
-          productType: "food",
+          style: aiStyle,
+          productType: aiProductType,
           catalogId: catalogId
         }),
       });
@@ -297,22 +296,21 @@ export default function ItemsPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        // Upload the enhanced image
         const token = localStorage.getItem(`catalog_admin_token_${slug}`);
         const enhancedBlob = await fetch(`data:${data.enhancedImage.mimeType};base64,${data.enhancedImage.base64}`).then(r => r.blob());
         const enhancedFile = new File([enhancedBlob], "enhanced-image.jpg", { type: data.enhancedImage.mimeType });
-        
+
         const uploadForm = new FormData();
         uploadForm.append("file", enhancedFile);
-        
+
         const uploadRes = await fetch(`/api/c/${slug}/admin/upload`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
           body: uploadForm,
         });
-        
+
         const uploadData = await uploadRes.json();
-        
+
         if (uploadRes.ok) {
           setFormData((prev) => ({ ...prev, image_url: uploadData.url }));
           setEnhanceLimit({ remaining: data.remaining, limit: data.limit });
@@ -351,7 +349,6 @@ export default function ItemsPage() {
       </CatalogAdminHeader>
 
       <CatalogAdminContent>
-        {/* Context Filter */}
         <div className="mb-10 flex flex-wrap items-center gap-6">
           <div className="relative group">
             <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -376,10 +373,7 @@ export default function ItemsPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="glass rounded-[2.5rem] p-8 animate-pulse h-40"
-              />
+              <div key={i} className="glass rounded-[2.5rem] p-8 animate-pulse h-40" />
             ))}
           </div>
         ) : filteredItems.length === 0 ? (
@@ -401,15 +395,9 @@ export default function ItemsPage() {
                 className="glass-card group relative overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-1"
               >
                 <div className="flex gap-6 p-6">
-                  {/* Entity Core (Image) */}
                   <div className="relative w-24 h-24 rounded-[2rem] overflow-hidden flex-shrink-0 group-hover:shadow-[0_0_30px_rgba(255,255,255,0.05)] transition-all">
                     {item.image_url ? (
-                      <Image
-                        src={item.image_url}
-                        alt={item.name_en}
-                        fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
+                      <Image src={item.image_url} alt={item.name_en} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-white/[0.02]">
                         <Package className="w-8 h-8 text-white/10" />
@@ -423,18 +411,17 @@ export default function ItemsPage() {
                     ) : null}
                   </div>
 
-                  {/* Telemetry Data */}
                   <div className="flex-1 min-w-0 py-2">
                     <div className="flex items-start justify-between gap-4">
-                       <div className="min-w-0">
-                          <h3 className="text-lg font-black text-white tracking-tighter truncate group-hover:text-primary transition-colors">
-                            {item.name_en}
-                          </h3>
-                          <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-1 truncate">
-                            {item.category_name}
-                          </p>
-                       </div>
-                       <div className="flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
+                      <div className="min-w-0">
+                        <h3 className="text-lg font-black text-white tracking-tighter truncate group-hover:text-primary transition-colors">
+                          {item.name_en}
+                        </h3>
+                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mt-1 truncate">
+                          {item.category_name}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
                         <button
                           onClick={() => openEditModal(item)}
                           className="w-8 h-8 bg-white/5 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/10 hover:bg-white/10 transition-all"
@@ -443,19 +430,19 @@ export default function ItemsPage() {
                         </button>
                         <button
                           onClick={() => handleDelete(item.id)}
-                          className="w-8 h-8 bg-red-500/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-red-500/20 hover:bg-red-500/30 transition-all"
+                          className="w-8 h-8 bg-purple-500/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-purple-500/20 hover:bg-purple-500/30 transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5 text-white" />
                         </button>
                       </div>
                     </div>
-                    
+
                     <div className="mt-4 flex items-center justify-between">
                       <p className="text-xl font-black text-white/90 tracking-tighter tabular-nums">
                         <span className="text-[10px] text-primary mr-1">{item.currency}</span>
                         {item.price.toFixed(2)}
                       </p>
-                      <div className={`w-1.5 h-1.5 rounded-full ${item.is_active ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-white/10'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${item.is_active ? 'bg-violet-500 shadow-[0_0_10px_#10b981]' : 'bg-white/10'}`} />
                     </div>
                   </div>
                 </div>
@@ -465,7 +452,6 @@ export default function ItemsPage() {
         )}
       </CatalogAdminContent>
 
-      {/* Configuration Matrix (Modal) */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6 sm:p-8 bg-[#050505]/60 backdrop-blur-md animate-in fade-in duration-300 overflow-y-auto custom-scrollbar">
           <div className="glass-card w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-500 border-white/10 my-auto">
@@ -486,101 +472,86 @@ export default function ItemsPage() {
 
             <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Visual Interface Component */}
                 <div className="space-y-6">
-                  <div>
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-4">
-                      Product Image
-                    </label>
-                    <div className="relative group/upload">
-                      {formData.image_url ? (
-                        <div className="relative h-64 rounded-[2.5rem] overflow-hidden border border-white/10">
-                          <Image
-                            src={formData.image_url}
-                            alt="Entity"
-                            fill
-                            className="object-cover"
-                          />
-                          {/* Action buttons overlay */}
-                          <div className="absolute top-4 right-4 flex gap-2">
-                            {/* AI Enhance Button */}
-                            <button
-                              onClick={handleAIEnhance}
-                              disabled={enhancing || enhanceLimit.remaining <= 0}
-                              className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-                              title={`تحسين بالذكاء الاصطناعي (${enhanceLimit.remaining}/${enhanceLimit.limit})`}
-                            >
-                              {enhancing ? (
-                                <Loader2 className="w-4 h-4 text-white animate-spin" />
-                              ) : (
-                                <Sparkles className="w-4 h-4 text-white" />
-                              )}
-                            </button>
-                            {/* Delete Button */}
-                            <button
-                              onClick={() => setFormData((p) => ({ ...p, image_url: "" }))}
-                              className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
-                            >
-                              <X className="w-4 h-4 text-white" />
-                            </button>
-                          </div>
-                          {/* AI Enhancement indicator */}
-                          {enhancing && (
-                            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center backdrop-blur-sm">
-                              <Loader2 className="w-10 h-10 text-purple-400 animate-spin mb-3" />
-                              <span className="text-xs font-bold text-white">جاري التحسين بالذكاء الاصطناعي...</span>
-                            </div>
-                          )}
-                          {/* Limit indicator */}
-                          <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-black/60 rounded-lg backdrop-blur-sm">
-                            <span className="text-[10px] font-bold text-white/70">
-                              ✨ {enhanceLimit.remaining}/{enhanceLimit.limit}
-                            </span>
-                          </div>
-                        </div>
-                      ) : uploading ? (
-                        <div className="flex flex-col items-center justify-center h-64 rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/[0.01] animate-pulse">
-                          <Loader2 className="w-8 h-8 text-primary mb-4 animate-spin" />
-                          <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Uploading...</span>
-                        </div>
-                      ) : (
-                        <label className="flex flex-col items-center justify-center h-64 rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/[0.01] cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all duration-500">
-                          <Upload className="w-8 h-8 text-white/10 mb-4" />
-                          <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Upload Image</span>
-                          <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                        </label>
-                      )}
-                    </div>
+                  <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-4">
+                    Product Image & AI Engine
+                  </label>
+
+                  <div className="flex gap-2 mb-4 p-2 bg-white/5 rounded-2xl border border-white/10">
+                    <select
+                      value={aiProductType}
+                      onChange={(e) => setAiProductType(e.target.value as any)}
+                      className="flex-1 bg-transparent text-[10px] font-black uppercase text-white/60 focus:outline-none cursor-pointer px-2"
+                    >
+                      <option value="food" className="bg-[#0a0a0a]">Food Mode</option>
+                      <option value="product" className="bg-[#0a0a0a]">Retail Mode</option>
+                    </select>
+                    <div className="w-[1px] bg-white/10" />
+                    <select
+                      value={aiStyle}
+                      onChange={(e) => setAiStyle(e.target.value as any)}
+                      className="flex-1 bg-transparent text-[10px] font-black uppercase text-white/60 focus:outline-none cursor-pointer px-2"
+                    >
+                      <option value="professional" className="bg-[#0a0a0a]">Pro Style</option>
+                      <option value="vibrant" className="bg-[#0a0a0a]">Vibrant</option>
+                      <option value="clean" className="bg-[#0a0a0a]">Clean</option>
+                    </select>
                   </div>
 
-                  {/* Context Assignment */}
-                  <div>
-                    <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Product Category</label>
-                    <select
-                      value={formData.category_id}
-                      onChange={(e) => setFormData((p) => ({ ...p, category_id: e.target.value }))}
-                      className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all appearance-none uppercase text-xs"
-                    >
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id} className="bg-[#0a0a0a]">{cat.name_en}</option>
-                      ))}
-                    </select>
+                  <div className="relative group/upload">
+                    {formData.image_url ? (
+                      <div className="relative h-64 rounded-[2.5rem] overflow-hidden border border-white/10">
+                        <Image src={formData.image_url} alt="Entity" fill className="object-cover" />
+                        <div className="absolute top-4 right-4 flex gap-2">
+                          <button
+                            onClick={handleAIEnhance}
+                            disabled={enhancing || enhanceLimit.remaining <= 0}
+                            className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={`تحسين بالذكاء الاصطناعي (${enhanceLimit.remaining}/${enhanceLimit.limit})`}
+                          >
+                            {enhancing ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Sparkles className="w-4 h-4 text-white" />}
+                          </button>
+                          <button
+                            onClick={() => setFormData((p) => ({ ...p, image_url: "" }))}
+                            className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
+                          >
+                            <X className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+                        {enhancing && (
+                          <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center backdrop-blur-sm">
+                            <Loader2 className="w-10 h-10 text-purple-400 animate-spin mb-3" />
+                            <span className="text-xs font-bold text-white">جاري التحسين بالذكاء الاصطناعي...</span>
+                          </div>
+                        )}
+                        <div className="absolute bottom-4 left-4 px-3 py-1.5 bg-black/60 rounded-lg backdrop-blur-sm">
+                          <span className="text-[10px] font-bold text-white/70">✨ {enhanceLimit.remaining}/{enhanceLimit.limit}</span>
+                        </div>
+                      </div>
+                    ) : uploading ? (
+                      <div className="flex flex-col items-center justify-center h-64 rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/[0.01] animate-pulse">
+                        <Loader2 className="w-8 h-8 text-primary mb-4 animate-spin" />
+                        <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Uploading...</span>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center h-64 rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/[0.01] cursor-pointer hover:border-primary/40 hover:bg-primary/5 transition-all duration-500">
+                        <Upload className="w-8 h-8 text-white/10 mb-4" />
+                        <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Upload Image</span>
+                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                      </label>
+                    )}
                   </div>
                 </div>
 
-                {/* Data Configuration Component */}
                 <div className="space-y-6">
-                   {/* Locale Selection */}
-                   {isMultiLang && (
+                  {isMultiLang && (
                     <div className="flex p-1.5 bg-white/[0.02] border border-white/5 rounded-2xl">
                       {(['en', 'ar', 'fr'] as const).map((lang) => (
                         <button
                           key={lang}
                           type="button"
                           onClick={() => setActiveLang(lang)}
-                          className={`flex-1 py-3 text-[10px] font-black transition-all rounded-xl uppercase tracking-widest ${
-                            activeLang === lang ? "bg-white text-black shadow-lg" : "text-white/30 hover:text-white"
-                          }`}
+                          className={`flex-1 py-3 text-[10px] font-black transition-all rounded-xl uppercase tracking-widest ${activeLang === lang ? "bg-white text-black shadow-lg" : "text-white/30 hover:text-white"}`}
                         >
                           {lang === 'ar' ? 'العربية' : lang.toUpperCase()}
                         </button>
@@ -588,98 +559,51 @@ export default function ItemsPage() {
                     </div>
                   )}
 
-                  {/* Variable Input Matrix */}
                   <div className="space-y-4">
                     {activeLang === 'en' ? (
                       <>
                         <div>
                           <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Product Name (EN)</label>
-                          <input
-                            type="text"
-                            value={formData.name_en}
-                            onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all"
-                            required
-                          />
+                          <input type="text" value={formData.name_en} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all" required />
                         </div>
                         <div>
                           <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Product Description (EN)</label>
-                          <textarea
-                            value={formData.description_en}
-                            onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
-                            rows={3}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all resize-none"
-                          />
+                          <textarea value={formData.description_en} onChange={(e) => setFormData({ ...formData, description_en: e.target.value })} rows={3} className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all resize-none" />
                         </div>
                       </>
                     ) : activeLang === 'ar' ? (
                       <>
                         <div>
                           <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2 text-right">اسم المنتج (AR)</label>
-                          <input
-                            type="text"
-                            value={formData.name_ar}
-                            onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all text-right"
-                            dir="rtl"
-                          />
+                          <input type="text" value={formData.name_ar} onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })} className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all text-right" dir="rtl" />
                         </div>
                         <div>
                           <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2 text-right">وصف المنتج (AR)</label>
-                          <textarea
-                            value={formData.description_ar}
-                            onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
-                            rows={3}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all text-right resize-none"
-                            dir="rtl"
-                          />
+                          <textarea value={formData.description_ar} onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })} rows={3} className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all text-right resize-none" dir="rtl" />
                         </div>
                       </>
                     ) : (
                       <>
                         <div>
                           <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Nom du produit (FR)</label>
-                          <input
-                            type="text"
-                            value={formData.name_fr}
-                            onChange={(e) => setFormData({ ...formData, name_fr: e.target.value })}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all"
-                          />
+                          <input type="text" value={formData.name_fr} onChange={(e) => setFormData({ ...formData, name_fr: e.target.value })} className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all" />
                         </div>
                         <div>
                           <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Description du produit (FR)</label>
-                          <textarea
-                            value={formData.description_fr}
-                            onChange={(e) => setFormData({ ...formData, description_fr: e.target.value })}
-                            rows={3}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all resize-none"
-                          />
+                          <textarea value={formData.description_fr} onChange={(e) => setFormData({ ...formData, description_fr: e.target.value })} rows={3} className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all resize-none" />
                         </div>
                       </>
                     )}
                   </div>
 
-                  {/* Financial Parameters */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Price</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={formData.price}
-                        onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))}
-                        className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 shadow-inner"
-                        placeholder="0.00"
-                        required
-                      />
+                      <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))} className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 shadow-inner" placeholder="0.00" required />
                     </div>
                     <div>
                       <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Currency</label>
-                      <select
-                        value={formData.currency}
-                        onChange={(e) => setFormData((p) => ({ ...p, currency: e.target.value }))}
-                        className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all appearance-none uppercase text-xs"
-                      >
+                      <select value={formData.currency} onChange={(e) => setFormData((p) => ({ ...p, currency: e.target.value }))} className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all appearance-none uppercase text-xs">
                         {['USD', 'EUR', 'GBP', 'AED', 'SAR', 'LBP'].map(cur => (
                           <option key={cur} value={cur} className="bg-[#0a0a0a]">{cur}</option>
                         ))}
@@ -687,19 +611,24 @@ export default function ItemsPage() {
                     </div>
                   </div>
 
-                  {/* Behavioral Flags */}
-                  <label className="flex items-center gap-4 cursor-pointer group/flag">
-                    <div className={`w-6 h-6 rounded-lg border border-white/10 flex items-center justify-center transition-all ${formData.is_featured ? 'bg-primary border-primary shadow-[0_0_15px_var(--color-primary)]' : 'bg-white/5 group-hover:bg-white/10'}`}>
-                      {formData.is_featured && <Star className="w-3.5 h-3.5 text-white fill-white" />}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-2">Product Category</label>
+                      <select value={formData.category_id} onChange={(e) => setFormData((p) => ({ ...p, category_id: e.target.value }))} className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all appearance-none uppercase text-xs">
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id} className="bg-[#0a0a0a]">{cat.name_en}</option>
+                        ))}
+                      </select>
                     </div>
-                    <input
-                      type="checkbox"
-                      checked={formData.is_featured}
-                      onChange={(e) => setFormData((p) => ({ ...p, is_featured: e.target.checked }))}
-                      className="hidden"
-                    />
-                    <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] group-hover:text-white transition-colors">Featured Product</span>
-                  </label>
+
+                    <label className="flex items-center gap-4 cursor-pointer group/flag">
+                      <div className={`w-6 h-6 rounded-lg border border-white/10 flex items-center justify-center transition-all ${formData.is_featured ? 'bg-primary border-primary shadow-[0_0_15px_var(--color-primary)]' : 'bg-white/5 group-hover:bg-white/10'}`}>
+                        {formData.is_featured && <Star className="w-3.5 h-3.5 text-white fill-white" />}
+                      </div>
+                      <input type="checkbox" checked={formData.is_featured} onChange={(e) => setFormData((p) => ({ ...p, is_featured: e.target.checked }))} className="hidden" />
+                      <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em] group-hover:text-white transition-colors">Featured Product</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>

@@ -38,7 +38,7 @@ export default function MenuLayout({
           {/* Back Button */}
           <button
             onClick={() => router.push("/categories")}
-            className="flex-shrink-0 w-10 h-10 rounded-full bg-white dark:bg-navy-800 text-slate-700 dark:text-slate-200 shadow-sm hover:shadow-md transition-all border border-slate-200 dark:border-navy-700 flex items-center justify-center hover:text-orange-500 dark:hover:text-orange-400 hover:border-orange-200"
+            className="flex-shrink-0 w-10 h-10 rounded-full bg-white dark:bg-navy-800 text-slate-700 dark:text-slate-200 shadow-sm hover:shadow-md transition-all border border-slate-200 dark:border-navy-700 flex items-center justify-center hover:text-purple-500 dark:hover:text-purple-400 hover:border-purple-200"
           >
             {lang === "ar" ? (
               <ChevronRight size={20} />
@@ -58,7 +58,7 @@ export default function MenuLayout({
                   "whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-bold transition-all border cursor-pointer hover:scale-105 active:scale-95 shadow-sm flex-shrink-0",
                   categoryId === cat.id
                     ? "bg-purple-600 text-white border-transparent shadow-purple-500/30"
-                    : "bg-white dark:bg-navy-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-navy-700 hover:border-orange-400 dark:hover:border-orange-500/50 hover:text-orange-600 dark:hover:text-orange-400"
+                    : "bg-white dark:bg-navy-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-navy-700 hover:border-purple-400 dark:hover:border-purple-500/50 hover:text-purple-600 dark:hover:text-purple-400"
                 )}
               >
                 {cat[lang]}

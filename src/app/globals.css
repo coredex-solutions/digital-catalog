@@ -9,11 +9,14 @@
   --card-foreground: 0 0% 98%;
   --popover: 240 10% 3.9%;
   --popover-foreground: 0 0% 98%;
-  --primary: #fead1d;
-  --secondary: #b14288;
-  --accent: #F7C948;
+  --primary: #8b5cf6;
+  /* Violet 500 */
+  --secondary: #8b5cf6;
+  /* Violet 600 */
+  --accent: #c084fc;
+  /* Purple 400 */
   --surface: #121215;
-  --background-hex: #020202;
+  --background-hex: #020203;
   --text-primary: #ffffff;
   --text-muted: rgba(255, 255, 255, 0.4);
   --ring: var(--primary);

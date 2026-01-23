@@ -281,7 +281,7 @@ export default function AIWaiterTraining() {
           <div className="flex flex-col items-center justify-center h-[60vh]">
             <div className="relative">
               <div className="w-20 h-20 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
-              <Sparkles className="w-8 h-8 text-pink-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-bounce" />
+              <Sparkles className="w-8 h-8 text-purple-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-bounce" />
             </div>
             <p className="mt-6 text-white/40 font-medium animate-pulse">Gemini is analyzing your menu to craft specific questions...</p>
           </div>
@@ -311,7 +311,7 @@ export default function AIWaiterTraining() {
             {/* Progress Bar */}
             <div className="relative h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
               <div
-                className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-700 ease-out"
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-purple-500 transition-all duration-700 ease-out"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -320,7 +320,7 @@ export default function AIWaiterTraining() {
               {/* Question Card */}
               <div className="lg:col-span-12">
                 <div className="relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-[2.5rem] opacity-20 blur group-hover:opacity-30 transition duration-1000"></div>
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-purple-500 rounded-[2.5rem] opacity-20 blur group-hover:opacity-30 transition duration-1000"></div>
                   <div className="relative bg-[#0a0a0c]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-12">
                     <div className="flex items-center justify-between gap-4 mb-8">
                       <div className="flex items-center gap-4">
@@ -353,9 +353,9 @@ export default function AIWaiterTraining() {
                       </p>
 
                       {currentQuestion.context && (
-                        <div className="flex items-start gap-3 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
-                          <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
-                          <p className="text-sm text-blue-400/80 leading-relaxed">
+                        <div className="flex items-start gap-3 p-4 bg-violet-500/5 border border-violet-500/10 rounded-2xl">
+                          <AlertCircle className="w-5 h-5 text-violet-400 mt-0.5" />
+                          <p className="text-sm text-violet-400/80 leading-relaxed">
                             {currentQuestion.context}
                           </p>
                         </div>
@@ -397,7 +397,7 @@ export default function AIWaiterTraining() {
                             disabled={!hasMicrophone && !isRecording}
                             title={!hasMicrophone ? "No microphone detected" : "Voice input"}
                             className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${isRecording
-                                ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+                                ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20'
                                 : !hasMicrophone
                                   ? 'bg-white/5 text-white/20 cursor-not-allowed'
                                   : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white'
@@ -412,10 +412,10 @@ export default function AIWaiterTraining() {
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="flex items-center gap-3 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-full w-fit"
+                          className="flex items-center gap-3 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full w-fit"
                         >
-                          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                          <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Listening...</span>
+                          <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                          <span className="text-[10px] font-black text-purple-500 uppercase tracking-widest">Listening...</span>
                         </motion.div>
                       )}
 
@@ -431,7 +431,7 @@ export default function AIWaiterTraining() {
                         <button
                           onClick={handleSaveAnswer}
                           disabled={!answer.trim() || saving}
-                          className="px-10 py-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl text-white font-bold shadow-lg shadow-purple-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale"
+                          className="px-10 py-4 bg-gradient-to-r from-purple-500 to-purple-500 rounded-2xl text-white font-bold shadow-lg shadow-purple-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale"
                         >
                           {saving ? (
                             <div className="flex items-center gap-2">
@@ -468,7 +468,7 @@ export default function AIWaiterTraining() {
               </button>
               <button
                 onClick={handleGenerateQuestions}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl text-white font-bold transition-all shadow-lg shadow-purple-500/10"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-500 rounded-xl text-white font-bold transition-all shadow-lg shadow-purple-500/10"
               >
                 <Brain className="w-4 h-4" />
                 Generate New Questions

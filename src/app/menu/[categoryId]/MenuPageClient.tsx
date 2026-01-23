@@ -197,11 +197,11 @@ export default function MenuPageClient({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsCartOpen(true)}
-              className="relative w-14 h-14 bg-slate-900/95 dark:bg-orange-500/95 backdrop-blur-lg text-white rounded-full shadow-xl shadow-slate-900/30 dark:shadow-orange-500/30 flex items-center justify-center border border-white/10 transition-all group"
+              className="relative w-14 h-14 bg-slate-900/95 dark:bg-purple-500/95 backdrop-blur-lg text-white rounded-full shadow-xl shadow-slate-900/30 dark:shadow-purple-500/30 flex items-center justify-center border border-white/10 transition-all group"
             >
               <ShoppingCart size={22} strokeWidth={2} />
               {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold border-2 border-white dark:border-navy-900">
+                <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold border-2 border-white dark:border-navy-900">
                   {cart.length}
                 </span>
               )}

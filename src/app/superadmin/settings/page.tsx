@@ -129,7 +129,7 @@ export default function SettingsPage() {
       </div>
       <button onClick={() => onChange(!checked)}>
         {checked ? (
-          <ToggleRight className="w-10 h-10 text-emerald-500" />
+          <ToggleRight className="w-10 h-10 text-violet-500" />
         ) : (
           <ToggleLeft className="w-10 h-10 text-slate-500" />
         )}
@@ -159,7 +159,7 @@ export default function SettingsPage() {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500/50"
+        className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/50"
       />
     </div>
   );
@@ -170,7 +170,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving || loading}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl font-medium transition-all hover:shadow-lg hover:shadow-emerald-500/20 disabled:opacity-50"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-violet-600 text-white rounded-xl font-medium transition-all hover:shadow-lg hover:shadow-violet-500/20 disabled:opacity-50"
         >
           {saving ? (
             <>
@@ -191,8 +191,8 @@ export default function SettingsPage() {
           <div
             className={`mb-6 px-4 py-3 rounded-xl ${
               message.type === "success"
-                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                : "bg-red-500/10 text-red-400 border border-red-500/20"
+                ? "bg-violet-500/10 text-violet-400 border border-violet-500/20"
+                : "bg-purple-500/10 text-purple-400 border border-purple-500/20"
             }`}
           >
             {message.text}
@@ -201,14 +201,14 @@ export default function SettingsPage() {
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-6">
             {/* General Settings */}
             <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
               <h3 className="font-semibold text-white mb-6 flex items-center gap-2">
-                <Globe className="w-5 h-5 text-emerald-500" />
+                <Globe className="w-5 h-5 text-violet-500" />
                 General
               </h3>
               <div className="space-y-4">
@@ -238,7 +238,7 @@ export default function SettingsPage() {
                     onChange={(e) =>
                       updateSetting("default_language", e.target.value)
                     }
-                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-emerald-500/50"
+                    className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500/50"
                   >
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
@@ -251,7 +251,7 @@ export default function SettingsPage() {
             {/* Access & Security */}
             <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
               <h3 className="font-semibold text-white mb-6 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-emerald-500" />
+                <Shield className="w-5 h-5 text-violet-500" />
                 Access & Security
               </h3>
               <div className="space-y-2">

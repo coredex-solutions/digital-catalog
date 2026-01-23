@@ -39,7 +39,7 @@ export function SaasFooter({
   contact,
   logoUrl,
   catalogName = "Restaurant",
-  colorPrimary = "#fead1d",
+  colorPrimary = "#8b5cf6",
   whatsappNumber
 }: SaasFooterProps) {
   const dir = lang === "ar" ? "rtl" : "ltr";
@@ -195,7 +195,7 @@ export function SaasFooter({
                   "text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider",
                   isOpen
                     ? "bg-green-500/15 text-green-600 dark:text-green-400"
-                    : "bg-red-500/15 text-red-600 dark:text-red-400"
+                    : "bg-purple-500/15 text-purple-600 dark:text-purple-400"
                 )}
               >
                 {isOpen

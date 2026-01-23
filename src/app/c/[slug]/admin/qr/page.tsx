@@ -369,7 +369,7 @@ const TEMPLATE_GRADIENT_DEFAULTS: Record<string, number> = {
 const DEFAULT_CUSTOMIZATION: TemplateCustomization = {
   primaryColor: "#FF6B35",
   secondaryColor: "#4A90A4",
-  accentColor: "#F7C948",
+  accentColor: "#c084fc",
   backgroundColor: "#1a1a2e",
   textPrimary: "#ffffff",
   textSecondary: "#a0aec0",
@@ -537,7 +537,7 @@ export default function QRCodePage() {
             logo_url: data.catalog.logo_url,
             color_primary: data.appearance.color_primary || "#FF6B35",
             color_secondary: data.appearance.color_secondary || "#4A90A4",
-            color_accent: data.appearance.color_accent || "#F7C948",
+            color_accent: data.appearance.color_accent || "#c084fc",
             color_background: data.appearance.color_background || "#1a1a2e",
           };
           setCatalog(catalogData);
@@ -746,7 +746,7 @@ export default function QRCodePage() {
         <CatalogAdminHeader title="QR Code & Print Materials" />
         <CatalogAdminContent>
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
           </div>
         </CatalogAdminContent>
       </CatalogAdminShell>
@@ -770,7 +770,7 @@ export default function QRCodePage() {
             {/* QR Preview */}
             <div className="bg-slate-800 rounded-xl p-6">
               <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-emerald-400" />
+                <QrCode className="w-5 h-5 text-violet-400" />
                 Your QR Code
               </h2>
 
@@ -781,12 +781,12 @@ export default function QRCodePage() {
                 }}
               >
                 {qrError ? (
-                  <div className="text-center text-red-400 p-4">
+                  <div className="text-center text-purple-400 p-4">
                     <p className="font-medium">Failed to load QR Code</p>
                     <p className="text-sm mt-1">{qrError}</p>
                     <button
                       onClick={() => regenerateQR()}
-                      className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-sm"
+                      className="mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm"
                     >
                       Retry
                     </button>
@@ -814,7 +814,7 @@ export default function QRCodePage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => downloadQR("png")}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors"
                 >
                   <FileImage className="w-4 h-4" />
                   Download PNG
@@ -832,7 +832,7 @@ export default function QRCodePage() {
             {/* QR Customization */}
             <div className="bg-slate-800 rounded-xl p-6">
               <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Palette className="w-5 h-5 text-emerald-400" />
+                <Palette className="w-5 h-5 text-violet-400" />
                 Customize QR Code
               </h2>
 
@@ -909,7 +909,7 @@ export default function QRCodePage() {
                         type="checkbox"
                         checked={transparent}
                         onChange={(e) => setTransparent(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-emerald-500"
+                        className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
                       />
                       <span className="text-sm text-slate-300">
                         Transparent
@@ -964,16 +964,15 @@ export default function QRCodePage() {
           <div className="bg-slate-800 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Printer className="w-5 h-5 text-emerald-400" />
+                <Printer className="w-5 h-5 text-violet-400" />
                 Printable Templates
               </h2>
               <button
                 onClick={() => setShowCustomizer(!showCustomizer)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  showCustomizer
-                    ? "bg-emerald-600 text-white"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${showCustomizer
+                    ? "bg-violet-600 text-white"
                     : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                }`}
+                  }`}
               >
                 <Settings2 className="w-4 h-4" />
                 {showCustomizer ? "Hide Customizer" : "Customize Design"}
@@ -989,7 +988,7 @@ export default function QRCodePage() {
               <div className="bg-slate-900 rounded-xl p-6 mb-6 border border-slate-700">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-white font-medium flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                    <Sparkles className="w-4 h-4 text-accent" />
                     Template Customization
                   </h3>
                   <button
@@ -1244,7 +1243,7 @@ export default function QRCodePage() {
                           onChange={(e) =>
                             updateCustomization("showLogo", e.target.checked)
                           }
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-emerald-500"
+                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
                         />
                         <span className="text-sm text-slate-300">
                           Show Logo
@@ -1260,7 +1259,7 @@ export default function QRCodePage() {
                               e.target.checked
                             )
                           }
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-emerald-500"
+                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
                         />
                         <span className="text-sm text-slate-300">
                           Show Shop Name
@@ -1280,7 +1279,7 @@ export default function QRCodePage() {
                             placeholder={
                               catalog?.name || "Custom name (optional)"
                             }
-                            className="w-full px-3 py-1.5 bg-slate-700 rounded-lg text-white text-sm border border-slate-600 focus:border-emerald-500 focus:outline-none"
+                            className="w-full px-3 py-1.5 bg-slate-700 rounded-lg text-white text-sm border border-slate-600 focus:border-violet-500 focus:outline-none"
                           />
                           <p className="text-[10px] text-slate-500 mt-1">
                             Leave empty to use catalog name, or enter custom
@@ -1298,7 +1297,7 @@ export default function QRCodePage() {
                               e.target.checked
                             )
                           }
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-emerald-500"
+                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
                         />
                         <span className="text-sm text-slate-300">
                           Show Arabic Text
@@ -1310,7 +1309,7 @@ export default function QRCodePage() {
                         <label className="block text-xs text-slate-400 mb-2">
                           Background Pattern{" "}
                           {selectedTemplate && (
-                            <span className="text-emerald-400">
+                            <span className="text-violet-400">
                               (for {selectedTemplate.replace("-", " ")})
                             </span>
                           )}
@@ -1322,11 +1321,10 @@ export default function QRCodePage() {
                               onClick={() =>
                                 updateCustomization("pattern", patternDef.id)
                               }
-                              className={`px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-1.5 ${
-                                customization.pattern === patternDef.id
-                                  ? "bg-emerald-600 text-white"
+                              className={`px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-1.5 ${customization.pattern === patternDef.id
+                                  ? "bg-violet-600 text-white"
                                   : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                              }`}
+                                }`}
                             >
                               <span>{patternDef.icon}</span>
                               <span>{patternDef.name}</span>
@@ -1371,7 +1369,7 @@ export default function QRCodePage() {
                         )}
                       </div>
                       {customization.customUrl && (
-                        <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                        <p className="text-xs text-purple-400 mt-1 flex items-center gap-1">
                           ⚠️ Using custom URL instead of catalog URL
                         </p>
                       )}
@@ -1455,11 +1453,10 @@ export default function QRCodePage() {
                               onClick={() =>
                                 updateCustomization("fontPreset", preset)
                               }
-                              className={`px-3 py-2 text-xs rounded-lg transition-colors text-left ${
-                                customization.fontPreset === preset
-                                  ? "bg-emerald-600 text-white"
+                              className={`px-3 py-2 text-xs rounded-lg transition-colors text-left ${customization.fontPreset === preset
+                                  ? "bg-violet-600 text-white"
                                   : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                              }`}
+                                }`}
                             >
                               <span className="font-medium block">
                                 {FONT_PRESETS[preset].name}
@@ -1490,11 +1487,10 @@ export default function QRCodePage() {
                             onClick={() =>
                               updateCustomization("headingWeight", weight)
                             }
-                            className={`px-3 py-1.5 text-xs rounded-lg capitalize transition-colors ${
-                              customization.headingWeight === weight
-                                ? "bg-emerald-600 text-white"
+                            className={`px-3 py-1.5 text-xs rounded-lg capitalize transition-colors ${customization.headingWeight === weight
+                                ? "bg-violet-600 text-white"
                                 : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                            }`}
+                              }`}
                           >
                             {weight}
                           </button>
@@ -1515,11 +1511,10 @@ export default function QRCodePage() {
                               onClick={() =>
                                 updateCustomization("letterSpacing", spacing)
                               }
-                              className={`px-3 py-1.5 text-xs rounded-lg capitalize transition-colors ${
-                                customization.letterSpacing === spacing
-                                  ? "bg-emerald-600 text-white"
+                              className={`px-3 py-1.5 text-xs rounded-lg capitalize transition-colors ${customization.letterSpacing === spacing
+                                  ? "bg-violet-600 text-white"
                                   : "bg-slate-700 text-slate-300 hover:bg-slate-600"
-                              }`}
+                                }`}
                             >
                               {spacing}
                             </button>
@@ -1537,11 +1532,10 @@ export default function QRCodePage() {
                 <button
                   key={template.id}
                   onClick={() => setSelectedTemplate(template.id)}
-                  className={`p-4 rounded-xl border-2 transition-all text-left ${
-                    selectedTemplate === template.id
-                      ? "border-emerald-500 bg-emerald-500/10"
+                  className={`p-4 rounded-xl border-2 transition-all text-left ${selectedTemplate === template.id
+                      ? "border-violet-500 bg-violet-500/10"
                       : "border-slate-700 bg-slate-900 hover:border-slate-600"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-2xl">{template.icon}</span>
@@ -1563,7 +1557,7 @@ export default function QRCodePage() {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handlePrint}
-                  className="flex items-center gap-2 py-3 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 py-3 px-6 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors"
                 >
                   <Printer className="w-4 h-4" />
                   Print / Save as PDF
@@ -1578,7 +1572,7 @@ export default function QRCodePage() {
                 <button
                   onClick={batchExportTemplates}
                   disabled={isBatchExporting}
-                  className="flex items-center gap-2 py-3 px-6 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 py-3 px-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
                   <Layers className="w-4 h-4" />
                   {isBatchExporting
@@ -1601,7 +1595,7 @@ export default function QRCodePage() {
               {/* Preview Header with Controls */}
               <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
                 <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-emerald-400" />
+                  <Eye className="w-5 h-5 text-violet-400" />
                   Preview:{" "}
                   {PRINT_TEMPLATES.find((t) => t.id === selectedTemplate)?.name}
                 </h2>
@@ -1676,11 +1670,10 @@ export default function QRCodePage() {
 
               {/* Preview Container with Scale */}
               <div
-                className={`bg-white rounded-lg p-4 overflow-auto transition-all ${
-                  isFullscreen
+                className={`bg-white rounded-lg p-4 overflow-auto transition-all ${isFullscreen
                     ? "min-h-screen flex items-center justify-center"
                     : ""
-                }`}
+                  }`}
                 style={{
                   backgroundColor: isFullscreen ? "#f5f5f5" : "white",
                 }}
@@ -3699,12 +3692,11 @@ function PrintTemplatePreview({
                   <div
                     className="p-0.5 rounded"
                     style={{
-                      background: `linear-gradient(${
-                        gradientDirection + 90
-                      }deg, ${hexToRgba(accentColor, 0.4)}, ${hexToRgba(
-                        primaryColor,
-                        0.4
-                      )})`,
+                      background: `linear-gradient(${gradientDirection + 90
+                        }deg, ${hexToRgba(accentColor, 0.4)}, ${hexToRgba(
+                          primaryColor,
+                          0.4
+                        )})`,
                     }}
                   >
                     <div className="bg-white p-4 rounded">
@@ -4242,13 +4234,13 @@ function PrintTemplatePreview({
             style={{
               backgroundImage: `
                 linear-gradient(${hexToRgba(
-                  primaryColor,
-                  0.04
-                )} 1px, transparent 1px),
+                primaryColor,
+                0.04
+              )} 1px, transparent 1px),
                 linear-gradient(90deg, ${hexToRgba(
-                  primaryColor,
-                  0.04
-                )} 1px, transparent 1px)
+                primaryColor,
+                0.04
+              )} 1px, transparent 1px)
               `,
               backgroundSize: "40px 40px",
             }}
@@ -4933,17 +4925,15 @@ function PrintTemplatePreview({
           <div
             className="absolute -top-10 -right-10 w-40 h-40 rounded-full"
             style={{
-              background: `linear-gradient(${
-                gradientDirection + 45
-              }deg, ${hexToRgba(accentColor, 0.4)} 0%, transparent 70%)`,
+              background: `linear-gradient(${gradientDirection + 45
+                }deg, ${hexToRgba(accentColor, 0.4)} 0%, transparent 70%)`,
             }}
           />
           <div
             className="absolute -bottom-16 -left-16 w-56 h-56 rounded-full"
             style={{
-              background: `linear-gradient(${
-                gradientDirection - 45
-              }deg, ${hexToRgba(secondaryColor, 0.3)} 0%, transparent 70%)`,
+              background: `linear-gradient(${gradientDirection - 45
+                }deg, ${hexToRgba(secondaryColor, 0.3)} 0%, transparent 70%)`,
             }}
           />
 

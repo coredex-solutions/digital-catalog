@@ -35,8 +35,8 @@ export function SaasCategoryGrid({
   categories,
   lang,
   catalogSlug,
-  colorPrimary = "#fead1d",
-  colorSecondary = "#b14288",
+  colorPrimary = "#8b5cf6",
+  colorSecondary = "#8b5cf6",
   isFirstLoad = false,
 }: SaasCategoryGridProps) {
   // Get category name based on language

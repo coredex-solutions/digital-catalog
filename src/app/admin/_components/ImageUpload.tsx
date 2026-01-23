@@ -67,7 +67,7 @@ export function ImageUpload({
               <button
                 type="button"
                 onClick={handleRemove}
-                className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                className="absolute top-2 right-2 p-2 bg-purple-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-purple-600"
               >
                 <X size={16} />
               </button>

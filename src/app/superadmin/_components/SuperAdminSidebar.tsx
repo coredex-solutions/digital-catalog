@@ -75,7 +75,7 @@ export function SuperAdminSidebar() {
       <div className="p-4 border-t border-white/5">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all w-full border border-transparent hover:border-red-500/20"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/40 hover:text-purple-400 hover:bg-purple-500/10 transition-all w-full border border-transparent hover:border-purple-500/20"
         >
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Sign Out</span>

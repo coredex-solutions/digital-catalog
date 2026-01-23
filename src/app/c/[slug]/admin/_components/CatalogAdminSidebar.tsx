@@ -147,7 +147,7 @@ export function CatalogAdminSidebar({
       <div className="p-6">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-5 py-4 rounded-2xl text-white/20 hover:text-red-400 hover:bg-red-500/5 border border-transparent hover:border-red-500/10 transition-all w-full group"
+          className="flex items-center gap-3 px-5 py-4 rounded-2xl text-white/20 hover:text-purple-400 hover:bg-purple-500/5 border border-transparent hover:border-purple-500/10 transition-all w-full group"
         >
           <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
           <span className="text-[11px] font-black uppercase tracking-[0.15em]">Sign Out</span>

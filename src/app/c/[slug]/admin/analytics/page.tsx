@@ -84,9 +84,9 @@ function StatCard({
               {isPositive ? (
                 <TrendingUp className="w-4 h-4 text-green-400" />
               ) : (
-                <TrendingDown className="w-4 h-4 text-red-400" />
+                <TrendingDown className="w-4 h-4 text-purple-400" />
               )}
-              <span className={isPositive ? "text-green-400" : "text-red-400"}>
+              <span className={isPositive ? "text-green-400" : "text-purple-400"}>
                 {isPositive ? "+" : ""}
                 {change.toFixed(1)}%
               </span>

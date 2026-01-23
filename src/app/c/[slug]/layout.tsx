@@ -119,7 +119,7 @@ export default async function CatalogLayout({
   const themeStyles = settings ? {
     '--color-primary': settings.color_primary || '#FF6B35',
     '--color-secondary': settings.color_secondary || '#4A90A4',
-    '--color-accent': settings.color_accent || '#F7C948',
+    '--color-accent': settings.color_accent || '#c084fc',
     '--color-background': settings.color_background || '#1a1a2e',
     '--color-surface': settings.color_surface || '#16213e',
     '--color-text': settings.color_text || '#ffffff',
