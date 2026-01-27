@@ -190,17 +190,33 @@ export function CatalogMenuClient({
   };
 
   return (
-    <div className={cn("min-h-screen bg-white dark:bg-navy-900 text-slate-900 dark:text-white", font)} dir={dir}>
+    <div
+      className={cn("min-h-screen transition-colors duration-300", font)}
+      style={{
+        backgroundColor: 'var(--background-hex)',
+        color: 'var(--text-primary)'
+      }}
+      dir={dir}
+    >
       {/* Header */}
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-40 backdrop-blur-xl border-b border-slate-200 dark:border-navy-800 bg-white/80 dark:bg-navy-900/80"
+        className="sticky top-0 z-40 backdrop-blur-xl border-b transition-colors duration-300"
+        style={{
+          backgroundColor: 'var(--navbar-bg)',
+          borderColor: 'var(--border-color)'
+        }}
       >
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
           <Link
             href={`/c/${slug}/categories`}
-            className="p-2 rounded-xl transition-colors bg-slate-100 dark:bg-navy-800 hover:bg-slate-200 dark:hover:bg-navy-700"
+            className="p-2 rounded-xl transition-all border"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderColor: 'var(--border-color)',
+              color: 'var(--text-primary)'
+            }}
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
@@ -224,7 +240,12 @@ export function CatalogMenuClient({
 
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-navy-800 hover:bg-slate-200 dark:hover:bg-navy-700 transition-colors"
+            className="p-2 rounded-xl transition-all border"
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderColor: 'var(--border-color)',
+              color: colorPrimary
+            }}
           >
             {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
@@ -244,7 +265,7 @@ export function CatalogMenuClient({
             fill
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white dark:to-navy-900" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[var(--background-hex)]" />
         </motion.div>
       )}
 
@@ -263,7 +284,11 @@ export function CatalogMenuClient({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="flex gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-navy-800"
+                  className="flex gap-4 p-4 rounded-2xl border transition-all"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    borderColor: 'var(--border-color)'
+                  }}
                 >
                   {/* Item Image */}
                   {item.image_url && (

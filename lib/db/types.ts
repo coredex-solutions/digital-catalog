@@ -29,8 +29,14 @@ export interface Catalog {
   id: string;
   slug: string;
   name: string;
+  name_ar?: string | null;
+  name_en?: string | null;
+  name_fr?: string | null;
   business_type: BusinessType;
   description: string | null;
+  description_ar?: string | null;
+  description_en?: string | null;
+  description_fr?: string | null;
   logo_url: string | null;
   is_active: boolean;
   is_suspended: boolean;
@@ -52,6 +58,8 @@ export interface CatalogSubscription {
   booking_enabled: boolean;
   analytics_enabled: boolean;
   custom_domain_enabled: boolean;
+  ai_image_enhancement_limit: number;
+  ai_image_enhancement_used: number;
   amount_paid: number | null;
   currency: string;
   payment_method: string | null;
@@ -67,7 +75,7 @@ export interface CatalogAdmin {
   email: string;
   password_hash: string;
   name: string;
-  role: 'admin' | 'editor';
+  role: 'admin' | 'editor' | 'owner' | 'viewer';
   is_active: boolean;
   created_at: string;
   last_login: string | null;
@@ -95,6 +103,9 @@ export interface CatalogSettings {
   color_text_muted: string;
 
   // Dark palette
+  color_primary_dark: string;
+  color_secondary_dark: string;
+  color_accent_dark: string;
   color_background_dark: string;
   color_surface_dark: string;
   color_text_dark: string;
@@ -346,6 +357,9 @@ export interface UpdateCatalogSettingsInput {
   color_surface?: string;
   color_text?: string;
   color_text_muted?: string;
+  color_primary_dark?: string;
+  color_secondary_dark?: string;
+  color_accent_dark?: string;
   color_background_dark?: string;
   color_surface_dark?: string;
   color_text_dark?: string;
@@ -413,7 +427,7 @@ export interface CatalogAdminJWTPayload {
   id: string;
   catalog_id: string;
   email: string;
-  role: 'admin' | 'editor';
+  role: 'admin' | 'editor' | 'owner' | 'viewer';
 }
 
 export type JWTPayload = SuperAdminJWTPayload | CatalogAdminJWTPayload;

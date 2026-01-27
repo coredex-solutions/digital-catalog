@@ -67,9 +67,9 @@ export function CatalogHomeClient() {
 
   // Build localized name object
   const catalogName: LocalizedString = {
-    ar: catalog.name,
-    en: catalog.name,
-    fr: catalog.name,
+    ar: catalog.name_ar || catalog.name,
+    en: catalog.name_en || catalog.name,
+    fr: catalog.name_fr || catalog.name,
   };
 
   // Build CTA labels from settings
@@ -90,7 +90,7 @@ export function CatalogHomeClient() {
       <DynamicHomePage
         lang={lang}
         onReservation={() => setIsReservationOpen(true)}
-        logoUrl={catalog.logo_url || "/placeholder-logo.png"}
+        logoUrl={catalog.logo_url || ""}
         name={catalogName}
         backgroundImage={settings?.hero_image_url}
         backgroundPattern="wood-pattern-dense"

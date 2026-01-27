@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { CatalogAdminShell } from "../_components/CatalogAdminShell";
+import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import {
   CatalogAdminHeader,
   CatalogAdminContent,
 } from "../_components/CatalogAdminSidebar";
 import {
+  Info,
   Save,
   Loader2,
   Palette,
@@ -19,11 +20,9 @@ import {
   ToggleLeft,
   ToggleRight,
   ImageIcon,
-  Search as SearchIcon,
   Bot as BotIcon,
   Sparkles as SparklesIcon,
   Brain,
-  Info as InfoIcon,
   Moon,
   Sun,
   Smartphone,
@@ -39,11 +38,18 @@ import {
   isImageFile,
 } from "@/utils/image-compression";
 import { cn } from "@/utils/helpers";
+import { CATALOG_THEMES, THEME_METHODS, generateDynamicTheme, ThemeMethod } from "@/config/themes";
 
 interface Settings {
   catalog: {
     name: string;
+    name_ar: string;
+    name_en: string;
+    name_fr: string;
     description: string;
+    description_ar: string;
+    description_en: string;
+    description_fr: string;
     logo_url: string;
   };
   appearance: {
@@ -58,6 +64,9 @@ interface Settings {
     color_text: string;
     color_text_muted: string;
     // Dark Mode specific colors
+    color_primary_dark: string;
+    color_secondary_dark: string;
+    color_accent_dark: string;
     color_background_dark: string;
     color_surface_dark: string;
     color_text_dark: string;
@@ -84,21 +93,6 @@ interface Settings {
     cta_order_label_ar: string;
     cta_order_label_fr: string;
   };
-  seo: {
-    seo_title_en: string;
-    seo_title_ar: string;
-    seo_title_fr: string;
-    seo_description_en: string;
-    seo_description_ar: string;
-    seo_description_fr: string;
-    seo_keywords: string;
-    json_ld_custom: string;
-  };
-  about: {
-    about_content_en: string;
-    about_content_ar: string;
-    about_content_fr: string;
-  };
   contact: {
     phone_primary: string;
     phone_whatsapp: string;
@@ -111,32 +105,39 @@ interface Settings {
     city_fr: string;
     google_map_iframe_url: string;
   };
+  subscription?: {
+    multi_language_enabled: boolean;
+    ai_image_enhancement_limit: number;
+  };
+  feature_config?: {
+    enabled_languages: string;
+    default_language: string;
+  };
 }
 
 export default function SettingsPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+  const { slug, user, fetchWithAuth } = useCatalogAdmin();
+  const isViewer = user?.role === 'viewer';
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "appearance" | "contact" | "features" | "seo" | "about" | "ai"
+    "appearance" | "contact" | "features" | "ai"
   >("appearance");
   const [previewMode, setPreviewMode] = useState<"light" | "dark">("dark");
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [savingSection, setSavingSection] = useState<string | null>(null);
 
   const fetchSettings = async () => {
     const token = localStorage.getItem(`catalog_admin_token_${slug}`);
     if (!token) return;
 
     try {
-      const res = await fetch(`/api/c/${slug}/admin/settings`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/settings`);
 
       if (res.ok) {
         const data = await res.json();
@@ -179,32 +180,31 @@ export default function SettingsPage() {
   }, [settings, previewMode]);
 
 
-  const handleSave = async () => {
+  const handleSaveSection = async (sectionName: string, dataToSave: any = settings) => {
     if (!settings) return;
-
-    setSaving(true);
+    setSavingSection(sectionName);
     setMessage(null);
 
     try {
-      const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-      const res = await fetch(`/api/c/${slug}/admin/settings`, {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/settings`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(dataToSave),
       });
 
       if (res.ok) {
-        setMessage({ type: "success", text: "Settings saved successfully" });
+        setMessage({ type: "success", text: `${sectionName} saved successfully!` });
+        setTimeout(() => setMessage(null), 3000);
       } else {
-        throw new Error("Failed to save settings");
+        const err = await res.json();
+        throw new Error(err.error || `Failed to save ${sectionName}`);
       }
     } catch (error: any) {
       setMessage({ type: "error", text: error.message });
     } finally {
-      setSaving(false);
+      setSavingSection(null);
     }
   };
 
@@ -301,6 +301,60 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+
+  const applyTheme = (themeId: string) => {
+    if (!settings) return;
+    const theme = CATALOG_THEMES.find(t => t.id === themeId);
+    if (!theme) return;
+
+    setSettings({
+      ...settings,
+      appearance: {
+        ...settings.appearance,
+        color_primary: theme.light.primary,
+        color_secondary: theme.light.secondary,
+        color_accent: theme.light.accent,
+        color_background: theme.light.background,
+        color_surface: theme.light.surface,
+        color_text: theme.light.text,
+        color_text_muted: theme.light.textMuted,
+        color_primary_dark: theme.dark.primary,
+        color_secondary_dark: theme.dark.secondary,
+        color_accent_dark: theme.dark.accent,
+        color_background_dark: theme.dark.background,
+        color_surface_dark: theme.dark.surface,
+        color_text_dark: theme.dark.text,
+        color_text_muted_dark: theme.dark.textMuted,
+      }
+    });
+    setMessage({ type: "success", text: `Theme "${theme.name}" applied. Don't forget to save!` });
+  };
+
+  const applyDynamicMethod = (method: ThemeMethod) => {
+    if (!settings) return;
+    const theme = generateDynamicTheme(settings.appearance.color_primary, method);
+
+    setSettings({
+      ...settings,
+      appearance: {
+        ...settings.appearance,
+        color_secondary: theme.light.secondary,
+        color_accent: theme.light.accent,
+        color_background: theme.light.background,
+        color_surface: theme.light.surface,
+        color_text: theme.light.text,
+        color_text_muted: theme.light.textMuted,
+        color_primary_dark: theme.dark.primary,
+        color_secondary_dark: theme.dark.secondary,
+        color_accent_dark: theme.dark.accent,
+        color_background_dark: theme.dark.background,
+        color_surface_dark: theme.dark.surface,
+        color_text_dark: theme.dark.text,
+        color_text_muted_dark: theme.dark.textMuted,
+      }
+    });
+    setMessage({ type: "success", text: `Method "${method}" applied to your brand color.` });
+  };
 
   const ProImageUpload = ({
     label,
@@ -399,25 +453,7 @@ export default function SettingsPage() {
 
   return (
     <CatalogAdminShell>
-      <CatalogAdminHeader title="Settings">
-        <button
-          onClick={handleSave}
-          disabled={saving || loading}
-          className="group relative flex items-center gap-3 px-8 py-3 bg-primary text-white rounded-2xl hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] transition-all duration-500 font-black text-[11px] uppercase tracking-widest overflow-hidden shadow-lg shadow-primary/10"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Saving Changes...
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              Save Settings
-            </>
-          )}
-        </button>
-      </CatalogAdminHeader>
+      <CatalogAdminHeader title="Settings" />
 
       <CatalogAdminContent>
         {message && (
@@ -444,8 +480,6 @@ export default function SettingsPage() {
                 { id: "appearance", label: "Branding", icon: Palette },
                 { id: "contact", label: "Contact", icon: Phone },
                 { id: "features", label: "Features", icon: ToggleRight },
-                { id: "seo", label: "SEO Settings", icon: SearchIcon },
-                { id: "about", label: "About Us", icon: InfoIcon },
                 { id: "ai", label: "AI Waiter", icon: Brain },
               ].map((tab) => (
                 <button
@@ -468,6 +502,86 @@ export default function SettingsPage() {
               {activeTab === "appearance" && (
                 <div className="grid lg:grid-cols-12 gap-12 items-start">
                   <div className="lg:col-span-8 space-y-8">
+                    {/* Identity Section */}
+                    <div className="glass-card p-10">
+                      <div className="flex items-center gap-3 mb-8">
+                        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                          <Layout className="w-4 h-4 text-primary" />
+                        </div>
+                        <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Business Identity</h3>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {/* English Name */}
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Business Name (English)</label>
+                          <input
+                            type="text"
+                            value={settings.catalog.name_en || settings.catalog.name || ""}
+                            onChange={(e) => updateSettings("catalog", "name_en", e.target.value)}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-bold text-sm focus:outline-none focus:border-primary/50"
+                            placeholder="e.g. Mtabal Restaurant"
+                          />
+                        </div>
+                        {/* Arabic Name */}
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Business Name (Arabic)</label>
+                          <input
+                            type="text"
+                            value={settings.catalog.name_ar || ""}
+                            onChange={(e) => updateSettings("catalog", "name_ar", e.target.value)}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-bold text-sm focus:outline-none focus:border-primary/50 text-right"
+                            placeholder="مثال: مطعم متبل"
+                            dir="rtl"
+                          />
+                        </div>
+                        {/* French Name */}
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Business Name (French)</label>
+                          <input
+                            type="text"
+                            value={settings.catalog.name_fr || ""}
+                            onChange={(e) => updateSettings("catalog", "name_fr", e.target.value)}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-bold text-sm focus:outline-none focus:border-primary/50"
+                            placeholder="e.g. Restaurant Mtabal"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+                        {/* English Desc */}
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Description (English)</label>
+                          <textarea
+                            value={settings.catalog.description_en || settings.catalog.description || ""}
+                            onChange={(e) => updateSettings("catalog", "description_en", e.target.value)}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-medium text-xs h-24 focus:outline-none focus:border-primary/50"
+                            placeholder="Brief description..."
+                          />
+                        </div>
+                        {/* Arabic Desc */}
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Description (Arabic)</label>
+                          <textarea
+                            value={settings.catalog.description_ar || ""}
+                            onChange={(e) => updateSettings("catalog", "description_ar", e.target.value)}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-medium text-xs h-24 focus:outline-none focus:border-primary/50 text-right"
+                            placeholder="وصف مختصر..."
+                            dir="rtl"
+                          />
+                        </div>
+                        {/* French Desc */}
+                        <div className="space-y-4">
+                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Description (French)</label>
+                          <textarea
+                            value={settings.catalog.description_fr || ""}
+                            onChange={(e) => updateSettings("catalog", "description_fr", e.target.value)}
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-medium text-xs h-24 focus:outline-none focus:border-primary/50"
+                            placeholder="Brève description..."
+                          />
+                        </div>
+                      </div>
+                    </div>
                     {/* Theme Preview Switcher */}
                     <div className="flex items-center justify-between p-8 bg-white/[0.03] border border-white/10 rounded-[2.5rem] mb-12">
                       <div className="flex items-center gap-6">
@@ -514,6 +628,76 @@ export default function SettingsPage() {
                           aspect="video"
                           hint="2048 x 1024 PX"
                         />
+                      </div>
+                    </div>
+
+                    <div className="glass-card p-10">
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                            <Palette className="w-4 h-4 text-primary" />
+                          </div>
+                          <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Dynamic Branding</h3>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                        <div>
+                          <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4">1. Pick your brand color</p>
+                          <ColorInput
+                            label="Main Brand Color"
+                            value={settings.appearance.color_primary}
+                            onChange={(v) => updateSettings("appearance", "color_primary", v)}
+                          />
+                        </div>
+                        <div className="space-y-4">
+                          <p className="text-[10px] font-black text-white/40 uppercase tracking-widest ">2. Choose its behavior</p>
+                          <div className="grid grid-cols-1 gap-3">
+                            {THEME_METHODS.map((method) => (
+                              <button
+                                key={method.id}
+                                onClick={() => applyDynamicMethod(method.id)}
+                                className="p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all text-left flex items-center justify-between group"
+                              >
+                                <div>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80 block">{method.name}</span>
+                                  <span className="text-[9px] text-white/30 uppercase font-medium">{method.description}</span>
+                                </div>
+                                <div className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: settings.appearance.color_primary }} />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="glass-card p-10">
+                      <div className="flex items-center gap-3 mb-8">
+                        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                          <SparklesIcon className="w-4 h-4 text-primary" />
+                        </div>
+                        <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Theme Presets</h3>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {CATALOG_THEMES.map((theme) => (
+                          <button
+                            key={theme.id}
+                            onClick={() => applyTheme(theme.id)}
+                            className="p-6 rounded-[2rem] border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all text-left group"
+                          >
+                            <div className="flex items-center justify-between mb-4">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">
+                                {theme.name}
+                              </span>
+                              <ChevronRight className="w-4 h-4 text-white/10 group-hover:translate-x-1 transition-all" />
+                            </div>
+                            <div className="flex gap-2">
+                              <div className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: theme.light.primary }} />
+                              <div className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: theme.light.background }} />
+                              <div className="w-6 h-6 rounded-full border border-black/20 transition-transform group-hover:scale-110" style={{ backgroundColor: theme.dark.background }} />
+                            </div>
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -583,6 +767,21 @@ export default function SettingsPage() {
                           onChange={(v) => updateSettings("appearance", "color_surface_dark", v)}
                         />
                         <ColorInput
+                          label="Dark Primary Color"
+                          value={settings.appearance.color_primary_dark}
+                          onChange={(v) => updateSettings("appearance", "color_primary_dark", v)}
+                        />
+                        <ColorInput
+                          label="Dark Secondary Color"
+                          value={settings.appearance.color_secondary_dark}
+                          onChange={(v) => updateSettings("appearance", "color_secondary_dark", v)}
+                        />
+                        <ColorInput
+                          label="Dark Accent Color"
+                          value={settings.appearance.color_accent_dark}
+                          onChange={(v) => updateSettings("appearance", "color_accent_dark", v)}
+                        />
+                        <ColorInput
                           label="Dark Primary Text"
                           value={settings.appearance.color_text_dark}
                           onChange={(v) => updateSettings("appearance", "color_text_dark", v)}
@@ -623,6 +822,17 @@ export default function SettingsPage() {
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    <div className="mt-8 pt-8 border-t border-white/5">
+                      <button
+                        onClick={() => handleSaveSection("Branding & Appearance", { appearance: settings.appearance })}
+                        disabled={savingSection === "Branding & Appearance" || isViewer}
+                        className="w-full py-4 bg-primary text-white font-black rounded-[1.5rem] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest shadow-lg shadow-primary/20"
+                      >
+                        {savingSection === "Branding & Appearance" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Save Appearance
+                      </button>
                     </div>
                   </div>
 
@@ -671,7 +881,7 @@ export default function SettingsPage() {
                               <img src={settings.catalog.logo_url} className="h-full w-auto object-contain" style={{ filter: `drop-shadow(0 0 5px ${settings.appearance.color_primary}80)` }} />
                             ) : (
                               <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: settings.appearance.color_primary }}>
-                                <InfoIcon size={14} className="text-white" />
+                                <Info size={14} className="text-white" />
                               </div>
                             )}
                           </div>
@@ -811,7 +1021,7 @@ export default function SettingsPage() {
                                 onChange={(e) => updateSettings("contact", locale.field, e.target.value)}
                                 className={`flex-1 bg-transparent border-0 text-white font-black tracking-tight focus:ring-0 text-sm ${locale.rtl ? 'text-right' : ''}`}
                                 dir={locale.rtl ? 'rtl' : 'ltr'}
-                                placeholder="Enter address..."
+                                placeholder={`Enter address in ${locale.label}...`}
                               />
                             </div>
                           ))}
@@ -829,6 +1039,17 @@ export default function SettingsPage() {
                           placeholder="https://www.google.com/maps/embed?pb=..."
                         />
                       </div>
+                    </div>
+
+                    <div className="mt-8 pt-8 border-t border-white/5">
+                      <button
+                        onClick={() => handleSaveSection("Contact Information", { contact: settings.contact })}
+                        disabled={savingSection === "Contact Information" || isViewer}
+                        className="w-full py-4 bg-primary text-white font-black rounded-[1.5rem] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest shadow-lg shadow-primary/20"
+                      >
+                        {savingSection === "Contact Information" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Save Contact Details
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -892,104 +1113,21 @@ export default function SettingsPage() {
                         </div>
                       ))}
                     </div>
-                  </div>
-                </div>
-              )}
 
-              {/* SEO Array */}
-              {activeTab === "seo" && (
-                <div className="space-y-8">
-                  <div className="glass-card p-10 space-y-10">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Search Engine Optimization</h3>
-
-                    <div className="space-y-12">
-                      {/* Meta Title Matrix */}
-                      <div className="space-y-6">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">SEO Page Titles</label>
-                        <div className="grid md:grid-cols-3 gap-6">
-                          {['en', 'ar', 'fr'].map(lang => (
-                            <div key={lang} className="space-y-2">
-                              <label className="text-[8px] font-black text-white/40 uppercase tracking-widest ml-1">{lang}</label>
-                              <input
-                                type="text"
-                                value={settings.seo[`seo_title_${lang}` as keyof Settings['seo']] || ""}
-                                onChange={(e) => updateSettings("seo", `seo_title_${lang}`, e.target.value)}
-                                className="w-full px-4 py-3 bg-white/[0.03] border border-white/5 rounded-xl text-white font-bold tracking-tight focus:outline-none focus:border-primary/50 transition-all text-sm"
-                                dir={lang === 'ar' ? 'rtl' : 'ltr'}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Meta Description Matrix */}
-                      <div className="space-y-6">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Meta Descriptions (SEO)</label>
-                        <div className="space-y-4">
-                          {['en', 'ar', 'fr'].map(lang => (
-                            <div key={lang} className="relative flex items-start bg-white/[0.02] border border-white/5 rounded-2xl p-6 gap-6">
-                              <span className="text-[10px] font-black text-white/20 uppercase tracking-widest w-8 mt-2">{lang}</span>
-                              <textarea
-                                value={settings.seo[`seo_description_${lang}` as keyof Settings['seo']] || ""}
-                                onChange={(e) => updateSettings("seo", `seo_description_${lang}`, e.target.value)}
-                                className="flex-1 bg-transparent border-0 text-white font-medium text-sm focus:ring-0 resize-none h-20"
-                                placeholder={`Detailed description in ${lang}...`}
-                                dir={lang === 'ar' ? 'rtl' : 'ltr'}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* SEO Tags */}
-                      <div className="grid md:grid-cols-2 gap-8">
-                        <div className="space-y-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">SEO Keywords</label>
-                          <input
-                            type="text"
-                            value={settings.seo.seo_keywords || ""}
-                            onChange={(e) => updateSettings("seo", "seo_keywords", e.target.value)}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-bold text-sm focus:outline-none focus:border-primary/50"
-                            placeholder="pizza, restaurant, luxury dining, etc."
-                          />
-                        </div>
-                        <div className="space-y-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Custom JSON-LD / Schema</label>
-                          <textarea
-                            value={settings.seo.json_ld_custom || ""}
-                            onChange={(e) => updateSettings("seo", "json_ld_custom", e.target.value)}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-mono text-xs h-20 focus:outline-none focus:border-primary/50"
-                            placeholder="{ '@context': 'https://schema.org', ... }"
-                          />
-                        </div>
-                      </div>
+                    <div className="mt-8 pt-8 border-t border-white/5">
+                      <button
+                        onClick={() => handleSaveSection("Features & Labels", { features: settings.features, cta: settings.cta })}
+                        disabled={savingSection === "Features & Labels" || isViewer}
+                        className="w-full py-4 bg-primary text-white font-black rounded-[1.5rem] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest shadow-lg shadow-primary/20"
+                      >
+                        {savingSection === "Features & Labels" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Save Features & Labels
+                      </button>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* About Array */}
-              {activeTab === "about" && (
-                <div className="space-y-8">
-                  <div className="glass-card p-10 space-y-10">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Business Information</h3>
-                    <div className="space-y-8">
-                      {['en', 'ar', 'fr'].map(lang => (
-                        <div key={lang} className="space-y-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2 block">{lang === 'ar' ? 'من نحن (بالعربية)' : lang === 'en' ? 'About Us (English)' : 'À Propos de Nous (French)'}</label>
-                          <textarea
-                            value={settings.about[`about_content_${lang}` as keyof Settings['about']] || ""}
-                            onChange={(e) => updateSettings("about", `about_content_${lang}`, e.target.value)}
-                            className="w-full p-8 bg-white/[0.02] border border-white/5 rounded-[2rem] text-white font-medium text-lg focus:outline-none focus:border-primary/50 transition-all min-h-[300px]"
-                            placeholder={`Describe your business in ${lang}...`}
-                            dir={lang === 'ar' ? 'rtl' : 'ltr'}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* AI Array */}
               {activeTab === "ai" && (
@@ -1032,6 +1170,17 @@ export default function SettingsPage() {
                             : "AI Assistant is currently disabled. Toggle it on in the Features tab."}
                         </p>
                       </div>
+                    </div>
+
+                    <div className="mt-8 pt-8 border-t border-white/5">
+                      <button
+                        onClick={() => handleSaveSection("AI Persona", { features: settings.features })}
+                        disabled={savingSection === "AI Persona" || isViewer}
+                        className="w-full py-4 bg-primary text-white font-black rounded-[1.5rem] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest shadow-lg shadow-primary/20"
+                      >
+                        {savingSection === "AI Persona" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Save AI Persona
+                      </button>
                     </div>
                   </div>
                 </div>

@@ -97,17 +97,19 @@ export function DynamicHomePage({
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center text-center"
         >
-          <div
-            className="w-24 h-24 mb-6 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 flex items-center justify-center p-4 relative group"
-            style={{ borderColor: `${colorPrimary}22` }}
-          >
-            <div className="absolute inset-0 bg-white/5 blur-xl group-hover:bg-white/10 transition-all rounded-3xl" />
-            <img
-              src={logoUrl}
-              alt="Logo"
-              className="w-full h-full object-contain relative z-10 filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] scale-110"
-            />
-          </div>
+          {logoUrl && (
+            <div
+              className="w-24 h-24 mb-6 rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 flex items-center justify-center p-4 relative group"
+              style={{ borderColor: `${colorPrimary}22` }}
+            >
+              <div className="absolute inset-0 bg-white/5 blur-xl group-hover:bg-white/10 transition-all rounded-3xl" />
+              <img
+                src={logoUrl}
+                alt="Logo"
+                className="w-full h-full object-contain relative z-10 filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] scale-110"
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <span className="text-[10px] font-black uppercase tracking-[0.4em] block opacity-40">Welcome To</span>
             <h1 className={cn(

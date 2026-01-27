@@ -58,6 +58,9 @@ export interface CatalogSettingsData {
   color_text_muted?: string;
 
   // Dark Mode specific colors
+  color_primary_dark?: string;
+  color_secondary_dark?: string;
+  color_accent_dark?: string;
   color_background_dark?: string;
   color_surface_dark?: string;
   color_text_dark?: string;
@@ -101,7 +104,13 @@ export interface CatalogUIData {
     id: string;
     slug: string;
     name: string;
+    name_ar?: string | null;
+    name_en?: string | null;
+    name_fr?: string | null;
     description?: string | null;
+    description_ar?: string | null;
+    description_en?: string | null;
+    description_fr?: string | null;
     logo_url?: string | null;
   };
   settings: CatalogSettingsData | null;
@@ -109,5 +118,7 @@ export interface CatalogUIData {
   operatingHours: OperatingHoursData[];
   socialMedia: SocialMediaLink[];
   menuItems: any[];
+  subscriptionType?: string;
+  isExpired?: boolean;
 }
 

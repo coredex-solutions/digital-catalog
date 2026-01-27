@@ -99,6 +99,10 @@ interface CatalogContextType {
 
   // Loading states
   isThemeLoaded: boolean;
+
+  // Subscription
+  subscriptionType: string;
+  isExpired: boolean;
 }
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
@@ -131,7 +135,7 @@ function parseEnabledLanguages(enabledLangs?: string): LanguageOption[] {
 }
 
 export function CatalogProvider({ children, data }: CatalogProviderProps) {
-  const { catalog, settings, contact, operatingHours, socialMedia, menuItems } = data;
+  const { catalog, settings, contact, operatingHours, socialMedia, menuItems, subscriptionType, isExpired } = data;
 
   // Client state
   const [lang, setLang] = useState<Language | null>(null);
@@ -153,9 +157,18 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
     [settings?.enabled_languages]
   );
 
-  const colorPrimary = settings?.color_primary || "#8b5cf6";
-  const colorSecondary = settings?.color_secondary || "#b14288";
-  const colorAccent = settings?.color_accent || "#c084fc";
+  const colorPrimary = isDarkMode
+    ? (settings?.color_primary_dark || settings?.color_primary || "#8b5cf6")
+    : (settings?.color_primary || "#8b5cf6");
+
+  const colorSecondary = isDarkMode
+    ? (settings?.color_secondary_dark || settings?.color_secondary || "#b14288")
+    : (settings?.color_secondary || "#b14288");
+
+  const colorAccent = isDarkMode
+    ? (settings?.color_accent_dark || settings?.color_accent || "#c084fc")
+    : (settings?.color_accent || "#c084fc");
+
   const bookingEnabled = settings?.booking_enabled ?? true;
   const whatsappEnabled = settings?.whatsapp_order_enabled ?? true;
 
@@ -266,11 +279,6 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
     if (isThemeLoaded) {
       const root = document.documentElement;
 
-      // Inject Colors
-      root.style.setProperty("--primary", colorPrimary);
-      root.style.setProperty("--secondary", colorSecondary);
-      root.style.setProperty("--accent", colorAccent);
-
       const hexToRgb = (hex: string) => {
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
@@ -281,20 +289,28 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
       if (isDarkMode) {
         const bg = settings?.color_background_dark || "#0a0a0c";
         const rgb = hexToRgb(bg);
+        root.style.setProperty("--primary", colorPrimary);
+        root.style.setProperty("--secondary", colorSecondary);
+        root.style.setProperty("--accent", colorAccent);
         root.style.setProperty("--background-hex", bg);
         root.style.setProperty("--background-hex-rgb", rgb);
         root.style.setProperty("--navbar-bg", `rgba(${rgb}, 0.95)`);
         root.style.setProperty("--surface", settings?.color_surface_dark || "#121215");
+        root.style.setProperty("--border-color", colorAccent || settings?.color_accent_dark || "rgba(255,255,255,0.1)");
         root.style.setProperty("--text-primary", settings?.color_text_dark || "#ffffff");
         root.style.setProperty("--text-muted", settings?.color_text_muted_dark || "rgba(255,255,255,0.4)");
         root.style.setProperty("--pattern-rgb", "255, 255, 255");
       } else {
         const bg = settings?.color_background || "#ffffff";
         const rgb = hexToRgb(bg);
+        root.style.setProperty("--primary", colorPrimary);
+        root.style.setProperty("--secondary", colorSecondary);
+        root.style.setProperty("--accent", colorAccent);
         root.style.setProperty("--background-hex", bg);
         root.style.setProperty("--background-hex-rgb", rgb);
         root.style.setProperty("--navbar-bg", `rgba(${rgb}, 0.95)`);
         root.style.setProperty("--surface", settings?.color_surface || "#f8fafc");
+        root.style.setProperty("--border-color", colorAccent || "rgba(0,0,0,0.05)");
         root.style.setProperty("--text-primary", settings?.color_text || "#0f172a");
         root.style.setProperty("--text-muted", settings?.color_text_muted || "#475569");
         root.style.setProperty("--pattern-rgb", "0, 0, 0");
@@ -354,6 +370,8 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
     selectedItem,
     setSelectedItem,
     isThemeLoaded,
+    subscriptionType: subscriptionType || "essential",
+    isExpired: !!isExpired,
   };
 
   return (

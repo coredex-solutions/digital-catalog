@@ -30,6 +30,7 @@ interface SaasFooterProps {
   catalogName?: string;
   colorPrimary?: string;
   whatsappNumber?: string | null;
+  subscriptionType?: string;
 }
 
 export function SaasFooter({
@@ -40,7 +41,8 @@ export function SaasFooter({
   logoUrl,
   catalogName = "Restaurant",
   colorPrimary = "#8b5cf6",
-  whatsappNumber
+  whatsappNumber,
+  subscriptionType = "essential"
 }: SaasFooterProps) {
   const dir = lang === "ar" ? "rtl" : "ltr";
   const font = lang === "ar" ? "font-cairo" : "font-inter";
@@ -89,12 +91,15 @@ export function SaasFooter({
           {/* 1. Brand & Socials */}
           <div className="space-y-6">
             <div className="flex flex-col items-start gap-6">
-              <img
-                src={logoUrl || RESTAURANT_CONFIG.logo}
-                alt={catalogName}
-                className="h-24 w-auto object-contain"
-                style={{ filter: `drop-shadow(0 0 10px ${colorPrimary}80)` }}
-              />
+              {(logoUrl || RESTAURANT_CONFIG.logo) && (
+                <img
+                  src={logoUrl || RESTAURANT_CONFIG.logo}
+                  alt={catalogName}
+                  className="h-24 w-auto object-contain"
+                  style={{ filter: `drop-shadow(0 0 10px ${colorPrimary}80)` }}
+                  onError={(e) => (e.currentTarget.style.display = 'none')}
+                />
+              )}
               <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                 {lang === "ar"
                   ? "نقدم تجربة طعام استثنائية تمزج بين الأصالة واللمسة العصرية. زورونا لتذوق الفرق."
@@ -299,24 +304,26 @@ export function SaasFooter({
                 : "All rights reserved"}
             .
           </p>
-          <div className="flex items-center gap-1.5">
-            <span>
-              {lang === "ar"
-                ? "القائمة بواسطة"
-                : lang === "fr"
-                  ? "Menu par"
-                  : "Menu By"}
-            </span>
-            <a
-              href="https://coredex.solutions"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold transition-colors underline underline-offset-2"
-              style={{ color: 'var(--text-primary)', "--tw-decoration-color": colorPrimary } as any}
-            >
-              Coredex Solutions
-            </a>
-          </div>
+          {subscriptionType === "essential" && (
+            <div className="flex items-center gap-1.5">
+              <span>
+                {lang === "ar"
+                  ? "القائمة بواسطة"
+                  : lang === "fr"
+                    ? "Menu par"
+                    : "Menu By"}
+              </span>
+              <a
+                href="https://coredex.solutions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold transition-colors underline underline-offset-2"
+                style={{ color: 'var(--text-primary)', "--tw-decoration-color": colorPrimary } as any}
+              >
+                Coredex Solutions
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </footer >

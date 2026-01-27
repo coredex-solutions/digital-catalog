@@ -34,11 +34,22 @@ export async function GET(
       id: catalog.id,
       slug: catalog.slug,
       name: catalog.name,
+      name_ar: catalog.name_ar,
+      name_en: catalog.name_en,
+      name_fr: catalog.name_fr,
       description: catalog.description,
+      description_ar: catalog.description_ar,
+      description_en: catalog.description_en,
+      description_fr: catalog.description_fr,
       logo_url: catalog.logo_url,
       business_type: catalog.business_type,
     },
+    subscription: {
+      multi_language_enabled: Boolean(subscription?.multi_language_enabled),
+      ai_image_enhancement_limit: subscription?.ai_image_enhancement_limit || 0,
+    },
     appearance: {
+      // ... existing fields ...
       hero_image_url: settings?.hero_image_url,
       bg_pattern_enabled: settings?.bg_pattern_enabled,
       bg_pattern_type: settings?.bg_pattern_type,
@@ -53,6 +64,10 @@ export async function GET(
       color_surface_dark: settings?.color_surface_dark,
       color_text_dark: settings?.color_text_dark,
       color_text_muted_dark: settings?.color_text_muted_dark,
+    },
+    feature_config: {
+      enabled_languages: settings?.enabled_languages || "en",
+      default_language: settings?.default_language || "en",
     },
     features: {
       booking_enabled: settings?.booking_enabled,
@@ -136,6 +151,30 @@ export async function PUT(
       if (catalogData.description !== undefined) {
         catalogUpdates.push("description = ?");
         catalogArgs.push(catalogData.description);
+      }
+      if (catalogData.name_ar !== undefined) {
+        catalogUpdates.push("name_ar = ?");
+        catalogArgs.push(catalogData.name_ar);
+      }
+      if (catalogData.name_en !== undefined) {
+        catalogUpdates.push("name_en = ?");
+        catalogArgs.push(catalogData.name_en);
+      }
+      if (catalogData.name_fr !== undefined) {
+        catalogUpdates.push("name_fr = ?");
+        catalogArgs.push(catalogData.name_fr);
+      }
+      if (catalogData.description_ar !== undefined) {
+        catalogUpdates.push("description_ar = ?");
+        catalogArgs.push(catalogData.description_ar);
+      }
+      if (catalogData.description_en !== undefined) {
+        catalogUpdates.push("description_en = ?");
+        catalogArgs.push(catalogData.description_en);
+      }
+      if (catalogData.description_fr !== undefined) {
+        catalogUpdates.push("description_fr = ?");
+        catalogArgs.push(catalogData.description_fr);
       }
       if (catalogData.logo_url !== undefined) {
         catalogUpdates.push("logo_url = ?");

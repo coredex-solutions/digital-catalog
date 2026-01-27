@@ -146,7 +146,7 @@ export async function PUT(
   const catalogUpdates: string[] = [];
   const catalogArgs: (string | number | null)[] = [];
   const allowedCatalogFields = ['slug', 'name', 'business_type', 'description', 'logo_url', 'is_active', 'is_suspended', 'suspension_reason'];
-  
+
   for (const field of allowedCatalogFields) {
     if (body[field] !== undefined) {
       catalogUpdates.push(`${field} = ?`);
@@ -168,7 +168,7 @@ export async function PUT(
   const subUpdates: string[] = [];
   const subArgs: (string | number | null)[] = [];
   const allowedSubFields = [
-    'subscription_type', 'expires_at', 
+    'subscription_type', 'expires_at',
     'multi_language_enabled', 'booking_enabled', 'analytics_enabled', 'custom_domain_enabled',
     'ai_image_enhancement_limit'
   ];
@@ -189,6 +189,28 @@ export async function PUT(
     await db.execute({
       sql: `UPDATE catalog_subscriptions SET ${subUpdates.join(', ')} WHERE catalog_id = ?`,
       args: subArgs,
+    });
+  }
+
+  // 3. Update Settings Table (Added for languages management)
+  const settingsUpdates: string[] = [];
+  const settingsArgs: (string | number | null)[] = [];
+  const allowedSettingsFields = ['enabled_languages', 'default_language'];
+
+  for (const field of allowedSettingsFields) {
+    if (body[field] !== undefined) {
+      settingsUpdates.push(`${field} = ?`);
+      settingsArgs.push(body[field]);
+    }
+  }
+
+  if (settingsUpdates.length > 0) {
+    settingsUpdates.push("updated_at = datetime('now')");
+    settingsArgs.push(id);
+
+    await db.execute({
+      sql: `UPDATE catalog_settings SET ${settingsUpdates.join(', ')} WHERE catalog_id = ?`,
+      args: settingsArgs,
     });
   }
 

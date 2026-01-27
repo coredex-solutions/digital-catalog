@@ -74,9 +74,10 @@ export function SaasCategoryGrid({
                 href={`/c/${catalogSlug}/menu/${cat.id}`}
                 style={{
                   backgroundColor: 'var(--surface)',
+                  borderColor: 'var(--border-color)',
                   ...(hasImage ? { borderColor: "transparent" } : {})
                 }}
-                className="relative rounded-xl shadow-sm border border-transparent overflow-hidden hover:shadow-lg transition-all group block"
+                className="relative rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all group block"
               >
                 {hasImage ? (
                   <div className="aspect-square relative">

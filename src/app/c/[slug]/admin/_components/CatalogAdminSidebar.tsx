@@ -30,6 +30,11 @@ interface Features {
   multi_language_enabled: boolean;
   booking_enabled: boolean;
   analytics_enabled: boolean;
+  ai_waiter_enabled: boolean;
+  ai_image_enhancement_limit: number;
+  ai_image_enhancement_used: number;
+  enabled_languages: string;
+  default_language: string;
   is_expired: boolean;
 }
 
@@ -77,12 +82,12 @@ export function CatalogAdminSidebar({
           <div
             className="w-14 h-14 rounded-2xl flex items-center justify-center relative group"
           >
-            <div className="absolute inset-0 rounded-2xl animate-pulse blur-xl opacity-20 transition-all group-hover:opacity-40" 
-                 style={{ background: `var(--color-primary)` }} />
+            <div className="absolute inset-0 rounded-2xl animate-pulse blur-xl opacity-20 transition-all group-hover:opacity-40"
+              style={{ background: `var(--color-primary)` }} />
             <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-all" />
             <div className="relative z-10 w-full h-full rounded-2xl flex items-center justify-center overflow-hidden">
-               <div className="absolute inset-0 opacity-20" style={{ background: `linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)` }} />
-               <Store className="w-6 h-6 text-white" />
+              <div className="absolute inset-0 opacity-20" style={{ background: `linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)` }} />
+              <Store className="w-6 h-6 text-white" />
             </div>
           </div>
           <div>
@@ -113,13 +118,13 @@ export function CatalogAdminSidebar({
               )}
             >
               {isActive && (
-                <div 
+                <div
                   className="absolute inset-0 rounded-2xl opacity-10 blur-md transition-all animate-pulse"
                   style={{ backgroundColor: `var(--color-primary)` }}
                 />
               )}
               {isActive && (
-                <div 
+                <div
                   className="absolute left-0 w-1 h-5 rounded-full"
                   style={{ backgroundColor: `var(--color-primary)` }}
                 />

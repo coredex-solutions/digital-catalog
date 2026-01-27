@@ -23,8 +23,14 @@ CREATE TABLE IF NOT EXISTS catalogs (
   id TEXT PRIMARY KEY,
   slug TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
+  name_ar TEXT,
+  name_en TEXT,
+  name_fr TEXT,
   business_type TEXT NOT NULL DEFAULT 'restaurant', -- 'restaurant', 'retail', 'cafe', 'salon', 'other'
   description TEXT,
+  description_ar TEXT,
+  description_en TEXT,
+  description_fr TEXT,
   logo_url TEXT,
   
   -- Status

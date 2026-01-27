@@ -62,8 +62,12 @@ export async function GET(
       multi_language_enabled: subscription?.multi_language_enabled || false,
       booking_enabled: subscription?.booking_enabled || false,
       analytics_enabled: subscription?.analytics_enabled || false,
+      ai_waiter_enabled: Boolean(settings?.ai_waiter_enabled),
+      ai_image_enhancement_limit: subscription?.ai_image_enhancement_limit || 0,
+      ai_image_enhancement_used: (catalog as any).ai_image_enhancement_used || 0,
+      enabled_languages: settings?.enabled_languages || 'en',
+      default_language: settings?.default_language || 'en',
       is_expired: isExpired,
     },
   });
 }
-

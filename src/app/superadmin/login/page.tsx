@@ -36,7 +36,7 @@ export default function SuperAdminLoginPage() {
 
       // Store token
       localStorage.setItem("superadmin_token", data.token);
-      
+
       // Redirect to dashboard
       router.push("/superadmin");
     } catch (err: any) {
@@ -55,7 +55,7 @@ export default function SuperAdminLoginPage() {
             <Shield className="w-10 h-10 text-white fill-white/20" />
           </div>
           <h1 className="text-4xl font-bold text-white tracking-tighter mb-2">Access Portal</h1>
-          <p className="text-white/40 font-medium tracking-wide">Coredex Infrastructure</p>
+          <p className="text-white/40 font-medium tracking-wide">Coredex Solutions</p>
         </div>
 
         {/* Login Card */}
@@ -119,7 +119,7 @@ export default function SuperAdminLoginPage() {
                   AUTHENTICATING...
                 </>
               ) : (
-                "INITIALIZE SESSION"
+                "LOGIN"
               )}
             </button>
           </form>

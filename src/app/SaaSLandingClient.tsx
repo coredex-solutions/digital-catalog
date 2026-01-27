@@ -21,7 +21,8 @@ import {
   MousePointer2,
   Terminal,
   Infinity as InfinityIcon,
-  MessageCircle
+  MessageCircle,
+  Mail
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -56,7 +57,7 @@ const FEATURE_CARDS = [
     desc: "Military-grade encryption for all tenant data and manual subscription logic.",
     icon: ShieldCheck,
     color: "from-violet-500/20 to-violet-400/20",
-    stats: "SOC2 Ready",
+    stats: "Fully Encrypted",
     textColor: "text-violet-400"
   },
   {
@@ -96,20 +97,21 @@ const FEATURE_CARDS = [
 const PRICING_PLANS = [
   {
     name: "Essential",
-    price: { monthly: 24, yearly: 19 },
+    price: { monthly: 10.30, yearly: 8.25 },
     desc: "Everything you need to go digital.",
     features: [
+      "2-Day Free Trial",
       "1 Digital Catalog",
       "Unlimited Menu Items",
       "Basic Theme Customization",
       "Standard QR Code",
-      "Weekly Analytics Report"
+      "Free Subdomain Access"
     ],
     highlight: false
   },
   {
     name: "Pro",
-    price: { monthly: 59, yearly: 49 },
+    price: { monthly: 31.15, yearly: 24.91 },
     desc: "Maximize revenue with smart features.",
     features: [
       "WhatsApp Ordering Integration",
@@ -123,10 +125,10 @@ const PRICING_PLANS = [
   },
   {
     name: "Enterprise",
-    price: { monthly: 129, yearly: 99 },
+    price: { monthly: 41.55, yearly: 33.25 },
     desc: "AI-powered automation & growth.",
     features: [
-      "AI Image Generation Engine",
+      "AI Image Engine (100 /mo)",
       "Auto-Translation (50+ Langs)",
       "Smart Upselling Engine",
       "Customer CRM & Remarketing",
@@ -205,9 +207,9 @@ export function SaaSLandingClient() {
             <Link href="#pricing" className="px-6 py-2.5 rounded-xl text-sm font-bold text-white/60 hover:text-white hover:bg-white/5 transition-all">Pricing</Link>
             <Link href="#demo" className="px-6 py-2.5 rounded-xl text-sm font-bold text-white/60 hover:text-white hover:bg-white/5 transition-all">Showcase</Link>
             <div className="w-px h-4 bg-white/10 mx-2" />
-            <Link href="/login" className="px-6 py-2.5 rounded-xl text-sm font-bold bg-white text-black hover:scale-105 transition-all active:scale-95 flex items-center gap-2">
-              <Terminal className="w-4 h-4" />
-              Portal Access
+            <Link href="#contact" className="px-6 py-2.5 rounded-xl text-sm font-bold bg-white text-black hover:scale-105 transition-all active:scale-95 flex items-center gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Contact Us
             </Link>
           </div>
 
@@ -233,7 +235,7 @@ export function SaaSLandingClient() {
                 { label: 'Capabilities', href: '#features' },
                 { label: 'Pricing Engine', href: '#pricing' },
                 { label: 'Live Showcase', href: '#demo' },
-                { label: 'Admin Portal', href: '/login', highlight: true }
+                { label: 'Contact Us', href: '#contact', highlight: true }
               ].map((link, i) => (
                 <motion.div
                   key={link.label}
@@ -276,7 +278,7 @@ export function SaaSLandingClient() {
             className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-white/[0.03] border border-white/10 text-[10px] font-black mb-10 tracking-[0.3em] uppercase text-white/60 hover:border-primary/40 transition-colors group cursor-pointer shadow-[0_0_20px_rgba(0,0,0,0.5)]"
           >
             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--color-primary)]" />
-            SaaS Infrastructure Engineered for 2030
+            SaaS Platform Engineered for 2030
             <ChevronRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
           </motion.div>
 
@@ -291,7 +293,7 @@ export function SaaSLandingClient() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
             <Link
-              href="/superadmin"
+              href="/signup"
               className="group relative px-10 py-5 bg-white text-black font-black text-lg rounded-[1.5rem] overflow-hidden hover:scale-105 active:scale-95 transition-all shadow-[0_20px_40px_-10px_rgba(255,255,255,0.2)]"
             >
               <span className="relative z-10 flex items-center gap-3">
@@ -434,17 +436,30 @@ export function SaaSLandingClient() {
                 <h3 className="text-2xl font-black mb-2 uppercase tracking-tight italic">{plan.name}</h3>
                 <p className="text-white/40 text-sm font-medium mb-10">{plan.desc}</p>
 
-                <div className="flex items-baseline gap-2 mb-10">
-                  <span className="text-sm font-black text-white/20">$</span>
-                  <span className="text-7xl font-black tracking-tighter leading-none">
-                    {billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly}
-                  </span>
-                  <span className="text-white/20 text-sm font-black uppercase tracking-widest">/ Month</span>
+                <div className="flex flex-col mb-10">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-sm font-black text-white/20 mb-2">$</span>
+                    <span className="text-7xl font-black leading-none flex items-baseline">
+                      {Math.floor(billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly)}
+                      <span className="text-2xl ml-1 font-normal">
+                        .{((billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly) % 1).toFixed(2).split('.')[1]}
+                      </span>
+                    </span>
+                    <span className="text-white/20 text-[10px] font-black uppercase tracking-widest ml-2">/ Month</span>
+                  </div>
+                  {billingCycle === 'yearly' && (
+                    <div className="text-[10px] font-black text-primary uppercase tracking-widest mt-3 ml-1 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-primary" />
+                      ${plan.name === "Essential" ? "99" : plan.name === "Pro" ? "299" : "399"} Billed Yearly
+                    </div>
+                  )}
                 </div>
 
-                <button className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm mb-12 transition-all shadow-xl ${plan.highlight ? 'bg-primary text-white hover:scale-105 shadow-primary/20' : 'bg-white/[0.05] text-white hover:bg-white/10'}`}>
+                <Link
+                  href="/signup"
+                  className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm mb-12 transition-all shadow-xl flex items-center justify-center ${plan.highlight ? 'bg-primary text-white hover:scale-105 shadow-primary/20' : 'bg-white/[0.05] text-white hover:bg-white/10'}`}>
                   Deploy Instance
-                </button>
+                </Link>
 
                 <div className="space-y-5">
                   <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-6">Stack includes:</p>
@@ -463,6 +478,130 @@ export function SaaSLandingClient() {
         </div>
       </section>
 
+      {/* Live Showcase Section */}
+      <section id="demo" className="py-32 relative overflow-hidden bg-[#020203]">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="flex flex-col lg:flex-row items-center gap-20">
+            <div className="lg:w-1/2">
+              <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-10">
+                <Smartphone className="w-4 h-4" />
+                Live Demo Node
+              </div>
+              <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-10 italic leading-[0.9]">
+                EXPERIENCE THE <br />
+                <span className="text-primary not-italic">FUTURE</span> OF SERVICE
+              </h2>
+              <p className="text-white/40 text-xl font-medium leading-relaxed mb-12 max-w-lg">
+                Toggle through our neural-processed themes. Zero latency, infinite customization, designed for the top 1%.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { name: 'LUXURY BISTRO', type: 'Dark Elite' },
+                  { name: 'MINIMAL RETAIL', type: 'Clean Slate' },
+                  { name: 'BOUTIQUE HOTEL', type: 'Golden Era' },
+                  { name: 'MODERN CAFE', type: 'Neon Pulse' }
+                ].map((item, i) => (
+                  <div key={i} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-primary/50 transition-all cursor-pointer group">
+                    <div className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">{item.type}</div>
+                    <div className="text-sm font-black text-white uppercase tracking-tight italic">{item.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="lg:w-1/2 relative group">
+              {/* iPhone Mockup Container */}
+              <div className="relative w-[320px] h-[640px] mx-auto bg-[#0a0a0c] rounded-[3.5rem] border-[8px] border-white/5 p-4 shadow-[0_0_100px_rgba(var(--color-primary-rgb),0.1)] overflow-hidden">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-white/5 rounded-b-2xl z-20" />
+                <div className="w-full h-full rounded-[2.5rem] overflow-hidden bg-black flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-primary/20 to-transparent">
+                  <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-2xl shadow-primary/50">
+                    <Zap className="w-8 h-8 text-white fill-white" />
+                  </div>
+                  <h3 className="text-xl font-black italic uppercase tracking-tighter mb-4">Prime Steaks</h3>
+                  <div className="w-full h-32 rounded-2xl bg-white/5 border border-white/10 mb-4" />
+                  <div className="space-y-2 w-full">
+                    <div className="w-full h-12 rounded-xl bg-primary/20 border border-primary/20" />
+                    <div className="w-full h-12 rounded-xl bg-white/5 border border-white/10" />
+                  </div>
+                </div>
+              </div>
+              {/* Floating Elements */}
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -top-10 -right-10 p-6 glass-card rounded-3xl border border-primary/20 z-10"
+              >
+                <div className="text-[9px] font-black text-primary uppercase tracking-widest mb-2">Real-time Stats</div>
+                <div className="text-2xl font-black italic">99.9%</div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-32 relative overflow-hidden bg-[#010101]">
+        <div className="max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div>
+              <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-10 italic leading-[0.9]">
+                INITIATE <br />
+                <span className="text-primary not-italic">CONTACT</span>
+              </h2>
+              <p className="text-white/40 text-xl font-medium leading-relaxed mb-12">
+                Ready to deploy your digital infrastructure? Use the secure channel below or contact our global support node.
+              </p>
+
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-6 p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <MessageCircle className="w-6 h-6 text-primary fill-primary" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">WhatsApp Support</div>
+                    <div className="text-lg font-black text-white tracking-tight">+966 54 067 9669</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 p-8 rounded-3xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all">
+                  <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center">
+                    <Mail className="w-6 h-6 text-white/40" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1">Official Inquiry</div>
+                    <div className="text-lg font-black text-white tracking-tight">ops@coredex.solutions</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="glass-card p-12 rounded-[3.5rem] border border-white/5 relative overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 p-10 text-white/[0.02]">
+                <MessageCircle className="w-40 h-40" />
+              </div>
+              <div className="relative z-10 space-y-8">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest ml-2">Your Name</label>
+                  <input type="text" placeholder="Alexander Pierce" className="w-full px-8 py-5 bg-white/[0.03] border border-white/5 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary/50 transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest ml-2">Email Address</label>
+                  <input type="email" placeholder="ceo@enterprise.com" className="w-full px-8 py-5 bg-white/[0.03] border border-white/5 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary/50 transition-all" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-white/20 uppercase tracking-widest ml-2">Message Channel</label>
+                  <textarea rows={4} placeholder="Briefly describe your requirements..." className="w-full px-8 py-5 bg-white/[0.03] border border-white/5 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary/50 transition-all resize-none"></textarea>
+                </div>
+                <button className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-white/5">
+                  Send Transmission
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="py-32 px-6 md:px-12 border-t border-white/5 bg-[#010101]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-20">
@@ -474,7 +613,7 @@ export function SaaSLandingClient() {
               <span className="text-2xl font-black tracking-tighter">COREDEX</span>
             </div>
             <p className="text-white/30 text-lg leading-relaxed font-medium mb-10">
-              The world's most advanced infrastructure for digital commerce. Engineering pixel-perfect experiences for the premium sector.
+              The world's most advanced platform for digital commerce. Engineering pixel-perfect experiences for the premium sector.
             </p>
             <div className="flex gap-4">
               {[Globe, MessageCircle, Smartphone].map((Icon, i) => (
@@ -508,7 +647,7 @@ export function SaaSLandingClient() {
         </div>
 
         <div className="max-w-7xl mx-auto mt-40 pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.5em] text-white/10">
-          <div>© 2026 COREDEX SYSTEMS. ALL RIGHTS RESERVED.</div>
+          <div>© 2026 COREDEX SOLUTIONS. ALL RIGHTS RESERVED.</div>
           <div className="flex gap-16">
             <span className="hover:text-white cursor-pointer transition-colors">Privacy</span>
             <span className="hover:text-white cursor-pointer transition-colors">Terms of Service</span>

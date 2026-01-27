@@ -54,96 +54,51 @@ import { useParams as useNextParams } from "next/navigation";
 /**
  * RESTAURANT CONFIGURATION
  */
-export const RESTAURANT_CONFIG = {
-  name: {
-    ar: "مطعم متَبل",
-    en: "Mtabal",
-    fr: "Mtabal",
-  },
-  logo: "/transparent-bg-mtabal.webp", // Full logo
-  logoEn: "/transparent-bg-mtabal-en-large.webp", // English minimalistic
-  logoAr: "/transparent-bg-mtabal-ar.webp", // Arabic text
-  image:
-    "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=800&fit=crop&q=80",
-  whatsapp: "9647718006006",
-  phone: "07818006006",
-  email: "info@mtabal.restaurant",
-  address: {
-    ar: "بغداد - زيونة - شارع الخدمي",
-    en: "Baghdad - Zayouna - Service Street",
-    fr: "Bagdad - Zayouna - Rue de Service",
-  },
-  addressFull: {
-    ar: "الفرع الرئيسي: بغداد - زيونة - شارع الخدمي مقابل ملعب الشعب داخل فرع مطعم ويست بركر",
-    en: "Main Branch: Baghdad - Zayouna - Service Street opposite Al-Shaab Stadium inside West Burger",
-    fr: "Branche Principale: Bagdad - Zayouna - Rue de Service en face du stade Al-Shaab",
-  },
-  branches: [
-    {
-      name: {
-        ar: "الفرع الرئيسي",
-        en: "Main Branch",
-        fr: "Branche Principale",
-      },
-      address: {
-        ar: "بغداد - زيونة - شارع الخدمي مقابل ملعب الشعب داخل فرع مطعم ويست بركر",
-        en: "Baghdad - Zayouna - Service Street opposite Al-Shaab Stadium inside West Burger",
-        fr: "Bagdad - Zayouna - Rue de Service en face du stade Al-Shaab",
-      },
-      phone: ["078 1800 6006", "077 1800 6006"],
-      mapUrl:
-        "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3283.8171362888916!2d43.67579277630874!3d34.60878528813813!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x15515100637877f5%3A0xc8e85733d4ff0d13!2z2YXYt9i52YUg2YXYqtio2YQg2YHYsdi5INiq2YPYsdmK2Ko!5e0!3m2!1sen!2slb!4v1763992585095!5m2!1sen!2slb",
-    },
-    {
-      name: { ar: "الفرع الثاني", en: "Second Branch", fr: "Deuxième Branche" },
-      address: {
-        ar: "صلاح الدين - تكريت - شارع الرئيسي موصل تكريت مجاور مركز شرطة تكريت",
-        en: "Salah Al-Din - Tikrit - Main Street Mosul-Tikrit next to Tikrit Police Station",
-        fr: "Salah Al-Din - Tikrit - Rue Principale Mossoul-Tikrit à côté du poste de police de Tikrit",
-      },
-      phone: ["078 26333310", "077 26333310"],
-      mapUrl: "", // Using main branch map for now or generic
-    },
-  ],
-  // Operating hours (24-hour format)
-  operatingHours: {
-    sunday: { open: 11, close: 23.5 }, // 11 AM - 11:30 PM
-    monday: { open: 11, close: 23.5 }, // 11 AM - 11:30 PM
-    tuesday: { open: 11, close: 23.5 }, // 11 AM - 11:30 PM
-    wednesday: { open: 11, close: 23.5 }, // 11 AM - 11:30 PM
-    thursday: { open: 11, close: 23.5 }, // 11 AM - 11:30 PM
-    friday: { open: 11, close: 23.5 }, // 11 AM - 11:30 PM
-    saturday: { open: 11, close: 23.5 }, // 11 AM - 11:30 PM
-  },
-  socialMedia: {
-    instagram: "https://instagram.com/mtabal.restaurant",
-    facebook: "https://facebook.com/mtabalrestaurant",
-    tiktok: "https://tiktok.com/@mtabal.restaurant",
-    youtube: "", // Removed as not provided
-  },
-};
-
 // Helper function to check if restaurant is currently open
 function isRestaurantOpen(): boolean {
-  const now = new Date();
-  const days = [
-    "sunday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-  ];
-  const currentDay = days[
-    now.getDay()
-  ] as keyof typeof RESTAURANT_CONFIG.operatingHours;
-  const currentHour = now.getHours();
-  const hours = RESTAURANT_CONFIG.operatingHours[currentDay];
-
-  if (!hours) return false;
-  return currentHour >= hours.open && currentHour < hours.close;
+  return true;
 }
+
+export const RESTAURANT_CONFIG = {
+  name: {
+    ar: "اسم المطعم",
+    en: "Restaurant Name",
+    fr: "Nom du Restaurant",
+  },
+  logo: "/placeholder-logo.png",
+  logoEn: "/placeholder-logo.png",
+  logoAr: "/placeholder-logo.png",
+  image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&h=800&fit=crop&q=80",
+  whatsapp: "",
+  phone: "",
+  email: "",
+  address: {
+    ar: "العنوان الرئيسي",
+    en: "Main Address",
+    fr: "Adresse Principale",
+  },
+  addressFull: {
+    ar: "العنوان الكامل",
+    en: "Full Address",
+    fr: "Adresse Complète",
+  },
+  branches: [],
+  operatingHours: {
+    sunday: { open: 9, close: 22 },
+    monday: { open: 9, close: 22 },
+    tuesday: { open: 9, close: 22 },
+    wednesday: { open: 9, close: 22 },
+    thursday: { open: 9, close: 22 },
+    friday: { open: 9, close: 22 },
+    saturday: { open: 9, close: 22 },
+  },
+  socialMedia: {
+    instagram: "",
+    facebook: "",
+    tiktok: "",
+    youtube: "",
+  },
+};
 
 /**
  * UTILITIES
@@ -177,99 +132,7 @@ const formatHours = (hour: number): string => {
 /**
  * MENU DATA
  */
-const CATEGORIES = [
-  {
-    id: "chicken_meals_rice",
-    ar: "وجبات دجاج متبل مع الأرز",
-    en: "Marinated Chicken Meals with Rice",
-    fr: "Repas de Poulet Mariné avec Riz",
-    icon: Utensils,
-  },
-  {
-    id: "stews_sauces",
-    ar: "المرق والصلصات",
-    en: "Stews and Sauces",
-    fr: "Ragoûts et Sauces",
-    icon: Utensils,
-  },
-  {
-    id: "additions_salads",
-    ar: "الإضافات والسلطات",
-    en: "Additions and Salads",
-    fr: "Suppléments et Salades",
-    icon: Utensils,
-  },
-  {
-    id: "charcoal_sandwiches",
-    ar: "سندويشات متبل عالفحم",
-    en: "Charcoal Grilled Marinated Sandwiches",
-    fr: "Sandwichs Marinés Grillés au Charbon",
-    icon: Utensils,
-  },
-  {
-    id: "rice",
-    ar: "الأرز",
-    en: "Rice",
-    fr: "Riz",
-    icon: Utensils,
-  },
-  {
-    id: "drinks",
-    ar: "المشروبات",
-    en: "Drinks",
-    fr: "Boissons",
-    icon: Coffee,
-  },
-  {
-    id: "mansaf",
-    ar: "مناسف الدجاج بالمكسرات على صينية",
-    en: "Chicken Mansaf with Nuts on a Tray",
-    fr: "Mansaf de Poulet aux Noix sur Plateau",
-    icon: Utensils,
-  },
-  {
-    id: "stuffed_chicken",
-    ar: "دجاج محشي بالكسكس مع الخضروات",
-    en: "Stuffed Chicken with Couscous and Vegetables",
-    fr: "Poulet Farci au Couscous avec Légumes",
-    icon: Utensils,
-  },
-  {
-    id: "pressure_grilled",
-    ar: "دجاج متبل مشوي مضغوط",
-    en: "Pressure Cooked Marinated Grilled Chicken",
-    fr: "Poulet Mariné Grillé à Pression",
-    icon: Utensils,
-  },
-  {
-    id: "charcoal_marinated",
-    ar: "دجاج عالفحم",
-    en: "Chicken on Charcoal",
-    fr: "Poulet sur Charbon",
-    icon: Utensils,
-  },
-  {
-    id: "charcoal_bbq",
-    ar: "مشاوي دجاج عالفحم",
-    en: "Charcoal Grilled Chicken BBQ",
-    fr: "BBQ de Poulet Grillés au Charbon",
-    icon: Utensils,
-  },
-  {
-    id: "wings",
-    ar: "أجنحة دجاج متبل",
-    en: "Marinated Chicken Wings",
-    fr: "Ailes de Poulet Marinées",
-    icon: Utensils,
-  },
-  {
-    id: "sumac_chicken",
-    ar: "دجاج بالسماك عالفحم",
-    en: "Chicken with Sumac on Charcoal",
-    fr: "Poulet au Sumac sur Charbon",
-    icon: Utensils,
-  },
-];
+const CATEGORIES: any[] = [];
 
 const COMMON_MODIFIERS = [
   {
@@ -1721,7 +1584,7 @@ function LandingPage({
                 className={cn(
                   "text-5xl md:text-6xl lg:text-7xl font-bold tracking-wide text-slate-900 dark:text-white",
                   lang === "ar" &&
-                    "font-handwriting text-6xl md:text-7xl lg:text-8xl"
+                  "font-handwriting text-6xl md:text-7xl lg:text-8xl"
                 )}
               >
                 {RESTAURANT_CONFIG.name[lang]}
@@ -1755,8 +1618,8 @@ function LandingPage({
               {lang === "ar"
                 ? "عرض القائمة"
                 : lang === "fr"
-                ? "Voir le Menu"
-                : "View Menu"}
+                  ? "Voir le Menu"
+                  : "View Menu"}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05, y: -2 }}
@@ -1771,8 +1634,8 @@ function LandingPage({
               {lang === "ar"
                 ? "حجز طاولة"
                 : lang === "fr"
-                ? "Réserver"
-                : "Make Reservation"}
+                  ? "Réserver"
+                  : "Make Reservation"}
             </motion.button>
           </motion.div>
         </motion.div>
@@ -1861,18 +1724,15 @@ function ReservationModal({
 
     let text = `*Reservation Request / طلب حجز* %0A%0A`;
     text += `━━━━━━━━━━━━━━━━━━━━%0A%0A`;
-    text += `*${lang === "ar" ? "الاسم الكامل" : "Full Name"}:* ${
-      formData.fullName
-    }%0A%0A`;
+    text += `*${lang === "ar" ? "الاسم الكامل" : "Full Name"}:* ${formData.fullName
+      }%0A%0A`;
     text += `*${lang === "ar" ? "التاريخ" : "Date"}:* ${formattedDate}%0A%0A`;
     text += `*${lang === "ar" ? "الوقت" : "Time"}:* ${formattedTime}%0A%0A`;
-    text += `*${lang === "ar" ? "عدد الأشخاص" : "Guests"}:* ${
-      formData.numberOfPeople
-    }%0A%0A`;
-    if (formData.notes.trim())
-      text += `*${lang === "ar" ? "ملاحظات" : "Notes"}:* ${
-        formData.notes
+    text += `*${lang === "ar" ? "عدد الأشخاص" : "Guests"}:* ${formData.numberOfPeople
       }%0A%0A`;
+    if (formData.notes.trim())
+      text += `*${lang === "ar" ? "ملاحظات" : "Notes"}:* ${formData.notes
+        }%0A%0A`;
     text += `━━━━━━━━━━━━━━━━━━━━`;
 
     // Use phone_reservation for reservations, fallback to whatsapp if not available
@@ -1924,8 +1784,8 @@ function ReservationModal({
               {lang === "ar"
                 ? "حجز طاولة"
                 : lang === "fr"
-                ? "Réserver"
-                : "Book a Table"}
+                  ? "Réserver"
+                  : "Book a Table"}
             </h2>
             <p className="text-slate-500 dark:text-slate-400 mt-1">
               {lang === "ar"
@@ -2273,7 +2133,7 @@ function Navbar({
                           className={cn(
                             "w-full flex items-center gap-3 px-4 py-3 hover:bg-white dark:hover:bg-slate-700 transition-colors text-left",
                             isSelected &&
-                              "bg-purple-500/10 dark:bg-purple-500/20 border-e-2 border-purple-500",
+                            "bg-purple-500/10 dark:bg-purple-500/20 border-e-2 border-purple-500",
                             l.code === "ar" ? "font-cairo" : "font-inter"
                           )}
                         >
@@ -2546,8 +2406,8 @@ function ItemModal({ item, lang, onClose, onConfirm }: any) {
                 {lang === "ar"
                   ? "إضافات"
                   : lang === "fr"
-                  ? "Suppléments"
-                  : "Add-ons"}
+                    ? "Suppléments"
+                    : "Add-ons"}
                 <div className="h-px flex-1 bg-slate-200 dark:bg-navy-700" />
               </h3>
               <div className="space-y-3">
@@ -2591,8 +2451,8 @@ function ItemModal({ item, lang, onClose, onConfirm }: any) {
                         {mod.price > 0
                           ? `+${formatPrice(mod.price, lang)}`
                           : lang === "ar"
-                          ? "مجاني"
-                          : "Free"}
+                            ? "مجاني"
+                            : "Free"}
                       </span>
                     </motion.button>
                   );
@@ -2677,8 +2537,8 @@ function CartDrawer({ cart, total, lang, onClose, onRemove, onCheckout }: any) {
               {lang === "ar"
                 ? "الفاتورة"
                 : lang === "fr"
-                ? "Facture"
-                : "Bill Details"}
+                  ? "Facture"
+                  : "Bill Details"}
             </h2>
             <p className="text-xs text-slate-500 mt-1">
               {new Date().toLocaleDateString()} •{" "}
@@ -2720,7 +2580,7 @@ function CartDrawer({ cart, total, lang, onClose, onRemove, onCheckout }: any) {
                     className={cn(
                       "p-4 flex gap-4 transition-colors hover:bg-slate-50 dark:hover:bg-navy-700/50",
                       idx !== cart.length - 1 &&
-                        "border-b border-slate-100 dark:border-navy-700"
+                      "border-b border-slate-100 dark:border-navy-700"
                     )}
                   >
                     {/* Qty Badge */}
@@ -2830,8 +2690,7 @@ function CheckoutForm({ cart, total, lang, onClose, settings }: any) {
 
     // Replace with actual restaurant phone
     window.open(
-      `https://wa.me/${
-        settings?.whatsapp || RESTAURANT_CONFIG.whatsapp
+      `https://wa.me/${settings?.whatsapp || RESTAURANT_CONFIG.whatsapp
       }?text=${text}`,
       "_blank"
     );
@@ -3091,19 +2950,19 @@ function Footer({
               {(socialMedia && socialMedia.length > 0
                 ? socialMedia
                 : [
-                    {
-                      platform: "instagram",
-                      url: RESTAURANT_CONFIG.socialMedia.instagram,
-                    },
-                    {
-                      platform: "facebook",
-                      url: RESTAURANT_CONFIG.socialMedia.facebook,
-                    },
-                    {
-                      platform: "tiktok",
-                      url: RESTAURANT_CONFIG.socialMedia.tiktok,
-                    },
-                  ].filter((s) => s.url)
+                  {
+                    platform: "instagram",
+                    url: RESTAURANT_CONFIG.socialMedia.instagram,
+                  },
+                  {
+                    platform: "facebook",
+                    url: RESTAURANT_CONFIG.socialMedia.facebook,
+                  },
+                  {
+                    platform: "tiktok",
+                    url: RESTAURANT_CONFIG.socialMedia.tiktok,
+                  },
+                ].filter((s) => s.url)
               ).map((s: any, i: number) => {
                 const platform = s.platform || s.platform_name;
                 const url = s.url || s.link;
@@ -3154,9 +3013,8 @@ function Footer({
               })}
               {/* WhatsApp Button - Minimalistic & Pro Design */}
               <a
-                href={`https://wa.me/${
-                  settings?.whatsapp_number || RESTAURANT_CONFIG.whatsapp
-                }`}
+                href={`https://wa.me/${settings?.whatsapp_number || RESTAURANT_CONFIG.whatsapp
+                  }`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full bg-[#25D366] hover:bg-[#20BA5A] shadow-sm flex items-center justify-center hover:scale-110 transition-all duration-200 group relative"
@@ -3238,8 +3096,8 @@ function Footer({
                     ? "مفتوح"
                     : "Open"
                   : lang === "ar"
-                  ? "مغلق"
-                  : "Closed"}
+                    ? "مغلق"
+                    : "Closed"}
               </span>
             </h3>
             <div className="space-y-2">
@@ -3250,7 +3108,7 @@ function Footer({
                 );
                 const staticHours =
                   RESTAURANT_CONFIG.operatingHours[
-                    day as keyof typeof RESTAURANT_CONFIG.operatingHours
+                  day as keyof typeof RESTAURANT_CONFIG.operatingHours
                   ];
                 const isToday = days[new Date().getDay()] === day;
                 const isClosed = todayHours?.is_closed || false;
@@ -3275,8 +3133,8 @@ function Footer({
                           ? "مغلق"
                           : "Closed"
                         : `${formatHours(openHour)} - ${formatHours(
-                            closeHour
-                          )}`}
+                          closeHour
+                        )}`}
                     </span>
                   </div>
                 );
@@ -3306,8 +3164,8 @@ function Footer({
                         {lang === "ar"
                           ? "موقعنا"
                           : lang === "fr"
-                          ? "Notre Emplacement"
-                          : "Our Location"}
+                            ? "Notre Emplacement"
+                            : "Our Location"}
                       </span>
                     </div>
                   </div>
@@ -3336,8 +3194,8 @@ function Footer({
             {lang === "ar"
               ? "جميع الحقوق محفوظة"
               : lang === "fr"
-              ? "Tous droits réservés"
-              : "All rights reserved"}
+                ? "Tous droits réservés"
+                : "All rights reserved"}
             .
           </p>
           <div className="flex items-center gap-1.5">
@@ -3345,8 +3203,8 @@ function Footer({
               {lang === "ar"
                 ? "القائمة بواسطة"
                 : lang === "fr"
-                ? "Menu par"
-                : "Menu By"}
+                  ? "Menu par"
+                  : "Menu By"}
             </span>
             <a
               href="https://dynamicord.com"
@@ -3558,8 +3416,8 @@ function InfoModal({
                       ? "مفتوح"
                       : "Open"
                     : lang === "ar"
-                    ? "مغلق"
-                    : "Closed"}
+                      ? "مغلق"
+                      : "Closed"}
                 </span>
               </div>
               <div className="space-y-2">
@@ -3576,7 +3434,7 @@ function InfoModal({
                   // Fallback to static config if no database data
                   const fallbackHours =
                     RESTAURANT_CONFIG.operatingHours[
-                      day as keyof typeof RESTAURANT_CONFIG.operatingHours
+                    day as keyof typeof RESTAURANT_CONFIG.operatingHours
                     ];
                   const finalOpenHour = openHour ?? fallbackHours?.open;
                   const finalCloseHour = closeHour ?? fallbackHours?.close;

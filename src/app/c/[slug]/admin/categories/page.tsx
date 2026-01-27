@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { CatalogAdminShell } from "../_components/CatalogAdminShell";
+import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import {
   CatalogAdminHeader,
   CatalogAdminContent,
@@ -33,17 +33,18 @@ interface Category {
 }
 
 export default function CategoriesPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+  const { slug, user, fetchWithAuth, features } = useCatalogAdmin();
+  const isViewer = user?.role === 'viewer';
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
-  
+
   const [isMultiLang, setIsMultiLang] = useState(false);
   const [activeLang, setActiveLang] = useState<'en' | 'ar' | 'fr'>('en');
+  const [enabledLangs, setEnabledLangs] = useState<string>("en");
 
   const [formData, setFormData] = useState({
     name_ar: "",
@@ -56,13 +57,8 @@ export default function CategoriesPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const fetchCategories = async () => {
-    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-    if (!token) return;
-
     try {
-      const res = await fetch(`/api/c/${slug}/admin/categories`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/categories`);
 
       if (res.ok) {
         const data = await res.json();
@@ -77,24 +73,12 @@ export default function CategoriesPage() {
 
   useEffect(() => {
     fetchCategories();
-    const checkFeatures = async () => {
-      try {
-        const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-        const res = await fetch(`/api/c/${slug}/admin/settings`, {
-           headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-           const data = await res.json();
-           if (data.features?.multi_language_enabled || data.settings?.multi_language_enabled) {
-             setIsMultiLang(true);
-           }
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    checkFeatures();
-  }, [slug]);
+    if (features) {
+      setIsMultiLang(features.multi_language_enabled);
+      setEnabledLangs(features.enabled_languages);
+      setActiveLang(features.default_language as any);
+    }
+  }, [slug, features]);
 
   const openAddModal = () => {
     setEditingCategory(null);
@@ -128,8 +112,6 @@ export default function CategoriesPage() {
     if (!formData.name_en) return;
 
     setSaving(true);
-    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-
     const body = {
       ...formData,
       name_ar: isMultiLang ? formData.name_ar : formData.name_en,
@@ -141,11 +123,10 @@ export default function CategoriesPage() {
         ? `/api/c/${slug}/admin/categories/${editingCategory.id}`
         : `/api/c/${slug}/admin/categories`;
 
-      const res = await fetch(url, {
+      const res = await fetchWithAuth(url, {
         method: editingCategory ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(body),
       });
@@ -162,13 +143,11 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this category?")) return;
+    if (!confirm("Are you sure you want to delete this category? All items in this category will be deleted too.")) return;
 
-    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
     try {
-      const res = await fetch(`/api/c/${slug}/admin/categories/${id}`, {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/categories/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
@@ -186,14 +165,12 @@ export default function CategoriesPage() {
     setUploading(true);
     setUploadError(null);
 
-    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
     const formDataUpload = new FormData();
     formDataUpload.append("file", file);
 
     try {
-      const res = await fetch(`/api/c/${slug}/admin/upload`, {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/upload`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: formDataUpload,
       });
 
@@ -216,7 +193,8 @@ export default function CategoriesPage() {
       <CatalogAdminHeader title="Categories">
         <button
           onClick={openAddModal}
-          className="group relative flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-2xl hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] transition-all duration-500 font-black text-[11px] uppercase tracking-widest overflow-hidden shadow-lg shadow-primary/10"
+          disabled={isViewer}
+          className="group relative flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-2xl hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] transition-all duration-500 font-black text-[11px] uppercase tracking-widest overflow-hidden shadow-lg shadow-primary/10 disabled:opacity-50"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           <Plus className="w-4 h-4" />
@@ -276,15 +254,17 @@ export default function CategoriesPage() {
                   <div className="absolute top-4 right-4 flex gap-2 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
                     <button
                       onClick={() => openEditModal(category)}
-                      className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/10 hover:bg-white/20 transition-all"
+                      disabled={isViewer}
+                      className="w-8 h-8 bg-white/5 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50"
                     >
-                      <Edit2 className="w-4 h-4 text-white" />
+                      <Edit2 className="w-3.5 h-3.5 text-white" />
                     </button>
                     <button
                       onClick={() => handleDelete(category.id)}
-                      className="w-10 h-10 bg-purple-500/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-purple-500/20 hover:bg-purple-500/40 transition-all"
+                      disabled={isViewer}
+                      className="w-8 h-8 bg-purple-500/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-purple-500/20 hover:bg-purple-500/30 transition-all disabled:opacity-50"
                     >
-                      <Trash2 className="w-4 h-4 text-white" />
+                      <Trash2 className="w-3.5 h-3.5 text-white" />
                     </button>
                   </div>
                 </div>
@@ -381,16 +361,15 @@ export default function CategoriesPage() {
               {/* Locale Matrix */}
               {isMultiLang && (
                 <div className="flex p-1.5 bg-white/[0.02] border border-white/5 rounded-2xl mb-6">
-                  {(['en', 'ar', 'fr'] as const).map((lang) => (
+                  {(['en', 'ar', 'fr'] as const).filter(l => enabledLangs.split(',').includes(l)).map((lang) => (
                     <button
                       key={lang}
                       type="button"
                       onClick={() => setActiveLang(lang)}
-                      className={`flex-1 py-3 text-[10px] font-black transition-all rounded-xl uppercase tracking-widest ${
-                        activeLang === lang
-                          ? "bg-white text-black shadow-lg"
-                          : "text-white/30 hover:text-white"
-                      }`}
+                      className={`flex-1 py-3 text-[10px] font-black transition-all rounded-xl uppercase tracking-widest ${activeLang === lang
+                        ? "bg-white text-black shadow-lg"
+                        : "text-white/30 hover:text-white"
+                        }`}
                     >
                       {lang === 'ar' ? 'العربية' : lang.toUpperCase()}
                     </button>
@@ -474,7 +453,7 @@ export default function CategoriesPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || !formData.name_en}
+                disabled={saving || !formData.name_en || isViewer}
                 className="flex-1 px-8 py-4 bg-primary text-white rounded-2xl font-black text-[11px] uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all flex items-center justify-center gap-3 group/save"
               >
                 {saving ? (

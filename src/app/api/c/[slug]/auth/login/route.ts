@@ -31,7 +31,7 @@ async function handler(
     }
 
     const db = getDb();
-    
+
     // Find admin for this catalog
     const result = await db.execute({
       sql: `
@@ -86,7 +86,7 @@ async function handler(
       id: admin.id as string,
       catalog_id: catalog.id,
       email: admin.email as string,
-      role: admin.role as 'admin' | 'editor',
+      role: admin.role as 'admin' | 'editor' | 'owner' | 'viewer',
     });
 
     return NextResponse.json({

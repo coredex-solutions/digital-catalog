@@ -105,10 +105,35 @@ export default async function CatalogLayout({
 
   if (data.isExpired) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
-        <div className="text-center p-8">
-          <h1 className="text-2xl font-bold mb-4">Catalog Unavailable</h1>
-          <p className="text-slate-400">This catalog's subscription has expired.</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#020203] text-white p-6 font-outfit">
+        <div className="fixed inset-0 pointer-events-none opacity-40">
+          <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[160px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-violet-600/5 rounded-full blur-[160px]" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-lg text-center">
+          <div className="w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-white/5 flex items-center justify-center mx-auto mb-10 group">
+            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Zap className="w-8 h-8 text-primary fill-primary" />
+            </div>
+          </div>
+
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-6 italic uppercase">
+            Catalog <span className="text-primary not-italic">Paused</span>
+          </h1>
+
+          <p className="text-white/40 text-lg font-medium leading-relaxed mb-12">
+            The subscription for <span className="text-white font-bold">{data.catalog.name}</span> has reached its limit or expired. Please contact the business owner to re-activate access.
+          </p>
+
+          <a
+            href={`https://wa.me/966540679669?text=I%20want%20to%20reactivate%20the%20catalog%20${data.catalog.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-4 px-10 py-5 bg-white text-black rounded-[1.5rem] font-black uppercase tracking-widest text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/5"
+          >
+            Contact Support
+          </a>
         </div>
       </div>
     );

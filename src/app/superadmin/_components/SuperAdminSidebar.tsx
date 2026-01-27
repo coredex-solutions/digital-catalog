@@ -2,11 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  FolderKanban, 
-  Users, 
-  CreditCard, 
+import {
+  LayoutDashboard,
+  FolderKanban,
+  CreditCard,
   Settings,
   LogOut,
   Shield,
@@ -17,7 +16,6 @@ import { clsx } from "clsx";
 const navItems = [
   { href: "/superadmin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/superadmin/catalogs", label: "Catalogs", icon: FolderKanban },
-  { href: "/superadmin/admins", label: "Catalog Admins", icon: Users },
   { href: "/superadmin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/superadmin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/superadmin/settings", label: "Settings", icon: Settings },
@@ -50,9 +48,9 @@ export function SuperAdminSidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
-          const isActive = pathname === item.href || 
+          const isActive = pathname === item.href ||
             (item.href !== "/superadmin" && pathname.startsWith(item.href));
-          
+
           return (
             <Link
               key={item.href}

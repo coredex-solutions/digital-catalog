@@ -229,6 +229,7 @@ export async function getFullCatalogData(slug: string) {
     faqs,
     menuItems,
     isExpired,
+    subscriptionType: subscription?.subscription_type || 'essential',
   };
 }
 

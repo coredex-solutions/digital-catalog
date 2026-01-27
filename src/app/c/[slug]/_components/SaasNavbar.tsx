@@ -68,7 +68,7 @@ export function SaasNavbar({
       className="fixed top-0 left-0 right-0 z-40 backdrop-blur-xl border-b shadow-sm transition-colors duration-300"
       style={{
         backgroundColor: 'var(--navbar-bg)',
-        borderColor: 'var(--surface)'
+        borderColor: 'var(--border-color)'
       }}
     >
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
@@ -78,7 +78,7 @@ export function SaasNavbar({
             <Link
               href={homeUrl || `/c/${catalogSlug}`}
               className="w-10 h-10 rounded-full flex items-center justify-center hover:shadow-md transition-all group flex-shrink-0 border"
-              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--surface)' }}
+              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border-color)' }}
             >
               <Home
                 size={18}
@@ -116,7 +116,7 @@ export function SaasNavbar({
           {/* Search Bar */}
           {onSearch && (
             <div className="border rounded-full px-4 py-2.5 flex items-center gap-2 flex-1 min-w-[120px] max-w-md transition-all focus-within:shadow-lg group"
-              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--surface)' }}
+              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border-color)' }}
             >
               <Search
                 size={16}
@@ -141,7 +141,7 @@ export function SaasNavbar({
             whileTap={{ scale: 0.95 }}
             onClick={onToggleTheme}
             className="w-10 h-10 rounded-full flex items-center justify-center hover:shadow-md transition-all group border"
-            style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--surface)' }}
+            style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border-color)' }}
           >
             {isDarkMode ? (
               <Sun size={18} style={{ color: colorPrimary }} className="group-hover:rotate-180 transition-transform duration-500" />
@@ -151,57 +151,58 @@ export function SaasNavbar({
           </motion.button>
 
           {/* Language Switcher */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-              style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--surface)' }}
-              className="h-10 px-3 rounded-full border flex items-center justify-center gap-1 hover:shadow-md transition-all group"
-            >
-              <Globe size={16} style={{ color: 'var(--text-muted)' }} />
-              <span className="text-xs font-bold uppercase" style={{ color: 'var(--text-primary)' }}>
-                {currentLang.code}
-              </span>
-              {/* <ChevronDown size={14} className={cn("transition-transform opacity-30", isLangDropdownOpen && "rotate-180")} /> */}
-            </button>
+          {supportedLanguages.length > 1 && (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                style={{ backgroundColor: 'var(--surface)', borderColor: 'var(--border-color)' }}
+                className="h-10 px-3 rounded-full border flex items-center justify-center gap-1 hover:shadow-md transition-all group"
+              >
+                <Globe size={16} style={{ color: 'var(--text-muted)' }} />
+                <span className="text-xs font-bold uppercase" style={{ color: 'var(--text-primary)' }}>
+                  {currentLang.code}
+                </span>
+              </button>
 
-            <AnimatePresence>
-              {isLangDropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                  style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}
-                  className={cn(
-                    "absolute top-full mt-2 py-2 rounded-xl border shadow-xl min-w-[130px] overflow-hidden z-50",
-                    dir === "rtl" ? "left-0" : "right-0"
-                  )}
-                >
-                  {supportedLanguages.map((l) => (
-                    <button
-                      key={l.code}
-                      onClick={() => {
-                        onLanguageChange(l.code);
-                        setIsLangDropdownOpen(false);
-                      }}
-                      className={cn(
-                        "w-full px-4 py-2.5 text-left flex items-center gap-3 transition-colors",
-                        l.code === lang ? "opacity-100" : "opacity-60 hover:opacity-100",
-                        l.font
-                      )}
-                      style={{
-                        backgroundColor: l.code === lang ? 'rgba(var(--pattern-rgb), 0.05)' : 'transparent',
-                      }}
-                      onMouseEnter={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = 'rgba(var(--pattern-rgb), 0.03)' }}
-                      onMouseLeave={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = 'transparent' }}
-                    >
-                      <span className="text-xs font-bold uppercase w-6 opacity-30" style={{ color: 'var(--text-primary)' }}>{l.code}</span>
-                      <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{l.label}</span>
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+              <AnimatePresence>
+                {isLangDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(var(--pattern-rgb), 0.08)' }}
+                    className={cn(
+                      "absolute top-full mt-2 py-2 rounded-xl border shadow-xl min-w-[130px] overflow-hidden z-50",
+                      dir === "rtl" ? "left-0" : "right-0"
+                    )}
+                  >
+                    {supportedLanguages.map((l) => (
+                      <button
+                        key={l.code}
+                        onClick={() => {
+                          onLanguageChange(l.code);
+                          setIsLangDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "w-full px-4 py-2.5 text-left flex items-center gap-3 transition-colors",
+                          l.code === lang ? "opacity-100" : "opacity-60 hover:opacity-100",
+                          l.font
+                        )}
+                        style={{
+                          backgroundColor: l.code === lang ? 'rgba(var(--pattern-rgb), 0.05)' : 'transparent',
+                        }}
+                        onMouseEnter={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = 'rgba(var(--pattern-rgb), 0.03)' }}
+                        onMouseLeave={(e) => { if (l.code !== lang) e.currentTarget.style.backgroundColor = 'transparent' }}
+                      >
+                        <span className="text-xs font-bold uppercase w-6 opacity-30" style={{ color: 'var(--text-primary)' }}>{l.code}</span>
+                        <span className="text-sm" style={{ color: 'var(--text-primary)' }}>{l.label}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </div>
     </nav>

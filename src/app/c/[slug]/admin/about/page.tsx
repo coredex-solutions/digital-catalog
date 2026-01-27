@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { CatalogAdminShell } from "../_components/CatalogAdminShell";
+import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import { CatalogAdminHeader, CatalogAdminContent } from "../_components/CatalogAdminSidebar";
 import { Save, Loader2, FileText, Search, Code, Globe, Sparkles, MapPin, Phone, Wand2, Eye, CheckCircle2, RefreshCw, Zap, Target, ArrowRight, ArrowLeft, X, Building2, Utensils, Star } from "lucide-react";
 
@@ -44,8 +44,8 @@ interface SuggestedKeyword {
 }
 
 export default function AboutSEOPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+  const { slug, user, fetchWithAuth } = useCatalogAdmin();
+  const isViewer = user?.role === 'viewer';
 
   const [data, setData] = useState<AboutSEOData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ export default function AboutSEOPage() {
   const [activeTab, setActiveTab] = useState<"about" | "seo" | "jsonld">("about");
   const [activeLang, setActiveLang] = useState<"en" | "ar" | "fr">("en");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  
+
   // AI Wizard State
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState<1 | 2 | 3>(1);
@@ -72,7 +72,6 @@ export default function AboutSEOPage() {
   const [customKeyword, setCustomKeyword] = useState("");
   const [showSeoDropdown, setShowSeoDropdown] = useState(false);
 
-  
   // Schema Wizard State
   const [schemaMode, setSchemaMode] = useState<"wizard" | "code">("wizard");
   const [schemaData, setSchemaData] = useState({
@@ -86,13 +85,8 @@ export default function AboutSEOPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-      if (!token) return;
-
       try {
-        const res = await fetch(`/api/c/${slug}/admin/about`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetchWithAuth(`/api/c/${slug}/admin/about`);
 
         if (res.ok) {
           const result = await res.json();
@@ -144,12 +138,10 @@ export default function AboutSEOPage() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-      const res = await fetch(`/api/c/${slug}/admin/about`, {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/about`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           ...data.about,
@@ -205,7 +197,7 @@ export default function AboutSEOPage() {
 
     setAiLoading(true);
     setWizardStep(2);
-    
+
     try {
       const res = await fetch("/api/ai/generate", {
         method: "POST",
@@ -239,7 +231,7 @@ export default function AboutSEOPage() {
   const goToStep3 = async () => {
     setAiLoading(true);
     setWizardStep(3);
-    
+
     try {
       const res = await fetch("/api/ai/generate", {
         method: "POST",
@@ -285,8 +277,8 @@ export default function AboutSEOPage() {
   };
 
   const toggleKeyword = (keyword: string) => {
-    setSelectedKeywords(prev => 
-      prev.includes(keyword) 
+    setSelectedKeywords(prev =>
+      prev.includes(keyword)
         ? prev.filter(k => k !== keyword)
         : [...prev, keyword]
     );
@@ -302,16 +294,16 @@ export default function AboutSEOPage() {
   // Enhance current content
   const enhanceWithAI = async () => {
     if (!data) return;
-    
+
     const currentContent = data.about[`about_content_${activeLang}` as keyof typeof data.about];
     if (!currentContent || currentContent.length < 20) {
       setMessage({ type: "error", text: "Write some content first or generate with AI." });
       return;
     }
-    
+
     setAiLoading(true);
     setMessage({ type: "success", text: `Enhancing ${activeLang.toUpperCase()} content...` });
-    
+
     try {
       const res = await fetch("/api/ai/generate", {
         method: "POST",
@@ -356,7 +348,7 @@ export default function AboutSEOPage() {
   const updateSchema = (field: keyof typeof schemaData, value: string) => {
     const newData = { ...schemaData, [field]: value };
     setSchemaData(newData);
-    
+
     if (!data) return;
 
     const typeMap: Record<string, string> = {
@@ -394,14 +386,14 @@ export default function AboutSEOPage() {
     if (!data) return;
 
     // Check if any About content exists for selected languages
-    const hasAboutContent = languages.some(lang => 
+    const hasAboutContent = languages.some(lang =>
       data.about[`about_content_${lang}` as keyof typeof data.about]?.trim()
     );
 
     if (!hasAboutContent) {
-      setMessage({ 
-        type: "error", 
-        text: "Please fill in the About tab first! AI needs your content to generate optimized SEO." 
+      setMessage({
+        type: "error",
+        text: "Please fill in the About tab first! AI needs your content to generate optimized SEO."
       });
       setShowSeoDropdown(false);
       return;
@@ -435,7 +427,7 @@ export default function AboutSEOPage() {
         const result = await res.json();
         if (result.seo) {
           const updates: Partial<typeof data.seo> = {};
-          
+
           languages.forEach(lang => {
             if (result.seo[lang]) {
               updates[`seo_title_${lang}` as keyof typeof data.seo] = result.seo[lang].title || "";
@@ -492,8 +484,8 @@ export default function AboutSEOPage() {
       <CatalogAdminHeader title="About & SEO">
         <button
           onClick={handleSave}
-          disabled={saving || !data}
-          className="flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-primary/30 transition-all disabled:opacity-50"
+          disabled={saving || isViewer}
+          className="group relative flex items-center gap-2 px-6 py-2.5 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:shadow-lg hover:shadow-primary/20 transition-all disabled:opacity-50"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           Save
@@ -505,9 +497,8 @@ export default function AboutSEOPage() {
           <div className="space-y-6">
             {/* Message */}
             {message && (
-              <div className={`p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top ${
-                message.type === "success" ? "bg-violet-500/10 text-violet-400" : "bg-purple-500/10 text-purple-400"
-              }`}>
+              <div className={`p-4 rounded-xl flex items-center gap-3 animate-in slide-in-from-top ${message.type === "success" ? "bg-violet-500/10 text-violet-400" : "bg-purple-500/10 text-purple-400"
+                }`}>
                 <CheckCircle2 className="w-5 h-5" />
                 <span className="text-sm font-medium">{message.text}</span>
                 <button onClick={() => setMessage(null)} className="ml-auto opacity-50 hover:opacity-100">
@@ -526,9 +517,8 @@ export default function AboutSEOPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    activeTab === tab.id ? "bg-primary text-white" : "text-white/40 hover:text-white"
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? "bg-primary text-white" : "text-white/40 hover:text-white"
+                    }`}
                 >
                   <tab.icon className="w-4 h-4" />
                   {tab.label}
@@ -545,9 +535,8 @@ export default function AboutSEOPage() {
                     <button
                       key={lang}
                       onClick={() => setActiveLang(lang)}
-                      className={`px-3 py-1 rounded text-xs font-bold uppercase ${
-                        activeLang === lang ? "bg-white text-black" : "text-white/30 hover:text-white"
-                      }`}
+                      className={`px-3 py-1 rounded text-xs font-bold uppercase ${activeLang === lang ? "bg-white text-black" : "text-white/30 hover:text-white"
+                        }`}
                     >
                       {lang}
                     </button>
@@ -567,16 +556,16 @@ export default function AboutSEOPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={openAIWizard}
-                      disabled={aiLoading}
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold hover:border-purple-400 transition-all"
+                      disabled={aiLoading || isViewer}
+                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/20 to-purple-500/20 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-bold hover:border-purple-400 transition-all disabled:opacity-50"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                       Generate with AI
                     </button>
                     <button
                       onClick={enhanceWithAI}
-                      disabled={aiLoading}
-                      className="flex items-center gap-2 px-3 py-2 bg-white/5 text-white/50 border border-white/10 rounded-lg text-xs font-bold hover:text-white hover:border-white/20 transition-all"
+                      disabled={aiLoading || isViewer}
+                      className="flex items-center gap-2 px-3 py-2 bg-white/5 text-white/50 border border-white/10 rounded-lg text-xs font-bold hover:text-white hover:border-white/20 transition-all disabled:opacity-50"
                     >
                       {aiLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                       Enhance
@@ -601,10 +590,10 @@ export default function AboutSEOPage() {
                 <div className="glass-card p-6 space-y-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-bold text-white">SEO Settings ({activeLang.toUpperCase()})</h3>
-                    
+
                     {/* Pro AI Auto-Generate Dropdown */}
                     <div className="relative">
-                      <button 
+                      <button
                         onClick={() => !aiLoading && setShowSeoDropdown(!showSeoDropdown)}
                         disabled={aiLoading}
                         className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500/10 to-purple-500/10 text-purple-400 border border-purple-500/20 rounded-lg text-xs font-bold hover:border-purple-400 transition-all disabled:opacity-50"
@@ -624,7 +613,7 @@ export default function AboutSEOPage() {
                           </>
                         )}
                       </button>
-                      
+
                       {showSeoDropdown && (
                         <>
                           <div className="fixed inset-0 z-40" onClick={() => setShowSeoDropdown(false)} />
@@ -814,7 +803,7 @@ export default function AboutSEOPage() {
                           <Building2 className="w-4 h-4" />
                           <span className="text-sm font-medium">أخبرنا عن نشاطك التجاري</span>
                         </div>
-                        
+
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="text-xs text-white/40 mb-1.5 block">اسم النشاط التجاري</label>
@@ -869,11 +858,10 @@ export default function AboutSEOPage() {
                                 <button
                                   key={i}
                                   onClick={() => toggleKeyword(kw.keyword)}
-                                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                                    selectedKeywords.includes(kw.keyword)
-                                      ? "bg-purple-500 text-white"
-                                      : "bg-white/5 text-white/60 hover:bg-white/10"
-                                  }`}
+                                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${selectedKeywords.includes(kw.keyword)
+                                    ? "bg-purple-500 text-white"
+                                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                                    }`}
                                 >
                                   {kw.keyword}
                                 </button>

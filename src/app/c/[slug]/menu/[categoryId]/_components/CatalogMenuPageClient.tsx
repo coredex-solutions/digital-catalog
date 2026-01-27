@@ -66,6 +66,7 @@ export function CatalogMenuPageClient({
     selectedItem,
     setSelectedItem,
     isThemeLoaded,
+    subscriptionType,
   } = useCatalog();
 
   const categoryTabsRef = useRef<HTMLDivElement>(null);
@@ -224,7 +225,10 @@ export function CatalogMenuPageClient({
         >
           <ShoppingCart size={22} />
           {cartItemCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-[10px] font-bold bg-purple-500 text-white rounded-full">
+            <span
+              className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-[10px] font-bold text-white rounded-full"
+              style={{ backgroundColor: colorSecondary || colorPrimary }}
+            >
               {cartItemCount}
             </span>
           )}
@@ -237,8 +241,9 @@ export function CatalogMenuPageClient({
         socialMedia={socialMedia}
         contact={contact}
         logoUrl={catalog.logo_url}
-        catalogName={catalog.name}
+        catalogName={catalog[`name_${lang}` as keyof typeof catalog] as string || catalog.name}
         colorPrimary={colorPrimary}
+        subscriptionType={subscriptionType}
       />
 
       {/* Modals */}
@@ -299,7 +304,7 @@ export function CatalogMenuPageClient({
               setIsCheckoutOpen(false);
             }}
             cartTotal={cartTotal}
-            catalogName={catalog.name}
+            catalogName={catalog[`name_${lang}` as keyof typeof catalog] as string || catalog.name}
             contact={contact}
             colorPrimary={colorPrimary}
           />

@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { CatalogAdminShell } from "../_components/CatalogAdminShell";
-import {
-  CatalogAdminHeader,
-  CatalogAdminContent,
-} from "../_components/CatalogAdminSidebar";
+import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
+import { CatalogAdminHeader, CatalogAdminContent } from "../_components/CatalogAdminSidebar";
 import {
   Save,
   Loader2,
@@ -44,8 +41,8 @@ function parseTimeToHour(time: string): number {
 }
 
 export default function OperatingHoursPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+  const { slug, user, fetchWithAuth } = useCatalogAdmin();
+  const isViewer = user?.role === 'viewer';
 
   const [hours, setHours] = useState<DayHours[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,59 +54,25 @@ export default function OperatingHoursPage() {
 
   useEffect(() => {
     const fetchHours = async () => {
-      const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
       try {
-        const res = await fetch(`/api/c/${slug}/admin/hours`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
+        const res = await fetchWithAuth(`/api/c/${slug}/admin/hours`);
         if (res.ok) {
           const data = await res.json();
           if (data.hours && data.hours.length > 0) {
             setHours(data.hours);
           } else {
-            // Initialize with default hours for all 7 days
-            setHours(
-              DAYS.map((day) => ({
-                day_name: day.name,
-                open_hour: 9,
-                close_hour: 22,
-                is_closed: false,
-              }))
-            );
+            setHours(DAYS.map(day => ({ day_name: day.name, open_hour: 9, close_hour: 22, is_closed: false })));
           }
         } else {
-          // Initialize defaults on error
-          setHours(
-            DAYS.map((day) => ({
-              day_name: day.name,
-              open_hour: 9,
-              close_hour: 22,
-              is_closed: false,
-            }))
-          );
+          setHours(DAYS.map(day => ({ day_name: day.name, open_hour: 9, close_hour: 22, is_closed: false })));
         }
       } catch (error) {
         console.error("Failed to fetch operating hours:", error);
-        // Initialize defaults on error
-        setHours(
-          DAYS.map((day) => ({
-            day_name: day.name,
-            open_hour: 9,
-            close_hour: 22,
-            is_closed: false,
-          }))
-        );
+        setHours(DAYS.map(day => ({ day_name: day.name, open_hour: 9, close_hour: 22, is_closed: false })));
       } finally {
         setLoading(false);
       }
     };
-
     fetchHours();
   }, [slug]);
 
@@ -118,12 +81,10 @@ export default function OperatingHoursPage() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-      const res = await fetch(`/api/c/${slug}/admin/hours`, {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/hours`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ hours }),
       });
@@ -156,8 +117,8 @@ export default function OperatingHoursPage() {
     onChange: (v: boolean) => void;
   }) => (
     <button
-      onClick={() => onChange(!checked)}
-      className="flex items-center"
+      onClick={() => !isViewer && onChange(!checked)}
+      className={`flex items-center ${isViewer ? 'cursor-not-allowed opacity-50' : ''}`}
     >
       {checked ? (
         <ToggleRight
@@ -175,20 +136,17 @@ export default function OperatingHoursPage() {
       <CatalogAdminHeader title="Operating Hours">
         <button
           onClick={handleSave}
-          disabled={saving || loading}
-          className="flex items-center gap-2 px-4 py-2 text-white rounded-xl font-medium transition-all disabled:opacity-50"
-          style={{
-            background: `linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)`,
-          }}
+          disabled={saving || loading || isViewer}
+          className="group relative flex items-center gap-2 px-8 py-3 bg-primary text-white rounded-2xl hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] transition-all duration-500 font-black text-[11px] uppercase tracking-widest overflow-hidden shadow-lg shadow-primary/10 disabled:opacity-50"
         >
           {saving ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" />
               Saving...
             </>
           ) : (
             <>
-              <Save className="w-5 h-5" />
+              <Save className="w-4 h-4" />
               Save Changes
             </>
           )}
@@ -198,23 +156,21 @@ export default function OperatingHoursPage() {
       <CatalogAdminContent>
         {message && (
           <div
-            className={`mb-6 px-4 py-3 rounded-xl ${
-              message.type === "success"
-                ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                : "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-            }`}
+            className={`mb-6 px-4 py-3 rounded-xl ${message.type === "success"
+              ? "bg-green-500/10 text-green-400 border border-green-500/20"
+              : "bg-purple-500/10 text-purple-400 border border-purple-500/20"
+              }`}
           >
             {message.text}
           </div>
         )}
 
         {loading ? (
-          <div className="animate-pulse space-y-4">
-            <div className="h-10 bg-slate-700 rounded w-1/3" />
-            <div className="h-64 bg-slate-700 rounded" />
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
+          <div className="glass rounded-[3rem] p-10 border border-white/5">
             <h3 className="font-semibold text-white mb-6 flex items-center gap-2">
               <Clock className="w-5 h-5" style={{ color: "var(--color-primary)" }} />
               Weekly Schedule
@@ -228,7 +184,7 @@ export default function OperatingHoursPage() {
                 return (
                   <div
                     key={day.name}
-                    className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-slate-900/50 rounded-xl"
+                    className="flex flex-col sm:flex-row sm:items-center gap-6 p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] hover:bg-white/[0.04] transition-all group"
                   >
                     <div className="flex items-center justify-between sm:w-32">
                       <span className="font-medium text-white">{day.label_en}</span>
@@ -246,9 +202,8 @@ export default function OperatingHoursPage() {
                     </div>
 
                     <div
-                      className={`flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-4 ${
-                        dayHours.is_closed ? "opacity-50 pointer-events-none" : ""
-                      }`}
+                      className={`flex-1 flex flex-col sm:flex-row items-start sm:items-center gap-4 ${dayHours.is_closed ? "opacity-50 pointer-events-none" : ""
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-400">Open:</span>
@@ -262,12 +217,13 @@ export default function OperatingHoursPage() {
                               parseTimeToHour(e.target.value)
                             )
                           }
-                          className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
+                          className="px-4 py-2 bg-white/[0.05] border border-white/10 rounded-xl text-white font-black focus:outline-none focus:border-primary/50 transition-all text-sm disabled:opacity-50"
+                          disabled={isViewer}
                         />
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-400">Close:</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Close:</span>
                         <input
                           type="time"
                           value={formatHourToTime(dayHours.close_hour)}
@@ -278,7 +234,8 @@ export default function OperatingHoursPage() {
                               parseTimeToHour(e.target.value)
                             )
                           }
-                          className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-violet-500"
+                          className="px-4 py-2 bg-white/[0.05] border border-white/10 rounded-xl text-white font-black focus:outline-none focus:border-primary/50 transition-all text-sm disabled:opacity-50"
+                          disabled={isViewer}
                         />
                       </div>
                     </div>

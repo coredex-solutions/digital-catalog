@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { CatalogAdminShell } from "../_components/CatalogAdminShell";
+import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import {
   CatalogAdminHeader,
   CatalogAdminContent,
@@ -45,8 +45,8 @@ interface Item {
 }
 
 export default function ItemsPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+  const { slug, user, fetchWithAuth, features } = useCatalogAdmin();
+  const isViewer = user?.role === 'viewer';
 
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -58,6 +58,7 @@ export default function ItemsPage() {
   const [filterCategory, setFilterCategory] = useState<string>("");
   const [isMultiLang, setIsMultiLang] = useState(true);
   const [activeLang, setActiveLang] = useState<'en' | 'ar' | 'fr'>('en');
+  const [enabledLangs, setEnabledLangs] = useState<string>("en");
 
   const [formData, setFormData] = useState({
     category_id: "",
@@ -87,12 +88,8 @@ export default function ItemsPage() {
 
     try {
       const [itemsRes, catsRes] = await Promise.all([
-        fetch(`/api/c/${slug}/admin/items`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`/api/c/${slug}/admin/categories`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        fetchWithAuth(`/api/c/${slug}/admin/items`),
+        fetchWithAuth(`/api/c/${slug}/admin/categories`),
       ]);
 
       if (itemsRes.ok) {
@@ -112,38 +109,16 @@ export default function ItemsPage() {
 
   useEffect(() => {
     fetchData();
-    const checkFeatures = async () => {
-      try {
-        const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-        const res = await fetch(`/api/c/${slug}/admin/settings`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.features?.multi_language_enabled || data.settings?.multi_language_enabled) {
-            setIsMultiLang(true);
-          }
-          // Get catalog ID for AI limits
-          if (data.catalog?.id) {
-            setCatalogId(data.catalog.id);
-            // Fetch AI enhancement limits
-            try {
-              const limitRes = await fetch(`/api/ai/enhance-image?catalogId=${data.catalog.id}`);
-              if (limitRes.ok) {
-                const limitData = await limitRes.json();
-                setEnhanceLimit({ remaining: limitData.remaining, limit: limitData.limit });
-              }
-            } catch (err) {
-              console.error("Failed to fetch AI limits:", err);
-            }
-          }
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    checkFeatures();
-  }, [slug]);
+    if (features) {
+      setIsMultiLang(features.multi_language_enabled);
+      setEnabledLangs(features.enabled_languages);
+      setActiveLang(features.default_language as any);
+      setEnhanceLimit({
+        remaining: features.ai_image_enhancement_limit - features.ai_image_enhancement_used,
+        limit: features.ai_image_enhancement_limit
+      });
+    }
+  }, [slug, features]);
 
   const openAddModal = () => {
     setEditingItem(null);
@@ -189,7 +164,6 @@ export default function ItemsPage() {
     if (!formData.name_en || !formData.category_id || !formData.price) return;
 
     setSaving(true);
-    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
 
     const body = {
       ...formData,
@@ -205,11 +179,10 @@ export default function ItemsPage() {
         ? `/api/c/${slug}/admin/items/${editingItem.id}`
         : `/api/c/${slug}/admin/items`;
 
-      const res = await fetch(url, {
+      const res = await fetchWithAuth(url, {
         method: editingItem ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(body),
       });
@@ -228,11 +201,9 @@ export default function ItemsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this item?")) return;
 
-    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
     try {
-      const res = await fetch(`/api/c/${slug}/admin/items/${id}`, {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/items/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (res.ok) {
@@ -250,14 +221,12 @@ export default function ItemsPage() {
     setUploading(true);
     setUploadError(null);
 
-    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
     const formDataUpload = new FormData();
     formDataUpload.append("file", file);
 
     try {
-      const res = await fetch(`/api/c/${slug}/admin/upload`, {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/upload`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
         body: formDataUpload,
       });
 
@@ -296,16 +265,14 @@ export default function ItemsPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        const token = localStorage.getItem(`catalog_admin_token_${slug}`);
         const enhancedBlob = await fetch(`data:${data.enhancedImage.mimeType};base64,${data.enhancedImage.base64}`).then(r => r.blob());
         const enhancedFile = new File([enhancedBlob], "enhanced-image.jpg", { type: data.enhancedImage.mimeType });
 
         const uploadForm = new FormData();
         uploadForm.append("file", enhancedFile);
 
-        const uploadRes = await fetch(`/api/c/${slug}/admin/upload`, {
+        const uploadRes = await fetchWithAuth(`/api/c/${slug}/admin/upload`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
           body: uploadForm,
         });
 
@@ -340,7 +307,8 @@ export default function ItemsPage() {
       <CatalogAdminHeader title="Product Manager">
         <button
           onClick={openAddModal}
-          className="group relative flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-2xl hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] transition-all duration-500 font-black text-[11px] uppercase tracking-widest overflow-hidden shadow-lg shadow-primary/10"
+          disabled={isViewer}
+          className="group relative flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-2xl hover:shadow-[0_0_30px_rgba(124,58,237,0.4)] transition-all duration-500 font-black text-[11px] uppercase tracking-widest overflow-hidden shadow-lg shadow-primary/10 disabled:opacity-50"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           <Plus className="w-4 h-4" />
@@ -424,13 +392,15 @@ export default function ItemsPage() {
                       <div className="flex flex-col gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-500">
                         <button
                           onClick={() => openEditModal(item)}
-                          className="w-8 h-8 bg-white/5 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/10 hover:bg-white/10 transition-all"
+                          disabled={isViewer}
+                          className="w-8 h-8 bg-white/5 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/10 hover:bg-white/10 transition-all disabled:opacity-50"
                         >
                           <Edit2 className="w-3.5 h-3.5 text-white" />
                         </button>
                         <button
                           onClick={() => handleDelete(item.id)}
-                          className="w-8 h-8 bg-purple-500/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-purple-500/20 hover:bg-purple-500/30 transition-all"
+                          disabled={isViewer}
+                          className="w-8 h-8 bg-purple-500/10 backdrop-blur-md rounded-lg flex items-center justify-center border border-purple-500/20 hover:bg-purple-500/30 transition-all disabled:opacity-50"
                         >
                           <Trash2 className="w-3.5 h-3.5 text-white" />
                         </button>
@@ -477,40 +447,44 @@ export default function ItemsPage() {
                     Product Image & AI Engine
                   </label>
 
-                  <div className="flex gap-2 mb-4 p-2 bg-white/5 rounded-2xl border border-white/10">
-                    <select
-                      value={aiProductType}
-                      onChange={(e) => setAiProductType(e.target.value as any)}
-                      className="flex-1 bg-transparent text-[10px] font-black uppercase text-white/60 focus:outline-none cursor-pointer px-2"
-                    >
-                      <option value="food" className="bg-[#0a0a0a]">Food Mode</option>
-                      <option value="product" className="bg-[#0a0a0a]">Retail Mode</option>
-                    </select>
-                    <div className="w-[1px] bg-white/10" />
-                    <select
-                      value={aiStyle}
-                      onChange={(e) => setAiStyle(e.target.value as any)}
-                      className="flex-1 bg-transparent text-[10px] font-black uppercase text-white/60 focus:outline-none cursor-pointer px-2"
-                    >
-                      <option value="professional" className="bg-[#0a0a0a]">Pro Style</option>
-                      <option value="vibrant" className="bg-[#0a0a0a]">Vibrant</option>
-                      <option value="clean" className="bg-[#0a0a0a]">Clean</option>
-                    </select>
-                  </div>
+                  {enhanceLimit.limit > 0 && (
+                    <div className="flex gap-2 mb-4 p-2 bg-white/5 rounded-2xl border border-white/10">
+                      <select
+                        value={aiProductType}
+                        onChange={(e) => setAiProductType(e.target.value as any)}
+                        className="flex-1 bg-transparent text-[10px] font-black uppercase text-white/60 focus:outline-none cursor-pointer px-2"
+                      >
+                        <option value="food" className="bg-[#0a0a0a]">Food Mode</option>
+                        <option value="product" className="bg-[#0a0a0a]">Retail Mode</option>
+                      </select>
+                      <div className="w-[1px] bg-white/10" />
+                      <select
+                        value={aiStyle}
+                        onChange={(e) => setAiStyle(e.target.value as any)}
+                        className="flex-1 bg-transparent text-[10px] font-black uppercase text-white/60 focus:outline-none cursor-pointer px-2"
+                      >
+                        <option value="professional" className="bg-[#0a0a0a]">Pro Style</option>
+                        <option value="vibrant" className="bg-[#0a0a0a]">Vibrant</option>
+                        <option value="clean" className="bg-[#0a0a0a]">Clean</option>
+                      </select>
+                    </div>
+                  )}
 
                   <div className="relative group/upload">
                     {formData.image_url ? (
                       <div className="relative h-64 rounded-[2.5rem] overflow-hidden border border-white/10">
                         <Image src={formData.image_url} alt="Entity" fill className="object-cover" />
                         <div className="absolute top-4 right-4 flex gap-2">
-                          <button
-                            onClick={handleAIEnhance}
-                            disabled={enhancing || enhanceLimit.remaining <= 0}
-                            className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={`تحسين بالذكاء الاصطناعي (${enhanceLimit.remaining}/${enhanceLimit.limit})`}
-                          >
-                            {enhancing ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Sparkles className="w-4 h-4 text-white" />}
-                          </button>
+                          {enhanceLimit.limit > 0 && (
+                            <button
+                              onClick={handleAIEnhance}
+                              disabled={enhancing || enhanceLimit.remaining <= 0}
+                              className="w-10 h-10 bg-gradient-to-r from-purple-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={`AI Enhancement (${enhanceLimit.remaining}/${enhanceLimit.limit})`}
+                            >
+                              {enhancing ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Sparkles className="w-4 h-4 text-white" />}
+                            </button>
+                          )}
                           <button
                             onClick={() => setFormData((p) => ({ ...p, image_url: "" }))}
                             className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg hover:scale-105 transition-transform"
@@ -546,7 +520,7 @@ export default function ItemsPage() {
                 <div className="space-y-6">
                   {isMultiLang && (
                     <div className="flex p-1.5 bg-white/[0.02] border border-white/5 rounded-2xl">
-                      {(['en', 'ar', 'fr'] as const).map((lang) => (
+                      {(['en', 'ar', 'fr'] as const).filter(l => enabledLangs.split(',').includes(l)).map((lang) => (
                         <button
                           key={lang}
                           type="button"
@@ -642,7 +616,7 @@ export default function ItemsPage() {
               </button>
               <button
                 onClick={handleSave}
-                disabled={saving || !formData.name_en || !formData.price}
+                disabled={saving || !formData.name_en || !formData.price || isViewer}
                 className="flex-1 px-8 py-4 bg-primary text-white rounded-2xl font-black text-[11px] uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(124,58,237,0.3)] transition-all flex items-center justify-center gap-3 group/save"
               >
                 {saving ? (
