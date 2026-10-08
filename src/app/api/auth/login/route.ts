@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -6,7 +7,7 @@ import { getDb } from "../../../../../lib/db/client";
 import { verifyPassword, hashPassword } from "../../../../../lib/auth/password";
 import { signToken } from "../../../../../lib/auth/jwt";
 
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest) {
   try {
     const { username, password } = await request.json();
 
@@ -115,4 +116,8 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: NextRequest) {
+  return withRateLimit(request, () => handler(request), RATE_LIMITS.login);
 }

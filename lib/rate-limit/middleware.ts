@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createHash } from 'crypto';
 import { getDb } from '../db/client';
-import { v4 as uuidv4 } from 'uuid';
 
 interface RateLimitConfig {
   windowMs: number;    // Time window in milliseconds
   maxRequests: number; // Max requests per window
-  keyPrefix?: string;  // Prefix for rate limit key
+  keyPrefix?: string;  // Bucket name; defaults to the request path
 }
 
 // Default rate limit configurations
@@ -14,148 +14,134 @@ export const RATE_LIMITS = {
   api: { windowMs: 60 * 1000, maxRequests: 100 },         // 100 req/min
   auth: { windowMs: 15 * 60 * 1000, maxRequests: 10 },    // 10 req/15min
   upload: { windowMs: 60 * 1000, maxRequests: 10 },       // 10 uploads/min
-  analytics: { windowMs: 1000, maxRequests: 20 },         // 20 req/sec
-  
+  analytics: { windowMs: 60 * 1000, maxRequests: 60 },    // 60 events/min
+
   // Stricter for sensitive operations
   login: { windowMs: 15 * 60 * 1000, maxRequests: 5 },    // 5 attempts/15min
-  register: { windowMs: 60 * 60 * 1000, maxRequests: 3 }, // 3 attempts/hour
+  register: { windowMs: 60 * 60 * 1000, maxRequests: 10 }, // 10 attempts/hour
+  sendCode: { windowMs: 60 * 60 * 1000, maxRequests: 5 }, // 5 emails/hour
+  verifyCode: { windowMs: 10 * 60 * 1000, maxRequests: 5 }, // 5 guesses per code lifetime
+
+  // Public AI endpoints (each call costs money)
+  aiChat: { windowMs: 60 * 1000, maxRequests: 15 },       // 15 msgs/min
+  tts: { windowMs: 60 * 1000, maxRequests: 30 },          // 30 clips/min
 };
 
 /**
- * Get client identifier (IP address or API key)
+ * Get client identifier (IP address)
  */
-function getClientIdentifier(request: NextRequest): string {
-  // Try various headers for real IP (behind proxies)
+export function getClientIdentifier(request: NextRequest): string {
+  // Set by Netlify's edge and not spoofable by the client, unlike x-forwarded-for
+  const netlifyIp = request.headers.get('x-nf-client-connection-ip');
+  if (netlifyIp) {
+    return netlifyIp.trim();
+  }
+
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) {
+    return realIp.trim();
+  }
+
   const forwardedFor = request.headers.get('x-forwarded-for');
   if (forwardedFor) {
     return forwardedFor.split(',')[0].trim();
   }
 
-  const realIp = request.headers.get('x-real-ip');
-  if (realIp) {
-    return realIp;
-  }
-
-  // Fallback to a hash of user agent + some request info
-  const ua = request.headers.get('user-agent') || 'unknown';
-  const accept = request.headers.get('accept') || '';
-  const identifier = `${ua}-${accept}`;
-  
-  // Simple hash
-  let hash = 0;
-  for (let i = 0; i < identifier.length; i++) {
-    const char = identifier.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return `ua-${Math.abs(hash).toString(36)}`;
+  return 'unknown';
 }
 
 /**
- * Check rate limit and return result
+ * Check rate limit and return result.
+ * Uses fixed windows stored in the rate_limits table so limits hold across serverless
+ * instances. `identifier` overrides the client IP, e.g. to limit per email address.
  */
 export async function checkRateLimit(
   request: NextRequest,
-  config: RateLimitConfig = RATE_LIMITS.api
+  config: RateLimitConfig = RATE_LIMITS.api,
+  identifier: string = getClientIdentifier(request)
 ): Promise<{ allowed: boolean; remaining: number; resetAt: Date }> {
-  const identifier = getClientIdentifier(request);
   const endpoint = config.keyPrefix || new URL(request.url).pathname;
-  
+
+  const windowStartMs = Math.floor(Date.now() / config.windowMs) * config.windowMs;
+  const resetAt = new Date(windowStartMs + config.windowMs);
+  // SQLite datetime format so cleanup can compare against datetime('now')
+  const windowStart = new Date(windowStartMs).toISOString().slice(0, 19).replace('T', ' ');
+  // Deterministic row id per (identifier, endpoint, window) so one upsert does the counting
+  const id = createHash('sha256').update(`${identifier}|${endpoint}|${windowStartMs}`).digest('hex');
+
   const db = getDb();
-  const windowStart = new Date(Date.now() - config.windowMs);
-  const windowStartStr = windowStart.toISOString();
 
   try {
-    // Clean up old records (older than window)
-    await db.execute({
-      sql: "DELETE FROM rate_limits WHERE window_start < datetime(?, '-1 hour')",
-      args: [windowStartStr],
-    });
-
-    // Get current count for this identifier + endpoint
     const result = await db.execute({
       sql: `
-        SELECT SUM(request_count) as total
-        FROM rate_limits 
-        WHERE identifier = ? AND endpoint = ? AND window_start >= ?
+        INSERT INTO rate_limits (id, identifier, endpoint, request_count, window_start)
+        VALUES (?, ?, ?, 1, ?)
+        ON CONFLICT(id) DO UPDATE SET request_count = request_count + 1
+        RETURNING request_count
       `,
-      args: [identifier, endpoint, windowStartStr],
+      args: [id, identifier, endpoint, windowStart],
     });
 
-    const currentCount = Number(result.rows[0]?.total || 0);
-    const remaining = Math.max(0, config.maxRequests - currentCount - 1);
-    const resetAt = new Date(Date.now() + config.windowMs);
-
-    if (currentCount >= config.maxRequests) {
-      return { allowed: false, remaining: 0, resetAt };
+    // Occasionally clear out expired windows (longest window is 1 hour)
+    if (Math.random() < 0.01) {
+      db.execute("DELETE FROM rate_limits WHERE window_start < datetime('now', '-1 day')")
+        .catch((error) => console.error('Rate limit cleanup failed:', error));
     }
 
-    // Increment count
-    const now = new Date();
-    const minuteKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}`;
-
-    const existing = await db.execute({
-      sql: `
-        SELECT id, request_count FROM rate_limits 
-        WHERE identifier = ? AND endpoint = ? AND window_start >= ?
-        LIMIT 1
-      `,
-      args: [identifier, endpoint, windowStartStr],
-    });
-
-    if (existing.rows.length > 0) {
-      await db.execute({
-        sql: 'UPDATE rate_limits SET request_count = request_count + 1 WHERE id = ?',
-        args: [existing.rows[0].id],
-      });
-    } else {
-      await db.execute({
-        sql: `
-          INSERT INTO rate_limits (id, identifier, endpoint, request_count, window_start)
-          VALUES (?, ?, ?, 1, datetime('now'))
-        `,
-        args: [uuidv4(), identifier, endpoint],
-      });
-    }
-
-    return { allowed: true, remaining, resetAt };
+    const count = Number(result.rows[0]?.request_count || 1);
+    return {
+      allowed: count <= config.maxRequests,
+      remaining: Math.max(0, config.maxRequests - count),
+      resetAt,
+    };
   } catch (error) {
     // If rate limiting fails, allow the request (fail open)
     console.error('Rate limit check failed:', error);
-    return { allowed: true, remaining: config.maxRequests, resetAt: new Date() };
+    return { allowed: true, remaining: config.maxRequests, resetAt };
   }
+}
+
+/**
+ * Build the 429 response for a failed rate limit check
+ */
+export function rateLimitResponse(
+  config: RateLimitConfig,
+  resetAt: Date
+): NextResponse {
+  const retryAfter = Math.max(1, Math.ceil((resetAt.getTime() - Date.now()) / 1000));
+  return NextResponse.json(
+    {
+      error: 'Too many requests. Please try again later.',
+      retryAfter,
+    },
+    {
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': config.maxRequests.toString(),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': resetAt.toISOString(),
+        'Retry-After': retryAfter.toString(),
+      },
+    }
+  );
 }
 
 /**
  * Rate limit middleware wrapper for API routes
  */
-export async function withRateLimit(
+export async function withRateLimit<T extends Response>(
   request: NextRequest,
-  handler: () => Promise<NextResponse>,
+  handler: () => Promise<T>,
   config: RateLimitConfig = RATE_LIMITS.api
-): Promise<NextResponse> {
+): Promise<T | NextResponse> {
   const result = await checkRateLimit(request, config);
 
   if (!result.allowed) {
-    return NextResponse.json(
-      { 
-        error: 'Too many requests. Please try again later.',
-        retryAfter: Math.ceil((result.resetAt.getTime() - Date.now()) / 1000),
-      },
-      { 
-        status: 429,
-        headers: {
-          'X-RateLimit-Limit': config.maxRequests.toString(),
-          'X-RateLimit-Remaining': '0',
-          'X-RateLimit-Reset': result.resetAt.toISOString(),
-          'Retry-After': Math.ceil((result.resetAt.getTime() - Date.now()) / 1000).toString(),
-        },
-      }
-    );
+    return rateLimitResponse(config, result.resetAt);
   }
 
   const response = await handler();
-  
+
   // Add rate limit headers to response
   response.headers.set('X-RateLimit-Limit', config.maxRequests.toString());
   response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
@@ -175,4 +161,3 @@ export function rateLimited<T extends (...args: any[]) => Promise<NextResponse>>
     return withRateLimit(request, () => handler(request, ...args), config);
   };
 }
-

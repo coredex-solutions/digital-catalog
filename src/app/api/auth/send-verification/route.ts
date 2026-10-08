@@ -1,14 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
 import { v4 as uuidv4 } from "uuid";
+import { randomInt } from "crypto";
 import { sendVerificationEmail } from "@/lib/email";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit/middleware";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Per-address cap so one inbox can't be flooded from many IPs
+const PER_EMAIL_LIMIT = { windowMs: 60 * 60 * 1000, maxRequests: 3, keyPrefix: "send-verification:email" };
 
 export async function POST(request: NextRequest) {
     try {
-        const { email } = await request.json();
-        if (!email) {
-            return NextResponse.json({ error: "Email is required" }, { status: 400 });
+        const ipLimit = await checkRateLimit(request, RATE_LIMITS.sendCode);
+        if (!ipLimit.allowed) return rateLimitResponse(RATE_LIMITS.sendCode, ipLimit.resetAt);
+
+        const body = await request.json();
+        const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
+        if (!email || !EMAIL_REGEX.test(email)) {
+            return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
         }
+
+        const emailLimit = await checkRateLimit(request, PER_EMAIL_LIMIT, email);
+        if (!emailLimit.allowed) return rateLimitResponse(PER_EMAIL_LIMIT, emailLimit.resetAt);
 
         const db = getDb();
 
@@ -24,14 +37,20 @@ export async function POST(request: NextRequest) {
         `);
 
         // Generate 6 digit code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+        const code = randomInt(100000, 1000000).toString();
 
-        // Store in DB
-        await db.execute({
-            sql: "INSERT INTO verification_codes (id, email, code, expires_at) VALUES (?, ?, ?, ?)",
-            args: [uuidv4(), email, code, expiresAt.toISOString()],
-        });
+        // Only the newest code is valid; stored in SQLite datetime format so the
+        // expires_at > datetime('now') check in verify-code compares correctly
+        await db.batch([
+            {
+                sql: "DELETE FROM verification_codes WHERE email = ?",
+                args: [email],
+            },
+            {
+                sql: "INSERT INTO verification_codes (id, email, code, expires_at) VALUES (?, ?, ?, datetime('now', '+10 minutes'))",
+                args: [uuidv4(), email, code],
+            },
+        ]);
 
         // Send Email
         try {

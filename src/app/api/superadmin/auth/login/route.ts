@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit/middleware';
 import { getDb } from '@/lib/db/client';
 import { verifyPassword } from '@/lib/auth/password';
 import { signSuperAdminToken } from '@/lib/auth/jwt';
 
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
@@ -74,3 +75,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  return withRateLimit(request, () => handler(request), RATE_LIMITS.login);
+}

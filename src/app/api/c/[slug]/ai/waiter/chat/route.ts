@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
 import { transcribeAudio } from "@/lib/ai-voice";
-import { checkRateLimit } from "../../../../../../../../lib/ratelimit";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const MODEL = "gemini-2.0-flash";
 
 const MAX_HISTORY_MESSAGES = 10;
 const MAX_USER_TEXT_LENGTH = 500;
-const RATE_LIMIT_REQUESTS = 15;
-const RATE_LIMIT_WINDOW = 60000;
 
 export async function POST(
   request: NextRequest,
@@ -18,8 +16,8 @@ export async function POST(
   const { slug } = await params;
   const db = getDb();
 
-  const ip = request.headers.get("x-forwarded-for") || "unknown";
-  if (!checkRateLimit(ip, RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW)) {
+  const rateLimit = await checkRateLimit(request, RATE_LIMITS.aiChat);
+  if (!rateLimit.allowed) {
     return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
   }
 

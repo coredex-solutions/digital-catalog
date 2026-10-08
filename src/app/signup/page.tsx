@@ -43,6 +43,7 @@ function SignupForm() {
     });
 
     const [verifying, setVerifying] = useState(false);
+    const [verificationToken, setVerificationToken] = useState<string | null>(null);
 
     const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
@@ -51,6 +52,10 @@ function SignupForm() {
 
     const handleSendCode = async () => {
         if (!formData.email || !formData.password || !formData.name) return;
+        if (formData.password.length < 8) {
+            setError("Password must be at least 8 characters.");
+            return;
+        }
         setLoading(true);
         setError(null);
         try {
@@ -82,6 +87,8 @@ function SignupForm() {
                 body: JSON.stringify({ email: formData.email, code }),
             });
             if (res.ok) {
+                const data = await res.json();
+                setVerificationToken(data.verificationToken);
                 setStep(2);
             } else {
                 const data = await res.json();
@@ -103,7 +110,7 @@ function SignupForm() {
             const res = await fetch("/api/auth/signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, verificationToken }),
             });
 
             const data = await res.json();

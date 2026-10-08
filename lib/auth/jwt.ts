@@ -66,6 +66,28 @@ export function verifyCatalogAdminToken(token: string): CatalogAdminJWTPayload |
 }
 
 // ============================================
+// Email Verification (signup)
+// ============================================
+
+// Issued by /api/auth/verify-code and required by /api/auth/signup, proving the
+// caller entered the code sent to this email address.
+export function signEmailVerificationToken(email: string): string {
+  return jwt.sign({ type: 'email_verification', email }, getJwtSecret(), { expiresIn: '30m' });
+}
+
+export function verifyEmailVerificationToken(token: string): string | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret()) as { type?: string; email?: string };
+    if (decoded.type === 'email_verification' && typeof decoded.email === 'string') {
+      return decoded.email;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ============================================
 // Generic Token Verification
 // ============================================
 

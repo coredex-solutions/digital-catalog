@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit/middleware';
 import { getDb } from '@/lib/db/client';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function POST(request: NextRequest) {
+async function handler(request: NextRequest) {
   try {
     const { catalog_id, event, fingerprint } = await request.json();
 
@@ -135,3 +136,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function POST(request: NextRequest) {
+  return withRateLimit(request, () => handler(request), RATE_LIMITS.analytics);
+}

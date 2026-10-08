@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { checkRateLimit } from "../../../../../lib/ratelimit";
+import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
@@ -7,8 +7,6 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const OPENAI_VOICE = "onyx";
 const GOOGLE_VOICE = "ar-XA-Wavenet-B";
 
-const RATE_LIMIT_REQUESTS = 30;
-const RATE_LIMIT_WINDOW = 60000;
 const MAX_TEXT_LENGTH = 1000;
 
 async function tryStreamElementsTTS(text: string, lang: string) {
@@ -57,8 +55,8 @@ export async function GET(request: NextRequest) {
   const text = searchParams.get("text");
   const lang = searchParams.get("lang") || "en";
 
-  const ip = request.headers.get("x-forwarded-for") || "unknown";
-  if (!checkRateLimit(ip, RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW)) {
+  const rateLimit = await checkRateLimit(request, RATE_LIMITS.tts);
+  if (!rateLimit.allowed) {
     return new Response("Too many requests", { status: 429 });
   }
 
