@@ -29,7 +29,40 @@ const SETTINGS_FIELDS = new Set([
   "seo_keywords", "json_ld_custom",
   // about
   "about_content_en", "about_content_ar", "about_content_fr",
+  // pricing
+  "currency_primary", "lbp_exchange_rate", "show_dual_currency",
+  // ordering
+  "order_types", "delivery_note_ar", "delivery_note_en",
 ]);
+
+const ORDER_TYPES = ["dine_in", "takeaway", "delivery"];
+
+/** Validate pricing/ordering values before they reach the database */
+function sanitizePricingAndOrdering(pricing: any, ordering: any): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (pricing) {
+    if (pricing.currency_primary !== undefined) {
+      out.currency_primary = pricing.currency_primary === "LBP" ? "LBP" : "USD";
+    }
+    if (pricing.lbp_exchange_rate !== undefined) {
+      // An empty rate clears it: prices are then shown only in the currency they were entered in
+      const empty = pricing.lbp_exchange_rate === null || pricing.lbp_exchange_rate === "";
+      const rate = Number(pricing.lbp_exchange_rate);
+      if (empty) out.lbp_exchange_rate = null;
+      else if (Number.isFinite(rate) && rate > 0 && rate < 10_000_000) out.lbp_exchange_rate = rate;
+    }
+    if (pricing.show_dual_currency !== undefined) out.show_dual_currency = Boolean(pricing.show_dual_currency);
+  }
+  if (ordering) {
+    if (ordering.order_types !== undefined) {
+      const list = String(ordering.order_types).split(",").map((t: string) => t.trim());
+      out.order_types = ORDER_TYPES.filter((t) => list.includes(t)).join(",");
+    }
+    if (ordering.delivery_note_ar !== undefined) out.delivery_note_ar = String(ordering.delivery_note_ar || "").slice(0, 300);
+    if (ordering.delivery_note_en !== undefined) out.delivery_note_en = String(ordering.delivery_note_en || "").slice(0, 300);
+  }
+  return out;
+}
 
 const CONTACT_FIELDS = new Set([
   "phone_primary", "phone_whatsapp", "email",
@@ -128,6 +161,17 @@ export async function GET(
       seo_keywords: settings?.seo_keywords,
       json_ld_custom: settings?.json_ld_custom,
     },
+    pricing: {
+      currency_primary: settings?.currency_primary || "USD",
+      lbp_exchange_rate: settings?.lbp_exchange_rate ?? null,
+      lbp_rate_updated_at: settings?.lbp_rate_updated_at ?? null,
+      show_dual_currency: Boolean(settings?.show_dual_currency ?? 0),
+    },
+    ordering: {
+      order_types: settings?.order_types ?? "dine_in,takeaway",
+      delivery_note_ar: settings?.delivery_note_ar || "",
+      delivery_note_en: settings?.delivery_note_en || "",
+    },
     about: {
       about_content_en: settings?.about_content_en,
       about_content_ar: settings?.about_content_ar,
@@ -165,7 +209,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { catalog: catalogData, appearance, features, cta, contact, seo, about } = body;
+    const { catalog: catalogData, appearance, features, cta, contact, seo, about, pricing, ordering } = body;
 
     const db = getDb();
 
@@ -231,6 +275,7 @@ export async function PUT(
       ...(cta || {}),
       ...(seo || {}),
       ...(about || {}),
+      ...sanitizePricingAndOrdering(pricing, ordering),
     };
 
     for (const [key, value] of Object.entries(settingsFields)) {
@@ -239,6 +284,11 @@ export async function PUT(
         if (typeof value === "boolean") {
           settingsArgs.push(value ? 1 : 0);
         } else {
+          settingsArgs.push(value);
+        }
+        // Record when the rate actually changed (the CASE sees the row's old value)
+        if (key === "lbp_exchange_rate") {
+          settingsUpdates.push("lbp_rate_updated_at = CASE WHEN lbp_exchange_rate IS ? THEN lbp_rate_updated_at ELSE datetime('now') END");
           settingsArgs.push(value);
         }
       }

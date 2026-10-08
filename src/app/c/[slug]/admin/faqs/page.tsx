@@ -24,7 +24,7 @@ interface FAQ {
   display_order: number;
 }
 
-export default function FAQsPage() {
+function FAQsPageContent() {
   const { slug, user, fetchWithAuth } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
 
@@ -103,7 +103,7 @@ export default function FAQsPage() {
   };
 
   return (
-    <CatalogAdminShell>
+    <>
       <CatalogAdminHeader title="FAQs & Chat">
         <div className="flex items-center gap-3">
           <button
@@ -264,6 +264,14 @@ export default function FAQsPage() {
           </div>
         )}
       </CatalogAdminContent>
+    </>
+  );
+}
+
+export default function FAQsPage() {
+  return (
+    <CatalogAdminShell>
+      <FAQsPageContent />
     </CatalogAdminShell>
   );
 }

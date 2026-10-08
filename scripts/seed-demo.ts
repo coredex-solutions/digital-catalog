@@ -84,7 +84,7 @@ async function seedDemo() {
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: [
             catalogId,
-            '#8B5CF6',
+            '#0F6B5B',
             'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=1200&h=600&fit=crop',
             'en,ar',
             'en',

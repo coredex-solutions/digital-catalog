@@ -42,9 +42,11 @@ interface Item {
   image_url: string | null;
   is_active: number;
   is_featured: number;
+  /** null/undefined before migration 20261008 has run: treated as available */
+  is_available?: number | null;
 }
 
-export default function ItemsPage() {
+function ItemsPageContent() {
   const { slug, user, fetchWithAuth, features } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
 
@@ -201,6 +203,26 @@ export default function ItemsPage() {
     }
   };
 
+  // One-tap "sold out" switch, so owners don't have to open the full edit form
+  const toggleAvailability = async (item: Item) => {
+    const available = item.is_available !== 0;
+    const setAvailable = (value: number) =>
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, is_available: value } : i)));
+    setAvailable(available ? 0 : 1);
+    try {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/items/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_available: !available }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (error) {
+      console.error("Failed to update availability:", error);
+      setAvailable(available ? 1 : 0);
+      alert("Couldn't update availability. Please try again.");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this item?")) return;
 
@@ -305,7 +327,7 @@ export default function ItemsPage() {
     : items;
 
   return (
-    <CatalogAdminShell>
+    <>
       <CatalogAdminHeader title="Product Manager">
         <button
           onClick={openAddModal}
@@ -414,7 +436,19 @@ export default function ItemsPage() {
                         <span className="text-[10px] text-primary mr-1">{item.currency}</span>
                         {item.price.toFixed(2)}
                       </p>
-                      <div className={`w-1.5 h-1.5 rounded-full ${item.is_active ? 'bg-violet-500 shadow-[0_0_10px_#10b981]' : 'bg-white/10'}`} />
+                      <button
+                        type="button"
+                        onClick={() => toggleAvailability(item)}
+                        disabled={isViewer}
+                        aria-pressed={item.is_available === 0}
+                        className={`min-h-9 rounded-[10px] border px-3 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                          item.is_available === 0
+                            ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
+                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+                        }`}
+                      >
+                        {item.is_available === 0 ? "Sold out · tap to restore" : "Available · mark sold out"}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -637,6 +671,14 @@ export default function ItemsPage() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+export default function ItemsPage() {
+  return (
+    <CatalogAdminShell>
+      <ItemsPageContent />
     </CatalogAdminShell>
   );
 }

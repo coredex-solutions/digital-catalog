@@ -96,6 +96,17 @@ export interface CatalogSettingsData {
   about_content_ar?: string | null;
   about_content_en?: string | null;
   about_content_fr?: string | null;
+
+  // Pricing (dual USD / LBP)
+  currency_primary?: string | null;
+  lbp_exchange_rate?: number | null;
+  lbp_rate_updated_at?: string | null;
+  show_dual_currency?: number | boolean | null;
+
+  // Ordering
+  order_types?: string | null;
+  delivery_note_ar?: string | null;
+  delivery_note_en?: string | null;
 }
 
 // Full catalog data for SaaS pages

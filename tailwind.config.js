@@ -4,11 +4,24 @@ export default {
   darkMode: "class",
   theme: {
     extend: {
+      borderRadius: {
+        // MENUDESIGN.md: controls 10px, panels and sheets 16px
+        control: "var(--radius-control, 10px)",
+        panel: "var(--radius-panel, 16px)",
+      },
+      boxShadow: {
+        "menu-sm": "var(--menu-shadow-sm)",
+        "menu-md": "var(--menu-shadow-md)",
+        "menu-lg": "var(--menu-shadow-lg)",
+      },
       fontFamily: {
         cairo: ["var(--font-cairo)", "sans-serif"],
         inter: ["var(--font-inter)", "sans-serif"],
         outfit: ["var(--font-outfit)", "sans-serif"],
         handwriting: ["var(--font-handwriting)", "serif"],
+        // Diner menu: switch between Latin and Arabic faces via CSS variables (see .menu in globals.css)
+        "menu-sans": ["var(--menu-font-sans)"],
+        "menu-display": ["var(--menu-font-display)"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -43,6 +56,27 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // Diner menu palette (scoped CSS variables, see .menu in globals.css)
+        menu: {
+          bg: "var(--menu-bg)",
+          surface: "var(--menu-surface)",
+          raised: "var(--menu-raised)",
+          ink: "var(--menu-ink)",
+          muted: "var(--menu-muted)",
+          line: "var(--menu-line)",
+          "input-border": "var(--menu-input-border)",
+          subtle: "var(--menu-subtle)",
+          accent: "var(--menu-accent)",
+          warning: "var(--menu-warning)",
+          success: "var(--menu-success)",
+          danger: "var(--menu-danger)",
+        },
+        brand: {
+          DEFAULT: "var(--brand)",
+          fg: "var(--brand-fg)",
+          ink: "var(--brand-ink)",
+          soft: "var(--brand-soft)",
         },
         // Dynamic colors via CSS variables (for SaaS theming)
         'dynamic-primary': 'var(--color-primary, #8b5cf6)',

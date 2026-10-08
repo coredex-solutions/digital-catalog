@@ -5,38 +5,29 @@ import {
   useContext,
   useState,
   useEffect,
+  useRef,
   ReactNode,
   useMemo,
   useCallback,
+  type CSSProperties,
 } from "react";
+import { useRouter } from "next/navigation";
 import type {
   Language,
-  LanguageOption,
   CatalogUIData,
   OperatingHoursData,
   SocialMediaLink,
   CatalogContactData,
   CatalogSettingsData,
 } from "@/types";
-
-// Cart item interface
-export interface CartItem {
-  id: string;
-  name_ar: string;
-  name_en: string;
-  name_fr: string;
-  description_ar?: string | null;
-  description_en?: string | null;
-  description_fr?: string | null;
-  price: number;
-  currency?: string;
-  quantity: number;
-  image_url?: string | null;
-}
+import { getPriceConfig, formatTotal, type PriceConfig, type FormattedPrice } from "@/lib/catalog/price";
+import { getDictionary, type Dictionary } from "../_lib/i18n";
+import { parseOrderTypes, type OrderType } from "../_lib/whatsapp";
 
 // Menu item interface
 export interface MenuItem {
   id: string;
+  category_id?: string;
   name_ar: string;
   name_en: string;
   name_fr: string;
@@ -47,6 +38,52 @@ export interface MenuItem {
   currency?: string;
   image_url?: string | null;
   is_featured?: boolean;
+  /** False while the dish is sold out: it stays on the menu but can't be ordered */
+  is_available?: boolean;
+}
+
+// Cart item interface
+export interface CartItem extends MenuItem {
+  quantity: number;
+  note?: string;
+}
+
+export interface MenuCategory {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  name_fr: string;
+  image_url?: string | null;
+}
+
+export interface MenuFaq {
+  id: string;
+  question_ar: string;
+  question_en: string;
+  question_fr: string;
+  answer_ar: string;
+  answer_en: string;
+  answer_fr: string;
+}
+
+export interface MenuBranch {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  name_fr: string;
+  address_ar: string;
+  address_en: string;
+  address_fr: string;
+  phone_numbers: string[];
+  map_url: string | null;
+}
+
+export type MenuSheet = "item" | "cart" | "checkout" | "search" | "info" | "reservation";
+
+export interface MenuData extends CatalogUIData {
+  categories: MenuCategory[];
+  faqs: MenuFaq[];
+  branches: MenuBranch[];
 }
 
 interface CatalogContextType {
@@ -56,53 +93,49 @@ interface CatalogContextType {
   contact: CatalogContactData | null;
   operatingHours: OperatingHoursData[];
   socialMedia: SocialMediaLink[];
+  categories: MenuCategory[];
   menuItems: MenuItem[];
+  faqs: MenuFaq[];
+  branches: MenuBranch[];
 
-  // Derived data
-  supportedLanguages: LanguageOption[];
+  // Language & appearance
+  lang: Language;
+  t: Dictionary;
+  dir: "rtl" | "ltr";
+  enabledLanguages: Language[];
+  setLanguage: (lang: Language) => void;
+  theme: "light" | "dark";
+  toggleTheme: () => void;
   colorPrimary: string;
-  colorSecondary: string;
-  colorAccent: string;
+
+  // Pricing & ordering
+  priceConfig: PriceConfig;
   bookingEnabled: boolean;
-  whatsappEnabled: boolean;
+  orderingEnabled: boolean;
+  orderTypes: OrderType[];
+  orderType: OrderType;
+  setOrderType: (type: OrderType) => void;
+  table: string;
+  setTable: (table: string) => void;
 
-  // Client state
-  lang: Language | null;
-  setLang: (lang: Language | null) => void;
-  isDarkMode: boolean;
-  setIsDarkMode: (dark: boolean) => void;
-  isInfoOpen: boolean;
-  setIsInfoOpen: (open: boolean) => void;
-  isReservationOpen: boolean;
-  setIsReservationOpen: (open: boolean) => void;
-
-  // Search
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-
-  // Cart state
+  // Cart
   cart: CartItem[];
-  addToCart: (item: MenuItem, quantity?: number) => void;
+  addToCart: (item: MenuItem, quantity?: number, note?: string) => void;
   removeFromCart: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
-  cartTotal: number;
   cartItemCount: number;
-  isCartOpen: boolean;
-  setIsCartOpen: (open: boolean) => void;
-  isCheckoutOpen: boolean;
-  setIsCheckoutOpen: (open: boolean) => void;
+  cartTotal: FormattedPrice;
 
-  // Item modal
+  // Sheets (only one open at a time)
+  activeSheet: MenuSheet | null;
+  openSheet: (sheet: MenuSheet) => void;
+  closeSheet: () => void;
   selectedItem: MenuItem | null;
-  setSelectedItem: (item: MenuItem | null) => void;
-
-  // Loading states
-  isThemeLoaded: boolean;
-
-  // Subscription
-  subscriptionType: string;
-  isExpired: boolean;
+  openItem: (item: MenuItem) => void;
+  /** Kept for the AI waiter, which opens the cart after acting on it */
+  setIsCartOpen: (open: boolean) => void;
+  portalContainer: HTMLElement | null;
 }
 
 const CatalogContext = createContext<CatalogContextType | undefined>(undefined);
@@ -117,98 +150,80 @@ export function useCatalog() {
 
 interface CatalogProviderProps {
   children: ReactNode;
-  data: CatalogUIData;
+  data: MenuData;
+  lang: Language;
+  enabledLanguages: Language[];
+  initialTheme: "light" | "dark";
+  className: string;
+  style: CSSProperties;
 }
 
-// Parse enabled languages string to LanguageOption array
-function parseEnabledLanguages(enabledLangs?: string): LanguageOption[] {
-  const defaultLanguages: LanguageOption[] = [
-    { code: "ar", label: "العربية", font: "font-cairo" },
-    { code: "en", label: "English", font: "font-inter" },
-    { code: "fr", label: "Français", font: "font-inter" },
-  ];
+const ONE_YEAR = 60 * 60 * 24 * 365;
 
-  if (!enabledLangs) return defaultLanguages;
-
-  const codes = enabledLangs.split(",").map((s) => s.trim().toLowerCase());
-  return defaultLanguages.filter((l) => codes.includes(l.code));
+function setCookie(name: string, value: string) {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
 }
 
-export function CatalogProvider({ children, data }: CatalogProviderProps) {
-  const { catalog, settings, contact, operatingHours, socialMedia, menuItems, subscriptionType, isExpired } = data;
+export function CatalogProvider({
+  children,
+  data,
+  lang,
+  enabledLanguages,
+  initialTheme,
+  className,
+  style,
+}: CatalogProviderProps) {
+  const router = useRouter();
+  const { catalog, settings, contact, operatingHours, socialMedia, categories, faqs, branches } = data;
+  const menuItems = data.menuItems as MenuItem[];
 
-  // Client state
-  const [lang, setLang] = useState<Language | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isThemeLoaded, setIsThemeLoaded] = useState(false);
-  const [isInfoOpen, setIsInfoOpen] = useState(false);
-  const [isReservationOpen, setIsReservationOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // Cart state
+  const [theme, setTheme] = useState(initialTheme);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [activeSheet, setActiveSheet] = useState<MenuSheet | null>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [table, setTableState] = useState("");
 
-  // Derived values
-  const supportedLanguages = useMemo(
-    () => parseEnabledLanguages(settings?.enabled_languages),
-    [settings?.enabled_languages]
-  );
+  const t = getDictionary(lang);
+  const priceConfig = useMemo(() => getPriceConfig(settings), [settings]);
+  const orderTypes = useMemo(() => parseOrderTypes(settings?.order_types), [settings?.order_types]);
+  const [orderType, setOrderType] = useState<OrderType>(orderTypes[0] || "dine_in");
 
-  const colorPrimary = isDarkMode
-    ? (settings?.color_primary_dark || settings?.color_primary || "#8b5cf6")
-    : (settings?.color_primary || "#8b5cf6");
+  const bookingEnabled = Boolean(settings?.booking_enabled ?? true) && !!contact?.phone_whatsapp;
+  const orderingEnabled =
+    Boolean(settings?.whatsapp_order_enabled ?? true) && !!contact?.phone_whatsapp && orderTypes.length > 0;
 
-  const colorSecondary = isDarkMode
-    ? (settings?.color_secondary_dark || settings?.color_secondary || "#b14288")
-    : (settings?.color_secondary || "#b14288");
-
-  const colorAccent = isDarkMode
-    ? (settings?.color_accent_dark || settings?.color_accent || "#c084fc")
-    : (settings?.color_accent || "#c084fc");
-
-  const bookingEnabled = settings?.booking_enabled ?? true;
-  const whatsappEnabled = settings?.whatsapp_order_enabled ?? true;
-
-  // Storage key unique to this catalog
+  // Storage key unique to this catalog (same key as before, so existing carts survive)
   const storagePrefix = `catalog_${catalog.slug}_`;
 
-  // Cart calculations
-  const cartTotal = useMemo(
-    () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
-    [cart]
-  );
+  // ---- Cart ----
+  const cartItemCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
+  const cartTotal = useMemo(() => formatTotal(cart, priceConfig, lang), [cart, priceConfig, lang]);
 
-  const cartItemCount = useMemo(
-    () => cart.reduce((sum, item) => sum + item.quantity, 0),
-    [cart]
-  );
-
-  // Cart actions
-  const addToCart = useCallback((item: MenuItem, quantity: number = 1) => {
+  const addToCart = useCallback((item: MenuItem, quantity: number = 1, note?: string) => {
+    if (item.is_available === false) return;
     setCart((prev) => {
       const existing = prev.find((i) => i.id === item.id);
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i
+          i.id === item.id
+            ? { ...i, quantity: i.quantity + quantity, note: note !== undefined ? note : i.note }
+            : i
         );
       }
       return [
         ...prev,
         {
           id: item.id,
+          category_id: item.category_id,
           name_ar: item.name_ar,
           name_en: item.name_en,
           name_fr: item.name_fr,
-          description_ar: item.description_ar,
-          description_en: item.description_en,
-          description_fr: item.description_fr,
           price: item.price,
           currency: item.currency,
-          quantity,
           image_url: item.image_url,
+          quantity,
+          note: note || undefined,
         },
       ];
     });
@@ -219,119 +234,140 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
   }, []);
 
   const updateQuantity = useCallback((itemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      setCart((prev) => prev.filter((i) => i.id !== itemId));
-    } else {
-      setCart((prev) =>
-        prev.map((i) => (i.id === itemId ? { ...i, quantity } : i))
-      );
+    setCart((prev) =>
+      quantity <= 0 ? prev.filter((i) => i.id !== itemId) : prev.map((i) => (i.id === itemId ? { ...i, quantity } : i))
+    );
+  }, []);
+
+  const clearCart = useCallback(() => setCart([]), []);
+
+  // ---- Sheets ----
+  // Opening a sheet adds a history entry, so the phone's Back button closes the sheet instead
+  // of leaving the menu. Switching between sheets reuses the entry. Next.js keeps its router
+  // data in history.state, so it is preserved and only a marker is added.
+  const sheetOpenRef = useRef(false);
+
+  const openSheet = useCallback((sheet: MenuSheet) => {
+    if (!sheetOpenRef.current) {
+      window.history.pushState({ ...window.history.state, menuSheet: true }, "");
+      sheetOpenRef.current = true;
     }
+    setActiveSheet(sheet);
   }, []);
 
-  const clearCart = useCallback(() => {
-    setCart([]);
+  const closeSheet = useCallback(() => {
+    if (sheetOpenRef.current && window.history.state?.menuSheet) {
+      // popstate (below) finishes closing
+      window.history.back();
+      return;
+    }
+    sheetOpenRef.current = false;
+    setActiveSheet(null);
   }, []);
 
-  // Load from localStorage on mount
   useEffect(() => {
-    // Theme
-    const savedTheme = localStorage.getItem(`${storagePrefix}theme`);
-    if (savedTheme === "dark") {
-      setIsDarkMode(true);
-      document.documentElement.classList.add("dark");
-    } else {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove("dark");
-    }
-    setIsThemeLoaded(true);
+    const onPopState = () => {
+      sheetOpenRef.current = false;
+      setActiveSheet(null);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
-    // Language
-    const savedLang = localStorage.getItem(`${storagePrefix}lang`) as Language;
-    if (savedLang && supportedLanguages.some((l) => l.code === savedLang)) {
-      setLang(savedLang);
-    }
+  const openItem = useCallback(
+    (item: MenuItem) => {
+      setSelectedItem(item);
+      openSheet("item");
+    },
+    [openSheet]
+  );
+  const setIsCartOpen = useCallback((open: boolean) => (open ? openSheet("cart") : closeSheet()), [openSheet, closeSheet]);
 
-    // Cart
-    const savedCart = localStorage.getItem(`${storagePrefix}cart`);
-    if (savedCart) {
+  // ---- Language & theme ----
+  const setLanguage = useCallback(
+    (next: Language) => {
+      if (next === lang) return;
+      setCookie(`menu_lang_${catalog.slug}`, next);
+      // The server renders text and direction, so re-render it in the new language
+      router.refresh();
+    },
+    [lang, catalog.slug, router]
+  );
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      setCookie("menu_theme", next);
+      return next;
+    });
+  }, []);
+
+  const setTable = useCallback(
+    (value: string) => {
+      setTableState(value);
       try {
-        setCart(JSON.parse(savedCart));
+        sessionStorage.setItem(`${storagePrefix}table`, value);
       } catch {
-        // Ignore invalid cart
+        // Storage unavailable (private mode); the value still lives in state
       }
-    }
-  }, [storagePrefix, supportedLanguages]);
+    },
+    [storagePrefix]
+  );
 
-  // Save language to localStorage
+  // ---- Restore state & read QR parameters on mount ----
   useEffect(() => {
-    if (lang) {
-      localStorage.setItem(`${storagePrefix}lang`, lang);
+    try {
+      const savedCart = localStorage.getItem(`${storagePrefix}cart`);
+      if (savedCart) {
+        const parsed = JSON.parse(savedCart);
+        // Drop lines whose dishes are no longer on the menu or are sold out, and refresh prices
+        const byId = new Map(menuItems.filter((i) => i.is_available !== false).map((i) => [i.id, i]));
+        setCart(
+          (Array.isArray(parsed) ? parsed : [])
+            .filter((line: CartItem) => byId.has(line.id) && line.quantity > 0)
+            .map((line: CartItem) => ({ ...byId.get(line.id)!, quantity: line.quantity, note: line.note }))
+        );
+      }
+    } catch {
+      // Ignore an invalid saved cart
     }
-  }, [lang, storagePrefix]);
 
-  // Save cart to localStorage
+    const params = new URLSearchParams(window.location.search);
+
+    // ?table=12 on a table's QR code pre-fills the table number for dine-in orders
+    const tableParam = params.get("table");
+    let savedTable: string | null = null;
+    try {
+      savedTable = sessionStorage.getItem(`${storagePrefix}table`);
+    } catch {
+      // ignore
+    }
+    if (tableParam) {
+      setTable(tableParam.slice(0, 10));
+      if (orderTypes.includes("dine_in")) setOrderType("dine_in");
+    } else if (savedTable) {
+      setTableState(savedTable);
+    }
+
+    // ?lang=ar links switch the language once, then the cookie remembers it
+    const langParam = params.get("lang") as Language | null;
+    if (langParam && enabledLanguages.includes(langParam) && langParam !== lang) {
+      params.delete("lang");
+      const query = params.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+      setLanguage(langParam);
+    }
+    // Run once on mount; later changes come from user actions
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
-    localStorage.setItem(`${storagePrefix}cart`, JSON.stringify(cart));
+    try {
+      localStorage.setItem(`${storagePrefix}cart`, JSON.stringify(cart));
+    } catch {
+      // Storage unavailable; the cart still works for this visit
+    }
   }, [cart, storagePrefix]);
-
-  // Update theme in localStorage and DOM
-  useEffect(() => {
-    if (isThemeLoaded) {
-      const root = document.documentElement;
-
-      const hexToRgb = (hex: string) => {
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `${r}, ${g}, ${b}`;
-      };
-
-      if (isDarkMode) {
-        const bg = settings?.color_background_dark || "#0a0a0c";
-        const rgb = hexToRgb(bg);
-        root.style.setProperty("--primary", colorPrimary);
-        root.style.setProperty("--secondary", colorSecondary);
-        root.style.setProperty("--accent", colorAccent);
-        root.style.setProperty("--background-hex", bg);
-        root.style.setProperty("--background-hex-rgb", rgb);
-        root.style.setProperty("--navbar-bg", `rgba(${rgb}, 0.95)`);
-        root.style.setProperty("--surface", settings?.color_surface_dark || "#121215");
-        root.style.setProperty("--border-color", colorAccent || settings?.color_accent_dark || "rgba(255,255,255,0.1)");
-        root.style.setProperty("--text-primary", settings?.color_text_dark || "#ffffff");
-        root.style.setProperty("--text-muted", settings?.color_text_muted_dark || "rgba(255,255,255,0.4)");
-        root.style.setProperty("--pattern-rgb", "255, 255, 255");
-      } else {
-        const bg = settings?.color_background || "#ffffff";
-        const rgb = hexToRgb(bg);
-        root.style.setProperty("--primary", colorPrimary);
-        root.style.setProperty("--secondary", colorSecondary);
-        root.style.setProperty("--accent", colorAccent);
-        root.style.setProperty("--background-hex", bg);
-        root.style.setProperty("--background-hex-rgb", rgb);
-        root.style.setProperty("--navbar-bg", `rgba(${rgb}, 0.95)`);
-        root.style.setProperty("--surface", settings?.color_surface || "#f8fafc");
-        root.style.setProperty("--border-color", colorAccent || "rgba(0,0,0,0.05)");
-        root.style.setProperty("--text-primary", settings?.color_text || "#0f172a");
-        root.style.setProperty("--text-muted", settings?.color_text_muted || "#475569");
-        root.style.setProperty("--pattern-rgb", "0, 0, 0");
-      }
-
-      // Inject Pattern
-      if (settings?.bg_pattern_enabled) {
-        root.setAttribute("data-pattern", settings.bg_pattern_type || "geometric");
-      } else {
-        root.removeAttribute("data-pattern");
-      }
-
-      if (isDarkMode) {
-        root.classList.add("dark");
-        localStorage.setItem(`${storagePrefix}theme`, "dark");
-      } else {
-        root.classList.remove("dark");
-        localStorage.setItem(`${storagePrefix}theme`, "light");
-      }
-    }
-  }, [isDarkMode, isThemeLoaded, storagePrefix, colorPrimary, colorSecondary, colorAccent, settings]);
 
   const value: CatalogContextType = {
     catalog,
@@ -339,42 +375,54 @@ export function CatalogProvider({ children, data }: CatalogProviderProps) {
     contact,
     operatingHours,
     socialMedia,
-    menuItems: menuItems || [],
-    supportedLanguages,
-    colorPrimary,
-    colorSecondary,
-    colorAccent,
-    bookingEnabled,
-    whatsappEnabled,
+    categories,
+    menuItems,
+    faqs,
+    branches,
     lang,
-    setLang,
-    isDarkMode,
-    setIsDarkMode,
-    isInfoOpen,
-    setIsInfoOpen,
-    isReservationOpen,
-    setIsReservationOpen,
-    searchQuery,
-    setSearchQuery,
+    t,
+    dir: lang === "ar" ? "rtl" : "ltr",
+    enabledLanguages,
+    setLanguage,
+    theme,
+    toggleTheme,
+    colorPrimary: settings?.color_primary || "#0F6B5B",
+    priceConfig,
+    bookingEnabled,
+    orderingEnabled,
+    orderTypes,
+    orderType,
+    setOrderType,
+    table,
+    setTable,
     cart,
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
-    cartTotal,
     cartItemCount,
-    isCartOpen,
-    setIsCartOpen,
-    isCheckoutOpen,
-    setIsCheckoutOpen,
+    cartTotal,
+    activeSheet,
+    openSheet,
+    closeSheet,
     selectedItem,
-    setSelectedItem,
-    isThemeLoaded,
-    subscriptionType: subscriptionType || "essential",
-    isExpired: !!isExpired,
+    openItem,
+    setIsCartOpen,
+    portalContainer,
   };
 
   return (
-    <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>
+    <CatalogContext.Provider value={value}>
+      <div
+        ref={setPortalContainer}
+        className={className}
+        style={style}
+        lang={lang}
+        dir={lang === "ar" ? "rtl" : "ltr"}
+        data-theme={theme}
+      >
+        {children}
+      </div>
+    </CatalogContext.Provider>
   );
 }

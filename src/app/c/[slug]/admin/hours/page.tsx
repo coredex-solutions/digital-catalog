@@ -40,7 +40,7 @@ function parseTimeToHour(time: string): number {
   return h + m / 60;
 }
 
-export default function OperatingHoursPage() {
+function OperatingHoursPageContent() {
   const { slug, user, fetchWithAuth } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
 
@@ -132,7 +132,7 @@ export default function OperatingHoursPage() {
   );
 
   return (
-    <CatalogAdminShell>
+    <>
       <CatalogAdminHeader title="Operating Hours">
         <button
           onClick={handleSave}
@@ -246,6 +246,14 @@ export default function OperatingHoursPage() {
           </div>
         )}
       </CatalogAdminContent>
+    </>
+  );
+}
+
+export default function OperatingHoursPage() {
+  return (
+    <CatalogAdminShell>
+      <OperatingHoursPageContent />
     </CatalogAdminShell>
   );
 }

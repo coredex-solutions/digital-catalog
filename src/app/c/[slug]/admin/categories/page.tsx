@@ -32,7 +32,7 @@ interface Category {
   item_count: number;
 }
 
-export default function CategoriesPage() {
+function CategoriesPageContent() {
   const { slug, user, fetchWithAuth, features } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
 
@@ -193,7 +193,7 @@ export default function CategoriesPage() {
   };
 
   return (
-    <CatalogAdminShell>
+    <>
       <CatalogAdminHeader title="Categories">
         <button
           onClick={openAddModal}
@@ -476,6 +476,14 @@ export default function CategoriesPage() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+export default function CategoriesPage() {
+  return (
+    <CatalogAdminShell>
+      <CategoriesPageContent />
     </CatalogAdminShell>
   );
 }

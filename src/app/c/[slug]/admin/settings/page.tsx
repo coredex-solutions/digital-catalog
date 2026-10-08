@@ -31,6 +31,7 @@ import {
   Utensils,
   ChevronRight,
   Globe,
+  Banknote,
 } from "lucide-react";
 import {
   compressImage,
@@ -113,9 +114,26 @@ interface Settings {
     enabled_languages: string;
     default_language: string;
   };
+  pricing: {
+    currency_primary: "USD" | "LBP";
+    lbp_exchange_rate: number | string | null;
+    lbp_rate_updated_at?: string | null;
+    show_dual_currency: boolean;
+  };
+  ordering: {
+    order_types: string;
+    delivery_note_ar: string;
+    delivery_note_en: string;
+  };
 }
 
-export default function SettingsPage() {
+const ORDER_TYPE_OPTIONS = [
+  { id: "dine_in", label: "Dine-in", hint: "Guests order from their table (they're asked for the table number)" },
+  { id: "takeaway", label: "Takeaway", hint: "Guests pick up their order" },
+  { id: "delivery", label: "Delivery", hint: "Guests enter an address and area" },
+];
+
+function SettingsPageContent() {
   const { slug, user, fetchWithAuth } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
 
@@ -123,7 +141,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "appearance" | "contact" | "features" | "ai"
+    "appearance" | "contact" | "pricing" | "features" | "ai"
   >("appearance");
   const [previewMode, setPreviewMode] = useState<"light" | "dark">("dark");
   const [message, setMessage] = useState<{
@@ -452,7 +470,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <CatalogAdminShell>
+    <>
       <CatalogAdminHeader title="Settings" />
 
       <CatalogAdminContent>
@@ -479,6 +497,7 @@ export default function SettingsPage() {
               {[
                 { id: "appearance", label: "Branding", icon: Palette },
                 { id: "contact", label: "Contact", icon: Phone },
+                { id: "pricing", label: "Pricing & orders", icon: Banknote },
                 { id: "features", label: "Features", icon: ToggleRight },
                 { id: "ai", label: "AI Waiter", icon: Brain },
               ].map((tab) => (
@@ -1055,6 +1074,129 @@ export default function SettingsPage() {
                 </div>
               )}
 
+              {/* Pricing & ordering (dual USD/LBP and WhatsApp order types) */}
+              {activeTab === "pricing" && settings.pricing && settings.ordering && (
+                <div className="space-y-8">
+                  <div className="glass-card p-10 space-y-8">
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Prices</h3>
+                      <p className="mt-1 text-sm text-white/50">Prices show in the currency you entered them in. Add your exchange rate to also show them in the other currency.</p>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <label htmlFor="currency-primary" className="text-sm font-semibold text-white/70 block">Main currency</label>
+                        <select
+                          id="currency-primary"
+                          value={settings.pricing.currency_primary}
+                          onChange={(e) => updateSettings("pricing", "currency_primary", e.target.value)}
+                          className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white focus:outline-none focus:border-primary/50 transition-all"
+                        >
+                          <option value="USD">US dollar ($) shown first</option>
+                          <option value="LBP">Lebanese pound (L.L.) shown first</option>
+                        </select>
+                      </div>
+                      <div className="space-y-3">
+                        <label htmlFor="lbp-rate" className="text-sm font-semibold text-white/70 block">Exchange rate (L.L. per $1)</label>
+                        <input
+                          id="lbp-rate"
+                          type="number"
+                          inputMode="numeric"
+                          min={1}
+                          step={500}
+                          value={settings.pricing.lbp_exchange_rate ?? ""}
+                          placeholder="Not set"
+                          onChange={(e) => updateSettings("pricing", "lbp_exchange_rate", e.target.value)}
+                          className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white focus:outline-none focus:border-primary/50 transition-all"
+                        />
+                        <p className="text-xs text-white/40">
+                          Converted pound prices are rounded to the nearest 1,000 L.L.
+                          {settings.pricing.lbp_rate_updated_at
+                            ? ` Last changed ${new Date(settings.pricing.lbp_rate_updated_at.replace(" ", "T") + "Z").toLocaleString()}.`
+                            : " Leave empty to never convert prices."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <ToggleSwitch
+                      label="Show both currencies"
+                      description={settings.pricing.lbp_exchange_rate ? "Turn off to show only the main currency." : "Set an exchange rate first."}
+                      checked={settings.pricing.show_dual_currency && !!settings.pricing.lbp_exchange_rate}
+                      onChange={(value) => updateSettings("pricing", "show_dual_currency", value)}
+                    />
+                  </div>
+
+                  <div className="glass-card p-10 space-y-8">
+                    <div>
+                      <h3 className="text-lg font-bold text-white">WhatsApp orders</h3>
+                      <p className="mt-1 text-sm text-white/50">Choose how guests can order. Orders arrive on the WhatsApp number from the Contact tab.</p>
+                    </div>
+
+                    <div className="space-y-4">
+                      {ORDER_TYPE_OPTIONS.map((option) => {
+                        const enabled = settings.ordering.order_types.split(",").includes(option.id);
+                        return (
+                          <ToggleSwitch
+                            key={option.id}
+                            label={option.label}
+                            description={option.hint}
+                            checked={enabled}
+                            onChange={(value) => {
+                              const current = settings.ordering.order_types.split(",").filter(Boolean);
+                              const next = value ? [...current, option.id] : current.filter((t) => t !== option.id);
+                              updateSettings(
+                                "ordering",
+                                "order_types",
+                                ORDER_TYPE_OPTIONS.map((o) => o.id).filter((id) => next.includes(id)).join(",")
+                              );
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {settings.ordering.order_types.split(",").includes("delivery") && (
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <label htmlFor="delivery-note-en" className="text-sm font-semibold text-white/70 block">Delivery note (English)</label>
+                          <textarea
+                            id="delivery-note-en"
+                            rows={3}
+                            value={settings.ordering.delivery_note_en}
+                            onChange={(e) => updateSettings("ordering", "delivery_note_en", e.target.value)}
+                            placeholder="e.g. Free delivery in Hamra and Verdun"
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white focus:outline-none focus:border-primary/50 transition-all resize-none"
+                          />
+                        </div>
+                        <div className="space-y-3">
+                          <label htmlFor="delivery-note-ar" className="text-sm font-semibold text-white/70 block">Delivery note (Arabic)</label>
+                          <textarea
+                            id="delivery-note-ar"
+                            dir="rtl"
+                            rows={3}
+                            value={settings.ordering.delivery_note_ar}
+                            onChange={(e) => updateSettings("ordering", "delivery_note_ar", e.target.value)}
+                            placeholder="مثلاً: توصيل مجاني في الحمرا وفردان"
+                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white focus:outline-none focus:border-primary/50 transition-all resize-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-8 border-t border-white/5">
+                      <button
+                        onClick={() => handleSaveSection("Pricing & orders", { pricing: settings.pricing, ordering: settings.ordering })}
+                        disabled={savingSection === "Pricing & orders" || isViewer}
+                        className="w-full py-4 bg-primary text-white font-bold rounded-[1.5rem] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-sm shadow-lg shadow-primary/20"
+                      >
+                        {savingSection === "Pricing & orders" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        Save pricing & orders
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Features Array */}
               {activeTab === "features" && (
                 <div className="space-y-8">
@@ -1196,6 +1338,14 @@ export default function SettingsPage() {
           </div>
         )}
       </CatalogAdminContent>
+    </>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <CatalogAdminShell>
+      <SettingsPageContent />
     </CatalogAdminShell>
   );
 }

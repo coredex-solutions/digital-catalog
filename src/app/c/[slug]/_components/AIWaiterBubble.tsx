@@ -3,22 +3,18 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
-  MessageSquare,
   X,
   Send,
   Mic,
   MicOff,
-  Brain,
   ChefHat,
-  Sparkles,
   Volume2,
   VolumeX,
   Loader2,
-  Globe
 } from "lucide-react";
 import { useCatalog } from "../_providers/CatalogProvider";
+import { OPEN_WAITER_EVENT } from "../_lib/events";
 import { Language } from "@/types";
-import { motion, AnimatePresence } from "framer-motion";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -28,40 +24,58 @@ interface ChatMessage {
 // Translations for the AI Waiter popup
 const translations = {
   en: {
-    title: "Coredex AI Waiter",
-    subtitle: "Always at your service",
-    placeholder: "Ask me anything...",
+    title: "Ask about the menu",
+    subtitle: "AI assistant. Check allergies with staff.",
+    placeholder: "Ask about a dish...",
     noMicTitle: "No microphone detected",
     voiceInputTitle: "Voice input",
-    branding: "Coredex Digital Intelligence",
-    greeting: "Hello! I'm your Coredex AI Waiter. I'm here to help you choose the perfect meal. How can I assist you today? 😊",
+    greeting: "Hi! Ask me about the dishes and I'll help you choose. For allergies or dietary needs, please confirm with the staff.",
     noMicAlert: "No microphone detected on your device.",
     noSpeechAlert: "Voice recognition is not supported in your browser.",
     noHttpsAlert: "Voice features require a secure connection (HTTPS). Please use HTTPS to enable the microphone.",
+    mute: "Mute voice replies",
+    unmute: "Turn on voice replies",
+    close: "Close",
+    listen: "Listen",
+    thinking: "Writing a reply",
+    voiceLanguage: "Voice language",
+    send: "Send",
   },
   ar: {
-    title: "نادل كورديكس الذكي",
-    subtitle: "دائماً في خدمتك",
-    placeholder: "اسألني أي شيء...",
+    title: "اسأل عن القائمة",
+    subtitle: "مساعد ذكي. تأكد من الحساسية مع الموظفين.",
+    placeholder: "اسأل عن طبق...",
     noMicTitle: "لم يتم اكتشاف ميكروفون",
     voiceInputTitle: "الإدخال الصوتي",
-    branding: "كورديكس للذكاء الرقمي",
-    greeting: "مرحباً! أنا نادل كورديكس الذكي. أنا هنا لمساعدتك في اختيار الوجبة المثالية. كيف يمكنني مساعدتك اليوم؟ 😊",
+    greeting: "مرحباً! اسألني عن الأطباق وسأساعدك في الاختيار. بالنسبة للحساسية أو الأنظمة الغذائية، يرجى التأكد مع الموظفين.",
     noMicAlert: "لم يتم اكتشاف ميكروفون على جهازك.",
     noSpeechAlert: "التعرف على الصوت غير مدعوم في متصفحك.",
     noHttpsAlert: "ميزات الصوت تتطلب اتصالاً آمناً (HTTPS). يرجى استخدام HTTPS لتفعيل الميكروفون.",
+    mute: "كتم الردود الصوتية",
+    unmute: "تشغيل الردود الصوتية",
+    close: "إغلاق",
+    listen: "استمع",
+    thinking: "جارٍ كتابة الرد",
+    voiceLanguage: "لغة الصوت",
+    send: "إرسال",
   },
   fr: {
-    title: "Serveur IA Coredex",
-    subtitle: "Toujours à votre service",
-    placeholder: "Demandez-moi n'importe quoi...",
+    title: "Questions sur le menu",
+    subtitle: "Assistant IA. Vérifiez les allergies avec le personnel.",
+    placeholder: "Posez une question sur un plat...",
     noMicTitle: "Aucun microphone détecté",
     voiceInputTitle: "Entrée vocale",
-    branding: "Coredex Intelligence Numérique",
-    greeting: "Bonjour! Je suis votre serveur IA Coredex. Je suis là pour vous aider à choisir le repas parfait. Comment puis-je vous aider aujourd'hui? 😊",
+    greeting: "Bonjour ! Posez-moi vos questions sur les plats, je vous aide à choisir. Pour les allergies ou régimes, merci de confirmer avec le personnel.",
     noMicAlert: "Aucun microphone détecté sur votre appareil.",
     noSpeechAlert: "La reconnaissance vocale n'est pas prise en charge par votre navigateur.",
     noHttpsAlert: "Les fonctions vocales nécessitent une connexion sécurisée (HTTPS). Veuillez utiliser HTTPS pour activer le microphone.",
+    mute: "Couper les réponses vocales",
+    unmute: "Activer les réponses vocales",
+    close: "Fermer",
+    listen: "Écouter",
+    thinking: "Rédaction de la réponse",
+    voiceLanguage: "Langue de la voix",
+    send: "Envoyer",
   },
 };
 
@@ -70,19 +84,26 @@ export default function AIWaiterBubble() {
   const slug = params.slug as string;
   const {
     lang: catalogLang,
-    colorPrimary,
     addToCart,
     updateQuantity,
     removeFromCart,
     setIsCartOpen,
     menuItems,
-    cart
+    cart,
   } = useCatalog();
 
   // Get translations for current language
   const t = translations[catalogLang as keyof typeof translations] || translations.en;
   const isRTL = catalogLang === "ar";
   const [isOpen, setIsOpen] = useState(false);
+
+  // Opened from the "Ask a question" button in the menu header. A floating button would sit on
+  // top of dishes and their add buttons, so there isn't one.
+  useEffect(() => {
+    const open = () => setIsOpen(true);
+    window.addEventListener(OPEN_WAITER_EVENT, open);
+    return () => window.removeEventListener(OPEN_WAITER_EVENT, open);
+  }, []);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -100,6 +121,14 @@ export default function AIWaiterBubble() {
     else if (catalogLang === "fr") setActiveVoiceLang("fr-FR");
     else setActiveVoiceLang("en-US");
   }, [catalogLang]);
+
+  // Escape closes the chat, like the menu's other panels
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => event.key === "Escape" && setIsOpen(false);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -401,36 +430,28 @@ export default function AIWaiterBubble() {
 
   return (
     <>
-      {/* Floating Bubble */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 w-16 h-16 rounded-full shadow-[0_0_30px_-5px_rgba(147,51,234,0.5)] flex items-center justify-center z-50 hover:scale-110 active:scale-90 transition-all duration-300 group ${isOpen ? 'scale-0' : 'scale-100'}`}
-        style={{
-          background: `linear-gradient(135deg, ${colorPrimary}, ${colorPrimary}dd)`,
-          boxShadow: `0 0 30px ${colorPrimary}40`
-        }}
+      {/* Chat panel: full screen on phones, a card on larger screens */}
+      <div
+        role="dialog"
+        aria-label={t.title}
+        aria-hidden={!isOpen}
+        inert={!isOpen}
+        className={`fixed inset-0 z-[60] flex flex-col bg-menu-surface text-menu-ink transition-[opacity,transform] duration-200 ease-out md:inset-auto md:bottom-6 md:end-6 md:h-[600px] md:w-[400px] md:overflow-hidden md:rounded-panel md:border md:border-menu-line md:shadow-menu-md ${isOpen ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'}`}
       >
-        <div className="absolute inset-0 rounded-full bg-white/20 animate-ping opacity-20"></div>
-        <Brain className="w-8 h-8 text-white group-hover:rotate-12 transition-transform" />
-      </button>
-
-      {/* Chat Interface */}
-      <div className={`fixed inset-0 md:inset-auto md:bottom-24 md:right-8 md:w-[400px] md:h-[600px] z-[60] flex flex-col transition-all duration-500 ease-out origin-bottom-right ${isOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-10 pointer-events-none'}`}>
-
         {/* Header */}
-        <div className="bg-[#0a0a0c] md:rounded-t-[2rem] p-6 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-purple-500/20 rounded-2xl flex items-center justify-center shadow-inner relative">
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#0a0a0c]"></div>
-              <ChefHat className="w-6 h-6 text-purple-400" />
-            </div>
-            <div dir={isRTL ? 'rtl' : 'ltr'}>
-              <h3 className="text-white font-bold leading-none mb-1">{t.title}</h3>
-              <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{t.subtitle}</p>
+        <div className="flex items-center justify-between gap-3 border-b border-menu-line px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-menu-subtle text-brand-ink">
+              <ChefHat className="h-5 w-5" aria-hidden />
+            </span>
+            <div className="min-w-0" dir={isRTL ? 'rtl' : 'ltr'}>
+              <h3 className="truncate font-semibold leading-tight">{t.title}</h3>
+              <p className="truncate text-sm text-menu-muted">{t.subtitle}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <button
+              type="button"
               onClick={() => {
                 const newMuted = !isMuted;
                 setIsMuted(newMuted);
@@ -443,166 +464,120 @@ export default function AIWaiterBubble() {
                   setIsSpeaking(false);
                 }
               }}
-              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 transition-colors"
+              aria-pressed={isMuted}
+              aria-label={isMuted ? t.unmute : t.mute}
+              className="flex h-11 w-11 items-center justify-center rounded-control text-menu-muted transition-colors hover:bg-menu-raised hover:text-menu-ink"
             >
-              {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+              {isMuted ? <VolumeX className="h-5 w-5" aria-hidden /> : <Volume2 className="h-5 w-5" aria-hidden />}
             </button>
             <button
+              type="button"
               onClick={() => setIsOpen(false)}
-              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/60 transition-colors"
+              aria-label={t.close}
+              className="flex h-11 w-11 items-center justify-center rounded-control text-menu-muted transition-colors hover:bg-menu-raised hover:text-menu-ink"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" aria-hidden />
             </button>
           </div>
         </div>
 
-        {/* Message Area */}
-        <div
-          ref={scrollRef}
-          className="flex-1 bg-[#0a0a0c]/95 backdrop-blur-3xl overflow-y-auto p-6 space-y-6 custom-scrollbar"
-        >
+        {/* Messages */}
+        <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-menu-bg p-4" aria-live="polite">
           {messages.map((msg, i) => (
-            <div
-              key={i}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-5 duration-300`}
-            >
-              <div className={`max-w-[85%] p-4 rounded-3xl relative group/msg ${msg.role === 'user'
-                ? 'bg-purple-600 text-white rounded-tr-none'
-                : 'bg-white/5 text-white/90 border border-white/10 rounded-tl-none'
-                }`}>
-                <p
-                  className="text-sm leading-relaxed"
-                  dir={/[\u0600-\u06FF]/.test(msg.content) ? 'rtl' : 'ltr'}
-                >{msg.content}</p>
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-[85%] rounded-panel px-4 py-3 ${msg.role === 'user'
+                  ? 'rounded-ee-[4px] bg-brand text-brand-fg'
+                  : 'rounded-es-[4px] border border-menu-line bg-menu-surface'
+                  }`}
+              >
+                <p className="whitespace-pre-line text-[0.9375rem]" dir={/[؀-ۿ]/.test(msg.content) ? 'rtl' : 'ltr'}>
+                  {msg.content}
+                </p>
                 {msg.role === 'assistant' && (
                   <button
+                    type="button"
                     onClick={() => playMessage(msg.content)}
-                    className="absolute -right-12 top-0 p-2 bg-white/5 hover:bg-white/10 rounded-xl opacity-0 group-hover/msg:opacity-100 transition-opacity"
+                    className="-ms-2 mt-1 inline-flex min-h-9 items-center gap-1.5 rounded-control px-2 text-sm text-menu-muted transition-colors hover:text-menu-ink"
                   >
-                    <Volume2 className="w-4 h-4 text-white/40" />
+                    <Volume2 className="h-4 w-4" aria-hidden />
+                    {t.listen}
                   </button>
                 )}
               </div>
             </div>
           ))}
           {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-white/5 border border-white/10 p-4 rounded-3xl rounded-tl-none flex gap-2">
-                <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce"></div>
-                <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce delay-100"></div>
-                <div className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-bounce delay-200"></div>
+            <div className="flex justify-start" role="status" aria-label={t.thinking}>
+              <div className="flex gap-1.5 rounded-panel rounded-es-[4px] border border-menu-line bg-menu-surface px-4 py-4">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-menu-muted" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-menu-muted [animation-delay:100ms]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-menu-muted [animation-delay:200ms]" />
               </div>
             </div>
           )}
         </div>
 
-        {/* Input Area */}
-        <div className="bg-[#0a0a0c] md:rounded-b-[2rem] p-4 border-t border-white/10 space-y-4">
-          {/* Language Selector - Moved above for better space */}
-          <div className="flex items-center justify-between px-2">
-            <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-              {[
-                { code: "en-US", label: "English" },
-                { code: "ar-SA", label: "العربية" },
-                { code: "fr-FR", label: "Français" }
-              ].map((l) => (
-                <button
-                  key={l.code}
-                  onClick={() => setActiveVoiceLang(l.code)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all ${activeVoiceLang === l.code ? 'bg-white text-black shadow-lg scale-105' : 'text-white/30 hover:text-white hover:bg-white/5'}`}
-                >
-                  {l.label}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => {
-                const newMuted = !isMuted;
-                setIsMuted(newMuted);
-                if (newMuted && isSpeaking) {
-                  window.speechSynthesis?.cancel();
-                  if (audioRef.current) {
-                    audioRef.current.pause();
-                    audioRef.current = null;
-                  }
-                  setIsSpeaking(false);
-                }
-              }}
-              className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/20 hover:text-white/60 transition-colors"
-            >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </button>
+        {/* Input */}
+        <div className="space-y-3 border-t border-menu-line px-4 pt-3 pb-safe">
+          <div className="flex items-center gap-2" role="radiogroup" aria-label={t.voiceLanguage}>
+            {[
+              { code: "en-US", label: "English" },
+              { code: "ar-SA", label: "العربية" },
+              { code: "fr-FR", label: "Français" }
+            ].map((l) => (
+              <button
+                key={l.code}
+                type="button"
+                role="radio"
+                aria-checked={activeVoiceLang === l.code}
+                onClick={() => setActiveVoiceLang(l.code)}
+                className={`min-h-9 rounded-control border px-3 text-sm font-medium transition-colors ${activeVoiceLang === l.code ? 'border-menu-input-border bg-menu-subtle text-menu-ink' : 'border-transparent text-menu-muted hover:text-menu-ink'}`}
+              >
+                {l.label}
+              </button>
+            ))}
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 group">
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder={t.placeholder}
-                dir={isRTL ? 'rtl' : 'ltr'}
-                className="w-full bg-white/[0.03] border border-white/10 text-white rounded-[1.25rem] py-4 px-5 focus:outline-none focus:border-primary/50 transition-all placeholder:text-white/20"
-                style={{ borderColor: inputText ? `${colorPrimary}40` : undefined }}
-              />
-
-              <AnimatePresence>
-                {inputText && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8, x: 10 }}
-                    animate={{ opacity: 1, scale: 1, x: 0 }}
-                    exit={{ opacity: 0, scale: 0.8, x: 10 }}
-                    onClick={() => handleSendMessage()}
-                    disabled={isLoading}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-all active:scale-90"
-                    style={{ backgroundColor: colorPrimary }}
-                  >
-                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  </motion.button>
-                )}
-              </AnimatePresence>
-            </div>
-
+          <form
+            className="flex items-center gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (inputText.trim()) handleSendMessage();
+            }}
+          >
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder={t.placeholder}
+              aria-label={t.placeholder}
+              dir={isRTL ? 'rtl' : 'ltr'}
+              className="min-h-12 min-w-0 flex-1 rounded-control border border-menu-input-border bg-menu-surface px-4 text-base placeholder:text-menu-muted focus:outline-none focus-visible:border-brand-ink"
+            />
             <button
+              type="submit"
+              disabled={isLoading || !inputText.trim()}
+              aria-label={t.send}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-control bg-brand text-brand-fg transition-opacity disabled:opacity-40"
+            >
+              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : <Send className="h-5 w-5 rtl:-scale-x-100" aria-hidden />}
+            </button>
+            <button
+              type="button"
               onClick={toggleRecording}
-              title={t.voiceInputTitle}
-              className={`w-14 h-14 rounded-[1.25rem] flex items-center justify-center transition-all duration-300 ${isRecording
-                ? 'bg-purple-500 shadow-[0_0_20px_rgba(239,68,68,0.4)] scale-105'
-                : 'bg-white/5 hover:bg-white/10 text-white/60 hover:text-white'
+              aria-pressed={isRecording}
+              aria-label={t.voiceInputTitle}
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-control border transition-colors ${isRecording
+                ? 'border-menu-danger bg-menu-danger text-white'
+                : 'border-menu-input-border text-menu-ink hover:bg-menu-raised'
                 }`}
             >
-              {isRecording ? (
-                <div className="relative">
-                  <MicOff className="w-6 h-6" />
-                  <div className="absolute -inset-2 bg-white/20 rounded-full animate-ping" />
-                </div>
-              ) : <Mic className="w-6 h-6" />}
+              {isRecording ? <MicOff className="h-5 w-5" aria-hidden /> : <Mic className="h-5 w-5" aria-hidden />}
             </button>
-          </div>
-
-          <div className="flex items-center justify-center gap-4 opacity-30 pb-2">
-            <div className="flex items-center gap-1.5 grayscale">
-              <Sparkles className="w-3 h-3 text-white" />
-              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-white" dir={isRTL ? 'rtl' : 'ltr'}>{t.branding}</span>
-            </div>
-          </div>
+          </form>
         </div>
       </div>
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 10px;
-        }
-      `}</style>
     </>
   );
 }

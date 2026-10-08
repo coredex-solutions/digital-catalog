@@ -153,3 +153,127 @@ html[data-pattern="lines"] body::before {
   scrollbar-width: none;
   /* Firefox */
 }
+/* ============================================
+   Diner menu theme (/c/[slug])
+   Pine & Ivory neutrals from MENUDESIGN.md. Scoped to .menu so the admin and landing pages
+   are unaffected. Each restaurant contributes only its brand colour: --brand, --brand-fg,
+   --brand-ink-*, --brand-soft-* are injected by src/app/c/[slug]/_lib/theme.ts with
+   checked contrast. Keep the light/dark backgrounds in sync with theme.ts.
+   ============================================ */
+.menu {
+  --menu-bg: #F7F8F5;
+  --menu-surface: #FFFFFF;
+  --menu-raised: #EEF1ED;
+  --menu-subtle: #E8F3ED;
+  --menu-ink: #172B26;
+  --menu-muted: #58665F;
+  --menu-line: #DCE4DE;
+  --menu-input-border: #7D8D84;
+  --menu-accent: #B94A28;
+  --menu-success: #166534;
+  --menu-warning: #92400E;
+  --menu-danger: #B91C1C;
+  --brand-ink: var(--brand-ink-light);
+  --brand-soft: var(--brand-soft-light);
+  --menu-focus: var(--brand-ink);
+  --radius-control: 10px;
+  --radius-panel: 16px;
+  --menu-shadow-sm: 0 1px 2px rgba(23, 43, 38, 0.06);
+  --menu-shadow-md: 0 4px 16px -6px rgba(23, 43, 38, 0.16);
+  --menu-shadow-lg: 0 -6px 24px -10px rgba(23, 43, 38, 0.22);
+  --menu-font-sans: var(--font-menu-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --menu-font-display: var(--menu-font-sans);
+
+  background-color: var(--menu-bg);
+  color: var(--menu-ink);
+  font-family: var(--menu-font-sans);
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Arabic: its own face, taller lines, and never any letter spacing. Tailwind's text-* sizes
+   set their own line-height, so running text is lifted explicitly (headings stay tighter). */
+.menu[lang="ar"] {
+  --menu-font-sans: var(--font-menu-arabic), var(--font-menu-sans), system-ui, sans-serif;
+  line-height: 1.7;
+}
+
+.menu[lang="ar"] :is(p, li, label, dd, textarea) {
+  line-height: 1.7;
+}
+
+.menu[lang="ar"] :is(h1, h2, h3) {
+  line-height: 1.45;
+}
+
+.menu[lang="ar"] * {
+  letter-spacing: 0 !important;
+}
+
+/* Dark mode is its own tested token set, not an inversion of the light one */
+.menu[data-theme="dark"] {
+  --menu-bg: #0F1714;
+  --menu-surface: #17221E;
+  --menu-raised: #1F2B27;
+  --menu-subtle: #17352D;
+  --menu-ink: #EDF3EF;
+  --menu-muted: #A7B5AE;
+  --menu-line: #2A3833;
+  --menu-input-border: #74867D;
+  --menu-accent: #E4825F;
+  --menu-success: #6FD69A;
+  --menu-warning: #F2B661;
+  --menu-danger: #F7958B;
+  --brand-ink: var(--brand-ink-dark);
+  --brand-soft: var(--brand-soft-dark);
+  --menu-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --menu-shadow-md: 0 4px 16px -6px rgba(0, 0, 0, 0.6);
+  --menu-shadow-lg: 0 -6px 24px -10px rgba(0, 0, 0, 0.7);
+  color-scheme: dark;
+}
+
+/* Match the page behind the menu (overscroll, safe areas) to the menu background */
+body:has(.menu) {
+  background: #F7F8F5;
+  color: #172B26;
+}
+
+body:has(.menu[data-theme="dark"]) {
+  background: #0F1714;
+  color: #EDF3EF;
+}
+
+/* Prices and totals line up */
+.menu bdi.tabular-nums,
+.menu .tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.menu :focus-visible {
+  outline: 2px solid var(--menu-focus);
+  outline-offset: 3px;
+  border-radius: var(--radius-control);
+}
+
+/* Keyboard-safe bottom spacing on phones with a home indicator */
+.menu .pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+/* Keep motion short and functional: sheets slide in quickly (reduced motion turns it off below) */
+@media (prefers-reduced-motion: no-preference) {
+  .menu [data-vaul-drawer],
+  .menu [data-vaul-overlay] {
+    animation-duration: 240ms !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu *,
+  .menu *::before,
+  .menu *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

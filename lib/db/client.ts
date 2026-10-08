@@ -7,7 +7,9 @@ function getDbConfig() {
     throw new Error("TURSO_DATABASE_URL is not set");
   }
 
-  if (!process.env.TURSO_AUTH_TOKEN) {
+  // Local SQLite files (file:local.db) need no token, which allows development without Turso
+  const isLocalFile = process.env.TURSO_DATABASE_URL.startsWith("file:");
+  if (!isLocalFile && !process.env.TURSO_AUTH_TOKEN) {
     throw new Error("TURSO_AUTH_TOKEN is not set");
   }
 

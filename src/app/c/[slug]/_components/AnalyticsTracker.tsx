@@ -27,6 +27,27 @@ function getFingerprint(): string {
   return Math.abs(hash).toString(36);
 }
 
+export type AnalyticsEvent = "page_view" | "whatsapp_click" | "booking_confirm";
+
+/**
+ * Record an analytics event. `keepalive` lets the request finish even when the page is
+ * navigating away at the same moment (e.g. opening WhatsApp right after an order is sent).
+ */
+export function trackEvent(catalogId: string, event: AnalyticsEvent) {
+  try {
+    fetch("/api/analytics/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ catalog_id: catalogId, event, fingerprint: getFingerprint() }),
+      keepalive: true,
+    }).catch(() => {
+      // Silently fail - don't block user experience
+    });
+  } catch {
+    // fetch unavailable; analytics are best-effort
+  }
+}
+
 export function CatalogAnalyticsTracker({ catalogId }: AnalyticsTrackerProps) {
   const tracked = useRef(false);
 
@@ -34,62 +55,8 @@ export function CatalogAnalyticsTracker({ catalogId }: AnalyticsTrackerProps) {
     // Only track once per page load
     if (tracked.current) return;
     tracked.current = true;
-
-    const fingerprint = getFingerprint();
-
-    // Track page view
-    fetch("/api/analytics/track", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        catalog_id: catalogId,
-        event: "page_view",
-        fingerprint,
-      }),
-    }).catch(() => {
-      // Silently fail - don't block user experience
-    });
-  }, [catalogId]);
-
-  // Setup click tracking for WhatsApp and Booking buttons
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const button = target.closest("[data-action]");
-      
-      if (!button) return;
-
-      const action = button.getAttribute("data-action");
-      if (!action) return;
-
-      // Map action to event type
-      const eventMap: Record<string, string> = {
-        whatsapp_order: "whatsapp_click",
-        booking_button: "booking_click",
-        booking_confirm: "booking_confirm",
-      };
-
-      const event = eventMap[action];
-      if (!event) return;
-
-      // Track the click
-      fetch("/api/analytics/track", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          catalog_id: catalogId,
-          event,
-          fingerprint: getFingerprint(),
-        }),
-      }).catch(() => {
-        // Silently fail
-      });
-    };
-
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
+    trackEvent(catalogId, "page_view");
   }, [catalogId]);
 
   return null;
 }
-

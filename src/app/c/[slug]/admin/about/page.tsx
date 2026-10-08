@@ -43,7 +43,7 @@ interface SuggestedKeyword {
   category: "local" | "service" | "product" | "brand";
 }
 
-export default function AboutSEOPage() {
+function AboutSEOPageContent() {
   const { slug, user, fetchWithAuth } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
 
@@ -480,7 +480,7 @@ export default function AboutSEOPage() {
   };
 
   return (
-    <CatalogAdminShell>
+    <>
       <CatalogAdminHeader title="About & SEO">
         <button
           onClick={handleSave}
@@ -954,6 +954,14 @@ export default function AboutSEOPage() {
           </div>
         )}
       </CatalogAdminContent>
+    </>
+  );
+}
+
+export default function AboutSEOPage() {
+  return (
+    <CatalogAdminShell>
+      <AboutSEOPageContent />
     </CatalogAdminShell>
   );
 }

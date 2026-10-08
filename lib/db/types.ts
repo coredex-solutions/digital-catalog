@@ -166,6 +166,17 @@ export interface CatalogSettings {
   ai_waiter_name?: string;
   ai_waiter_persona?: string;
 
+  // Pricing (migration 20261008_menu_redesign; optional until it has run)
+  currency_primary?: 'USD' | 'LBP' | null;
+  lbp_exchange_rate?: number | null;
+  lbp_rate_updated_at?: string | null;
+  show_dual_currency?: number | boolean | null;
+
+  // Ordering
+  order_types?: string | null;
+  delivery_note_ar?: string | null;
+  delivery_note_en?: string | null;
+
   updated_at: string;
 }
 
@@ -247,6 +258,8 @@ export interface MenuItem {
   display_order: number;
   is_active: boolean;
   is_featured: boolean;
+  /** Sold out for now (shown, but can't be ordered). Optional until migration 20261008 has run */
+  is_available?: boolean | number | null;
   created_at: string;
   updated_at: string;
 }

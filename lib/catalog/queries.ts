@@ -1,5 +1,7 @@
+import { cache } from 'react';
 import { getDb } from '../db/client';
 import type {
+  Branch,
   Catalog,
   CatalogSettings,
   CatalogContact,
@@ -196,13 +198,27 @@ export async function getCategoryById(catalogId: string, categoryId: string): Pr
 }
 
 /**
- * Get full catalog data for rendering (cached)
+ * Get active branches for catalog
  */
-export async function getFullCatalogData(slug: string) {
+export async function getCatalogBranches(catalogId: string): Promise<Branch[]> {
+  const db = getDb();
+  const result = await db.execute({
+    sql: 'SELECT * FROM branches WHERE catalog_id = ? AND is_active = 1 ORDER BY display_order ASC',
+    args: [catalogId],
+  });
+
+  return result.rows as unknown as Branch[];
+}
+
+/**
+ * Get full catalog data for rendering.
+ * Wrapped in React cache() so the layout, metadata and page share one load per request.
+ */
+export const getFullCatalogData = cache(async (slug: string) => {
   const catalog = await getCatalogBySlug(slug);
   if (!catalog) return null;
 
-  const [settings, contact, subscription, categories, operatingHours, socialMedia, faqs, menuItems] = await Promise.all([
+  const [settings, contact, subscription, categories, operatingHours, socialMedia, faqs, menuItems, branches] = await Promise.all([
     getCatalogSettings(catalog.id),
     getCatalogContact(catalog.id),
     getCatalogSubscription(catalog.id),
@@ -211,6 +227,7 @@ export async function getFullCatalogData(slug: string) {
     getCatalogSocialMedia(catalog.id),
     getCatalogFAQs(catalog.id),
     getCatalogItems(catalog.id),
+    getCatalogBranches(catalog.id),
   ]);
 
   // Check if subscription is expired
@@ -228,8 +245,9 @@ export async function getFullCatalogData(slug: string) {
     socialMedia,
     faqs,
     menuItems,
+    branches,
     isExpired,
     subscriptionType: subscription?.subscription_type || 'essential',
   };
-}
+});
 

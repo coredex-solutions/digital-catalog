@@ -61,12 +61,13 @@ export async function PUT(
       "image_url",
       "is_active",
       "is_featured",
+      "is_available",
     ];
 
     for (const field of fields) {
       if (body[field] !== undefined) {
         updates.push(`${field} = ?`);
-        if (field === "is_active" || field === "is_featured") {
+        if (field === "is_active" || field === "is_featured" || field === "is_available") {
           args.push(body[field] ? 1 : 0);
         } else if (field === "image_url" && !body[field]) {
           args.push(null);
