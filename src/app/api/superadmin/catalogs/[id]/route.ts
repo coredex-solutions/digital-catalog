@@ -33,6 +33,8 @@ export async function GET(
         cs.payment_notes,
         cs.ai_image_enhancement_limit,
         cs.ai_image_enhancement_used,
+        cs.max_items,
+        cs.max_categories,
         cs.is_active as subscription_active
       FROM catalogs c
       LEFT JOIN catalog_subscriptions cs ON cs.catalog_id = c.id
@@ -110,111 +112,122 @@ export async function PUT(
   const auth = await requireSuperAdmin(request);
   if (!auth.success) return auth.response;
 
-  const { id } = await params;
-  const body = await request.json();
-  const db = getDb();
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const db = getDb();
 
-  // Check catalog exists
-  const existing = await db.execute({
-    sql: 'SELECT id, slug FROM catalogs WHERE id = ?',
-    args: [id],
-  });
-
-  if (existing.rows.length === 0) {
-    return NextResponse.json(
-      { error: 'Catalog not found' },
-      { status: 404 }
-    );
-  }
-
-  // If updating slug, check it's unique
-  if (body.slug && body.slug !== existing.rows[0].slug) {
-    const slugCheck = await db.execute({
-      sql: 'SELECT id FROM catalogs WHERE slug = ? AND id != ?',
-      args: [body.slug, id],
+    // Check catalog exists
+    const existing = await db.execute({
+      sql: 'SELECT id, slug FROM catalogs WHERE id = ?',
+      args: [id],
     });
 
-    if (slugCheck.rows.length > 0) {
+    if (existing.rows.length === 0) {
       return NextResponse.json(
-        { error: 'Slug is already taken' },
-        { status: 409 }
+        { error: 'Catalog not found' },
+        { status: 404 }
       );
     }
-  }
 
-  // 1. Update Catalog Table
-  const catalogUpdates: string[] = [];
-  const catalogArgs: (string | number | null)[] = [];
-  const allowedCatalogFields = ['slug', 'name', 'business_type', 'description', 'logo_url', 'is_active', 'is_suspended', 'suspension_reason'];
+    // If updating slug, check it's unique
+    if (body.slug && body.slug !== existing.rows[0].slug) {
+      const slugCheck = await db.execute({
+        sql: 'SELECT id FROM catalogs WHERE slug = ? AND id != ?',
+        args: [body.slug, id],
+      });
 
-  for (const field of allowedCatalogFields) {
-    if (body[field] !== undefined) {
-      catalogUpdates.push(`${field} = ?`);
-      catalogArgs.push(body[field]);
+      if (slugCheck.rows.length > 0) {
+        return NextResponse.json(
+          { error: 'Slug is already taken' },
+          { status: 409 }
+        );
+      }
     }
-  }
 
-  if (catalogUpdates.length > 0) {
-    catalogUpdates.push("updated_at = datetime('now')");
-    catalogArgs.push(id);
+    // 1. Update Catalog Table
+    const catalogUpdates: string[] = [];
+    const catalogArgs: (string | number | null)[] = [];
+    const allowedCatalogFields = ['slug', 'name', 'business_type', 'description', 'logo_url', 'is_active', 'is_suspended', 'suspension_reason'];
 
-    await db.execute({
-      sql: `UPDATE catalogs SET ${catalogUpdates.join(', ')} WHERE id = ?`,
-      args: catalogArgs,
-    });
-  }
-
-  // 2. Update Subscription Table
-  const subUpdates: string[] = [];
-  const subArgs: (string | number | null)[] = [];
-  const allowedSubFields = [
-    'subscription_type', 'expires_at',
-    'multi_language_enabled', 'booking_enabled', 'analytics_enabled', 'custom_domain_enabled',
-    'ai_image_enhancement_limit'
-  ];
-
-  for (const field of allowedSubFields) {
-    if (body[field] !== undefined) {
-      subUpdates.push(`${field} = ?`);
-      // Convert boolean to 1/0 for SQLite
-      const val = typeof body[field] === 'boolean' ? (body[field] ? 1 : 0) : body[field];
-      subArgs.push(val);
+    for (const field of allowedCatalogFields) {
+      if (body[field] !== undefined) {
+        catalogUpdates.push(`${field} = ?`);
+        // Convert boolean to 1/0 for SQLite
+        const val = typeof body[field] === 'boolean' ? (body[field] ? 1 : 0) : body[field];
+        catalogArgs.push(val);
+      }
     }
-  }
 
-  if (subUpdates.length > 0) {
-    subUpdates.push("updated_at = datetime('now')");
-    subArgs.push(id);
+    if (catalogUpdates.length > 0) {
+      catalogUpdates.push("updated_at = datetime('now')");
+      catalogArgs.push(id);
 
-    await db.execute({
-      sql: `UPDATE catalog_subscriptions SET ${subUpdates.join(', ')} WHERE catalog_id = ?`,
-      args: subArgs,
-    });
-  }
-
-  // 3. Update Settings Table (Added for languages management)
-  const settingsUpdates: string[] = [];
-  const settingsArgs: (string | number | null)[] = [];
-  const allowedSettingsFields = ['enabled_languages', 'default_language'];
-
-  for (const field of allowedSettingsFields) {
-    if (body[field] !== undefined) {
-      settingsUpdates.push(`${field} = ?`);
-      settingsArgs.push(body[field]);
+      await db.execute({
+        sql: `UPDATE catalogs SET ${catalogUpdates.join(', ')} WHERE id = ?`,
+        args: catalogArgs,
+      });
     }
+
+    // 2. Update Subscription Table
+    const subUpdates: string[] = [];
+    const subArgs: (string | number | null)[] = [];
+    const allowedSubFields = [
+      'subscription_type', 'starts_at', 'expires_at',
+      'multi_language_enabled', 'booking_enabled', 'analytics_enabled', 'custom_domain_enabled',
+      'ai_image_enhancement_limit', 'max_items', 'max_categories',
+      'amount_paid', 'payment_method', 'payment_notes'
+    ];
+
+    for (const field of allowedSubFields) {
+      if (body[field] !== undefined) {
+        subUpdates.push(`${field} = ?`);
+        // Convert boolean to 1/0 for SQLite
+        const val = typeof body[field] === 'boolean' ? (body[field] ? 1 : 0) : body[field];
+        subArgs.push(val);
+      }
+    }
+
+    if (subUpdates.length > 0) {
+      subUpdates.push("updated_at = datetime('now')");
+      subArgs.push(id);
+
+      await db.execute({
+        sql: `UPDATE catalog_subscriptions SET ${subUpdates.join(', ')} WHERE catalog_id = ?`,
+        args: subArgs,
+      });
+    }
+
+    // 3. Update Settings Table (Added for languages management)
+    const settingsUpdates: string[] = [];
+    const settingsArgs: (string | number | null)[] = [];
+    const allowedSettingsFields = ['enabled_languages', 'default_language'];
+
+    for (const field of allowedSettingsFields) {
+      if (body[field] !== undefined) {
+        settingsUpdates.push(`${field} = ?`);
+        settingsArgs.push(body[field]);
+      }
+    }
+
+    if (settingsUpdates.length > 0) {
+      settingsUpdates.push("updated_at = datetime('now')");
+      settingsArgs.push(id);
+
+      await db.execute({
+        sql: `UPDATE catalog_settings SET ${settingsUpdates.join(', ')} WHERE catalog_id = ?`,
+        args: settingsArgs,
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Failed to update catalog:', error);
+    return NextResponse.json(
+      { error: error.code === 'UND_ERR_CONNECT_TIMEOUT' ? 'Database connection timeout. Please try again.' : 'Failed to update catalog' },
+      { status: 500 }
+    );
   }
-
-  if (settingsUpdates.length > 0) {
-    settingsUpdates.push("updated_at = datetime('now')");
-    settingsArgs.push(id);
-
-    await db.execute({
-      sql: `UPDATE catalog_settings SET ${settingsUpdates.join(', ')} WHERE catalog_id = ?`,
-      args: settingsArgs,
-    });
-  }
-
-  return NextResponse.json({ success: true });
 }
 
 // DELETE: Delete catalog (soft delete by suspending, or hard delete)

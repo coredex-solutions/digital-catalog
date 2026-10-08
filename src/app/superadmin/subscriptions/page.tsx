@@ -126,11 +126,10 @@ export default function SubscriptionsPage() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  filter === f
-                    ? "bg-violet-500 text-white"
-                    : "text-slate-400 hover:text-white"
-                }`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filter === f
+                  ? "bg-violet-500 text-white"
+                  : "text-slate-400 hover:text-white"
+                  }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
               </button>
@@ -222,13 +221,19 @@ export default function SubscriptionsPage() {
                     Plan
                   </th>
                   <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
+                    Price
+                  </th>
+                  <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
                     Status
                   </th>
                   <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
                     Expires
                   </th>
                   <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
-                    remaining
+                    Remaining
+                  </th>
+                  <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -266,6 +271,9 @@ export default function SubscriptionsPage() {
                           {sub.subscription_type}
                         </span>
                       </td>
+                      <td className="px-6 py-4 text-white font-medium">
+                        ${({ essential: 99, pro: 299, enterprise: 399 } as Record<string, number>)[sub.subscription_type] || '—'}
+                      </td>
                       <td className="px-6 py-4">
                         {isExpired(sub.expires_at) ? (
                           <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400">
@@ -288,29 +296,24 @@ export default function SubscriptionsPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`font-medium ${
-                            isExpired(sub.expires_at)
-                              ? "text-purple-400"
-                              : isExpiringSoon(sub.expires_at)
+                          className={`font-medium ${isExpired(sub.expires_at)
+                            ? "text-purple-400"
+                            : isExpiringSoon(sub.expires_at)
                               ? "text-purple-400"
                               : "text-violet-400"
-                          }`}
+                            }`}
                         >
                           {getDaysRemaining(sub.expires_at)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span
-                          className={`font-medium ${
-                            isExpired(sub.expires_at)
-                              ? "text-purple-400"
-                              : isExpiringSoon(sub.expires_at)
-                              ? "text-purple-400"
-                              : "text-violet-400"
-                          }`}
+                        <Link
+                          href={`/superadmin/catalogs/${sub.catalog_id}?tab=subscription`}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-colors"
                         >
-                          {getDaysRemaining(sub.expires_at)}
-                        </span>
+                          <Edit className="w-3 h-3" />
+                          Manage
+                        </Link>
                       </td>
                     </tr>
                   ))

@@ -20,9 +20,12 @@ interface Features {
   ai_waiter_enabled: boolean;
   ai_image_enhancement_limit: number;
   ai_image_enhancement_used: number;
+  max_items: number;
+  max_categories: number;
   enabled_languages: string;
   default_language: string;
   is_expired: boolean;
+  subscription_type: string;
 }
 
 interface AdminUser {

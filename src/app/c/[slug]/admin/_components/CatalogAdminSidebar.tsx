@@ -16,6 +16,8 @@ import {
   Clock,
   MessageCircle,
   Brain,
+  CreditCard,
+  MapPin
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -33,9 +35,12 @@ interface Features {
   ai_waiter_enabled: boolean;
   ai_image_enhancement_limit: number;
   ai_image_enhancement_used: number;
+  max_items: number;
+  max_categories: number;
   enabled_languages: string;
   default_language: string;
   is_expired: boolean;
+  subscription_type: string;
 }
 
 interface CatalogAdminSidebarProps {
@@ -61,12 +66,14 @@ export function CatalogAdminSidebar({
     { href: `${basePath}/about`, label: "About & SEO", icon: FileText },
     { href: `${basePath}/hours`, label: "Business Hours", icon: Clock },
     { href: `${basePath}/faqs`, label: "FAQs", icon: MessageCircle },
+    { href: `${basePath}/branches`, label: "Branches", icon: MapPin },
     { href: `${basePath}/ai-waiter`, label: "AI Waiter", icon: Brain },
     ...(features?.analytics_enabled
       ? [{ href: `${basePath}/analytics`, label: "Analytics", icon: BarChart3 }]
       : []),
     { href: `${basePath}/qr`, label: "QR Codes", icon: QrCode },
     { href: `${basePath}/settings`, label: "Settings", icon: Settings },
+    { href: `${basePath}/billing`, label: "Billing & Plan", icon: CreditCard },
   ];
 
   const handleLogout = () => {

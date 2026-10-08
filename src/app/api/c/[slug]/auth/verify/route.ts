@@ -64,10 +64,13 @@ export async function GET(
       analytics_enabled: subscription?.analytics_enabled || false,
       ai_waiter_enabled: Boolean(settings?.ai_waiter_enabled),
       ai_image_enhancement_limit: subscription?.ai_image_enhancement_limit || 0,
-      ai_image_enhancement_used: (catalog as any).ai_image_enhancement_used || 0,
+      ai_image_enhancement_used: subscription?.ai_image_enhancement_used || 0,
+      max_items: (subscription as any)?.max_items || 200,
+      max_categories: (subscription as any)?.max_categories || 20,
       enabled_languages: settings?.enabled_languages || 'en',
       default_language: settings?.default_language || 'en',
       is_expired: isExpired,
+      subscription_type: subscription?.subscription_type || 'essential',
     },
   });
 }

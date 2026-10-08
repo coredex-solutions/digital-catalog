@@ -121,6 +121,10 @@ export default function ItemsPage() {
   }, [slug, features]);
 
   const openAddModal = () => {
+    if (features && items.length >= features.max_items) {
+      alert(`Limit reached! Your current plan allows up to ${features.max_items} products. Please upgrade in the Billing section to add more scale.`);
+      return;
+    }
     setEditingItem(null);
     setFormData({
       category_id: categories[0]?.id || "",

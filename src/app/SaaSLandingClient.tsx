@@ -456,7 +456,7 @@ export function SaaSLandingClient() {
                 </div>
 
                 <Link
-                  href="/signup"
+                  href={`/signup?plan=${plan.name.toLowerCase()}`}
                   className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-sm mb-12 transition-all shadow-xl flex items-center justify-center ${plan.highlight ? 'bg-primary text-white hover:scale-105 shadow-primary/20' : 'bg-white/[0.05] text-white hover:bg-white/10'}`}>
                   Deploy Instance
                 </Link>
@@ -479,62 +479,194 @@ export function SaaSLandingClient() {
       </section>
 
       {/* Live Showcase Section */}
-      <section id="demo" className="py-32 relative overflow-hidden bg-[#020203]">
+      <section id="demo" className="py-40 relative overflow-hidden bg-gradient-to-b from-[#020203] via-[#0a0614] to-[#020203]">
+        {/* Background Effects */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/10 rounded-full blur-[150px]" />
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[120px]" />
+        </div>
+
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="flex flex-col lg:flex-row items-center gap-20">
-            <div className="lg:w-1/2">
-              <div className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-10">
-                <Smartphone className="w-4 h-4" />
-                Live Demo Node
-              </div>
-              <h2 className="text-5xl md:text-7xl font-black tracking-tighter mb-10 italic leading-[0.9]">
-                EXPERIENCE THE <br />
-                <span className="text-primary not-italic">FUTURE</span> OF SERVICE
-              </h2>
-              <p className="text-white/40 text-xl font-medium leading-relaxed mb-12 max-w-lg">
-                Toggle through our neural-processed themes. Zero latency, infinite customization, designed for the top 1%.
-              </p>
+          {/* Section Header */}
+          <div className="text-center mb-24">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-3 px-5 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-[0.3em] mb-10"
+            >
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              Live Preview
+            </motion.div>
+            <h2 className="text-5xl md:text-[6rem] font-black tracking-tighter mb-8 italic leading-[0.9]">
+              SEE IT IN<br />
+              <span className="not-italic bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">ACTION.</span>
+            </h2>
+            <p className="max-w-2xl mx-auto text-white/40 text-xl font-medium leading-relaxed">
+              Scan the QR code or explore the interactive preview. Your customers get instant access to your entire catalog.
+            </p>
+          </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { name: 'LUXURY BISTRO', type: 'Dark Elite' },
-                  { name: 'MINIMAL RETAIL', type: 'Clean Slate' },
-                  { name: 'BOUTIQUE HOTEL', type: 'Golden Era' },
-                  { name: 'MODERN CAFE', type: 'Neon Pulse' }
-                ].map((item, i) => (
-                  <div key={i} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-primary/50 transition-all cursor-pointer group">
-                    <div className="text-[10px] font-black text-white/20 uppercase tracking-widest mb-1 group-hover:text-primary transition-colors">{item.type}</div>
-                    <div className="text-sm font-black text-white uppercase tracking-tight italic">{item.name}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-20">
+            {/* Phone Mockup with Real Content */}
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="relative"
+            >
+              {/* Floating Stats */}
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -top-6 -left-16 p-5 rounded-2xl bg-[#0a0a0c]/90 backdrop-blur-xl border border-white/10 shadow-2xl z-20"
+              >
+                <div className="text-[9px] font-black text-green-400 uppercase tracking-widest mb-1 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  Live Orders
+                </div>
+                <div className="text-2xl font-black italic text-white">+127</div>
+              </motion.div>
 
-            <div className="lg:w-1/2 relative group">
-              {/* iPhone Mockup Container */}
-              <div className="relative w-[320px] h-[640px] mx-auto bg-[#0a0a0c] rounded-[3.5rem] border-[8px] border-white/5 p-4 shadow-[0_0_100px_rgba(var(--color-primary-rgb),0.1)] overflow-hidden">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-white/5 rounded-b-2xl z-20" />
-                <div className="w-full h-full rounded-[2.5rem] overflow-hidden bg-black flex flex-col items-center justify-center p-8 text-center bg-gradient-to-b from-primary/20 to-transparent">
-                  <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-2xl shadow-primary/50">
-                    <Zap className="w-8 h-8 text-white fill-white" />
+              <motion.div
+                animate={{ y: [0, 8, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                className="absolute -bottom-4 -left-12 p-5 rounded-2xl bg-[#0a0a0c]/90 backdrop-blur-xl border border-white/10 shadow-2xl z-20"
+              >
+                <div className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Response Time</div>
+                <div className="text-2xl font-black italic text-white">0.3<span className="text-sm">ms</span></div>
+              </motion.div>
+
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                className="absolute top-20 -right-16 p-5 rounded-2xl bg-[#0a0a0c]/90 backdrop-blur-xl border border-primary/20 shadow-2xl z-20"
+              >
+                <div className="text-[9px] font-black text-primary uppercase tracking-widest mb-1">Conversion</div>
+                <div className="text-2xl font-black italic text-white">89%</div>
+              </motion.div>
+
+              {/* iPhone Frame */}
+              <div className="relative w-[320px] h-[680px] bg-[#0a0a0c] rounded-[3.5rem] border-[10px] border-[#1a1a1c] p-2 shadow-[0_0_80px_rgba(139,92,246,0.2),0_0_120px_rgba(0,0,0,0.8)]">
+                {/* Notch */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-[#0a0a0c] rounded-b-2xl z-30 flex items-center justify-center">
+                  <div className="w-16 h-4 bg-[#1a1a1c] rounded-full" />
+                </div>
+
+                {/* Screen Content */}
+                <div className="w-full h-full rounded-[2.5rem] overflow-hidden bg-gradient-to-b from-[#0f0f12] to-[#080809]">
+                  {/* Header */}
+                  <div className="p-6 pb-4">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <div className="text-[9px] font-black text-white/30 uppercase tracking-widest">Welcome to</div>
+                        <div className="text-xl font-black italic uppercase tracking-tight text-white">Prime Steaks</div>
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center shadow-lg shadow-primary/30">
+                        <Star className="w-5 h-5 text-white fill-white" />
+                      </div>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="flex items-center gap-3 px-4 py-3 bg-white/5 rounded-xl border border-white/5">
+                      <MousePointer2 className="w-4 h-4 text-white/30" />
+                      <span className="text-sm text-white/30 font-medium">Search menu...</span>
+                    </div>
                   </div>
-                  <h3 className="text-xl font-black italic uppercase tracking-tighter mb-4">Prime Steaks</h3>
-                  <div className="w-full h-32 rounded-2xl bg-white/5 border border-white/10 mb-4" />
-                  <div className="space-y-2 w-full">
-                    <div className="w-full h-12 rounded-xl bg-primary/20 border border-primary/20" />
-                    <div className="w-full h-12 rounded-xl bg-white/5 border border-white/10" />
+
+                  {/* Categories */}
+                  <div className="px-6 mb-4">
+                    <div className="flex gap-2 overflow-hidden">
+                      {['All', 'Steaks', 'Sides', 'Drinks'].map((cat, i) => (
+                        <div
+                          key={cat}
+                          className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap ${i === 1 ? 'bg-primary text-white' : 'bg-white/5 text-white/50'}`}
+                        >
+                          {cat}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="px-6 space-y-3 overflow-hidden">
+                    {[
+                      { name: 'Wagyu A5 Ribeye', price: '$189', img: '🥩', tag: 'Chef Pick' },
+                      { name: 'Prime Filet Mignon', price: '$145', img: '🍖', tag: 'Popular' },
+                      { name: 'Tomahawk 32oz', price: '$225', img: '🥩', tag: null },
+                    ].map((item, i) => (
+                      <motion.div
+                        key={item.name}
+                        initial={{ opacity: 0, x: 20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 + i * 0.1 }}
+                        className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-primary/30 transition-all group"
+                      >
+                        <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-primary/20 to-purple-600/20 flex items-center justify-center text-2xl">
+                          {item.img}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-bold text-white">{item.name}</span>
+                            {item.tag && (
+                              <span className="px-2 py-0.5 rounded-md bg-primary/20 text-primary text-[8px] font-black uppercase">{item.tag}</span>
+                            )}
+                          </div>
+                          <div className="text-lg font-black text-primary">{item.price}</div>
+                        </div>
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                          <ChevronRight className="w-4 h-4 text-primary" />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Bottom Nav */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#080809] to-transparent">
+                    <div className="flex items-center justify-around p-3 rounded-2xl bg-white/5 border border-white/5">
+                      {[QrCode, BarChart3, MessageCircle].map((Icon, i) => (
+                        <div key={i} className={`w-10 h-10 rounded-xl flex items-center justify-center ${i === 0 ? 'bg-primary text-white' : 'text-white/30'}`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
-              {/* Floating Elements */}
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -top-10 -right-10 p-6 glass-card rounded-3xl border border-primary/20 z-10"
+            </motion.div>
+
+            {/* Right Side Content */}
+            <div className="lg:max-w-md text-center lg:text-left">
+              <h3 className="text-3xl md:text-4xl font-black tracking-tight mb-8 italic">
+                Your <span className="text-primary not-italic">entire menu</span> in their pocket.
+              </h3>
+              <p className="text-white/40 text-lg font-medium leading-relaxed mb-12">
+                Customers scan a QR code and instantly access your beautifully designed digital catalog. No apps to download, no waiting.
+              </p>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-4 mb-12">
+                {[
+                  { value: '0.3s', label: 'Load Time' },
+                  { value: '100%', label: 'Mobile Ready' },
+                  { value: '50+', label: 'Languages' },
+                  { value: '24/7', label: 'Availability' },
+                ].map((stat, i) => (
+                  <div key={i} className="p-6 rounded-2xl bg-white/[0.02] border border-white/5">
+                    <div className="text-2xl font-black italic text-primary mb-1">{stat.value}</div>
+                    <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <Link
+                href="/c/demo"
+                className="inline-flex items-center gap-3 px-10 py-5 bg-white text-black font-black text-lg rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl shadow-white/10"
               >
-                <div className="text-[9px] font-black text-primary uppercase tracking-widest mb-2">Real-time Stats</div>
-                <div className="text-2xl font-black italic">99.9%</div>
-              </motion.div>
+                <Smartphone className="w-5 h-5" />
+                Try Live Demo
+                <ArrowUpRight className="w-5 h-5" />
+              </Link>
             </div>
           </div>
         </div>

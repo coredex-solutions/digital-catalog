@@ -16,12 +16,16 @@ import {
     Sparkles
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { CATALOG_THEMES, DEFAULT_THEME_ID } from "@/config/themes";
 import { PinInput } from "./_components/PinInput";
+import { Suspense } from "react";
 
-export default function SignupPage() {
+function SignupForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const plan = searchParams.get("plan") || "essential";
+
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -34,7 +38,8 @@ export default function SignupPage() {
         catalogName: "",
         catalogSlug: "",
         businessType: "restaurant",
-        themeId: DEFAULT_THEME_ID
+        themeId: DEFAULT_THEME_ID,
+        plan: plan
     });
 
     const [verifying, setVerifying] = useState(false);
@@ -154,7 +159,7 @@ export default function SignupPage() {
                                     </h2>
                                     <div className="flex items-center justify-center gap-2 mb-4">
                                         <span className="px-3 py-1 bg-primary/20 text-primary text-[9px] font-black uppercase tracking-widest rounded-full border border-primary/20">
-                                            Free 48h Premium Trial
+                                            {formData.plan} Plan — Free 48h Trial
                                         </span>
                                     </div>
                                     <p className="text-white/40 text-sm font-medium uppercase tracking-widest">
@@ -416,5 +421,17 @@ export default function SignupPage() {
                 </p>
             </div>
         </main>
+    );
+}
+
+export default function SignupPage() {
+    return (
+        <Suspense fallback={
+            <main className="min-h-screen bg-[#020203] flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            </main>
+        }>
+            <SignupForm />
+        </Suspense>
     );
 }

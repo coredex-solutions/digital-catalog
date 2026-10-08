@@ -7,7 +7,7 @@ import { CATALOG_THEMES, DEFAULT_THEME_ID } from "@/config/themes";
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { email, password, name, catalogName, catalogSlug, businessType, themeId } = body;
+        const { email, password, name, catalogName, catalogSlug, businessType, themeId, plan } = body;
 
         // 1. Basic Validation
         if (!email || !password || !name || !catalogName || !catalogSlug) {
@@ -40,6 +40,26 @@ export async function POST(request: NextRequest) {
         const subId = uuidv4();
         const hashedPassword = await hashPassword(password);
 
+        // 4.5 Plan Selection & Defaults
+        const selectedPlan = (plan || "essential").toLowerCase();
+        let maxItems = 200;
+        let maxCategories = 20;
+        let aiLimit = 5;
+        let multiLang = 0;
+        let analytics = 1;
+
+        if (selectedPlan === "pro") {
+            maxItems = 1000;
+            maxCategories = 50;
+            aiLimit = 20;
+            multiLang = 1;
+        } else if (selectedPlan === "enterprise") {
+            maxItems = 10000;
+            maxCategories = 200;
+            aiLimit = 100;
+            multiLang = 1;
+        }
+
         // Find selected theme colors
         const selectedTheme = CATALOG_THEMES.find(t => t.id === themeId) || CATALOG_THEMES.find(t => t.id === DEFAULT_THEME_ID)!;
 
@@ -62,9 +82,10 @@ export async function POST(request: NextRequest) {
                 sql: `INSERT INTO catalog_subscriptions (
                 id, catalog_id, subscription_type, starts_at, expires_at, 
                 multi_language_enabled, booking_enabled, analytics_enabled, 
-                custom_domain_enabled, ai_image_enhancement_limit, is_active
-              ) VALUES (?, ?, ?, datetime('now'), datetime('now', '+2 days'), 0, 1, 1, 0, 5, 1)`,
-                args: [subId, catalogId, "essential"],
+                custom_domain_enabled, ai_image_enhancement_limit, 
+                max_items, max_categories, is_active
+              ) VALUES (?, ?, ?, datetime('now'), datetime('now', '+2 days'), ?, 1, ?, 0, ?, ?, ?, 1)`,
+                args: [subId, catalogId, selectedPlan, multiLang, analytics, aiLimit, maxItems, maxCategories],
             },
             // D. Initialize Settings with Theme Colors
             {

@@ -9,12 +9,14 @@ import {
   Settings,
   LogOut,
   Shield,
-  BarChart3
+  BarChart3,
+  Inbox
 } from "lucide-react";
 import { clsx } from "clsx";
 
 const navItems = [
   { href: "/superadmin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/superadmin/requests", label: "Upgrade Requests", icon: Inbox },
   { href: "/superadmin/catalogs", label: "Catalogs", icon: FolderKanban },
   { href: "/superadmin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/superadmin/analytics", label: "Analytics", icon: BarChart3 },

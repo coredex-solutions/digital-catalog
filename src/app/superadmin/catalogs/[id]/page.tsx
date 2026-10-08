@@ -36,7 +36,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
   const [savingSection, setSavingSection] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [activeTab, setActiveTab] = useState<"overview" | "settings" | "admins">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "settings" | "subscription" | "admins">("overview");
 
   const [data, setData] = useState<any>(null);
   const [editForm, setEditForm] = useState<any>(null);
@@ -92,6 +92,16 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         analytics_enabled: Boolean(result.catalog.analytics_enabled),
         custom_domain_enabled: Boolean(result.catalog.custom_domain_enabled),
         ai_image_enhancement_limit: result.catalog.ai_image_enhancement_limit || 0,
+        max_items: result.catalog.max_items || 200,
+        max_categories: result.catalog.max_categories || 20,
+
+        // Subscription management fields
+        subscription_type: result.catalog.subscription_type || "essential",
+        starts_at: result.catalog.starts_at || "",
+        expires_at: result.catalog.expires_at || "",
+        amount_paid: result.catalog.amount_paid || "",
+        payment_method: result.catalog.payment_method || "",
+        payment_notes: result.catalog.payment_notes || "",
 
         // Settings fields
         enabled_languages: result.settings?.enabled_languages || "en",
@@ -141,6 +151,8 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
     slug: editForm.slug,
     business_type: editForm.business_type,
     ai_image_enhancement_limit: editForm.ai_image_enhancement_limit,
+    max_items: editForm.max_items,
+    max_categories: editForm.max_categories,
   });
 
   const saveFeatureAccess = () => handleSaveSection("Feature Access", {
@@ -245,7 +257,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
 
     try {
       const token = localStorage.getItem("superadmin_token");
-      const res = await fetch(`/api/superadmin/catalogs/${id}`, {
+      const res = await fetch(`/api/superadmin/catalogs/${id}?hard=true`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -389,6 +401,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         <div className="flex gap-8 border-b border-white/5 mb-8">
           {[
             { id: "overview", label: "Overview" },
+            { id: "subscription", label: "Subscription" },
             { id: "settings", label: "Settings" },
             { id: "admins", label: "Admins" },
           ].map((tab) => (
@@ -498,6 +511,286 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
           </div>
         )}
 
+        {/* TAB: SUBSCRIPTION */}
+        {activeTab === "subscription" && (
+          <div className="space-y-6">
+            {/* Success/Error Messages */}
+            {successMessage && (
+              <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary text-sm font-bold flex items-center gap-3 animate-in slide-in-from-top">
+                <CheckCircle className="w-5 h-5" />
+                {successMessage}
+              </div>
+            )}
+            {error && (
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold flex items-center gap-3">
+                <XCircle className="w-5 h-5" />
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid.cols-2 gap-6">
+              {/* Plan & Status */}
+              <div className="glass rounded-[2rem] p-8 border border-white/5">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white tracking-tight">Plan & Status</h3>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Plan Selection */}
+                  <div>
+                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Subscription Plan</label>
+                    <select
+                      value={editForm.subscription_type}
+                      onChange={(e) => {
+                        const plan = e.target.value;
+                        // Auto-apply plan defaults including price
+                        const defaults: Record<string, any> = {
+                          essential: { max_items: 50, max_categories: 5, ai_image_enhancement_limit: 10, multi_language_enabled: false, price: 99 },
+                          pro: { max_items: 200, max_categories: 20, ai_image_enhancement_limit: 50, multi_language_enabled: true, price: 299 },
+                          enterprise: { max_items: 9999, max_categories: 999, ai_image_enhancement_limit: 200, multi_language_enabled: true, price: 399 },
+                        };
+                        const planDefaults = defaults[plan] || {};
+                        const { price, ...planSettings } = planDefaults;
+                        setEditForm({
+                          ...editForm,
+                          subscription_type: plan,
+                          ...planSettings,
+                          amount_paid: price || editForm.amount_paid
+                        });
+                      }}
+                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer font-bold"
+                    >
+                      <option value="essential">Essential</option>
+                      <option value="pro">Pro</option>
+                      <option value="enterprise">Enterprise</option>
+                      <option value="yearly">Yearly (Legacy)</option>
+                      <option value="forever">Forever (Legacy)</option>
+                      <option value="custom_years">Custom Years (Legacy)</option>
+                    </select>
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/40 text-sm font-medium">Current Status</span>
+                      {(() => {
+                        const expiresAt = catalog.expires_at ? new Date(catalog.expires_at) : null;
+                        const now = new Date();
+                        const daysRemaining = expiresAt ? Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+
+                        if (!expiresAt) {
+                          return <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-widest">Forever Active</span>;
+                        } else if (daysRemaining && daysRemaining < 0) {
+                          return <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-bold uppercase tracking-widest">Expired</span>;
+                        } else if (daysRemaining && daysRemaining <= 30) {
+                          return <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-widest">Expiring Soon ({daysRemaining} days)</span>;
+                        } else {
+                          return <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-widest">Active ({daysRemaining} days)</span>;
+                        }
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Subscription Dates */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Start Date</label>
+                      <input
+                        type="date"
+                        value={editForm.starts_at ? editForm.starts_at.split('T')[0] : ''}
+                        onChange={(e) => setEditForm({ ...editForm, starts_at: e.target.value })}
+                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Expiry Date</label>
+                      <input
+                        type="date"
+                        value={editForm.expires_at ? editForm.expires_at.split('T')[0] : ''}
+                        onChange={(e) => setEditForm({ ...editForm, expires_at: e.target.value || null })}
+                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        const currentExpiry = editForm.expires_at ? new Date(editForm.expires_at) : new Date();
+                        currentExpiry.setFullYear(currentExpiry.getFullYear() + 1);
+                        setEditForm({ ...editForm, expires_at: currentExpiry.toISOString().split('T')[0] });
+                      }}
+                      className="flex-1 py-3 bg-violet-600/20 text-violet-400 font-bold rounded-xl hover:bg-violet-600/30 transition-all text-sm border border-violet-500/20"
+                    >
+                      + Extend 1 Year
+                    </button>
+                    <button
+                      onClick={() => setEditForm({ ...editForm, expires_at: null })}
+                      className="flex-1 py-3 bg-primary/20 text-primary font-bold rounded-xl hover:bg-primary/30 transition-all text-sm border border-primary/20"
+                    >
+                      Set as Forever
+                    </button>
+                  </div>
+                </div>
+
+                {/* Save Plan Button */}
+                <div className="pt-6 mt-6 border-t border-white/5">
+                  <button
+                    onClick={() => handleSaveSection("Plan & Dates", {
+                      subscription_type: editForm.subscription_type,
+                      starts_at: editForm.starts_at,
+                      expires_at: editForm.expires_at,
+                    })}
+                    disabled={savingSection === "Plan & Dates"}
+                    className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                  >
+                    {savingSection === "Plan & Dates" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Plan & Dates
+                  </button>
+                </div>
+              </div>
+
+              {/* Limits */}
+              <div className="glass rounded-[2rem] p-8 border border-white/5">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                    <Store className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white tracking-tight">Plan Limits</h3>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Max Products</label>
+                      <input
+                        type="number"
+                        value={editForm.max_items}
+                        onChange={(e) => setEditForm({ ...editForm, max_items: parseInt(e.target.value) || 0 })}
+                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-xl"
+                      />
+                      <p className="text-[10px] text-white/20 mt-2 ml-1">Currently using: {counts?.items || 0}</p>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Max Categories</label>
+                      <input
+                        type="number"
+                        value={editForm.max_categories}
+                        onChange={(e) => setEditForm({ ...editForm, max_categories: parseInt(e.target.value) || 0 })}
+                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-xl"
+                      />
+                      <p className="text-[10px] text-white/20 mt-2 ml-1">Currently using: {counts?.categories || 0}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">AI Enhancement Limit (Monthly)</label>
+                    <input
+                      type="number"
+                      value={editForm.ai_image_enhancement_limit}
+                      onChange={(e) => setEditForm({ ...editForm, ai_image_enhancement_limit: parseInt(e.target.value) || 0 })}
+                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-bold text-xl"
+                    />
+                    <p className="text-[10px] text-white/20 mt-2 ml-1">Used this month: {catalog.ai_image_enhancement_used || 0}</p>
+                  </div>
+                </div>
+
+                {/* Save Limits Button */}
+                <div className="pt-6 mt-6 border-t border-white/5">
+                  <button
+                    onClick={() => handleSaveSection("Limits", {
+                      max_items: editForm.max_items,
+                      max_categories: editForm.max_categories,
+                      ai_image_enhancement_limit: editForm.ai_image_enhancement_limit,
+                    })}
+                    disabled={savingSection === "Limits"}
+                    className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                  >
+                    {savingSection === "Limits" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Save Limits
+                  </button>
+                </div>
+              </div>
+
+              {/* Payment Recording */}
+              <div className="lg:col-span-2 glass rounded-[2rem] p-8 border border-white/5">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                    <CreditCard className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white tracking-tight">Payment Record</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Amount Paid</label>
+                    <div className="relative">
+                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 font-bold">$</span>
+                      <input
+                        type="number"
+                        value={editForm.amount_paid}
+                        onChange={(e) => setEditForm({ ...editForm, amount_paid: e.target.value })}
+                        className="w-full pl-10 pr-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-bold text-xl"
+                        placeholder="0"
+                      />
+                    </div>
+                    <p className="text-[10px] text-white/30 mt-2 ml-1">
+                      Plan price: ${
+                        { essential: 99, pro: 299, enterprise: 399 }[editForm.subscription_type as string] || '—'
+                      }/year
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Payment Method</label>
+                    <select
+                      value={editForm.payment_method}
+                      onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
+                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all appearance-none cursor-pointer"
+                    >
+                      <option value="">Select method...</option>
+                      <option value="cash">Cash</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                      <option value="whatsapp_pay">WhatsApp Pay</option>
+                      <option value="credit_card">Credit Card</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Payment Notes</label>
+                    <input
+                      type="text"
+                      value={editForm.payment_notes}
+                      onChange={(e) => setEditForm({ ...editForm, payment_notes: e.target.value })}
+                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                      placeholder="Receipt #, date, etc."
+                    />
+                  </div>
+                </div>
+
+                {/* Save Payment Button */}
+                <div className="pt-6 mt-6 border-t border-white/5">
+                  <button
+                    onClick={() => handleSaveSection("Payment", {
+                      amount_paid: parseFloat(editForm.amount_paid) || null,
+                      payment_method: editForm.payment_method,
+                      payment_notes: editForm.payment_notes,
+                    })}
+                    disabled={savingSection === "Payment"}
+                    className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                  >
+                    {savingSection === "Payment" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Record Payment
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TAB: SETTINGS */}
         {activeTab === "settings" && (
           <div className="space-y-6">
@@ -562,19 +855,35 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                     </select>
                   </div>
 
-                  <div className="pt-4 border-t border-white/5">
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">AI Enhancement Limit</label>
-                    <div className="flex items-center gap-4">
+                  <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Max Products</label>
                       <input
                         type="number"
-                        value={editForm.ai_image_enhancement_limit}
-                        onChange={(e) => setEditForm({ ...editForm, ai_image_enhancement_limit: parseInt(e.target.value) || 0 })}
-                        className="flex-1 px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-bold text-xl"
+                        value={editForm.max_items}
+                        onChange={(e) => setEditForm({ ...editForm, max_items: parseInt(e.target.value) || 0 })}
+                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
                       />
-                      <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
-                        <BarChart3 className="w-6 h-6 text-purple-400" />
-                      </div>
                     </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Max Categories</label>
+                      <input
+                        type="number"
+                        value={editForm.max_categories}
+                        onChange={(e) => setEditForm({ ...editForm, max_categories: parseInt(e.target.value) || 0 })}
+                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5">
+                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">AI Enhancement Limit</label>
+                    <input
+                      type="number"
+                      value={editForm.ai_image_enhancement_limit}
+                      onChange={(e) => setEditForm({ ...editForm, ai_image_enhancement_limit: parseInt(e.target.value) || 0 })}
+                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-bold text-xl"
+                    />
                     <p className="text-[10px] text-white/20 mt-3 ml-1">Number of monthly professional image enhancements allowed.</p>
                   </div>
 
@@ -728,13 +1037,14 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                       <p className="text-purple-400/40 text-[10px] font-bold uppercase tracking-widest">Disable or enable public access</p>
                     </div>
                     <button
-                      onClick={() => setEditForm({ ...editForm, is_suspended: !editForm.is_suspended })}
+                      onClick={() => handleSaveSection("Visibility", { is_suspended: !editForm.is_suspended })}
+                      disabled={savingSection === "Visibility"}
                       className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-widest ${editForm.is_suspended
                         ? "bg-primary text-white shadow-lg shadow-primary/20"
-                        : "bg-purple-500/20 text-purple-400 border border-purple-500/20 hover:bg-purple-500/30"
+                        : "bg-purple-500/20 text-purple-400 border border-purple-500/20 hover:bg-purple-500/30 text-white"
                         }`}
                     >
-                      {editForm.is_suspended ? "Activate" : "Suspend"}
+                      {savingSection === "Visibility" ? <Loader2 className="w-4 h-4 animate-spin" /> : (editForm.is_suspended ? "Activate" : "Suspend")}
                     </button>
                   </div>
 

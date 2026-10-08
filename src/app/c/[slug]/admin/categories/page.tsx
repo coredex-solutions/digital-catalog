@@ -81,6 +81,10 @@ export default function CategoriesPage() {
   }, [slug, features]);
 
   const openAddModal = () => {
+    if (features && categories.length >= features.max_categories) {
+      alert(`Limit reached! Your current plan allows up to ${features.max_categories} categories. Please upgrade in the Billing section to add more.`);
+      return;
+    }
     setEditingCategory(null);
     setFormData({
       name_ar: "",

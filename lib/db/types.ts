@@ -6,7 +6,7 @@
 export type BusinessType = 'restaurant' | 'retail' | 'cafe' | 'salon' | 'bakery' | 'pharmacy' | 'grocery' | 'other';
 
 // Subscription types
-export type SubscriptionType = 'yearly' | 'forever' | 'custom_years';
+export type SubscriptionType = 'essential' | 'pro' | 'enterprise' | 'yearly' | 'forever' | 'custom_years';
 
 // Languages supported
 export type Language = 'ar' | 'en' | 'fr';
@@ -60,6 +60,8 @@ export interface CatalogSubscription {
   custom_domain_enabled: boolean;
   ai_image_enhancement_limit: number;
   ai_image_enhancement_used: number;
+  max_items: number;
+  max_categories: number;
   amount_paid: number | null;
   currency: string;
   payment_method: string | null;
@@ -67,6 +69,17 @@ export interface CatalogSubscription {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface PlanRequest {
+  id: string;
+  catalog_id: string;
+  catalog_name: string;
+  catalog_slug: string;
+  plan_name: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_notes: string | null;
+  created_at: string;
 }
 
 export interface CatalogAdmin {

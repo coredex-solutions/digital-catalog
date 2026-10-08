@@ -96,11 +96,10 @@ export default function AnalyticsPage() {
             <Icon className="w-6 h-6 text-white" />
           </div>
           <div
-            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-              isPositive
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isPositive
                 ? "bg-violet-500/10 text-violet-400"
                 : "bg-purple-500/10 text-purple-400"
-            }`}
+              }`}
           >
             {isPositive ? (
               <ArrowUp className="w-3 h-3" />
@@ -127,11 +126,10 @@ export default function AnalyticsPage() {
               <button
                 key={range}
                 onClick={() => setDateRange(range)}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  dateRange === range
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${dateRange === range
                     ? "bg-violet-500 text-white"
                     : "text-slate-400 hover:text-white"
-                }`}
+                  }`}
               >
                 {range === "7d" ? "7 Days" : range === "30d" ? "30 Days" : "90 Days"}
               </button>
@@ -216,15 +214,14 @@ export default function AnalyticsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <span
-                              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                index === 0
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${index === 0
                                   ? "bg-purple-500 text-black"
                                   : index === 1
-                                  ? "bg-slate-400 text-black"
-                                  : index === 2
-                                  ? "bg-purple-700 text-white"
-                                  : "bg-slate-700 text-slate-400"
-                              }`}
+                                    ? "bg-slate-400 text-black"
+                                    : index === 2
+                                      ? "bg-purple-700 text-white"
+                                      : "bg-slate-700 text-slate-400"
+                                }`}
                             >
                               {index + 1}
                             </span>
@@ -254,16 +251,7 @@ export default function AnalyticsPage() {
               </table>
             </div>
 
-            {/* Simple Chart Placeholder */}
-            <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
-              <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-violet-500" />
-                Daily Performance
-              </h3>
-              <div className="h-64 flex items-center justify-center text-slate-500">
-                <p>Chart visualization would go here</p>
-              </div>
-            </div>
+
           </div>
         ) : (
           <div className="text-center py-12 text-slate-500">
