@@ -96,6 +96,24 @@ export async function POST(
       );
     }
 
+    // Enforce the plan's item limit (defaults match /auth/verify)
+    const limitResult = await db.execute({
+      sql: `
+        SELECT
+          (SELECT COUNT(*) FROM menu_items WHERE catalog_id = ?) as current_count,
+          (SELECT max_items FROM catalog_subscriptions WHERE catalog_id = ? AND is_active = 1) as max_allowed
+      `,
+      args: [catalog.id, catalog.id],
+    });
+    const currentCount = Number(limitResult.rows[0]?.current_count || 0);
+    const maxAllowed = Number(limitResult.rows[0]?.max_allowed ?? 0) || 200;
+    if (currentCount >= maxAllowed) {
+      return NextResponse.json(
+        { error: `Item limit reached for your plan (${maxAllowed}). Upgrade to add more.`, current: currentCount, max: maxAllowed },
+        { status: 403 }
+      );
+    }
+
     // Get max display order
     const maxOrderResult = await db.execute({
       sql: "SELECT MAX(display_order) as max_order FROM menu_items WHERE catalog_id = ? AND category_id = ?",

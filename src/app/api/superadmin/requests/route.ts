@@ -1,25 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
-import { jwtVerify } from "jose";
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "default_secret_key_change_me");
-
-async function verifySuperAdmin(request: NextRequest) {
-    const authHeader = request.headers.get("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
-    const token = authHeader.split(" ")[1];
-    try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
-        if (payload.type !== "super_admin") return null;
-        return payload;
-    } catch {
-        return null;
-    }
-}
+import { requireSuperAdmin } from "@/lib/auth/super-admin-middleware";
 
 export async function GET(request: NextRequest) {
-    const admin = await verifySuperAdmin(request);
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireSuperAdmin(request);
+    if (!auth.success) return auth.response;
 
     const db = getDb();
     try {
@@ -39,8 +24,8 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-    const admin = await verifySuperAdmin(request);
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const auth = await requireSuperAdmin(request);
+    if (!auth.success) return auth.response;
 
     const body = await request.json();
     const { requestId, status, adminNotes } = body;

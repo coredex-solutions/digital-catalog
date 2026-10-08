@@ -8,6 +8,36 @@ import {
 } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
 
+// Column names are interpolated into the UPDATE statements below, so only these
+// known columns (the same ones GET returns) may ever be written.
+const SETTINGS_FIELDS = new Set([
+  // appearance
+  "hero_image_url", "bg_pattern_enabled", "bg_pattern_type",
+  "color_primary", "color_secondary", "color_accent", "color_background",
+  "color_surface", "color_text", "color_text_muted",
+  "color_background_dark", "color_surface_dark", "color_text_dark", "color_text_muted_dark",
+  // features
+  "booking_enabled", "whatsapp_order_enabled", "live_chat_enabled",
+  "ai_waiter_enabled", "ai_waiter_name", "ai_waiter_persona",
+  // cta
+  "cta_menu_label_en", "cta_menu_label_ar", "cta_menu_label_fr",
+  "cta_booking_label_en", "cta_booking_label_ar", "cta_booking_label_fr",
+  "cta_order_label_en", "cta_order_label_ar", "cta_order_label_fr",
+  // seo
+  "seo_title_en", "seo_title_ar", "seo_title_fr",
+  "seo_description_en", "seo_description_ar", "seo_description_fr",
+  "seo_keywords", "json_ld_custom",
+  // about
+  "about_content_en", "about_content_ar", "about_content_fr",
+]);
+
+const CONTACT_FIELDS = new Set([
+  "phone_primary", "phone_whatsapp", "email",
+  "address_en", "address_ar", "address_fr",
+  "city_en", "city_ar", "city_fr",
+  "google_map_iframe_url",
+]);
+
 // GET: Get all settings
 export async function GET(
   request: NextRequest,
@@ -204,7 +234,7 @@ export async function PUT(
     };
 
     for (const [key, value] of Object.entries(settingsFields)) {
-      if (value !== undefined) {
+      if (value !== undefined && SETTINGS_FIELDS.has(key)) {
         settingsUpdates.push(`${key} = ?`);
         if (typeof value === "boolean") {
           settingsArgs.push(value ? 1 : 0);
@@ -231,7 +261,7 @@ export async function PUT(
       const contactArgs: any[] = [];
 
       for (const [key, value] of Object.entries(contact)) {
-        if (value !== undefined) {
+        if (value !== undefined && CONTACT_FIELDS.has(key)) {
           contactUpdates.push(`${key} = ?`);
           contactArgs.push(value || null);
         }

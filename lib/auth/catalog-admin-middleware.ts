@@ -5,11 +5,14 @@ import { getDb } from '../db/client';
 
 /**
  * Middleware to require catalog admin authentication
- * Verifies the admin has access to the specified catalog
+ * Verifies the admin has access to the specified catalog.
+ * Writes are refused once the catalog's subscription has expired, unless allowExpired is set
+ * (e.g. for submitting an upgrade request); reads (GET) stay available.
  */
 export async function requireCatalogAdmin(
   request: NextRequest,
-  catalogId?: string
+  catalogId?: string,
+  options: { allowExpired?: boolean } = {}
 ): Promise<{ success: true; admin: CatalogAdminJWTPayload } | { success: false; response: NextResponse }> {
   // Get token from Authorization header
   const authHeader = request.headers.get('Authorization');
@@ -52,7 +55,12 @@ export async function requireCatalogAdmin(
   const db = getDb();
   const result = await db.execute({
     sql: `
-      SELECT ca.id, ca.is_active, c.is_active as catalog_active, c.is_suspended
+      SELECT ca.id, ca.is_active, c.is_active as catalog_active, c.is_suspended,
+        EXISTS (
+          SELECT 1 FROM catalog_subscriptions cs
+          WHERE cs.catalog_id = ca.catalog_id AND cs.is_active = 1
+            AND cs.expires_at IS NOT NULL AND datetime(cs.expires_at) <= datetime('now')
+        ) as is_expired
       FROM catalog_admins ca
       JOIN catalogs c ON c.id = ca.catalog_id
       WHERE ca.id = ?
@@ -88,6 +96,16 @@ export async function requireCatalogAdmin(
       response: NextResponse.json(
         { error: 'Catalog is suspended or inactive' },
         { status: 403 }
+      ),
+    };
+  }
+
+  if (admin.is_expired && request.method !== 'GET' && !options.allowExpired) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: 'Subscription has expired. Please renew to make changes.' },
+        { status: 402 }
       ),
     };
   }

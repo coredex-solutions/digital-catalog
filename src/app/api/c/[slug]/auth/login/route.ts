@@ -38,7 +38,7 @@ async function handler(
         SELECT ca.*, c.is_suspended as catalog_suspended
         FROM catalog_admins ca
         JOIN catalogs c ON c.id = ca.catalog_id
-        WHERE ca.catalog_id = ? AND ca.email = ?
+        WHERE ca.catalog_id = ? AND LOWER(ca.email) = ?
       `,
       args: [catalog.id, email.toLowerCase().trim()],
     });

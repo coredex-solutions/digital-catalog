@@ -3,6 +3,7 @@ import { getFullCatalogData } from '@/lib/catalog/queries';
 import type { Metadata } from 'next';
 import { CatalogProvider } from './_providers/CatalogProvider';
 import AIWaiterBubble from './_components/AIWaiterBubble';
+import { Zap } from 'lucide-react';
 import type { CatalogUIData } from '@/types';
 
 // Generate metadata for SEO

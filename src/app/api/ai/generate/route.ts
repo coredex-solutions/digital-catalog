@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseAIJson, AI_CONSTRAINTS } from "@/lib/ai-utils";
+import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = "llama-3.1-8b-instant";
@@ -68,6 +69,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+
+  const auth = await requireCatalogAdmin(request);
+  if (!auth.success) return auth.response;
 
   try {
     const body: GenerateRequest = await request.json();

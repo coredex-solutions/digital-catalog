@@ -12,7 +12,8 @@ export async function POST(
     const catalog = await getCatalogBySlug(slug);
     if (!catalog) return NextResponse.json({ error: "Catalog not found" }, { status: 404 });
 
-    const auth = await requireCatalogAdmin(request, catalog.id);
+    // Expired catalogs must still be able to ask for a renewal
+    const auth = await requireCatalogAdmin(request, catalog.id, { allowExpired: true });
     if (!auth.success) return auth.response;
 
     const body = await request.json();

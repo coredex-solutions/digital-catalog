@@ -76,7 +76,7 @@ export function PinInput({ length = 6, onComplete, disabled = false }: PinInputP
                     transition={{ delay: i * 0.05 }}
                 >
                     <input
-                        ref={(el) => (inputRefs.current[i] = el)}
+                        ref={(el) => { inputRefs.current[i] = el; }}
                         type="text"
                         inputMode="numeric"
                         maxLength={1}

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
+import { getR2PublicUrl } from "@/lib/r2/client";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 // Nano Banana (Gemini 2.0) for high-end image generation/editing
@@ -14,7 +16,6 @@ interface EnhanceRequest {
   mimeType?: string;
   style?: "professional" | "vibrant" | "clean";
   productType?: string;
-  catalogId: string;
 }
 
 // Check and update AI enhancement limit
@@ -68,7 +69,7 @@ async function checkAndUpdateLimit(catalogId: string): Promise<{ allowed: boolea
     return { allowed: true, remaining: limit - used - 1, limit };
   } catch (error) {
     console.error("Failed to check AI limit:", error);
-    return { allowed: true, remaining: 10, limit: 10 };
+    return { allowed: false, remaining: 0, limit: 0, error: "Failed to check AI enhancement limit" };
   }
 }
 
@@ -80,13 +81,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const auth = await requireCatalogAdmin(request);
+  if (!auth.success) return auth.response;
+  // Usage is billed to the caller's own catalog, never one named in the request body
+  const catalogId = auth.admin.catalog_id;
+
   try {
     const body: EnhanceRequest = await request.json();
-    let { imageBase64, mimeType, style = "professional", productType = "food", catalogId } = body;
+    let { imageBase64, mimeType, style = "professional", productType = "food" } = body;
     const { imageUrl } = body;
 
     // Fetch Image if URL is provided
     if (!imageBase64 && imageUrl) {
+      // Only fetch from our own R2 bucket so the server can't be pointed at arbitrary hosts
+      if (!imageUrl.startsWith(`${getR2PublicUrl()}/`)) {
+        return NextResponse.json({ error: "Image URL is not allowed" }, { status: 400 });
+      }
       try {
         const imageRes = await fetch(imageUrl);
         if (!imageRes.ok) throw new Error(`Failed to fetch: ${imageRes.statusText}`);
@@ -101,10 +111,6 @@ export async function POST(request: NextRequest) {
 
     if (!imageBase64) {
       return NextResponse.json({ error: "لم يتم تحميل صورة" }, { status: 400 });
-    }
-
-    if (!catalogId) {
-      return NextResponse.json({ error: "Catalog ID is required" }, { status: 400 });
     }
 
     const limitCheck = await checkAndUpdateLimit(catalogId);
@@ -191,12 +197,9 @@ The final output must be just the image.`;
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const catalogId = searchParams.get("catalogId");
-
-  if (!catalogId) {
-    return NextResponse.json({ error: "Catalog ID required" }, { status: 400 });
-  }
+  const auth = await requireCatalogAdmin(request);
+  if (!auth.success) return auth.response;
+  const catalogId = auth.admin.catalog_id;
 
   const db = getDb();
   const currentMonth = new Date().toISOString().slice(0, 7);

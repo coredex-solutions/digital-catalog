@@ -17,6 +17,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Login looks admins up by lowercased email, so store it the same way
+        const normalizedEmail = String(email).toLowerCase().trim();
+
         const db = getDb();
 
         // 2. Check if slug is taken
@@ -75,7 +78,7 @@ export async function POST(request: NextRequest) {
             {
                 sql: `INSERT INTO catalog_admins (id, catalog_id, email, password_hash, name, created_at) 
               VALUES (?, ?, ?, ?, ?, datetime('now'))`,
-                args: [adminId, catalogId, email, hashedPassword, name],
+                args: [adminId, catalogId, normalizedEmail, hashedPassword, name],
             },
             // C. Create Trial Subscription (Free for 2 days)
             {
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest) {
             // E. Initialize Contact
             {
                 sql: `INSERT INTO catalog_contact (catalog_id, email, updated_at) VALUES (?, ?, datetime('now'))`,
-                args: [catalogId, email],
+                args: [catalogId, normalizedEmail],
             }
         ]);
 

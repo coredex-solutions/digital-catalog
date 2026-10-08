@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "../../../../lib/db/client";
+import { requireAuth } from "../../../../lib/auth/middleware";
 
 export async function GET() {
   try {
@@ -31,6 +32,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = requireAuth(request);
+    if ("error" in auth) {
+      return auth.error;
+    }
+
     const body = await request.json();
     const {
       id,
@@ -90,6 +96,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const auth = requireAuth(request);
+    if ("error" in auth) {
+      return auth.error;
+    }
+
     const body = await request.json();
     const {
       id,
@@ -144,6 +155,11 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = requireAuth(request);
+    if ("error" in auth) {
+      return auth.error;
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 

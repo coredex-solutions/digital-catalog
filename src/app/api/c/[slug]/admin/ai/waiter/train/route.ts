@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
 import { parseAIJson, AI_CONSTRAINTS } from "@/lib/ai-utils";
+import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const MODEL = "gemini-2.0-flash";
@@ -23,6 +24,9 @@ export async function GET(
     }
 
     const catalogId = catalogRes.rows[0].id as string;
+
+    const auth = await requireCatalogAdmin(request, catalogId);
+    if (!auth.success) return auth.response;
 
     // Fetch existing questions in the training queue
     const queueRes = await db.execute({
@@ -57,6 +61,10 @@ export async function POST(
     }
 
     const catalogId = catalogRes.rows[0].id as string;
+
+    const auth = await requireCatalogAdmin(request, catalogId);
+    if (!auth.success) return auth.response;
+
     const businessName = catalogRes.rows[0].name as string;
     const businessType = catalogRes.rows[0].business_type as string;
 

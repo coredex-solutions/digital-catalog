@@ -78,7 +78,6 @@ export default function ItemsPage() {
 
   const [enhancing, setEnhancing] = useState(false);
   const [enhanceLimit, setEnhanceLimit] = useState({ remaining: 10, limit: 10 });
-  const [catalogId, setCatalogId] = useState<string>("");
   const [aiStyle, setAiStyle] = useState<"professional" | "vibrant" | "clean">("professional");
   const [aiProductType, setAiProductType] = useState<"food" | "product">("food");
 
@@ -255,14 +254,13 @@ export default function ItemsPage() {
     setUploadError(null);
 
     try {
-      const res = await fetch("/api/ai/enhance-image", {
+      const res = await fetchWithAuth("/api/ai/enhance-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageUrl: formData.image_url,
           style: aiStyle,
           productType: aiProductType,
-          catalogId: catalogId
         }),
       });
 

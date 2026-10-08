@@ -1,30 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db/client';
-import { jwtVerify } from 'jose';
 import { v4 as uuidv4 } from 'uuid';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback-secret-key-change-in-production');
+import { requireCatalogAdmin } from '@/lib/auth/catalog-admin-middleware';
+import { getCatalogBySlug } from '@/lib/catalog/queries';
 
 // Helper to verify catalog admin token
 async function verifyCatalogAdmin(request: NextRequest, slug: string) {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-        return { success: false, error: 'Unauthorized', status: 401 };
+    const catalog = await getCatalogBySlug(slug);
+    if (!catalog) {
+        return { success: false as const, response: NextResponse.json({ error: 'Catalog not found' }, { status: 404 }) };
     }
 
-    const token = authHeader.substring(7);
-
-    try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
-
-        if (payload.catalogSlug !== slug) {
-            return { success: false, error: 'Unauthorized for this catalog', status: 403 };
-        }
-
-        return { success: true, adminId: payload.adminId, catalogId: payload.catalogId };
-    } catch {
-        return { success: false, error: 'Invalid token', status: 401 };
+    const auth = await requireCatalogAdmin(request, catalog.id);
+    if (!auth.success) {
+        return { success: false as const, response: auth.response };
     }
+
+    return { success: true as const, adminId: auth.admin.id, catalogId: catalog.id };
 }
 
 // GET: Fetch all branches for a catalog
@@ -34,9 +26,7 @@ export async function GET(
 ) {
     const { slug } = await params;
     const auth = await verifyCatalogAdmin(request, slug);
-    if (!auth.success) {
-        return NextResponse.json({ error: auth.error }, { status: auth.status });
-    }
+    if (!auth.success) return auth.response;
 
     const db = getDb();
 
@@ -60,9 +50,7 @@ export async function POST(
 ) {
     const { slug } = await params;
     const auth = await verifyCatalogAdmin(request, slug);
-    if (!auth.success) {
-        return NextResponse.json({ error: auth.error }, { status: auth.status });
-    }
+    if (!auth.success) return auth.response;
 
     const body = await request.json();
     const db = getDb();
@@ -109,9 +97,7 @@ export async function PUT(
 ) {
     const { slug } = await params;
     const auth = await verifyCatalogAdmin(request, slug);
-    if (!auth.success) {
-        return NextResponse.json({ error: auth.error }, { status: auth.status });
-    }
+    if (!auth.success) return auth.response;
 
     const body = await request.json();
     const db = getDb();
@@ -164,9 +150,7 @@ export async function DELETE(
 ) {
     const { slug } = await params;
     const auth = await verifyCatalogAdmin(request, slug);
-    if (!auth.success) {
-        return NextResponse.json({ error: auth.error }, { status: auth.status });
-    }
+    if (!auth.success) return auth.response;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

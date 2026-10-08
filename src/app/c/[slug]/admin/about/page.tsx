@@ -199,7 +199,7 @@ export default function AboutSEOPage() {
     setWizardStep(2);
 
     try {
-      const res = await fetch("/api/ai/generate", {
+      const res = await fetchWithAuth("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -233,7 +233,7 @@ export default function AboutSEOPage() {
     setWizardStep(3);
 
     try {
-      const res = await fetch("/api/ai/generate", {
+      const res = await fetchWithAuth("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -305,7 +305,7 @@ export default function AboutSEOPage() {
     setMessage({ type: "success", text: `Enhancing ${activeLang.toUpperCase()} content...` });
 
     try {
-      const res = await fetch("/api/ai/generate", {
+      const res = await fetchWithAuth("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -404,7 +404,7 @@ export default function AboutSEOPage() {
     setMessage({ type: "success", text: "AI is generating your SEO..." });
 
     try {
-      const res = await fetch("/api/ai/generate", {
+      const res = await fetchWithAuth("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

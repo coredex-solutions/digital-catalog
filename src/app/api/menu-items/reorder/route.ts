@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "../../../../../lib/db/client";
+import { requireAuth } from "../../../../../lib/auth/middleware";
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = requireAuth(request);
+    if ("error" in auth) {
+      return auth.error;
+    }
+
     const body = await request.json();
     const { items } = body; // Array of { id, display_order }
 

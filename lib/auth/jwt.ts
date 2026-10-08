@@ -1,7 +1,15 @@
 import jwt from 'jsonwebtoken';
 import type { SuperAdminJWTPayload, CatalogAdminJWTPayload, JWTPayload } from '../db/types';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// Read lazily so builds without the env var still succeed; fail loudly at sign/verify time
+// instead of silently falling back to a guessable secret.
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not set');
+  }
+  return secret;
+}
 
 // Legacy payload type (for backward compatibility during migration)
 export interface LegacyJWTPayload {
@@ -16,14 +24,14 @@ export interface LegacyJWTPayload {
 export function signSuperAdminToken(payload: Omit<SuperAdminJWTPayload, 'type'>): string {
   return jwt.sign(
     { ...payload, type: 'super_admin' } as SuperAdminJWTPayload,
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 }
 
 export function verifySuperAdminToken(token: string): SuperAdminJWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as JWTPayload;
     if (decoded.type === 'super_admin') {
       return decoded as SuperAdminJWTPayload;
     }
@@ -40,14 +48,14 @@ export function verifySuperAdminToken(token: string): SuperAdminJWTPayload | nul
 export function signCatalogAdminToken(payload: Omit<CatalogAdminJWTPayload, 'type'>): string {
   return jwt.sign(
     { ...payload, type: 'catalog_admin' } as CatalogAdminJWTPayload,
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 }
 
 export function verifyCatalogAdminToken(token: string): CatalogAdminJWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as JWTPayload;
     if (decoded.type === 'catalog_admin') {
       return decoded as CatalogAdminJWTPayload;
     }
@@ -63,7 +71,7 @@ export function verifyCatalogAdminToken(token: string): CatalogAdminJWTPayload |
 
 export function verifyAnyToken(token: string): JWTPayload | LegacyJWTPayload | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload | LegacyJWTPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as JWTPayload | LegacyJWTPayload;
     return decoded;
   } catch {
     return null;
@@ -75,12 +83,23 @@ export function verifyAnyToken(token: string): JWTPayload | LegacyJWTPayload | n
 // ============================================
 
 export function signToken(payload: LegacyJWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
 }
 
+// Accepts only platform-level tokens: untyped legacy tokens (issued by /api/auth/login to
+// super admins) and super_admin tokens. Catalog admin tokens are signed with the same secret,
+// so they must be rejected here or any tenant could use the unscoped legacy routes.
 export function verifyToken(token: string): LegacyJWTPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as LegacyJWTPayload;
+    const decoded = jwt.verify(token, getJwtSecret()) as (JWTPayload | LegacyJWTPayload) & { type?: string };
+    if (decoded.type === undefined) {
+      return decoded as LegacyJWTPayload;
+    }
+    if (decoded.type === 'super_admin') {
+      const superAdmin = decoded as SuperAdminJWTPayload;
+      return { userId: superAdmin.id, username: superAdmin.email };
+    }
+    return null;
   } catch {
     return null;
   }

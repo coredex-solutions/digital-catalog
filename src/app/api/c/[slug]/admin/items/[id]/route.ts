@@ -33,6 +33,17 @@ export async function PUT(
       return NextResponse.json({ error: "Item not found" }, { status: 404 });
     }
 
+    // A moved item must stay inside this catalog's own categories
+    if (body.category_id !== undefined) {
+      const categoryCheck = await db.execute({
+        sql: "SELECT id FROM categories WHERE id = ? AND catalog_id = ?",
+        args: [body.category_id, catalog.id],
+      });
+      if (categoryCheck.rows.length === 0) {
+        return NextResponse.json({ error: "Category not found" }, { status: 404 });
+      }
+    }
+
     // Build update query dynamically
     const updates: string[] = [];
     const args: any[] = [];
