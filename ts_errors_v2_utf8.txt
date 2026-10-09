@@ -1,1 +1,0 @@
-﻿src/app/c/[slug]/admin/settings/page.tsx(892,34): error TS2304: Cannot find name 'InfoIcon'.

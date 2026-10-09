@@ -1,9 +1,0 @@
-# robots.txt for Mtabal Restaurant
-
-User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /api/admin/
-
-# Sitemap
-Sitemap: https://mtabal.m.dynamicord.com/sitemap.xml
