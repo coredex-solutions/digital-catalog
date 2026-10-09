@@ -20,7 +20,7 @@ const navItems = [
   { href: "/superadmin/catalogs", label: "Catalogs", icon: FolderKanban },
   { href: "/superadmin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/superadmin/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/superadmin/settings", label: "Settings", icon: Settings },
+  { href: "/superadmin/settings", label: "Platform", icon: Settings },
 ];
 
 export function SuperAdminSidebar() {
@@ -33,16 +33,16 @@ export function SuperAdminSidebar() {
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-black/60 backdrop-blur-2xl border-r border-white/5 flex flex-col z-40">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-ui-surface border-r border-ui-line flex flex-col z-40">
       {/* Header */}
-      <div className="p-6 border-b border-white/5">
+      <div className="p-6 border-b border-ui-line">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-purple-400 flex items-center justify-center shadow-lg shadow-primary/20">
-            <Shield className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-control bg-ui-primary flex items-center justify-center">
+            <Shield className="w-5 h-5 text-ui-primary-fg" />
           </div>
           <div>
-            <h1 className="font-bold text-white tracking-tight">Super Admin</h1>
-            <p className="text-xs text-white/40 font-medium tracking-widest uppercase">Platform Control</p>
+            <p className="font-bold text-ui-ink">Super Admin</p>
+            <p className="text-xs text-ui-muted font-medium">Platform Control</p>
           </div>
         </div>
       </div>
@@ -58,10 +58,10 @@ export function SuperAdminSidebar() {
               key={item.href}
               href={item.href}
               className={clsx(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group",
+                "flex items-center gap-3 px-4 py-3 rounded-control transition-all duration-300 group",
                 isActive
-                  ? "bg-primary/10 text-primary border border-primary/20 shadow-[0_0_20px_-5px_rgba(124,58,237,0.3)]"
-                  : "text-white/40 hover:text-white hover:bg-white/5 border border-transparent"
+                  ? "bg-ui-subtle text-ui-primary font-semibold border border-ui-line"
+                  : "text-ui-muted hover:text-ui-ink hover:bg-ui-subtle border border-transparent"
               )}
             >
               <item.icon className="w-5 h-5" />
@@ -72,10 +72,10 @@ export function SuperAdminSidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-white/5">
+      <div className="p-4 border-t border-ui-line">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/40 hover:text-purple-400 hover:bg-purple-500/10 transition-all w-full border border-transparent hover:border-purple-500/20"
+          className="flex items-center gap-3 px-4 py-3 rounded-control text-ui-muted hover:text-ui-danger hover:bg-ui-subtle transition-all w-full border border-transparent hover:border-ui-line"
         >
           <LogOut className="w-5 h-5" />
           <span className="font-medium">Sign Out</span>
@@ -87,9 +87,9 @@ export function SuperAdminSidebar() {
 
 export function SuperAdminHeader({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
-    <header className="bg-black/20 backdrop-blur-xl border-b border-white/5 px-8 py-6 sticky top-0 z-30">
+    <header className="bg-ui-surface border-b border-ui-line px-8 py-6 sticky top-0 z-30">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-bold text-ui-ink">{title}</h1>
         {children}
       </div>
     </header>

@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
 import { transcribeAudio } from "@/lib/ai-voice";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
+import { getAiWaiterCatalog } from "@/lib/catalog/ai-access";
+import { getPublicMenu } from "@/lib/catalog/publishing";
+import { readVariants } from "@/lib/catalog/dish-info";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const MODEL = "gemini-2.0-flash";
 
 const MAX_HISTORY_MESSAGES = 10;
@@ -22,6 +26,19 @@ export async function POST(
   }
 
   try {
+    // Only catalogs that switched the waiter on and are paid up may spend AI credits
+    const catalog = await getAiWaiterCatalog(slug);
+    if (!catalog) {
+      return NextResponse.json({ error: "Catalog not found" }, { status: 404 });
+    }
+    if (!catalog.aiWaiterEnabled || !catalog.subscriptionLive) {
+      return NextResponse.json({ error: "The AI waiter is not available for this menu" }, { status: 403 });
+    }
+
+    if (!GOOGLE_API_KEY) {
+      return NextResponse.json({ error: "The AI waiter is not configured on this server" }, { status: 503 });
+    }
+
     const formData = await request.formData();
     const message = formData.get("message") as string;
     const audio = formData.get("audio") as Blob | null;
@@ -39,6 +56,9 @@ export async function POST(
       if (audio.size > 2 * 1024 * 1024) {
         return NextResponse.json({ error: "Audio file too large" }, { status: 400 });
       }
+      if (!OPENAI_API_KEY) {
+        return NextResponse.json({ error: "Voice messages are not configured on this server" }, { status: 503 });
+      }
       const audioBuffer = Buffer.from(await audio.arrayBuffer());
       userText = await transcribeAudio(audioBuffer, audio.type);
     }
@@ -49,31 +69,31 @@ export async function POST(
       }, { status: 400 });
     }
 
-    const catalogRes = await db.execute({
-      sql: "SELECT id, name, business_type FROM catalogs WHERE slug = ? AND is_active = 1",
-      args: [slug]
-    });
+    const catalogId = catalog.id;
+    const businessName = catalog.name;
 
-    if (catalogRes.rows.length === 0) {
-      return NextResponse.json({ error: "Catalog not found" }, { status: 404 });
-    }
-
-    const catalogId = catalogRes.rows[0].id as string;
-    const businessName = catalogRes.rows[0].name as string;
-
-    const [knowledgeRes, itemsRes] = await Promise.all([
+    const [knowledgeRes, publicMenu] = await Promise.all([
       db.execute({
         sql: "SELECT question, answer FROM catalog_ai_knowledge WHERE catalog_id = ? AND is_active = 1 LIMIT 50",
         args: [catalogId]
       }),
-      db.execute({
-        sql: "SELECT id, name_en, name_ar, description_en, description_ar, price FROM menu_items WHERE catalog_id = ? AND is_active = 1 LIMIT 100",
-        args: [catalogId]
-      })
+      // The published menu guests see (not the owner's draft)
+      getPublicMenu(catalogId),
     ]);
 
     const knowledgeBase = knowledgeRes.rows.map(r => `Q: ${r.question}\nA: ${r.answer}`).join("\n\n");
-    const menuItems = itemsRes.rows.map(r => `- [ID: ${r.id}] ${r.name_en} (${r.price} USD)`).join("\n");
+    // Sold-out items cannot be ordered, so the waiter never sees them. Dishes with options
+    // list them, so the waiter can mention the choice (the guest picks it on the dish).
+    const menuItems = publicMenu.items
+      .filter((r) => Number(r.is_available ?? 1) === 1)
+      .slice(0, 100)
+      .map((r) => {
+        const options = readVariants(r.variants);
+        const currency = String(r.currency || "USD");
+        const optionText = options.length ? `; options: ${options.map((o) => `${o.name_en || o.name_ar} ${o.price} ${currency}`).join(", ")}` : "";
+        return `- [ID: ${r.id}] ${r.name_en} (${r.price} ${currency}${optionText})`;
+      })
+      .join("\n");
     const cartDisplay = currentCart.map((c: any) => `- ${c.name_en} (ID: ${c.id}, Qty: ${c.quantity})`).join("\n") || "Cart is currently empty.";
 
     const settingsRes = await db.execute({
@@ -113,7 +133,7 @@ ${knowledgeBase}
 MENU (Use IDs for actions):
 ${menuItems}
 
-LANGUAGE: Respond in the language of the latest message. For ARABIC, use full diacritics (Harakat).`;
+LANGUAGE: Respond only in Arabic or English. If the latest message is in Arabic (including Lebanese dialect or Arabizi), respond in Arabic with full diacritics (Harakat); otherwise respond in English.`;
 
     const chatMessages = [
       ...history.map((h: any) => ({
@@ -122,8 +142,6 @@ LANGUAGE: Respond in the language of the latest message. For ARABIC, use full di
       })),
       { role: "user", parts: [{ text: userText }] }
     ];
-
-    if (!GOOGLE_API_KEY) throw new Error("AI Service Unavailable");
 
     const aiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`,

@@ -70,7 +70,7 @@ export async function sendEmail(
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const { to, subject, html, text, from } = options;
   const fromAddress =
-    from || process.env.EMAIL_FROM || "noreply@digitalcatalog.app";
+    from || process.env.EMAIL_FROM || process.env.SMTP_USER || "info@coredex.solutions";
 
   // Development mode or no SMTP config - just log
   if (process.env.NODE_ENV === "development" && !isEmailConfigured()) {
@@ -139,7 +139,7 @@ export const emailTemplates = {
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { text-align: center; padding: 20px 0; }
-          .button { display: inline-block; padding: 12px 24px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
+          .button { display: inline-block; padding: 12px 24px; background: #0F6B5B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
           .footer { text-align: center; padding: 20px 0; color: #666; font-size: 14px; }
         </style>
       </head>
@@ -154,7 +154,7 @@ export const emailTemplates = {
             <a href="${loginUrl}" class="button">Log In to Dashboard</a>
           </p>
           <div class="footer">
-            <p>Digital Catalog Platform</p>
+            <p>Coredex</p>
           </div>
         </div>
       </body>
@@ -175,7 +175,7 @@ export const emailTemplates = {
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { text-align: center; padding: 20px 0; }
-          .button { display: inline-block; padding: 12px 24px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
+          .button { display: inline-block; padding: 12px 24px; background: #0F6B5B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
           .footer { text-align: center; padding: 20px 0; color: #666; font-size: 14px; }
         </style>
       </head>
@@ -192,7 +192,7 @@ export const emailTemplates = {
           <p>This link will expire in 1 hour.</p>
           <p>If you didn't request this, you can safely ignore this email.</p>
           <div class="footer">
-            <p>Digital Catalog Platform</p>
+            <p>Coredex</p>
           </div>
         </div>
       </body>
@@ -218,7 +218,7 @@ export const emailTemplates = {
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { text-align: center; padding: 20px 0; }
           .warning { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0; }
-          .button { display: inline-block; padding: 12px 24px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
+          .button { display: inline-block; padding: 12px 24px; background: #0F6B5B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; }
           .footer { text-align: center; padding: 20px 0; color: #666; font-size: 14px; }
         </style>
       </head>
@@ -235,7 +235,7 @@ export const emailTemplates = {
             <a href="${renewUrl}" class="button">Renew Subscription</a>
           </p>
           <div class="footer">
-            <p>Digital Catalog Platform</p>
+            <p>Coredex</p>
           </div>
         </div>
       </body>
@@ -275,7 +275,7 @@ export const emailTemplates = {
             <p><strong>Admin Email:</strong> ${adminEmail}</p>
           </div>
           <div class="footer">
-            <p>Digital Catalog Platform</p>
+            <p>Coredex</p>
           </div>
         </div>
       </body>
@@ -303,7 +303,7 @@ export const emailTemplates = {
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f5f5f5; }
           .wrapper { padding: 40px 20px; }
           .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-          .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center; }
+          .header { background: linear-gradient(135deg, #0F6B5B 0%, #059669 100%); padding: 40px 20px; text-align: center; }
           .header h1 { color: white; margin: 0; font-size: 28px; }
           .header p { color: rgba(255,255,255,0.9); margin: 10px 0 0; }
           .content { padding: 40px 30px; }
@@ -314,12 +314,12 @@ export const emailTemplates = {
           .credentials .value { font-size: 16px; color: #1e293b; font-family: monospace; background: white; padding: 8px 12px; border-radius: 6px; margin-top: 4px; display: block; border: 1px solid #e2e8f0; }
           .warning { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 14px; }
           .warning strong { color: #92400e; }
-          .button { display: inline-block; padding: 14px 28px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 8px 4px; }
+          .button { display: inline-block; padding: 14px 28px; background: #0F6B5B; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 8px 4px; }
           .button.secondary { background: #1e293b; }
           .buttons { text-align: center; padding: 20px 0; }
           .links { background: #f8fafc; padding: 20px 30px; border-top: 1px solid #e2e8f0; }
           .links p { margin: 8px 0; font-size: 14px; color: #64748b; }
-          .links a { color: #10b981; }
+          .links a { color: #0F6B5B; }
           .footer { text-align: center; padding: 30px; color: #64748b; font-size: 14px; border-top: 1px solid #e2e8f0; }
         </style>
       </head>
@@ -328,11 +328,11 @@ export const emailTemplates = {
           <div class="container">
             <div class="header">
               <h1>🎉 Welcome Aboard!</h1>
-              <p>Your digital catalog is ready</p>
+              <p>Your Coredex menu is ready</p>
             </div>
             <div class="content">
               <p class="greeting">Hello ${name},</p>
-              <p>Great news! Your account for <strong>${catalogName}</strong> has been created and your digital catalog is ready to go.</p>
+              <p>Great news! Your account for <strong>${catalogName}</strong> has been created and your menu is ready to go.</p>
               
               <div class="credentials">
                 <p>
@@ -362,7 +362,7 @@ export const emailTemplates = {
 
             <div class="footer">
               <p>Need help? Just reply to this email.</p>
-              <p>© Digital Catalog Platform</p>
+              <p>© Coredex</p>
             </div>
           </div>
         </div>
@@ -384,6 +384,6 @@ Your Catalog: ${catalogUrl}
 
 Need help? Just reply to this email.
 
-© Digital Catalog Platform`,
+© Coredex`,
   }),
 };

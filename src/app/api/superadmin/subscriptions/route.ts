@@ -3,6 +3,7 @@ import { requireSuperAdmin } from '@/lib/auth/super-admin-middleware';
 import { getDb } from '@/lib/db/client';
 import { v4 as uuidv4 } from 'uuid';
 import type { SubscriptionType } from '@/lib/db/types';
+import { getPlanForSubscriptionType, getSubscriptionExpiry, isSubscriptionType } from '@/lib/plans';
 
 // GET: List all subscriptions
 export async function GET(request: NextRequest) {
@@ -59,10 +60,10 @@ export async function POST(request: NextRequest) {
       currency = 'USD',
       payment_method,
       payment_notes,
-      multi_language_enabled = false,
-      booking_enabled = true,
-      analytics_enabled = true,
-      custom_domain_enabled = false,
+      multi_language_enabled,
+      booking_enabled,
+      analytics_enabled,
+      custom_domain_enabled,
     } = await request.json();
 
     if (!catalog_id || !subscription_type) {
@@ -71,6 +72,23 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    if (!isSubscriptionType(subscription_type)) {
+      return NextResponse.json(
+        { error: 'Unknown subscription type' },
+        { status: 400 }
+      );
+    }
+    if (subscription_type === 'custom_years' && !(Number.isInteger(Number(custom_years)) && Number(custom_years) >= 1)) {
+      return NextResponse.json(
+        { error: 'Custom years must be a whole number of 1 or more' },
+        { status: 400 }
+      );
+    }
+
+    // Limits and default flags come from the plan; explicit flags in the body still win
+    const plan = getPlanForSubscriptionType(subscription_type);
+    const flag = (value: unknown, fallback: boolean) => (value === undefined ? fallback : Boolean(value)) ? 1 : 0;
 
     const db = getDb();
 
@@ -87,45 +105,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculate dates
+    // Calculate dates ('forever' = no expiration)
     const startsAt = new Date().toISOString();
-    let expiresAt: string | null = null;
+    const expiresAt = getSubscriptionExpiry(subscription_type as SubscriptionType, custom_years);
 
-    if (subscription_type === 'yearly') {
-      const expires = new Date();
-      expires.setFullYear(expires.getFullYear() + 1);
-      expiresAt = expires.toISOString();
-    } else if (subscription_type === 'custom_years' && custom_years) {
-      const expires = new Date();
-      expires.setFullYear(expires.getFullYear() + custom_years);
-      expiresAt = expires.toISOString();
-    }
-
-    // Delete existing subscription
-    await db.execute({
-      sql: 'DELETE FROM catalog_subscriptions WHERE catalog_id = ?',
-      args: [catalog_id],
-    });
-
-    // Create new subscription
+    // Replace the existing subscription in one transaction
     const id = uuidv4();
-    await db.execute({
-      sql: `
-        INSERT INTO catalog_subscriptions (
-          id, catalog_id, subscription_type, custom_years, starts_at, expires_at,
-          multi_language_enabled, booking_enabled, analytics_enabled, custom_domain_enabled,
-          amount_paid, currency, payment_method, payment_notes, is_active, created_at, updated_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
-      `,
-      args: [
-        id, catalog_id, subscription_type as SubscriptionType, custom_years || null,
-        startsAt, expiresAt,
-        multi_language_enabled ? 1 : 0, booking_enabled ? 1 : 0, 
-        analytics_enabled ? 1 : 0, custom_domain_enabled ? 1 : 0,
-        amount_paid || null, currency, payment_method || null, payment_notes || null,
-      ],
-    });
+    await db.batch([
+      {
+        sql: 'DELETE FROM catalog_subscriptions WHERE catalog_id = ?',
+        args: [catalog_id],
+      },
+      {
+        sql: `
+          INSERT INTO catalog_subscriptions (
+            id, catalog_id, subscription_type, custom_years, starts_at, expires_at,
+            multi_language_enabled, booking_enabled, analytics_enabled, custom_domain_enabled,
+            max_items, max_categories, ai_image_enhancement_limit,
+            amount_paid, currency, payment_method, payment_notes, is_active, created_at, updated_at
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+        `,
+        args: [
+          id, catalog_id, subscription_type as SubscriptionType, custom_years || null,
+          startsAt, expiresAt,
+          flag(multi_language_enabled, plan.features.multi_language_enabled),
+          flag(booking_enabled, plan.features.booking_enabled),
+          flag(analytics_enabled, plan.features.analytics_enabled),
+          flag(custom_domain_enabled, plan.features.custom_domain_enabled),
+          plan.limits.max_items, plan.limits.max_categories, plan.limits.ai_image_enhancement_limit,
+          amount_paid || null, currency, payment_method || null, payment_notes || null,
+        ],
+      },
+    ], 'write');
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  content: ["./src/**/*.{js,ts,jsx,tsx}"],
   darkMode: "class",
   theme: {
     extend: {
@@ -15,10 +15,7 @@ export default {
         "menu-lg": "var(--menu-shadow-lg)",
       },
       fontFamily: {
-        cairo: ["var(--font-cairo)", "sans-serif"],
         inter: ["var(--font-inter)", "sans-serif"],
-        outfit: ["var(--font-outfit)", "sans-serif"],
-        handwriting: ["var(--font-handwriting)", "serif"],
         // Diner menu: switch between Latin and Arabic faces via CSS variables (see .menu in globals.css)
         "menu-sans": ["var(--menu-font-sans)"],
         "menu-display": ["var(--menu-font-display)"],
@@ -56,6 +53,24 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // Platform palette: Pine & Ivory (scoped CSS variables, see .platform in globals.css)
+        ui: {
+          bg: "var(--ui-bg)",
+          surface: "var(--ui-surface)",
+          ink: "var(--ui-ink)",
+          muted: "var(--ui-muted)",
+          primary: "var(--ui-primary)",
+          "primary-fg": "var(--ui-primary-fg)",
+          "primary-hover": "var(--ui-primary-hover)",
+          subtle: "var(--ui-subtle)",
+          accent: "var(--ui-accent)",
+          "accent-fg": "var(--ui-accent-fg)",
+          line: "var(--ui-line)",
+          input: "var(--ui-input)",
+          success: "var(--ui-success)",
+          warning: "var(--ui-warning)",
+          danger: "var(--ui-danger)",
         },
         // Diner menu palette (scoped CSS variables, see .menu in globals.css)
         menu: {

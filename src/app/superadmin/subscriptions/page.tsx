@@ -16,6 +16,7 @@ import {
   Edit,
   RefreshCw,
 } from "lucide-react";
+import { getPlanPrice } from "@/lib/plans";
 
 interface Subscription {
   id: string;
@@ -109,11 +110,11 @@ export default function SubscriptionsPage() {
   const getTypeColor = (type: string) => {
     switch (type) {
       case "premium":
-        return "bg-purple-500/10 text-purple-400 border-purple-500/20";
+        return "bg-ui-subtle text-ui-primary border-ui-line";
       case "enterprise":
-        return "bg-purple-500/10 text-purple-400 border-purple-500/20";
+        return "bg-ui-primary text-ui-primary-fg border-ui-primary";
       default:
-        return "bg-slate-500/10 text-slate-400 border-slate-500/20";
+        return "bg-ui-bg text-ui-muted border-ui-line";
     }
   };
 
@@ -121,14 +122,14 @@ export default function SubscriptionsPage() {
     <SuperAdminShell>
       <SuperAdminHeader title="Subscriptions">
         <div className="flex items-center gap-3">
-          <div className="flex bg-slate-800/50 rounded-lg p-1">
+          <div className="flex bg-ui-surface border border-ui-line rounded-control p-1">
             {(["all", "active", "expiring", "expired"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${filter === f
-                  ? "bg-violet-500 text-white"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-ui-primary text-ui-primary-fg"
+                  : "text-ui-muted hover:text-ui-ink"
                   }`}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -136,13 +137,13 @@ export default function SubscriptionsPage() {
             ))}
           </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ui-muted" />
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500/50 w-48"
+              className="pl-10 pr-4 py-2 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary w-48"
             />
           </div>
         </div>
@@ -151,55 +152,55 @@ export default function SubscriptionsPage() {
       <SuperAdminContent>
         {/* Stats Cards */}
         <div className="grid grid-cols-4 gap-4 mb-8">
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+          <div className="bg-ui-surface rounded-control p-4 border border-ui-line">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-violet-500" />
+              <div className="w-10 h-10 rounded-lg bg-ui-subtle flex items-center justify-center">
+                <CheckCircle className="w-5 h-5 text-ui-success" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-ui-ink">
                   {subscriptions.filter((s) => s.is_active && !isExpired(s.expires_at)).length}
                 </p>
-                <p className="text-sm text-slate-400">Active</p>
+                <p className="text-sm text-ui-muted">Active</p>
               </div>
             </div>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+          <div className="bg-ui-surface rounded-control p-4 border border-ui-line">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <Clock className="w-5 h-5 text-purple-500" />
+              <div className="w-10 h-10 rounded-lg bg-ui-subtle flex items-center justify-center">
+                <Clock className="w-5 h-5 text-ui-warning" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-ui-ink">
                   {subscriptions.filter((s) => isExpiringSoon(s.expires_at)).length}
                 </p>
-                <p className="text-sm text-slate-400">Expiring Soon</p>
+                <p className="text-sm text-ui-muted">Expiring Soon</p>
               </div>
             </div>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+          <div className="bg-ui-surface rounded-control p-4 border border-ui-line">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5 text-purple-500" />
+              <div className="w-10 h-10 rounded-lg bg-ui-subtle flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-ui-danger" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-ui-ink">
                   {subscriptions.filter((s) => isExpired(s.expires_at)).length}
                 </p>
-                <p className="text-sm text-slate-400">Expired</p>
+                <p className="text-sm text-ui-muted">Expired</p>
               </div>
             </div>
           </div>
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+          <div className="bg-ui-surface rounded-control p-4 border border-ui-line">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                <RefreshCw className="w-5 h-5 text-violet-500" />
+              <div className="w-10 h-10 rounded-lg bg-ui-subtle flex items-center justify-center">
+                <RefreshCw className="w-5 h-5 text-ui-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-ui-ink">
                   {subscriptions.filter((s) => s.auto_renew).length}
                 </p>
-                <p className="text-sm text-slate-400">Auto-Renew</p>
+                <p className="text-sm text-ui-muted">Auto-Renew</p>
               </div>
             </div>
           </div>
@@ -207,32 +208,32 @@ export default function SubscriptionsPage() {
 
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-ui-primary" />
           </div>
         ) : (
-          <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
+          <div className="bg-ui-surface rounded-panel border border-ui-line overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-700/50">
-                  <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
+                <tr className="border-b border-ui-line">
+                  <th className="text-left px-6 py-4 text-ui-muted font-medium text-sm">
                     Catalog
                   </th>
-                  <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
+                  <th className="text-left px-6 py-4 text-ui-muted font-medium text-sm">
                     Plan
                   </th>
-                  <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
+                  <th className="text-left px-6 py-4 text-ui-muted font-medium text-sm">
                     Price
                   </th>
-                  <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
+                  <th className="text-left px-6 py-4 text-ui-muted font-medium text-sm">
                     Status
                   </th>
-                  <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
+                  <th className="text-left px-6 py-4 text-ui-muted font-medium text-sm">
                     Expires
                   </th>
-                  <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
+                  <th className="text-left px-6 py-4 text-ui-muted font-medium text-sm">
                     Remaining
                   </th>
-                  <th className="text-left px-6 py-4 text-slate-400 font-medium text-sm">
+                  <th className="text-left px-6 py-4 text-ui-muted font-medium text-sm">
                     Actions
                   </th>
                 </tr>
@@ -242,7 +243,7 @@ export default function SubscriptionsPage() {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-6 py-12 text-center text-slate-500"
+                      className="px-6 py-12 text-center text-ui-muted"
                     >
                       No subscriptions found
                     </td>
@@ -251,16 +252,16 @@ export default function SubscriptionsPage() {
                   filteredSubscriptions.map((sub) => (
                     <tr
                       key={sub.id}
-                      className="border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors"
+                      className="border-b border-ui-line hover:bg-ui-bg transition-colors"
                     >
                       <td className="px-6 py-4">
                         <Link
                           href={`/superadmin/catalogs/${sub.catalog_id}`}
-                          className="font-medium text-white hover:text-violet-400 transition-colors"
+                          className="font-medium text-ui-ink hover:text-ui-primary transition-colors"
                         >
                           {sub.catalog_name}
                         </Link>
-                        <p className="text-sm text-slate-500">/{sub.catalog_slug}</p>
+                        <p className="text-sm text-ui-muted">/{sub.catalog_slug}</p>
                       </td>
                       <td className="px-6 py-4">
                         <span
@@ -271,36 +272,36 @@ export default function SubscriptionsPage() {
                           {sub.subscription_type}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-white font-medium">
-                        ${({ essential: 99, pro: 299, enterprise: 399 } as Record<string, number>)[sub.subscription_type] || '—'}
+                      <td className="px-6 py-4 text-ui-ink font-medium">
+                        ${getPlanPrice(sub.subscription_type) || '—'}
                       </td>
                       <td className="px-6 py-4">
                         {isExpired(sub.expires_at) ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-ui-bg text-ui-danger border border-ui-danger">
                             <AlertTriangle className="w-3 h-3" />
                             Expired
                           </span>
                         ) : sub.is_active ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-ui-subtle text-ui-success">
                             <CheckCircle className="w-3 h-3" />
                             Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-slate-500/10 text-slate-400">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-ui-bg text-ui-muted">
                             Inactive
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-slate-400">
+                      <td className="px-6 py-4 text-ui-muted">
                         {formatDate(sub.expires_at)}
                       </td>
                       <td className="px-6 py-4">
                         <span
                           className={`font-medium ${isExpired(sub.expires_at)
-                            ? "text-purple-400"
+                            ? "text-ui-danger"
                             : isExpiringSoon(sub.expires_at)
-                              ? "text-purple-400"
-                              : "text-violet-400"
+                              ? "text-ui-warning"
+                              : "text-ui-success"
                             }`}
                         >
                           {getDaysRemaining(sub.expires_at)}
@@ -309,7 +310,7 @@ export default function SubscriptionsPage() {
                       <td className="px-6 py-4">
                         <Link
                           href={`/superadmin/catalogs/${sub.catalog_id}?tab=subscription`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-ui-subtle text-ui-primary hover:bg-ui-line transition-colors"
                         >
                           <Edit className="w-3 h-3" />
                           Manage

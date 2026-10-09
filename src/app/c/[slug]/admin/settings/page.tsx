@@ -9,7 +9,6 @@ import {
   CatalogAdminContent,
 } from "../_components/CatalogAdminSidebar";
 import {
-  Info,
   Save,
   Loader2,
   Palette,
@@ -17,9 +16,7 @@ import {
   MapPin,
   Upload,
   X,
-  ToggleLeft,
   ToggleRight,
-  ImageIcon,
   Bot as BotIcon,
   Sparkles as SparklesIcon,
   Brain,
@@ -27,8 +24,6 @@ import {
   Sun,
   Smartphone,
   Layout,
-  Home,
-  Utensils,
   ChevronRight,
   Globe,
   Banknote,
@@ -39,60 +34,35 @@ import {
   isImageFile,
 } from "@/utils/image-compression";
 import { cn } from "@/utils/helpers";
-import { CATALOG_THEMES, THEME_METHODS, generateDynamicTheme, ThemeMethod } from "@/config/themes";
+import { MenuBrandPreview, type PreviewLang } from "../_components/MenuBrandPreview";
+import { buildMenuTheme } from "../../_lib/theme";
 
 interface Settings {
   catalog: {
     name: string;
     name_ar: string;
     name_en: string;
-    name_fr: string;
     description: string;
     description_ar: string;
     description_en: string;
-    description_fr: string;
     logo_url: string;
   };
+  // The menu only reads the brand colour and cover from appearance
   appearance: {
     hero_image_url: string;
-    bg_pattern_enabled: boolean;
-    bg_pattern_type: string;
     color_primary: string;
-    color_secondary: string;
-    color_accent: string;
-    color_background: string;
-    color_surface: string;
-    color_text: string;
-    color_text_muted: string;
-    // Dark Mode specific colors
-    color_primary_dark: string;
-    color_secondary_dark: string;
-    color_accent_dark: string;
-    color_background_dark: string;
-    color_surface_dark: string;
-    color_text_dark: string;
-    color_text_muted_dark: string;
   };
   features: {
     booking_enabled: boolean;
     whatsapp_order_enabled: boolean;
-    live_chat_enabled: boolean;
     ai_waiter_enabled: boolean;
     ai_waiter_name: string;
     ai_waiter_persona: string;
   };
+  // Only the menu button label is shown to guests (on the About page)
   cta: {
     cta_menu_label_en: string;
     cta_menu_label_ar: string;
-    cta_menu_label_fr: string;
-
-    cta_booking_label_en: string;
-    cta_booking_label_ar: string;
-    cta_booking_label_fr: string;
-
-    cta_order_label_en: string;
-    cta_order_label_ar: string;
-    cta_order_label_fr: string;
   };
   contact: {
     phone_primary: string;
@@ -100,14 +70,11 @@ interface Settings {
     email: string;
     address_en: string;
     address_ar: string;
-    address_fr: string;
     city_en: string;
     city_ar: string;
-    city_fr: string;
     google_map_iframe_url: string;
   };
   subscription?: {
-    multi_language_enabled: boolean;
     ai_image_enhancement_limit: number;
   };
   feature_config?: {
@@ -143,7 +110,8 @@ function SettingsPageContent() {
   const [activeTab, setActiveTab] = useState<
     "appearance" | "contact" | "pricing" | "features" | "ai"
   >("appearance");
-  const [previewMode, setPreviewMode] = useState<"light" | "dark">("dark");
+  const [previewMode, setPreviewMode] = useState<"light" | "dark">("light");
+  const [previewLang, setPreviewLang] = useState<PreviewLang>("en");
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -171,32 +139,6 @@ function SettingsPageContent() {
   useEffect(() => {
     fetchSettings();
   }, [slug]);
-
-  // Live Preview Theme Injection
-  useEffect(() => {
-    if (!settings) return;
-    const root = document.documentElement;
-    const isDark = previewMode === "dark";
-
-    root.style.setProperty("--primary", settings.appearance.color_primary);
-    root.style.setProperty("--secondary", settings.appearance.color_secondary);
-    root.style.setProperty("--accent", settings.appearance.color_accent);
-
-    if (isDark) {
-      root.style.setProperty("--background-hex", settings.appearance.color_background_dark || "#0a0a0c");
-      root.style.setProperty("--surface", settings.appearance.color_surface_dark || "#121215");
-      root.style.setProperty("--text-primary", settings.appearance.color_text_dark || "#ffffff");
-      root.style.setProperty("--text-muted", settings.appearance.color_text_muted_dark || "rgba(255,255,255,0.4)");
-      root.classList.add("dark");
-    } else {
-      root.style.setProperty("--background-hex", settings.appearance.color_background || "#ffffff");
-      root.style.setProperty("--surface", settings.appearance.color_surface || "#f8fafc");
-      root.style.setProperty("--text-primary", settings.appearance.color_text || "#0f172a");
-      root.style.setProperty("--text-muted", settings.appearance.color_text_muted || "#64748b");
-      root.classList.remove("dark");
-    }
-  }, [settings, previewMode]);
-
 
   const handleSaveSection = async (sectionName: string, dataToSave: any = settings) => {
     if (!settings) return;
@@ -287,92 +229,42 @@ function SettingsPageContent() {
   };
 
   const ColorInput = ({
+    id,
     label,
     value,
     onChange,
   }: {
+    id: string;
     label: string;
     value: string;
     onChange: (v: string) => void;
   }) => (
     <div className="space-y-2">
-      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">
+      <label htmlFor={`${id}-hex`} className="text-xs font-semibold text-ui-muted ml-2">
         {label}
       </label>
       <div className="relative group">
-        <div className="absolute inset-0 bg-white/5 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="relative flex items-center gap-3 p-2 bg-white/[0.03] border border-white/5 rounded-2xl">
+        <div className="relative flex items-center gap-3 p-2 bg-ui-bg border border-ui-line rounded-control">
           <input
+            id={`${id}-picker`}
             type="color"
+            aria-label={`${label} picker`}
             value={value || "#000000"}
             onChange={(e) => onChange(e.target.value)}
-            className="w-12 h-12 rounded-xl cursor-pointer border-0 bg-transparent ring-1 ring-white/10"
+            className="w-12 h-12 rounded-xl cursor-pointer border-0 bg-transparent ring-1 ring-ui-line"
           />
           <input
+            id={`${id}-hex`}
             type="text"
             value={value || ""}
             onChange={(e) => onChange(e.target.value)}
-            className="flex-1 bg-transparent border-0 text-white font-mono text-xs focus:ring-0 uppercase tracking-widest"
+            className="flex-1 min-h-11 bg-transparent border-0 text-ui-ink font-mono text-xs focus:ring-0"
             placeholder="#000000"
           />
         </div>
       </div>
     </div>
   );
-
-  const applyTheme = (themeId: string) => {
-    if (!settings) return;
-    const theme = CATALOG_THEMES.find(t => t.id === themeId);
-    if (!theme) return;
-
-    setSettings({
-      ...settings,
-      appearance: {
-        ...settings.appearance,
-        color_primary: theme.light.primary,
-        color_secondary: theme.light.secondary,
-        color_accent: theme.light.accent,
-        color_background: theme.light.background,
-        color_surface: theme.light.surface,
-        color_text: theme.light.text,
-        color_text_muted: theme.light.textMuted,
-        color_primary_dark: theme.dark.primary,
-        color_secondary_dark: theme.dark.secondary,
-        color_accent_dark: theme.dark.accent,
-        color_background_dark: theme.dark.background,
-        color_surface_dark: theme.dark.surface,
-        color_text_dark: theme.dark.text,
-        color_text_muted_dark: theme.dark.textMuted,
-      }
-    });
-    setMessage({ type: "success", text: `Theme "${theme.name}" applied. Don't forget to save!` });
-  };
-
-  const applyDynamicMethod = (method: ThemeMethod) => {
-    if (!settings) return;
-    const theme = generateDynamicTheme(settings.appearance.color_primary, method);
-
-    setSettings({
-      ...settings,
-      appearance: {
-        ...settings.appearance,
-        color_secondary: theme.light.secondary,
-        color_accent: theme.light.accent,
-        color_background: theme.light.background,
-        color_surface: theme.light.surface,
-        color_text: theme.light.text,
-        color_text_muted: theme.light.textMuted,
-        color_primary_dark: theme.dark.primary,
-        color_secondary_dark: theme.dark.secondary,
-        color_accent_dark: theme.dark.accent,
-        color_background_dark: theme.dark.background,
-        color_surface_dark: theme.dark.surface,
-        color_text_dark: theme.dark.text,
-        color_text_muted_dark: theme.dark.textMuted,
-      }
-    });
-    setMessage({ type: "success", text: `Method "${method}" applied to your brand color.` });
-  };
 
   const ProImageUpload = ({
     label,
@@ -391,10 +283,10 @@ function SettingsPageContent() {
     const [dragging, setDragging] = useState(false);
 
     return (
-      <div className="glass-card p-10 flex flex-col h-full bg-white/[0.02] border border-white/5 rounded-[2.5rem] transition-all duration-500 hover:bg-white/[0.04] group/card">
+      <div className="glass-card p-5 sm:p-8 lg:p-10 flex flex-col h-full bg-ui-bg border border-ui-line rounded-panel transition-all duration-500 hover:bg-ui-subtle group/card">
         <div className="flex items-center justify-between mb-8">
-          <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">{label}</h3>
-          {hint && <span className="text-[9px] font-black text-white/20 uppercase tracking-widest">{hint}</span>}
+          <h3 className="text-xs font-semibold text-ui-ink opacity-50">{label}</h3>
+          {hint && <span className="text-xs font-semibold text-ui-muted">{hint}</span>}
         </div>
 
         <div
@@ -402,40 +294,43 @@ function SettingsPageContent() {
           onDragLeave={() => setDragging(false)}
           onDrop={(e) => { e.preventDefault(); setDragging(false); if (e.dataTransfer.files[0]) onUpload(e.dataTransfer.files[0]); }}
           className={cn(
-            "relative flex-1 min-h-[200px] rounded-[2rem] overflow-hidden border-2 border-dashed transition-all duration-500",
-            dragging ? "border-primary bg-primary/10 scale-[1.02]" : url ? "border-white/10" : "border-white/5 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+            "relative flex-1 min-h-[200px] rounded-panel overflow-hidden border-2 border-dashed transition-all duration-500",
+            dragging ? "border-ui-primary bg-ui-subtle scale-[1.02]" : url ? "border-ui-line" : "border-ui-line bg-ui-bg hover:border-ui-input hover:bg-ui-subtle"
           )}
         >
           {url ? (
             <div className="relative w-full h-full group">
-              <Image src={url} alt={label} fill className="object-cover transition-transform duration-700 group-hover:scale-110" />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 backdrop-blur-sm">
-                <label className="w-14 h-14 bg-white text-black rounded-2xl flex items-center justify-center cursor-pointer hover:scale-110 active:scale-95 transition-all shadow-xl">
-                  <Upload className="w-6 h-6" />
-                  <input type="file" accept="image/*" onChange={onUpload} className="hidden" />
+              <Image src={url} alt={label} fill className="object-cover transition-transform duration-700" />
+              <div className="absolute inset-0 flex items-end justify-end gap-2 p-3 transition-opacity lg:items-center lg:justify-center lg:gap-4 lg:bg-black/40 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+                <label className="w-11 h-11 lg:w-14 lg:h-14 bg-ui-primary text-ui-primary-fg rounded-control flex items-center justify-center cursor-pointer active:scale-95 transition-all shadow-xl focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-ui-primary">
+                  <Upload className="w-5 h-5 lg:w-6 lg:h-6" aria-hidden />
+                  <span className="sr-only">Replace {label}</span>
+                  <input type="file" accept="image/*" onChange={onUpload} className="sr-only" />
                 </label>
                 <button
+                  type="button"
                   onClick={onRemove}
-                  className="w-14 h-14 bg-purple-500 text-white rounded-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-xl"
+                  aria-label={`Remove ${label}`}
+                  className="w-11 h-11 lg:w-14 lg:h-14 bg-ui-surface text-ui-danger border border-ui-line rounded-control flex items-center justify-center active:scale-95 transition-all shadow-xl"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 h-5 lg:w-6 lg:h-6" aria-hidden />
                 </button>
               </div>
             </div>
           ) : (
             <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer group/label">
-              <div className="w-16 h-16 bg-white/[0.03] border border-white/5 rounded-3xl flex items-center justify-center mb-4 group-hover/label:scale-110 group-hover/label:bg-primary/20 group-hover/label:border-primary/30 transition-all duration-500">
-                <Upload className="w-6 h-6 text-white/30 group-hover/label:text-primary" />
+              <div className="w-16 h-16 bg-ui-bg border border-ui-line rounded-panel flex items-center justify-center mb-4 group-hover/label:scale-110 group-hover/label:bg-primary/20 group-hover/label:border-primary/30 transition-all duration-500">
+                <Upload className="w-6 h-6 text-ui-muted group-hover/label:text-primary" />
               </div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 group-hover/label:text-white/40 transition-colors">Click or Drag Image</p>
+              <p className="text-xs font-semibold text-ui-muted group-hover/label:text-white/40 transition-colors">Click or Drag Image</p>
               <input type="file" accept="image/*" onChange={onUpload} className="hidden" />
             </label>
           )}
 
           {uploadProgress && uploadProgress.toLowerCase().includes(label.toLowerCase().split(' ')[0]) && (
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center z-50 animate-in fade-in">
-              <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
-              <p className="text-[10px] font-black text-white uppercase tracking-[0.4em] animate-pulse">{uploadProgress}</p>
+            <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center z-50 animate-in fade-in">
+              <Loader2 className="w-10 h-10 text-ui-primary animate-spin mb-4" />
+              <p className="text-xs font-semibold text-ui-ink">{uploadProgress}</p>
             </div>
           )}
         </div>
@@ -454,19 +349,21 @@ function SettingsPageContent() {
     checked: boolean;
     onChange: (v: boolean) => void;
   }) => (
-    <div
-      className="flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] cursor-pointer hover:bg-white/[0.04] transition-all group"
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      className="w-full flex items-center justify-between gap-4 p-6 text-start bg-ui-bg border border-ui-line rounded-panel cursor-pointer hover:bg-ui-subtle transition-all group"
       onClick={() => onChange(!checked)}
     >
-      <div>
-        <p className="text-[11px] font-black text-white uppercase tracking-widest">{label}</p>
-        {description && <p className="text-[9px] font-black text-white/20 uppercase tracking-widest mt-1">{description}</p>}
-      </div>
-      <div className={`w-14 h-8 rounded-full transition-all duration-500 relative flex items-center p-1 ${checked ? 'bg-primary' : 'bg-white/10'}`}>
-        <div className={`w-6 h-6 rounded-full bg-white shadow-lg transition-all duration-500 ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
-        {checked && <div className="absolute inset-0 bg-primary blur-lg opacity-40 animate-pulse" />}
-      </div>
-    </div>
+      <span>
+        <span className="block text-xs font-semibold text-ui-ink">{label}</span>
+        {description && <span className="block text-xs font-semibold text-ui-muted mt-1">{description}</span>}
+      </span>
+      <span aria-hidden className={`shrink-0 w-14 h-8 rounded-full transition-all duration-500 relative flex items-center p-1 ${checked ? 'bg-ui-primary' : 'bg-ui-subtle'}`}>
+        <span className={`w-6 h-6 rounded-full bg-white shadow-lg transition-all duration-500 ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
+      </span>
+    </button>
   );
 
   return (
@@ -476,9 +373,9 @@ function SettingsPageContent() {
       <CatalogAdminContent>
         {message && (
           <div
-            className={`mb-8 px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border animate-in slide-in-from-top-4 duration-500 ${message.type === "success"
-              ? "bg-violet-500/10 text-violet-400 border-violet-500/20"
-              : "bg-purple-500/10 text-purple-400 border-purple-500/20"
+            className={`mb-8 px-6 py-4 rounded-control text-xs font-semibold border animate-in slide-in-from-top-4 duration-500 ${message.type === "success"
+              ? "bg-ui-subtle text-ui-primary border-ui-line"
+              : "bg-ui-subtle text-ui-primary border-ui-line"
               }`}
           >
             {message.text}
@@ -487,13 +384,14 @@ function SettingsPageContent() {
 
         {loading ? (
           <div className="space-y-8">
-            <div className="h-12 bg-white/5 rounded-2xl w-1/3 animate-pulse" />
-            <div className="h-96 glass rounded-[3rem] animate-pulse" />
+            <div className="h-12 bg-ui-subtle rounded-control w-1/3" />
+            <div className="h-96 glass rounded-panel" />
           </div>
         ) : settings ? (
           <div className="space-y-10">
             {/* Context Selectors (Tabs) */}
-            <div className="flex flex-wrap gap-4 p-2 bg-white/[0.02] border border-white/5 rounded-[2.5rem] w-full md:w-fit">
+            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto scrollbar-hide">
+            <div role="group" aria-label="Settings sections" className="flex gap-2 p-1.5 bg-ui-surface border border-ui-line rounded-panel w-max">
               {[
                 { id: "appearance", label: "Branding", icon: Palette },
                 { id: "contact", label: "Contact", icon: Phone },
@@ -503,131 +401,90 @@ function SettingsPageContent() {
               ].map((tab) => (
                 <button
                   key={tab.id}
+                  type="button"
+                  aria-pressed={activeTab === tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab.id
-                    ? "bg-white text-black shadow-xl scale-[1.05]"
-                    : "text-white/30 hover:text-white hover:bg-white/5"
+                  className={`flex shrink-0 items-center gap-2 min-h-11 px-4 sm:px-5 rounded-control text-sm whitespace-nowrap transition-colors ${activeTab === tab.id
+                    ? "bg-ui-primary text-ui-primary-fg font-semibold"
+                    : "text-ui-muted font-medium hover:text-ui-ink hover:bg-ui-subtle"
                     }`}
                 >
-                  <tab.icon className="w-3.5 h-3.5" />
+                  <tab.icon className="w-4 h-4" aria-hidden />
                   {tab.label}
                 </button>
               ))}
+            </div>
             </div>
 
             {/* Matrix Layers */}
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
               {/* Appearance Array */}
               {activeTab === "appearance" && (
-                <div className="grid lg:grid-cols-12 gap-12 items-start">
+                <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
                   <div className="lg:col-span-8 space-y-8">
                     {/* Identity Section */}
-                    <div className="glass-card p-10">
+                    <div className="glass-card p-5 sm:p-8 lg:p-10">
                       <div className="flex items-center gap-3 mb-8">
-                        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                          <Layout className="w-4 h-4 text-primary" />
+                        <div className="w-8 h-8 rounded-lg bg-ui-subtle flex items-center justify-center">
+                          <Layout className="w-4 h-4 text-ui-primary" />
                         </div>
-                        <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Business Identity</h3>
+                        <h3 className="text-xs font-semibold text-ui-ink opacity-50">Business Identity</h3>
                       </div>
 
-                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      <div className="grid md:grid-cols-2 gap-8">
                         {/* English Name */}
                         <div className="space-y-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Business Name (English)</label>
+                          <label htmlFor="business-name-en" className="text-xs font-semibold text-ui-muted ml-2">Business Name (English)</label>
                           <input
+                            id="business-name-en"
                             type="text"
                             value={settings.catalog.name_en || settings.catalog.name || ""}
                             onChange={(e) => updateSettings("catalog", "name_en", e.target.value)}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-bold text-sm focus:outline-none focus:border-primary/50"
-                            placeholder="e.g. Mtabal Restaurant"
+                            className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-bold text-sm focus:outline-none focus:border-ui-primary"
+                            placeholder="e.g. Sofra"
                           />
                         </div>
                         {/* Arabic Name */}
                         <div className="space-y-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Business Name (Arabic)</label>
+                          <label htmlFor="business-name-ar" className="text-xs font-semibold text-ui-muted ml-2">Business Name (Arabic)</label>
                           <input
+                            id="business-name-ar"
                             type="text"
                             value={settings.catalog.name_ar || ""}
                             onChange={(e) => updateSettings("catalog", "name_ar", e.target.value)}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-bold text-sm focus:outline-none focus:border-primary/50 text-right"
+                            className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-bold text-sm focus:outline-none focus:border-ui-primary text-right"
                             placeholder="مثال: مطعم متبل"
                             dir="rtl"
                           />
                         </div>
-                        {/* French Name */}
-                        <div className="space-y-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Business Name (French)</label>
-                          <input
-                            type="text"
-                            value={settings.catalog.name_fr || ""}
-                            onChange={(e) => updateSettings("catalog", "name_fr", e.target.value)}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-bold text-sm focus:outline-none focus:border-primary/50"
-                            placeholder="e.g. Restaurant Mtabal"
-                          />
-                        </div>
                       </div>
 
-                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
+                      <div className="grid md:grid-cols-2 gap-8 mt-8">
                         {/* English Desc */}
                         <div className="space-y-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Description (English)</label>
+                          <label htmlFor="business-description-en" className="text-xs font-semibold text-ui-muted ml-2">Description (English)</label>
                           <textarea
+                            id="business-description-en"
                             value={settings.catalog.description_en || settings.catalog.description || ""}
                             onChange={(e) => updateSettings("catalog", "description_en", e.target.value)}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-medium text-xs h-24 focus:outline-none focus:border-primary/50"
+                            className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-medium text-xs h-24 focus:outline-none focus:border-ui-primary"
                             placeholder="Brief description..."
                           />
                         </div>
                         {/* Arabic Desc */}
                         <div className="space-y-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Description (Arabic)</label>
+                          <label htmlFor="business-description-ar" className="text-xs font-semibold text-ui-muted ml-2">Description (Arabic)</label>
                           <textarea
+                            id="business-description-ar"
                             value={settings.catalog.description_ar || ""}
                             onChange={(e) => updateSettings("catalog", "description_ar", e.target.value)}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-medium text-xs h-24 focus:outline-none focus:border-primary/50 text-right"
+                            className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-medium text-xs h-24 focus:outline-none focus:border-ui-primary text-right"
                             placeholder="وصف مختصر..."
                             dir="rtl"
                           />
                         </div>
-                        {/* French Desc */}
-                        <div className="space-y-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Description (French)</label>
-                          <textarea
-                            value={settings.catalog.description_fr || ""}
-                            onChange={(e) => updateSettings("catalog", "description_fr", e.target.value)}
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-medium text-xs h-24 focus:outline-none focus:border-primary/50"
-                            placeholder="Brève description..."
-                          />
-                        </div>
                       </div>
                     </div>
-                    {/* Theme Preview Switcher */}
-                    <div className="flex items-center justify-between p-8 bg-white/[0.03] border border-white/10 rounded-[2.5rem] mb-12">
-                      <div className="flex items-center gap-6">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 scale-110 shadow-2xl ${previewMode === 'dark' ? 'bg-violet-500 text-white shadow-violet-500/20' : 'bg-primary text-white shadow-primary/20'}`}>
-                          {previewMode === 'dark' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6" />}
-                        </div>
-                        <div>
-                          <h4 className="text-[12px] font-black text-white uppercase tracking-[0.3em]">Theme Preview</h4>
-                          <p className="text-white/30 text-[10px] font-medium uppercase tracking-widest mt-1">Currently viewing: {previewMode} mode</p>
-                        </div>
-                      </div>
-                      <div className="flex p-2 bg-black/20 rounded-2xl border border-white/5">
-                        <button
-                          onClick={() => setPreviewMode("light")}
-                          className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${previewMode === 'light' ? 'bg-white text-black shadow-xl' : 'text-white/40 hover:text-white'}`}
-                        >
-                          Light
-                        </button>
-                        <button
-                          onClick={() => setPreviewMode("dark")}
-                          className={`px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${previewMode === 'dark' ? 'bg-white text-black shadow-xl' : 'text-white/40 hover:text-white'}`}
-                        >
-                          Dark
-                        </button>
-                      </div>
-                    </div>
-
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                       <div className="lg:col-span-1">
                         <ProImageUpload
@@ -650,204 +507,54 @@ function SettingsPageContent() {
                       </div>
                     </div>
 
-                    <div className="glass-card p-10">
-                      <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                            <Palette className="w-4 h-4 text-primary" />
-                          </div>
-                          <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Dynamic Branding</h3>
+                    <section className="glass-card p-5 sm:p-8 lg:p-10" aria-labelledby="brand-colour-heading">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-ui-subtle flex items-center justify-center">
+                          <Palette className="w-4 h-4 text-ui-primary" aria-hidden />
                         </div>
+                        <h3 id="brand-colour-heading" className="text-base font-semibold text-ui-ink">Brand colour</h3>
                       </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-                        <div>
-                          <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-4">1. Pick your brand color</p>
+                      <p className="text-sm text-ui-muted mb-6 max-w-prose">
+                        Your menu uses one colour: this one. It fills the selected category, buttons and highlights. We adjust it automatically so text stays readable in light and dark mode.
+                      </p>
+                      <div className="flex flex-wrap items-end gap-4">
+                        <div className="w-full sm:w-72">
                           <ColorInput
-                            label="Main Brand Color"
+                            id="brand-colour"
+                            label="Main brand colour"
                             value={settings.appearance.color_primary}
                             onChange={(v) => updateSettings("appearance", "color_primary", v)}
                           />
                         </div>
-                        <div className="space-y-4">
-                          <p className="text-[10px] font-black text-white/40 uppercase tracking-widest ">2. Choose its behavior</p>
-                          <div className="grid grid-cols-1 gap-3">
-                            {THEME_METHODS.map((method) => (
-                              <button
-                                key={method.id}
-                                onClick={() => applyDynamicMethod(method.id)}
-                                className="p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all text-left flex items-center justify-between group"
-                              >
-                                <div>
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-white/80 block">{method.name}</span>
-                                  <span className="text-[9px] text-white/30 uppercase font-medium">{method.description}</span>
-                                </div>
-                                <div className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: settings.appearance.color_primary }} />
-                              </button>
-                            ))}
-                          </div>
-                        </div>
+                        <span
+                          aria-hidden
+                          className="mb-2 inline-flex h-11 items-center rounded-control px-4 text-sm font-semibold"
+                          style={{ ...buildMenuTheme(settings.appearance.color_primary), backgroundColor: "var(--brand)", color: "var(--brand-fg)" }}
+                        >
+                          Button sample
+                        </span>
                       </div>
-                    </div>
+                    </section>
 
-                    <div className="glass-card p-10">
-                      <div className="flex items-center gap-3 mb-8">
-                        <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                          <SparklesIcon className="w-4 h-4 text-primary" />
-                        </div>
-                        <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Theme Presets</h3>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {CATALOG_THEMES.map((theme) => (
-                          <button
-                            key={theme.id}
-                            onClick={() => applyTheme(theme.id)}
-                            className="p-6 rounded-[2rem] border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10 transition-all text-left group"
-                          >
-                            <div className="flex items-center justify-between mb-4">
-                              <span className="text-[10px] font-black uppercase tracking-widest text-white/60 group-hover:text-white transition-colors">
-                                {theme.name}
-                              </span>
-                              <ChevronRight className="w-4 h-4 text-white/10 group-hover:translate-x-1 transition-all" />
-                            </div>
-                            <div className="flex gap-2">
-                              <div className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: theme.light.primary }} />
-                              <div className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: theme.light.background }} />
-                              <div className="w-6 h-6 rounded-full border border-black/20 transition-transform group-hover:scale-110" style={{ backgroundColor: theme.dark.background }} />
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="glass-card p-10">
-                      <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-10 opacity-50">Brand Colors</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        <ColorInput
-                          label="Primary Color"
-                          value={settings.appearance.color_primary}
-                          onChange={(v) => updateSettings("appearance", "color_primary", v)}
-                        />
-                        <ColorInput
-                          label="Secondary Color"
-                          value={settings.appearance.color_secondary}
-                          onChange={(v) => updateSettings("appearance", "color_secondary", v)}
-                        />
-                        <ColorInput
-                          label="Accent Color"
-                          value={settings.appearance.color_accent}
-                          onChange={(v) => updateSettings("appearance", "color_accent", v)}
-                        />
-                        <ColorInput
-                          label="Background Color"
-                          value={settings.appearance.color_background}
-                          onChange={(v) => updateSettings("appearance", "color_background", v)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="glass-card p-10">
-                      <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-10 opacity-50">Typography & Interface Colors</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                        <ColorInput
-                          label="Surface (Cards/Modals)"
-                          value={settings.appearance.color_surface}
-                          onChange={(v) => updateSettings("appearance", "color_surface", v)}
-                        />
-                        <ColorInput
-                          label="Primary Text"
-                          value={settings.appearance.color_text}
-                          onChange={(v) => updateSettings("appearance", "color_text", v)}
-                        />
-                        <ColorInput
-                          label="Muted Text"
-                          value={settings.appearance.color_text_muted}
-                          onChange={(v) => updateSettings("appearance", "color_text_muted", v)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="glass-card p-10 border-violet-500/20 bg-violet-500/[0.02]">
-                      <div className="flex items-center gap-3 mb-10">
-                        <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                          <Moon className="w-4 h-4 text-violet-400" />
-                        </div>
-                        <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Dark Mode Specific Colors</h3>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        <ColorInput
-                          label="Dark Background"
-                          value={settings.appearance.color_background_dark}
-                          onChange={(v) => updateSettings("appearance", "color_background_dark", v)}
-                        />
-                        <ColorInput
-                          label="Dark Surface"
-                          value={settings.appearance.color_surface_dark}
-                          onChange={(v) => updateSettings("appearance", "color_surface_dark", v)}
-                        />
-                        <ColorInput
-                          label="Dark Primary Color"
-                          value={settings.appearance.color_primary_dark}
-                          onChange={(v) => updateSettings("appearance", "color_primary_dark", v)}
-                        />
-                        <ColorInput
-                          label="Dark Secondary Color"
-                          value={settings.appearance.color_secondary_dark}
-                          onChange={(v) => updateSettings("appearance", "color_secondary_dark", v)}
-                        />
-                        <ColorInput
-                          label="Dark Accent Color"
-                          value={settings.appearance.color_accent_dark}
-                          onChange={(v) => updateSettings("appearance", "color_accent_dark", v)}
-                        />
-                        <ColorInput
-                          label="Dark Primary Text"
-                          value={settings.appearance.color_text_dark}
-                          onChange={(v) => updateSettings("appearance", "color_text_dark", v)}
-                        />
-                        <ColorInput
-                          label="Dark Muted Text"
-                          value={settings.appearance.color_text_muted_dark}
-                          onChange={(v) => updateSettings("appearance", "color_text_muted_dark", v)}
-                        />
-                      </div>
-                    </div>
-
-
-                    <div className="glass-card p-10">
-                      <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-8 opacity-50">Background Pattern</h3>
-                      <ToggleSwitch
-                        label="Enable Pattern"
-                        description="Display a subtle geometric pattern on the background"
-                        checked={settings.appearance.bg_pattern_enabled}
-                        onChange={(v) => updateSettings("appearance", "bg_pattern_enabled", v)}
-                      />
-                      {settings.appearance.bg_pattern_enabled && (
-                        <div className="mt-8 animate-in slide-in-from-top-4">
-                          <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-4 ml-2">Pattern Style</label>
-                          <div className="flex gap-4">
-                            {['geometric', 'dots', 'lines'].map(type => (
-                              <button
-                                key={type}
-                                onClick={() => updateSettings("appearance", "bg_pattern_type", type)}
-                                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${settings.appearance.bg_pattern_type === type
-                                  ? 'bg-primary border-primary text-white'
-                                  : 'bg-white/5 border-white/5 text-white/30 hover:border-white/20'
-                                  }`}
-                              >
-                                {type}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-8 pt-8 border-t border-white/5">
+                    <div className="mt-8 pt-8 border-t border-ui-line">
                       <button
-                        onClick={() => handleSaveSection("Branding & Appearance", { appearance: settings.appearance })}
+                        onClick={() =>
+                          handleSaveSection("Branding & Appearance", {
+                            catalog: {
+                              name_en: settings.catalog.name_en,
+                              name_ar: settings.catalog.name_ar,
+                              description_en: settings.catalog.description_en,
+                              description_ar: settings.catalog.description_ar,
+                              logo_url: settings.catalog.logo_url,
+                            },
+                            appearance: {
+                              hero_image_url: settings.appearance.hero_image_url,
+                              color_primary: settings.appearance.color_primary,
+                            },
+                          })
+                        }
                         disabled={savingSection === "Branding & Appearance" || isViewer}
-                        className="w-full py-4 bg-primary text-white font-black rounded-[1.5rem] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest shadow-lg shadow-primary/20"
+                        className="w-full py-4 bg-ui-primary text-ui-primary-fg font-semibold rounded-control active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-xs shadow-lg"
                       >
                         {savingSection === "Branding & Appearance" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Save Appearance
@@ -855,126 +562,71 @@ function SettingsPageContent() {
                     </div>
                   </div>
 
-                  {/* RIGHT COLUMN: Mobile Preview Mockup */}
-                  <div className="lg:col-span-4 sticky top-12 z-20 hidden lg:block">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                        <Smartphone className="w-4 h-4 text-violet-400" />
-                      </div>
-                      <h3 className="text-[10px] font-black text-white uppercase tracking-[0.4em] opacity-50">Real-time Preview</h3>
-                    </div>
-
-                    <div className="relative mx-auto w-full max-w-[320px] aspect-[9/19.5] rounded-[3.5rem] border-[10px] border-black shadow-2xl overflow-hidden ring-1 ring-white/10 bg-black">
-                      {/* Notch */}
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-b-2xl z-50 shadow-xl" />
-
-                      {/* Mockup Screen Content */}
-                      <div
-                        className={cn(
-                          "absolute inset-0 transition-colors duration-700 overflow-y-auto hide-scrollbar relative",
-                          settings.appearance.bg_pattern_enabled && "bg-wood-pattern"
-                        )}
-                        style={{ backgroundColor: previewMode === 'dark' ? settings.appearance.color_background_dark : settings.appearance.color_background }}
-                      >
-                        {/* Navbar Mockup - High Fidelity RTL */}
-                        <div
-                          className="sticky top-0 z-40 p-4 flex items-center justify-between backdrop-blur-md border-b"
-                          dir="rtl"
-                          style={{
-                            backgroundColor: previewMode === 'dark' ? `${settings.appearance.color_background_dark}F2` : `${settings.appearance.color_background}F2`,
-                            borderColor: 'rgba(255,255,255,0.05)'
-                          }}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="h-8 px-2 rounded-full border flex items-center justify-center gap-1" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(255,255,255,0.05)' }}>
-                              <Globe size={10} className="text-white/40" />
-                              <span className="text-[8px] font-black text-white/40">AR</span>
-                            </div>
-                            <div className="w-8 h-8 rounded-full border flex items-center justify-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(255,255,255,0.05)' }}>
-                              {previewMode === 'dark' ? <Sun size={12} style={{ color: settings.appearance.color_primary }} /> : <Moon size={12} style={{ color: settings.appearance.color_primary }} />}
-                            </div>
-                          </div>
-
-                          <div className="h-10 w-auto">
-                            {settings.catalog.logo_url ? (
-                              <img src={settings.catalog.logo_url} className="h-full w-auto object-contain" style={{ filter: `drop-shadow(0 0 5px ${settings.appearance.color_primary}80)` }} />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: settings.appearance.color_primary }}>
-                                <Info size={14} className="text-white" />
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="w-8 h-8 rounded-full border flex items-center justify-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(255,255,255,0.05)' }}>
-                            <Home size={14} style={{ color: settings.appearance.color_primary }} />
-                          </div>
+                  {/* RIGHT COLUMN: live miniature of the diner menu */}
+                  <div className="lg:col-span-4 lg:sticky lg:top-6 z-10">
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-ui-subtle flex items-center justify-center">
+                          <Smartphone className="w-4 h-4 text-ui-primary" aria-hidden />
                         </div>
-
-                        {/* Content Mockup - Category Grid Fidelity */}
-                        <div className="p-6 space-y-6" dir="rtl">
-                          <h1 className="text-2xl font-black text-right pr-2" style={{ color: previewMode === 'dark' ? settings.appearance.color_text_dark : settings.appearance.color_text }}>الأقسام</h1>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            {[
-                              { name: 'الأطباق الرئيسية' },
-                              { name: 'المقبلات' },
-                              { name: 'الحلويات' },
-                              { name: 'المشروبات' }
-                            ].map((cat, i) => (
-                              <div
-                                key={i}
-                                className="p-8 rounded-[2rem] flex flex-col items-center gap-5 border transition-all shadow-sm group"
-                                style={{
-                                  backgroundColor: previewMode === 'dark' ? settings.appearance.color_surface_dark : settings.appearance.color_surface,
-                                  borderColor: 'rgba(255,255,255,0.05)'
-                                }}
-                              >
-                                <div
-                                  className="w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-md"
-                                  style={{
-                                    backgroundColor: `${settings.appearance.color_primary}15`,
-                                    color: settings.appearance.color_primary,
-                                  }}
-                                >
-                                  <Utensils size={22} strokeWidth={1.5} />
-                                </div>
-                                <span
-                                  className="font-black text-[11px] text-center tracking-tight"
-                                  style={{ color: previewMode === 'dark' ? settings.appearance.color_text_dark : settings.appearance.color_text }}
-                                >
-                                  {cat.name}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Footer Simulation */}
-                          <div
-                            className="mt-12 p-8 rounded-[3rem] border text-center space-y-5"
-                            style={{
-                              backgroundColor: previewMode === 'dark' ? settings.appearance.color_surface_dark : settings.appearance.color_surface,
-                              borderColor: 'rgba(255,255,255,0.05)'
-                            }}
-                          >
-                            <div className="w-3/4 h-2.5 rounded-full opacity-20 mx-auto" style={{ backgroundColor: previewMode === 'dark' ? settings.appearance.color_text_dark : settings.appearance.color_text }} />
-                            <div className="w-1/2 h-2.5 rounded-full opacity-10 mx-auto" style={{ backgroundColor: previewMode === 'dark' ? settings.appearance.color_text_dark : settings.appearance.color_text }} />
-                            <div className="pt-4 flex justify-center gap-4">
-                              {[1, 2, 3].map(i => (
-                                <div key={i} className="w-10 h-10 rounded-full border shadow-sm flex items-center justify-center" style={{ backgroundColor: 'var(--surface)', borderColor: 'rgba(255,255,255,0.05)' }}>
-                                  <div className="w-5 h-5 rounded-full bg-white/5" />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                        <h3 className="text-sm font-semibold text-ui-ink">Live preview</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <div role="group" aria-label="Preview theme" className="flex p-1 bg-ui-surface border border-ui-line rounded-control">
+                          {(["light", "dark"] as const).map((mode) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => setPreviewMode(mode)}
+                              aria-pressed={previewMode === mode}
+                              className={cn(
+                                "inline-flex min-h-10 items-center gap-1.5 px-3 rounded-lg text-xs transition-colors",
+                                previewMode === mode ? "bg-ui-primary text-ui-primary-fg font-semibold" : "text-ui-muted font-medium hover:text-ui-ink"
+                              )}
+                            >
+                              {mode === "light" ? <Sun className="w-3.5 h-3.5" aria-hidden /> : <Moon className="w-3.5 h-3.5" aria-hidden />}
+                              {mode === "light" ? "Light" : "Dark"}
+                            </button>
+                          ))}
+                        </div>
+                        <div role="group" aria-label="Preview language" className="flex p-1 bg-ui-surface border border-ui-line rounded-control">
+                          {([["en", "EN"], ["ar", "عربي"]] as const).map(([code, label]) => (
+                            <button
+                              key={code}
+                              type="button"
+                              onClick={() => setPreviewLang(code)}
+                              aria-pressed={previewLang === code}
+                              className={cn(
+                                "inline-flex min-h-10 items-center px-3 rounded-lg text-xs transition-colors",
+                                previewLang === code ? "bg-ui-primary text-ui-primary-fg font-semibold" : "text-ui-muted font-medium hover:text-ui-ink"
+                              )}
+                            >
+                              <Globe className="w-3.5 h-3.5 me-1" aria-hidden />
+                              {label}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>
 
-                    <div className="mt-8 p-6 bg-white/[0.03] border border-white/10 rounded-3xl">
-                      <p className="text-[9px] font-black text-white/30 uppercase tracking-widest leading-relaxed text-center">
-                        This is a simulated preview. Actual rendering may vary slightly per device but will strictly follow your brand colors.
-                      </p>
-                    </div>
+                    <figure>
+                      <div className="relative mx-auto w-full max-w-[300px] h-[560px] rounded-[28px] border-[8px] border-[#1c2622] shadow-xl overflow-hidden bg-ui-bg">
+                        <MenuBrandPreview
+                          brandColor={settings.appearance.color_primary}
+                          theme={previewMode}
+                          lang={previewLang}
+                          names={settings.catalog}
+                          logoUrl={settings.catalog.logo_url}
+                          coverUrl={settings.appearance.hero_image_url}
+                          hasPhone={!!settings.contact?.phone_primary}
+                          hasWhatsapp={!!settings.contact?.phone_whatsapp}
+                          currency={settings.pricing?.currency_primary === "LBP" ? "LBP" : "USD"}
+                        />
+                      </div>
+                      <figcaption className="mt-4 text-xs text-ui-muted leading-relaxed text-center max-w-[300px] mx-auto">
+                        Your name, logo, cover and brand colour, including unsaved changes. Categories and dishes are samples.
+                      </figcaption>
+                    </figure>
                   </div>
                 </div>
               )}
@@ -982,63 +634,66 @@ function SettingsPageContent() {
               {/* Contact Array */}
               {activeTab === "contact" && (
                 <div className="space-y-8">
-                  <div className="glass-card p-10 space-y-10">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Contact Information</h3>
+                  <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-10">
+                    <h3 className="text-xs font-semibold text-ui-ink opacity-50">Contact Information</h3>
                     <div className="grid md:grid-cols-2 gap-8">
                       <div className="space-y-4">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2 block">Primary Phone</label>
+                        <label htmlFor="contact-phone_primary" className="text-xs font-semibold text-ui-muted ml-2 block">Primary Phone</label>
                         <input
+                          id="contact-phone_primary"
                           type="tel"
                           value={settings.contact.phone_primary || ""}
                           onChange={(e) => updateSettings("contact", "phone_primary", e.target.value)}
-                          className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all"
+                          className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all"
                           placeholder="+000 00 000 000"
                         />
                       </div>
                       <div className="space-y-4">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2 block">WhatsApp Number</label>
+                        <label htmlFor="contact-phone_whatsapp" className="text-xs font-semibold text-ui-muted ml-2 block">WhatsApp Number</label>
                         <input
+                          id="contact-phone_whatsapp"
                           type="tel"
                           value={settings.contact.phone_whatsapp || ""}
                           onChange={(e) => updateSettings("contact", "phone_whatsapp", e.target.value)}
-                          className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all font-mono"
+                          className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all font-mono"
                           placeholder="e.g. +96170123456"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-4 pt-4">
-                      <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2 block">Email Address</label>
+                      <label htmlFor="contact-email" className="text-xs font-semibold text-ui-muted ml-2 block">Email Address</label>
                       <input
+                        id="contact-email"
                         type="email"
                         value={settings.contact.email || ""}
                         onChange={(e) => updateSettings("contact", "email", e.target.value)}
-                        className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all"
+                        className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all"
                         placeholder="email@example.com"
                       />
                     </div>
                   </div>
 
-                  <div className="glass-card p-10 space-y-10">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">Business Address</h3>
+                  <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-10">
+                    <h3 className="text-xs font-semibold text-ui-ink opacity-50">Business Address</h3>
 
                     <div className="space-y-8">
                       {/* Address Matrix */}
                       <div className="space-y-4">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Physical Address</label>
+                        <label className="text-xs font-semibold text-ui-muted ml-2">Physical Address</label>
                         <div className="grid gap-4">
                           {[
                             { id: 'en', label: 'English', field: 'address_en' },
                             { id: 'ar', label: 'Arabic', field: 'address_ar', rtl: true },
-                            { id: 'fr', label: 'French', field: 'address_fr' }
                           ].map(locale => (
-                            <div key={locale.id} className="relative flex items-center bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 group focus-within:border-primary/40 transition-all">
-                              <span className="text-[9px] font-black text-white/20 uppercase tracking-widest w-24 flex-shrink-0">{locale.label}</span>
+                            <div key={locale.id} className="relative flex items-center bg-ui-bg border border-ui-line rounded-control px-6 py-4 group focus-within:border-primary/40 transition-all">
+                              <label htmlFor={`contact-address-${locale.id}`} className="text-xs font-semibold text-ui-muted w-24 flex-shrink-0">{locale.label}</label>
                               <input
+                                id={`contact-address-${locale.id}`}
                                 type="text"
                                 value={settings.contact[locale.field as keyof Settings['contact']] || ""}
                                 onChange={(e) => updateSettings("contact", locale.field, e.target.value)}
-                                className={`flex-1 bg-transparent border-0 text-white font-black tracking-tight focus:ring-0 text-sm ${locale.rtl ? 'text-right' : ''}`}
+                                className={`flex-1 bg-transparent border-0 text-ui-ink font-semibold focus:ring-0 text-sm ${locale.rtl ? 'text-right' : ''}`}
                                 dir={locale.rtl ? 'rtl' : 'ltr'}
                                 placeholder={`Enter address in ${locale.label}...`}
                               />
@@ -1049,22 +704,23 @@ function SettingsPageContent() {
 
                       {/* Map Matrix */}
                       <div className="space-y-4 pt-6">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2 block">Google Maps Embed URL</label>
+                        <label htmlFor="contact-map-url" className="text-xs font-semibold text-ui-muted ml-2 block">Google Maps Embed URL</label>
                         <input
+                          id="contact-map-url"
                           type="url"
                           value={settings.contact.google_map_iframe_url || ""}
                           onChange={(e) => updateSettings("contact", "google_map_iframe_url", e.target.value)}
-                          className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all font-mono text-xs"
+                          className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all font-mono text-xs"
                           placeholder="https://www.google.com/maps/embed?pb=..."
                         />
                       </div>
                     </div>
 
-                    <div className="mt-8 pt-8 border-t border-white/5">
+                    <div className="mt-8 pt-8 border-t border-ui-line">
                       <button
                         onClick={() => handleSaveSection("Contact Information", { contact: settings.contact })}
                         disabled={savingSection === "Contact Information" || isViewer}
-                        className="w-full py-4 bg-primary text-white font-black rounded-[1.5rem] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest shadow-lg shadow-primary/20"
+                        className="w-full py-4 bg-ui-primary text-ui-primary-fg font-semibold rounded-control active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-xs shadow-lg"
                       >
                         {savingSection === "Contact Information" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Save Contact Details
@@ -1077,27 +733,27 @@ function SettingsPageContent() {
               {/* Pricing & ordering (dual USD/LBP and WhatsApp order types) */}
               {activeTab === "pricing" && settings.pricing && settings.ordering && (
                 <div className="space-y-8">
-                  <div className="glass-card p-10 space-y-8">
+                  <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-8">
                     <div>
-                      <h3 className="text-lg font-bold text-white">Prices</h3>
-                      <p className="mt-1 text-sm text-white/50">Prices show in the currency you entered them in. Add your exchange rate to also show them in the other currency.</p>
+                      <h3 className="text-lg font-bold text-ui-ink">Prices</h3>
+                      <p className="mt-1 text-sm text-ui-muted">Prices show in the currency you entered them in. Add your exchange rate to also show them in the other currency.</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-8">
                       <div className="space-y-3">
-                        <label htmlFor="currency-primary" className="text-sm font-semibold text-white/70 block">Main currency</label>
+                        <label htmlFor="currency-primary" className="text-sm font-semibold text-ui-ink block">Main currency</label>
                         <select
                           id="currency-primary"
                           value={settings.pricing.currency_primary}
                           onChange={(e) => updateSettings("pricing", "currency_primary", e.target.value)}
-                          className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white focus:outline-none focus:border-primary/50 transition-all"
+                          className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary transition-all"
                         >
                           <option value="USD">US dollar ($) shown first</option>
                           <option value="LBP">Lebanese pound (L.L.) shown first</option>
                         </select>
                       </div>
                       <div className="space-y-3">
-                        <label htmlFor="lbp-rate" className="text-sm font-semibold text-white/70 block">Exchange rate (L.L. per $1)</label>
+                        <label htmlFor="lbp-rate" className="text-sm font-semibold text-ui-ink block">Exchange rate (L.L. per $1)</label>
                         <input
                           id="lbp-rate"
                           type="number"
@@ -1107,9 +763,9 @@ function SettingsPageContent() {
                           value={settings.pricing.lbp_exchange_rate ?? ""}
                           placeholder="Not set"
                           onChange={(e) => updateSettings("pricing", "lbp_exchange_rate", e.target.value)}
-                          className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white focus:outline-none focus:border-primary/50 transition-all"
+                          className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary transition-all"
                         />
-                        <p className="text-xs text-white/40">
+                        <p className="text-xs text-ui-muted">
                           Converted pound prices are rounded to the nearest 1,000 L.L.
                           {settings.pricing.lbp_rate_updated_at
                             ? ` Last changed ${new Date(settings.pricing.lbp_rate_updated_at.replace(" ", "T") + "Z").toLocaleString()}.`
@@ -1126,10 +782,10 @@ function SettingsPageContent() {
                     />
                   </div>
 
-                  <div className="glass-card p-10 space-y-8">
+                  <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-8">
                     <div>
-                      <h3 className="text-lg font-bold text-white">WhatsApp orders</h3>
-                      <p className="mt-1 text-sm text-white/50">Choose how guests can order. Orders arrive on the WhatsApp number from the Contact tab.</p>
+                      <h3 className="text-lg font-bold text-ui-ink">WhatsApp orders</h3>
+                      <p className="mt-1 text-sm text-ui-muted">Choose how guests can order. Orders arrive on the WhatsApp number from the Contact tab.</p>
                     </div>
 
                     <div className="space-y-4">
@@ -1158,18 +814,18 @@ function SettingsPageContent() {
                     {settings.ordering.order_types.split(",").includes("delivery") && (
                       <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-3">
-                          <label htmlFor="delivery-note-en" className="text-sm font-semibold text-white/70 block">Delivery note (English)</label>
+                          <label htmlFor="delivery-note-en" className="text-sm font-semibold text-ui-ink block">Delivery note (English)</label>
                           <textarea
                             id="delivery-note-en"
                             rows={3}
                             value={settings.ordering.delivery_note_en}
                             onChange={(e) => updateSettings("ordering", "delivery_note_en", e.target.value)}
                             placeholder="e.g. Free delivery in Hamra and Verdun"
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white focus:outline-none focus:border-primary/50 transition-all resize-none"
+                            className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary transition-all resize-none"
                           />
                         </div>
                         <div className="space-y-3">
-                          <label htmlFor="delivery-note-ar" className="text-sm font-semibold text-white/70 block">Delivery note (Arabic)</label>
+                          <label htmlFor="delivery-note-ar" className="text-sm font-semibold text-ui-ink block">Delivery note (Arabic)</label>
                           <textarea
                             id="delivery-note-ar"
                             dir="rtl"
@@ -1177,17 +833,17 @@ function SettingsPageContent() {
                             value={settings.ordering.delivery_note_ar}
                             onChange={(e) => updateSettings("ordering", "delivery_note_ar", e.target.value)}
                             placeholder="مثلاً: توصيل مجاني في الحمرا وفردان"
-                            className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white focus:outline-none focus:border-primary/50 transition-all resize-none"
+                            className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary transition-all resize-none"
                           />
                         </div>
                       </div>
                     )}
 
-                    <div className="pt-8 border-t border-white/5">
+                    <div className="pt-8 border-t border-ui-line">
                       <button
                         onClick={() => handleSaveSection("Pricing & orders", { pricing: settings.pricing, ordering: settings.ordering })}
                         disabled={savingSection === "Pricing & orders" || isViewer}
-                        className="w-full py-4 bg-primary text-white font-bold rounded-[1.5rem] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-sm shadow-lg shadow-primary/20"
+                        className="w-full py-4 bg-ui-primary text-ui-primary-fg font-bold rounded-control active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-sm shadow-lg"
                       >
                         {savingSection === "Pricing & orders" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Save pricing & orders
@@ -1200,8 +856,8 @@ function SettingsPageContent() {
               {/* Features Array */}
               {activeTab === "features" && (
                 <div className="space-y-8">
-                  <div className="glass-card p-10 space-y-6">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-10 opacity-50">Feature Toggles</h3>
+                  <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-6">
+                    <h3 className="text-xs font-semibold text-ui-ink mb-10 opacity-50">Feature Toggles</h3>
                     <ToggleSwitch
                       label="WhatsApp Ordering"
                       description="Allow customers to send orders via WhatsApp"
@@ -1215,12 +871,6 @@ function SettingsPageContent() {
                       onChange={(v) => updateSettings("features", "booking_enabled", v)}
                     />
                     <ToggleSwitch
-                      label="Live Chat Support"
-                      description="Display a live chat widget on your catalog"
-                      checked={settings.features.live_chat_enabled}
-                      onChange={(v) => updateSettings("features", "live_chat_enabled", v)}
-                    />
-                    <ToggleSwitch
                       label="AI Waiter Assistant"
                       description="Enable the AI Waiter to help customers with menu questions"
                       checked={settings.features.ai_waiter_enabled}
@@ -1228,25 +878,24 @@ function SettingsPageContent() {
                     />
                   </div>
 
-                  <div className="glass-card p-10">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] mb-10 opacity-50">Button Labels (Localization)</h3>
+                  <div className="glass-card p-5 sm:p-8 lg:p-10">
+                    <h3 className="text-xs font-semibold text-ui-ink mb-10 opacity-50">Button Labels (Localization)</h3>
                     <div className="space-y-12">
                       {[
-                        { id: 'cta_menu_label', title: 'Menu Button Label' },
-                        { id: 'cta_booking_label', title: 'Reservation Button Label' },
-                        { id: 'cta_order_label', title: 'Order Button Label' }
+                        { id: 'cta_menu_label', title: 'Menu button on your About page' },
                       ].map(section => (
                         <div key={section.id} className="space-y-6">
-                          <h4 className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] border-b border-white/5 pb-2">{section.title}</h4>
-                          <div className="grid md:grid-cols-3 gap-6">
-                            {['en', 'ar', 'fr'].map(lang => (
+                          <h4 className="text-xs font-semibold text-ui-muted border-b border-ui-line pb-2">{section.title}</h4>
+                          <div className="grid md:grid-cols-2 gap-6">
+                            {[['en', 'English'], ['ar', 'Arabic']].map(([lang, langLabel]) => (
                               <div key={lang} className="space-y-2">
-                                <label className="text-[8px] font-black text-white/40 uppercase tracking-widest ml-1">{lang}</label>
+                                <label htmlFor={`${section.id}_${lang}`} className="text-xs font-semibold text-ui-muted ml-1">{langLabel}</label>
                                 <input
+                                  id={`${section.id}_${lang}`}
                                   type="text"
                                   value={settings.cta[`${section.id}_${lang}` as keyof Settings['cta']] || ""}
                                   onChange={(e) => updateSettings("cta", `${section.id}_${lang}`, e.target.value)}
-                                  className="w-full px-4 py-3 bg-white/[0.03] border border-white/5 rounded-xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all text-xs"
+                                  className="w-full px-4 py-3 bg-ui-bg border border-ui-input rounded-xl text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all text-xs"
                                   dir={lang === 'ar' ? 'rtl' : 'ltr'}
                                 />
                               </div>
@@ -1256,11 +905,23 @@ function SettingsPageContent() {
                       ))}
                     </div>
 
-                    <div className="mt-8 pt-8 border-t border-white/5">
+                    <div className="mt-8 pt-8 border-t border-ui-line">
                       <button
-                        onClick={() => handleSaveSection("Features & Labels", { features: settings.features, cta: settings.cta })}
+                        onClick={() =>
+                          handleSaveSection("Features & Labels", {
+                            features: {
+                              booking_enabled: settings.features.booking_enabled,
+                              whatsapp_order_enabled: settings.features.whatsapp_order_enabled,
+                              ai_waiter_enabled: settings.features.ai_waiter_enabled,
+                            },
+                            cta: {
+                              cta_menu_label_en: settings.cta.cta_menu_label_en,
+                              cta_menu_label_ar: settings.cta.cta_menu_label_ar,
+                            },
+                          })
+                        }
                         disabled={savingSection === "Features & Labels" || isViewer}
-                        className="w-full py-4 bg-primary text-white font-black rounded-[1.5rem] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest shadow-lg shadow-primary/20"
+                        className="w-full py-4 bg-ui-primary text-ui-primary-fg font-semibold rounded-control active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-xs shadow-lg"
                       >
                         {savingSection === "Features & Labels" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Save Features & Labels
@@ -1274,39 +935,41 @@ function SettingsPageContent() {
               {/* AI Array */}
               {activeTab === "ai" && (
                 <div className="space-y-8">
-                  <div className="glass-card p-10 space-y-10">
-                    <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em] opacity-50">AI Waiter Persona</h3>
+                  <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-10">
+                    <h3 className="text-xs font-semibold text-ui-ink opacity-50">AI Waiter Persona</h3>
                     <div className="grid md:grid-cols-2 gap-8">
                       <div className="space-y-4">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">AI Identity (Name)</label>
+                        <label htmlFor="ai-waiter-name" className="text-xs font-semibold text-ui-muted ml-2">AI Identity (Name)</label>
                         <div className="relative">
-                          <BotIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
+                          <BotIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-ui-primary" />
                           <input
+                            id="ai-waiter-name"
                             type="text"
                             value={settings.features.ai_waiter_name || ""}
                             onChange={(e) => updateSettings("features", "ai_waiter_name", e.target.value)}
-                            className="w-full pl-14 pr-6 py-5 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50"
+                            className="w-full pl-14 pr-6 py-5 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary"
                             placeholder="e.g. Sarah"
                           />
                         </div>
                       </div>
                       <div className="space-y-4">
-                        <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Tone & Behavior (Persona)</label>
+                        <label htmlFor="ai-waiter-persona" className="text-xs font-semibold text-ui-muted ml-2">Tone & Behavior (Persona)</label>
                         <textarea
+                          id="ai-waiter-persona"
                           value={settings.features.ai_waiter_persona || ""}
                           onChange={(e) => updateSettings("features", "ai_waiter_persona", e.target.value)}
-                          className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-medium text-sm h-24 focus:outline-none focus:border-primary/50"
+                          className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-medium text-sm h-24 focus:outline-none focus:border-ui-primary"
                           placeholder="e.g. You are a charming, luxury restaurant waiter who is very formal and knowledgeable about wine."
                         />
                       </div>
                     </div>
-                    <div className="p-8 bg-violet-500/5 border border-violet-500/10 rounded-3xl flex items-center gap-6">
-                      <div className="w-12 h-12 bg-violet-500 rounded-2xl flex items-center justify-center text-white">
+                    <div className="p-5 sm:p-8 bg-ui-subtle border border-ui-line rounded-panel flex items-center gap-6">
+                      <div className="w-12 h-12 bg-ui-primary rounded-control flex items-center justify-center text-ui-primary-fg">
                         <SparklesIcon className="w-6 h-6" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-violet-400 uppercase tracking-widest">AI Status</p>
-                        <p className="text-white/40 text-[10px] font-medium leading-relaxed mt-1">
+                        <p className="text-xs font-semibold text-ui-primary">AI Status</p>
+                        <p className="text-ui-muted text-xs font-medium leading-relaxed mt-1">
                           {settings.features.ai_waiter_enabled
                             ? "Your AI assistant is currently active and helping customers."
                             : "AI Assistant is currently disabled. Toggle it on in the Features tab."}
@@ -1314,11 +977,18 @@ function SettingsPageContent() {
                       </div>
                     </div>
 
-                    <div className="mt-8 pt-8 border-t border-white/5">
+                    <div className="mt-8 pt-8 border-t border-ui-line">
                       <button
-                        onClick={() => handleSaveSection("AI Persona", { features: settings.features })}
+                        onClick={() =>
+                          handleSaveSection("AI Persona", {
+                            features: {
+                              ai_waiter_name: settings.features.ai_waiter_name,
+                              ai_waiter_persona: settings.features.ai_waiter_persona,
+                            },
+                          })
+                        }
                         disabled={savingSection === "AI Persona" || isViewer}
-                        className="w-full py-4 bg-primary text-white font-black rounded-[1.5rem] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-[11px] uppercase tracking-widest shadow-lg shadow-primary/20"
+                        className="w-full py-4 bg-ui-primary text-ui-primary-fg font-semibold rounded-control active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-3 text-xs shadow-lg"
                       >
                         {savingSection === "AI Persona" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Save AI Persona
@@ -1330,9 +1000,9 @@ function SettingsPageContent() {
             </div>
           </div>
         ) : (
-          <div className="text-center py-32 glass rounded-[3rem] border border-white/5">
-            <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-6" />
-            <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em]">
+          <div className="text-center py-32 glass rounded-panel border border-ui-line">
+            <Loader2 className="w-12 h-12 text-ui-primary animate-spin mx-auto mb-6" />
+            <p className="text-xs font-semibold text-ui-muted">
               Loading settings...
             </p>
           </div>

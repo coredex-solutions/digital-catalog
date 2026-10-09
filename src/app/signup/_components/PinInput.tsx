@@ -84,10 +84,10 @@ export function PinInput({ length = 6, onComplete, disabled = false }: PinInputP
                         disabled={disabled}
                         onChange={(e) => handleChange(e.target.value, i)}
                         onKeyDown={(e) => handleKeyDown(e, i)}
-                        className={`w-12 h-16 md:w-14 md:h-20 text-center text-2xl font-black bg-white/[0.03] border rounded-2xl transition-all focus:outline-none ${digit
-                                ? "border-primary text-white shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.1)] shadow-primary/20"
-                                : "border-white/5 text-white/40 focus:border-primary/50 focus:bg-primary/5 shadow-primary/0 focus:shadow-primary/10"
-                            } ${disabled ? "opacity-30 cursor-not-allowed scale-95" : "hover:border-white/20"} focus:scale-105`}
+                        className={`w-12 h-16 md:w-14 md:h-20 text-center text-2xl font-semibold bg-ui-bg border rounded-control transition-all focus:outline-none ${digit
+                                ? "border-ui-primary text-ui-ink"
+                                : "border-ui-line text-ui-muted focus:border-ui-primary focus:bg-primary/5 focus:shadow-primary/10"
+                            } ${disabled ? "opacity-30 cursor-not-allowed scale-95" : "hover:border-ui-input"} focus:scale-105`}
                     />
                 </motion.div>
             ))}

@@ -1,66 +1,40 @@
 import type { Metadata } from "next";
-import { Cairo, Inter, Outfit } from "next/font/google";
-import { AppProvider } from "../providers/AppProvider";
-import { GlobalModalsWrapper } from "./_components/GlobalModalsWrapper";
-import { TopLoadingBar } from "../components/TopLoadingBar";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const cairo = Cairo({
-  subsets: ["arabic", "latin"],
-  weight: ["300", "400", "600", "700"],
-  variable: "--font-cairo",
-  display: "swap",
-});
-
+// Inter backs the .platform UI (globals.css: var(--font-inter)). The guest menu loads its own
+// fonts in the catalog layout and the landing page loads its Arabic face itself.
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
-const outfit = Outfit({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
-  variable: "--font-outfit",
-  display: "swap",
-});
+const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://coredex.digital"
-  ),
+  metadataBase: new URL(baseUrl),
   title: {
-    default: "Coredex | Next-Gen Multi-Tenant Digital Catalog Platform",
+    default: "Coredex: QR menus for restaurants and cafés",
     template: "%s | Coredex",
   },
   description:
-    "The world's most advanced digital catalog infrastructure. Multi-tenant SaaS with hyper-dynamic interfaces, AI optimization, and enterprise-grade scalability.",
-  keywords: [
-    "Digital Catalog SaaS",
-    "Multi-tenant Platform",
-    "Digital Menu",
-    "QR Menu",
-    "Retail Catalog",
-    "Enterprise SEO Catalog",
-  ],
-  authors: [{ name: "Coredex Engineering" }],
+    "A fast QR menu guests open in the browser, in Arabic and English, with prices in dollars and Lebanese pounds and orders sent to WhatsApp.",
+  keywords: ["QR menu", "digital menu", "Lebanon", "restaurant menu", "WhatsApp ordering", "menu Arabic English"],
   creator: "Coredex",
   publisher: "Coredex",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "/",
-    title: "Coredex | Next-Gen Digital Catalog Platform",
-    description: "Multi-tenant SaaS for the next era of commerce.",
+    title: "Coredex: QR menus for restaurants and cafés",
+    description: "QR menus in Arabic and English, with dollar and pound prices and WhatsApp orders.",
     siteName: "Coredex",
   },
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "Coredex",
-    description: "The infrastructure for digital catalogs.",
-  },
-  icons: {
-    icon: "/favicon.ico",
+    description: "QR menus for restaurants and cafés.",
   },
 };
 
@@ -70,19 +44,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${inter.variable} ${cairo.variable} ${outfit.variable}`}
-    >
-      <body className={`${inter.className} bg-black antialiased`}>
-        <AppProvider>
-          <TopLoadingBar />
-          <div className="relative min-h-screen">
-            {children}
-          </div>
-          <GlobalModalsWrapper />
-        </AppProvider>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
+      <body className={`${inter.className} bg-[#F7F8F5] text-[#172B26] antialiased`}>
+        {children}
       </body>
     </html>
   );

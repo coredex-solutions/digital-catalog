@@ -87,6 +87,21 @@ export function verifyEmailVerificationToken(token: string): string | null {
   }
 }
 
+// Lets an owner open the guest menu with unpublished changes (?preview=…). Short-lived and
+// tied to one catalog; it grants no admin access.
+export function signMenuPreviewToken(catalogId: string): string {
+  return jwt.sign({ type: 'menu_preview', catalogId }, getJwtSecret(), { expiresIn: '30m' });
+}
+
+export function verifyMenuPreviewToken(token: string, catalogId: string): boolean {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret()) as { type?: string; catalogId?: string };
+    return decoded.type === 'menu_preview' && decoded.catalogId === catalogId;
+  } catch {
+    return false;
+  }
+}
+
 // ============================================
 // Generic Token Verification
 // ============================================
@@ -95,33 +110,6 @@ export function verifyAnyToken(token: string): JWTPayload | LegacyJWTPayload | n
   try {
     const decoded = jwt.verify(token, getJwtSecret()) as JWTPayload | LegacyJWTPayload;
     return decoded;
-  } catch {
-    return null;
-  }
-}
-
-// ============================================
-// Legacy Functions (backward compatibility)
-// ============================================
-
-export function signToken(payload: LegacyJWTPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' });
-}
-
-// Accepts only platform-level tokens: untyped legacy tokens (issued by /api/auth/login to
-// super admins) and super_admin tokens. Catalog admin tokens are signed with the same secret,
-// so they must be rejected here or any tenant could use the unscoped legacy routes.
-export function verifyToken(token: string): LegacyJWTPayload | null {
-  try {
-    const decoded = jwt.verify(token, getJwtSecret()) as (JWTPayload | LegacyJWTPayload) & { type?: string };
-    if (decoded.type === undefined) {
-      return decoded as LegacyJWTPayload;
-    }
-    if (decoded.type === 'super_admin') {
-      const superAdmin = decoded as SuperAdminJWTPayload;
-      return { userId: superAdmin.id, username: superAdmin.email };
-    }
-    return null;
   } catch {
     return null;
   }

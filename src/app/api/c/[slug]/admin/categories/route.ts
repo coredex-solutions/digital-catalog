@@ -3,6 +3,7 @@ import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
 import { v4 as uuidv4 } from "uuid";
+import { PLAN_CONFIG } from "@/lib/plans";
 
 // GET: List all categories for this catalog
 export async function GET(
@@ -55,7 +56,6 @@ export async function POST(
     const {
       name_ar,
       name_en,
-      name_fr,
       image_url,
       icon_name = "Folder",
     } = body;
@@ -69,7 +69,7 @@ export async function POST(
 
     const db = getDb();
 
-    // Enforce the plan's category limit (defaults match /auth/verify)
+    // Enforce the plan's category limit (falls back to Essential's)
     const limitResult = await db.execute({
       sql: `
         SELECT
@@ -79,7 +79,7 @@ export async function POST(
       args: [catalog.id, catalog.id],
     });
     const currentCount = Number(limitResult.rows[0]?.current_count || 0);
-    const maxAllowed = Number(limitResult.rows[0]?.max_allowed ?? 0) || 20;
+    const maxAllowed = Number(limitResult.rows[0]?.max_allowed ?? 0) || PLAN_CONFIG.essential.limits.max_categories;
     if (currentCount >= maxAllowed) {
       return NextResponse.json(
         { error: `Category limit reached for your plan (${maxAllowed}). Upgrade to add more.`, current: currentCount, max: maxAllowed },
@@ -99,14 +99,13 @@ export async function POST(
     await db.execute({
       sql: `
         INSERT INTO categories (id, catalog_id, name_ar, name_en, name_fr, image_url, icon_name, display_order, is_active, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+        VALUES (?, ?, ?, ?, '', ?, ?, ?, 1, datetime('now'), datetime('now'))
       `,
       args: [
         id,
         catalog.id,
         name_ar || name_en,
         name_en,
-        name_fr || name_en,
         image_url || null,
         icon_name,
         nextOrder,
@@ -121,7 +120,6 @@ export async function POST(
           catalog_id: catalog.id,
           name_ar: name_ar || name_en,
           name_en,
-          name_fr: name_fr || name_en,
           image_url,
           icon_name,
           display_order: nextOrder,

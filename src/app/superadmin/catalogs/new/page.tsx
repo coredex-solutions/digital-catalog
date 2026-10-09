@@ -59,7 +59,6 @@ export default function NewCatalogPage() {
     payment_method: "",
     payment_notes: "",
     // Features
-    multi_language_enabled: true,
     booking_enabled: true,
     analytics_enabled: true,
     // Admin
@@ -137,10 +136,10 @@ export default function NewCatalogPage() {
 
   return (
     <SuperAdminShell>
-      <SuperAdminHeader title="System Manifest">
+      <SuperAdminHeader title="New Catalog">
         <Link
           href="/superadmin/catalogs"
-          className="group flex items-center gap-2 px-3 py-1.5 text-white/40 hover:text-white transition-all bg-white/5 border border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest"
+          className="group flex items-center gap-2 px-3 py-1.5 text-ui-muted hover:text-ui-ink transition-colors bg-ui-surface border border-ui-line rounded-control text-sm font-medium"
         >
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
           Back
@@ -152,17 +151,17 @@ export default function NewCatalogPage() {
           {/* Progress Steps */}
           <div className="flex items-center gap-4 mb-12">
             {[
-              { id: 1, label: "Identity" },
+              { id: 1, label: "Business" },
               { id: 2, label: "Subscription" },
-              { id: 3, label: "Security" }
+              { id: 3, label: "Admin account" }
             ].map((s, i) => (
               <div key={s.id} className="flex-1 flex flex-col gap-3">
                 <div className="flex items-center">
                   <div
-                    className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm transition-all duration-500 border ${
+                    className={`w-10 h-10 rounded-control flex items-center justify-center font-bold text-sm transition-all duration-500 border ${
                       step >= s.id
-                        ? "bg-primary border-primary shadow-[0_0_20px_rgba(124,58,237,0.4)] text-white"
-                        : "bg-white/5 border-white/5 text-white/20"
+                        ? "bg-ui-primary border-ui-primary text-ui-primary-fg"
+                        : "bg-ui-surface border-ui-line text-ui-muted"
                     }`}
                   >
                     {step > s.id ? <ShieldCheck className="w-5 h-5" /> : s.id}
@@ -171,14 +170,14 @@ export default function NewCatalogPage() {
                     <div className="flex-1 px-4">
                       <div
                         className={`h-px transition-all duration-500 rounded-full ${
-                          step > s.id ? "bg-primary" : "bg-white/5"
+                          step > s.id ? "bg-ui-primary" : "bg-ui-line"
                         }`}
                       />
                     </div>
                   )}
                 </div>
-                <span className={`text-[10px] uppercase font-bold tracking-widest transition-colors duration-500 ${
-                  step >= s.id ? "text-primary" : "text-white/20"
+                <span className={`text-xs font-bold transition-colors duration-500 ${
+                  step >= s.id ? "text-ui-primary" : "text-ui-muted"
                 }`}>
                   {s.label}
                 </span>
@@ -187,59 +186,59 @@ export default function NewCatalogPage() {
           </div>
 
           {error && (
-            <div className="bg-purple-500/10 border border-purple-500/20 rounded-2xl px-5 py-4 text-purple-400 mb-8 flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+            <div className="bg-ui-surface border border-ui-danger rounded-control px-5 py-4 text-ui-danger mb-8 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-ui-danger" />
               <p className="text-sm font-medium">{error}</p>
             </div>
           )}
 
           {/* Step 1: Basic Info */}
           {step === 1 && (
-            <div className="glass rounded-[2rem] p-10 border border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-2xl font-bold text-white mb-8 tracking-tight flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+            <div className="bg-ui-surface rounded-panel p-8 border border-ui-line animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-xl font-semibold text-ui-ink mb-8 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                   <Zap className="w-5 h-5" />
                 </div>
-                Brand Profile
+                Business details
               </h2>
               
               <div className="space-y-8">
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                    Entity Name *
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
+                    Business name *
                   </label>
                   <input
                     type="text"
                     autoFocus
                     value={formData.name}
                     onChange={(e) => updateFormData("name", e.target.value)}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                    placeholder="e.g., Nexus Gastronomy"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all"
+                    placeholder="e.g., Cedar Grill"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                    Route Signature *
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
+                    Menu link *
                   </label>
                   <div className="relative group">
-                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 font-bold pointer-events-none transition-colors group-focus-within:text-primary/40">coredex.digital/c/</span>
+                    <span className="absolute left-5 top-1/2 -translate-y-1/2 text-ui-muted font-bold pointer-events-none transition-colors group-focus-within:text-ui-primary">/c/</span>
                     <input
                       type="text"
                       value={formData.slug}
                       onChange={(e) => updateFormData("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                      className="w-full pl-36 pr-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
-                      placeholder="nexus-gastronomy"
+                      className="w-full pl-12 pr-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-mono"
+                      placeholder="cedar-grill"
                     />
                   </div>
-                  <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest mt-3 ml-1">
-                    This is your permanent system identifier.
+                  <p className="text-xs text-ui-muted font-bold mt-3 ml-1">
+                    This is the permanent web address of the menu.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-4 ml-1">
-                    Market Sector *
+                  <label className="block text-sm font-medium text-ui-ink mb-3">
+                    Business type *
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {businessTypes.map((type) => (
@@ -247,35 +246,35 @@ export default function NewCatalogPage() {
                         key={type.id}
                         type="button"
                         onClick={() => updateFormData("business_type", type.id)}
-                        className={`group flex flex-col items-center gap-3 p-5 rounded-[1.5rem] border transition-all duration-300 ${
+                        className={`group flex flex-col items-center gap-3 p-5 rounded-control border transition-all duration-300 ${
                           formData.business_type === type.id
-                            ? "bg-primary border-primary shadow-[0_10px_30px_-10px_rgba(124,58,237,0.5)] text-white"
-                            : "bg-white/[0.03] border-white/5 text-white/40 hover:border-white/20 hover:bg-white/[0.05]"
+                            ? "bg-ui-primary border-ui-primary text-ui-primary-fg"
+                            : "bg-ui-surface border-ui-line text-ui-muted hover:border-ui-input hover:bg-ui-subtle"
                         }`}
                       >
-                        <div className={`p-3 rounded-2xl transition-colors ${
+                        <div className={`p-3 rounded-control transition-colors ${
                           formData.business_type === type.id
-                            ? "bg-white/20"
-                            : "bg-white/5 group-hover:bg-white/10"
+                            ? "bg-ui-primary-hover"
+                            : "bg-ui-subtle group-hover:bg-ui-line"
                         }`}>
                           <type.icon className="w-5 h-5" />
                         </div>
-                        <span className="text-[10px] font-bold uppercase tracking-widest">{type.label}</span>
+                        <span className="text-xs font-bold">{type.label}</span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                    Manifesto / Description
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
+                    Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => updateFormData("description", e.target.value)}
                     rows={4}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
-                    placeholder="Vision and mission of this entity..."
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all resize-none"
+                    placeholder="A short description of the business..."
                   />
                 </div>
               </div>
@@ -284,18 +283,18 @@ export default function NewCatalogPage() {
 
           {/* Step 2: Subscription */}
           {step === 2 && (
-            <div className="glass rounded-[2rem] p-10 border border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-2xl font-bold text-white mb-8 tracking-tight flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+            <div className="bg-ui-surface rounded-panel p-8 border border-ui-line animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-xl font-semibold text-ui-ink mb-8 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                   <Package className="w-5 h-5" />
                 </div>
-                Access Tiering
+                Subscription
               </h2>
               
               <div className="space-y-8">
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-4 ml-1">
-                    Select Plan Type *
+                  <label className="block text-sm font-medium text-ui-ink mb-3">
+                    Plan type *
                   </label>
                   <div className="grid grid-cols-3 gap-4">
                     {subscriptionTypes.map((type) => (
@@ -303,19 +302,19 @@ export default function NewCatalogPage() {
                         key={type.id}
                         type="button"
                         onClick={() => updateFormData("subscription_type", type.id)}
-                        className={`p-6 rounded-[1.5rem] border text-center transition-all duration-300 group ${
+                        className={`p-6 rounded-control border text-center transition-all duration-300 group ${
                           formData.subscription_type === type.id
-                            ? "bg-primary border-primary shadow-[0_10px_30px_-10px_rgba(124,58,237,0.5)]"
-                            : "bg-white/[0.03] border-white/5"
+                            ? "bg-ui-primary border-ui-primary"
+                            : "bg-ui-surface border-ui-line hover:border-ui-input"
                         }`}
                       >
-                        <p className={`font-bold tracking-tight text-lg transition-colors ${
-                          formData.subscription_type === type.id ? "text-white" : "text-white/40 group-hover:text-white"
+                        <p className={`font-bold text-lg transition-colors ${
+                          formData.subscription_type === type.id ? "text-ui-primary-fg" : "text-ui-ink"
                         }`}>
                           {type.label}
                         </p>
-                        <p className={`text-[10px] font-bold uppercase tracking-widest mt-2 transition-colors ${
-                          formData.subscription_type === type.id ? "text-white/60" : "text-white/20"
+                        <p className={`text-xs font-bold mt-2 transition-colors ${
+                          formData.subscription_type === type.id ? "text-ui-primary-fg opacity-80" : "text-ui-muted"
                         }`}>{type.description}</p>
                       </button>
                     ))}
@@ -324,8 +323,8 @@ export default function NewCatalogPage() {
 
                 {formData.subscription_type === "custom_years" && (
                   <div className="animate-in slide-in-from-top-2 duration-300">
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                      Override Duration (Years)
+                    <label className="block text-sm font-medium text-ui-ink mb-2">
+                      Duration (years)
                     </label>
                     <input
                       type="number"
@@ -333,33 +332,33 @@ export default function NewCatalogPage() {
                       max="10"
                       value={formData.custom_years}
                       onChange={(e) => updateFormData("custom_years", parseInt(e.target.value) || 1)}
-                      className="w-32 px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
+                      className="w-32 px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-mono"
                     />
                   </div>
                 )}
 
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                      Finalized Quantum
+                    <label className="block text-sm font-medium text-ui-ink mb-2">
+                      Amount paid
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       value={formData.amount_paid}
                       onChange={(e) => updateFormData("amount_paid", e.target.value)}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all"
                       placeholder="0.00"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                      Currency Unit
+                    <label className="block text-sm font-medium text-ui-ink mb-2">
+                      Currency
                     </label>
                     <select
                       value={formData.currency}
                       onChange={(e) => updateFormData("currency", e.target.value)}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer"
                     >
                       <option value="USD">USD ($)</option>
                       <option value="EUR">EUR (€)</option>
@@ -371,42 +370,42 @@ export default function NewCatalogPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                    Settlement Method
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
+                    Payment method
                   </label>
                   <select
                     value={formData.payment_method}
                     onChange={(e) => updateFormData("payment_method", e.target.value)}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer"
                   >
-                    <option value="">Select Protocol...</option>
-                    <option value="cash">Direct Cash</option>
-                    <option value="bank_transfer">Bank Settlement</option>
-                    <option value="mobile_payment">Mobile Link</option>
-                    <option value="other">Alternative</option>
+                    <option value="">Select method...</option>
+                    <option value="cash">Cash</option>
+                    <option value="bank_transfer">Bank transfer</option>
+                    <option value="mobile_payment">Mobile payment</option>
+                    <option value="other">Other</option>
                   </select>
                 </div>
 
-                <div className="pt-8 border-t border-white/5">
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-6 ml-1">
-                    System Permissions
+                <div className="pt-8 border-t border-ui-line">
+                  <label className="block text-sm font-medium text-ui-ink mb-3">
+                    Features
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
-                      { key: "booking_enabled", label: "Reservation Matrix", icon: ChevronRight },
-                      { key: "analytics_enabled", label: "Hyper-Analytics", icon: ChevronRight },
-                      { key: "multi_language_enabled", label: "Multilingual Engine", icon: Globe },
+                      { key: "booking_enabled", label: "Bookings", icon: ChevronRight },
+                      { key: "analytics_enabled", label: "Analytics", icon: ChevronRight },
                     ].map((feature) => (
-                      <div key={feature.key} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-2xl hover:bg-white/[0.05] transition-colors">
-                        <span className="text-white font-bold tracking-tight text-sm">{feature.label}</span>
+                      <div key={feature.key} className="flex items-center justify-between p-4 bg-ui-surface border border-ui-line rounded-control hover:bg-ui-subtle transition-colors">
+                        <span className="text-ui-ink font-medium text-sm">{feature.label}</span>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input 
                             type="checkbox" 
                             className="sr-only peer"
+                            aria-label={feature.label}
                             checked={formData[feature.key as keyof typeof formData] as boolean}
                             onChange={(e) => updateFormData(feature.key, e.target.checked)}
                           />
-                          <div className="w-10 h-5 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                          <div className="w-10 h-5 bg-ui-line rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-ui-primary shadow-inner"></div>
                         </label>
                       </div>
                     ))}
@@ -418,61 +417,61 @@ export default function NewCatalogPage() {
 
           {/* Step 3: Admin Account */}
           {step === 3 && (
-            <div className="glass rounded-[2rem] p-10 border border-white/5 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-2xl font-bold text-white mb-2 tracking-tight flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+            <div className="bg-ui-surface rounded-panel p-8 border border-ui-line animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <h2 className="text-xl font-semibold text-ui-ink mb-2 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
-                Security Protocol
+                Admin account
               </h2>
-              <p className="text-white/40 mb-8 font-medium">
-                Provision default administrative credentials for this catalog.
+              <p className="text-ui-muted mb-8 font-medium">
+                Optional: create the first admin login for this catalog.
               </p>
               
               <div className="space-y-8">
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                    Operative Identity
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
+                    Admin name
                   </label>
                   <input
                     type="text"
                     autoFocus
                     value={formData.admin_name}
                     onChange={(e) => updateFormData("admin_name", e.target.value)}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
-                    placeholder="e.g., Operative 01"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-bold"
+                    placeholder="e.g., Rami Haddad"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                    System Email
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
+                    Admin email
                   </label>
                   <input
                     type="email"
                     value={formData.admin_email}
                     onChange={(e) => updateFormData("admin_email", e.target.value)}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
-                    placeholder="admin@entity.digital"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-mono"
+                    placeholder="owner@business.com"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">
-                    Access Key {formData.admin_email && "(Min 8 Bits)"}
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
+                    Password {formData.admin_email && "(min. 8 characters)"}
                   </label>
                   <input
                     type="password"
                     value={formData.admin_password}
                     onChange={(e) => updateFormData("admin_password", e.target.value)}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-mono"
                     placeholder="••••••••"
                   />
                 </div>
 
                 {formData.admin_email && formData.admin_password && formData.admin_password.length < 8 && (
-                  <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-3 text-purple-500 text-[10px] font-bold uppercase tracking-widest animate-pulse">
-                    Security Policy Violation: Access Key Too Short
+                  <div className="bg-ui-surface border border-ui-danger rounded-control px-4 py-3 text-ui-danger text-sm font-medium">
+                    Password must be at least 8 characters.
                   </div>
                 )}
               </div>
@@ -480,15 +479,14 @@ export default function NewCatalogPage() {
           )}
 
           {/* Navigation Buttons */}
-          {/* Navigation Buttons */}
           <div className="flex justify-between mt-12 px-2">
             {step > 1 ? (
               <button
                 type="button"
                 onClick={() => setStep(step - 1)}
-                className="px-8 py-4 text-white/40 font-bold uppercase tracking-[0.2em] text-[10px] hover:text-white transition-colors"
+                className="px-6 py-3 text-ui-muted font-medium text-sm hover:text-ui-ink transition-colors"
               >
-                Previous Stage
+                Back
               </button>
             ) : (
               <div />
@@ -499,9 +497,9 @@ export default function NewCatalogPage() {
                 type="button"
                 onClick={() => setStep(step + 1)}
                 disabled={!canProceed()}
-                className="px-10 py-5 bg-white text-black font-bold rounded-2xl hover:scale-105 active:scale-95 disabled:opacity-20 disabled:scale-100 transition-all shadow-[0_10px_30px_rgba(255,255,255,0.2)] flex items-center gap-2 group"
+                className="px-6 py-3 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2 group"
               >
-                PROCEED TO PHASE {step + 1}
+                Continue
                 <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
             ) : (
@@ -509,17 +507,17 @@ export default function NewCatalogPage() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading || !canProceed()}
-                className="px-10 py-5 bg-primary text-white font-bold rounded-2xl hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all shadow-[0_10px_40px_-5px_rgba(124,58,237,0.6)] flex items-center gap-3 group"
+                className="px-6 py-3 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-3 group"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    INITIALIZING...
+                    Creating...
                   </>
                 ) : (
                   <>
-                    DEPLOY CATALOG
-                    <Zap className="w-4 h-4 fill-current group-hover:scale-125 transition-transform" />
+                    Create catalog
+                    <Zap className="w-4 h-4" />
                   </>
                 )}
               </button>

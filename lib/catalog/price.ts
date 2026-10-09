@@ -76,7 +76,11 @@ export function formatPrice(amount: number, currency: string | null | undefined,
 
   const usd = code === "USD" ? amount : amount / config.lbpRate;
   const lbp = code === "LBP" ? amount : roundLbp(amount * config.lbpRate);
+  return formatPair(usd, lbp, config, lang);
+}
 
+/** Show a USD amount and its LBP equivalent according to the primary currency and dual setting */
+function formatPair(usd: number, lbp: number, config: PriceConfig, lang: string): FormattedPrice {
   const usdText = formatMoney(usd, "USD", lang);
   const lbpText = formatMoney(lbp, "LBP", lang);
 
@@ -100,20 +104,24 @@ export interface PricedLine {
  * Total a set of lines. USD and LBP lines are combined (converted through the rate) when a
  * rate is set; otherwise, and for any other currency, each currency is totalled separately
  * and appended, e.g. "$12 + 500,000 L.L.".
+ *
+ * The LBP side is the sum of each line's displayed LBP amount (a line is `price × quantity`,
+ * rounded to the nearest 1,000 exactly as formatPrice shows it), so the total always matches
+ * the lines above it. The USD side is exact. The cart bar, cart sheet and WhatsApp message all
+ * use this function.
  */
 export function formatTotal(lines: PricedLine[], config: PriceConfig, lang: string): FormattedPrice {
   let usdTotal = 0;
+  let lbpTotal = 0;
   let hasUsdFamily = false;
   const others = new Map<string, number>();
 
   for (const line of lines) {
     const code = (line.currency || "USD").toUpperCase();
     const amount = line.price * line.quantity;
-    if (code === "USD") {
-      usdTotal += amount;
-      hasUsdFamily = true;
-    } else if (code === "LBP" && config.lbpRate !== null) {
-      usdTotal += amount / config.lbpRate;
+    if (config.lbpRate !== null && (code === "USD" || code === "LBP")) {
+      usdTotal += code === "USD" ? amount : amount / config.lbpRate;
+      lbpTotal += code === "LBP" ? amount : roundLbp(amount * config.lbpRate);
       hasUsdFamily = true;
     } else {
       others.set(code, (others.get(code) || 0) + amount);
@@ -126,10 +134,34 @@ export function formatTotal(lines: PricedLine[], config: PriceConfig, lang: stri
     return { primary: otherText.join(" + ") || formatMoney(0, config.primary, lang) };
   }
 
-  const base = formatPrice(usdTotal, "USD", config, lang);
+  const base = formatPair(usdTotal, lbpTotal, config, lang);
   if (otherText.length === 0) return base;
   return {
     primary: [base.primary, ...otherText].join(" + "),
     secondary: base.secondary,
   };
+}
+
+/** Currencies an item price can be stored in */
+export const ITEM_CURRENCIES: readonly PrimaryCurrency[] = ["USD", "LBP"];
+
+/** Highest price accepted for one item; anything larger is a typo */
+export const MAX_ITEM_PRICE = 1e9;
+
+/**
+ * Validate an item price from a request body. Accepts numbers and numeric strings,
+ * returns the price as a number, or null when it is not a finite amount in range.
+ */
+export function parseItemPrice(value: unknown): number | null {
+  if (typeof value !== "number" && (typeof value !== "string" || value.trim() === "")) return null;
+  const price = Number(value);
+  if (!Number.isFinite(price) || price < 0 || price > MAX_ITEM_PRICE) return null;
+  return price;
+}
+
+/** Validate an item currency, returning the normalized code or null when unsupported */
+export function parseItemCurrency(value: unknown): PrimaryCurrency | null {
+  if (typeof value !== "string") return null;
+  const code = value.trim().toUpperCase();
+  return (ITEM_CURRENCIES as readonly string[]).includes(code) ? (code as PrimaryCurrency) : null;
 }

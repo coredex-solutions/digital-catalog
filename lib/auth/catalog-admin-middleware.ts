@@ -2,17 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyCatalogAdminToken } from './jwt';
 import { CatalogAdminJWTPayload } from '../db/types';
 import { getDb } from '../db/client';
+import { SQL_GRACE_MODIFIER } from "@/lib/plans";
+
+// Methods that never change data
+const READ_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 
 /**
  * Middleware to require catalog admin authentication
  * Verifies the admin has access to the specified catalog.
  * Writes are refused once the catalog's subscription has expired, unless allowExpired is set
  * (e.g. for submitting an upgrade request); reads (GET) stay available.
+ * Admins with the 'viewer' role (as stored now, not as in the token) can only read.
  */
 export async function requireCatalogAdmin(
   request: NextRequest,
   catalogId?: string,
-  options: { allowExpired?: boolean } = {}
+  options: { allowExpired?: boolean; ownerOnly?: boolean } = {}
 ): Promise<{ success: true; admin: CatalogAdminJWTPayload } | { success: false; response: NextResponse }> {
   // Get token from Authorization header
   const authHeader = request.headers.get('Authorization');
@@ -55,17 +60,18 @@ export async function requireCatalogAdmin(
   const db = getDb();
   const result = await db.execute({
     sql: `
-      SELECT ca.id, ca.is_active, c.is_active as catalog_active, c.is_suspended,
+      SELECT ca.id, ca.is_active, ca.role, c.is_active as catalog_active, c.is_suspended,
         EXISTS (
           SELECT 1 FROM catalog_subscriptions cs
           WHERE cs.catalog_id = ca.catalog_id AND cs.is_active = 1
-            AND cs.expires_at IS NOT NULL AND datetime(cs.expires_at) <= datetime('now')
+            AND cs.expires_at IS NOT NULL AND datetime(cs.expires_at, ?) <= datetime('now')
         ) as is_expired
       FROM catalog_admins ca
       JOIN catalogs c ON c.id = ca.catalog_id
       WHERE ca.id = ?
     `,
-    args: [payload.id],
+    // Writes stay open during the grace period after the plan ends
+    args: [SQL_GRACE_MODIFIER, payload.id],
   });
 
   if (result.rows.length === 0) {
@@ -100,7 +106,30 @@ export async function requireCatalogAdmin(
     };
   }
 
-  if (admin.is_expired && request.method !== 'GET' && !options.allowExpired) {
+  const isRead = READ_METHODS.includes(request.method);
+
+  if (admin.role === 'viewer' && !isRead) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: 'Your account has view-only access' },
+        { status: 403 }
+      ),
+    };
+  }
+
+  // Settings, billing and the team are the owner's: editors and viewers can only read them
+  if (options.ownerOnly && !isRead && !isOwnerRole(admin.role)) {
+    return {
+      success: false,
+      response: NextResponse.json(
+        { error: 'Only the owner can change this' },
+        { status: 403 }
+      ),
+    };
+  }
+
+  if (admin.is_expired && !isRead && !options.allowExpired) {
     return {
       success: false,
       response: NextResponse.json(
@@ -110,7 +139,13 @@ export async function requireCatalogAdmin(
     };
   }
 
-  return { success: true, admin: payload };
+  // The role as stored now (a changed role applies immediately, not at the next login)
+  return { success: true, admin: { ...payload, role: (admin.role || 'admin') as CatalogAdminJWTPayload['role'] } };
+}
+
+/** 'owner' and the original 'admin' role both mean the restaurant's owner */
+export function isOwnerRole(role: unknown): boolean {
+  return role === 'owner' || role === 'admin' || role === null || role === undefined;
 }
 
 /**
@@ -163,13 +198,13 @@ export async function getCatalogFeatures(catalogId: string): Promise<{
         expires_at,
         CASE 
           WHEN expires_at IS NULL THEN 0
-          WHEN expires_at > datetime('now') THEN 0
+          WHEN datetime(expires_at, ?) > datetime('now') THEN 0
           ELSE 1
         END as is_expired
       FROM catalog_subscriptions
       WHERE catalog_id = ? AND is_active = 1
     `,
-    args: [catalogId],
+    args: [SQL_GRACE_MODIFIER, catalogId],
   });
 
   if (result.rows.length === 0) return null;

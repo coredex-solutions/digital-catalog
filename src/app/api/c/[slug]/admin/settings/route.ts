@@ -9,26 +9,24 @@ import {
 import { getDb } from "@/lib/db/client";
 
 // Column names are interpolated into the UPDATE statements below, so only these
-// known columns (the same ones GET returns) may ever be written.
+// known columns (the same ones GET returns) may ever be written. Only settings the
+// guest menu actually reads are here: Arabic and English content (no French), the
+// brand colour (no secondary/background/dark-mode colours or patterns), and the
+// menu button label (the booking/order labels and live chat were never shown).
 const SETTINGS_FIELDS = new Set([
   // appearance
-  "hero_image_url", "bg_pattern_enabled", "bg_pattern_type",
-  "color_primary", "color_secondary", "color_accent", "color_background",
-  "color_surface", "color_text", "color_text_muted",
-  "color_background_dark", "color_surface_dark", "color_text_dark", "color_text_muted_dark",
+  "hero_image_url", "color_primary",
   // features
-  "booking_enabled", "whatsapp_order_enabled", "live_chat_enabled",
+  "booking_enabled", "whatsapp_order_enabled",
   "ai_waiter_enabled", "ai_waiter_name", "ai_waiter_persona",
   // cta
-  "cta_menu_label_en", "cta_menu_label_ar", "cta_menu_label_fr",
-  "cta_booking_label_en", "cta_booking_label_ar", "cta_booking_label_fr",
-  "cta_order_label_en", "cta_order_label_ar", "cta_order_label_fr",
+  "cta_menu_label_en", "cta_menu_label_ar",
   // seo
-  "seo_title_en", "seo_title_ar", "seo_title_fr",
-  "seo_description_en", "seo_description_ar", "seo_description_fr",
-  "seo_keywords", "json_ld_custom",
+  "seo_title_en", "seo_title_ar",
+  "seo_description_en", "seo_description_ar",
+  "seo_keywords",
   // about
-  "about_content_en", "about_content_ar", "about_content_fr",
+  "about_content_en", "about_content_ar",
   // pricing
   "currency_primary", "lbp_exchange_rate", "show_dual_currency",
   // ordering
@@ -36,6 +34,20 @@ const SETTINGS_FIELDS = new Set([
 ]);
 
 const ORDER_TYPES = ["dine_in", "takeaway", "delivery"];
+
+/** Menus are offered in Arabic and English only; anything else (e.g. a legacy "fr") is dropped */
+const MENU_LANGUAGES = ["ar", "en"] as const;
+function sanitizeEnabledLanguages(value: unknown): string {
+  const list = String(value || "").split(",").map((l) => l.trim());
+  const kept = MENU_LANGUAGES.filter((l) => list.includes(l));
+  return (kept.length ? kept : ["ar", "en"]).join(",");
+}
+function sanitizeDefaultLanguage(value: unknown, enabled: string): string {
+  const lang = String(value || "");
+  return (MENU_LANGUAGES as readonly string[]).includes(lang) && enabled.split(",").includes(lang)
+    ? lang
+    : enabled.split(",")[0];
+}
 
 /** Validate pricing/ordering values before they reach the database */
 function sanitizePricingAndOrdering(pricing: any, ordering: any): Record<string, unknown> {
@@ -66,8 +78,8 @@ function sanitizePricingAndOrdering(pricing: any, ordering: any): Record<string,
 
 const CONTACT_FIELDS = new Set([
   "phone_primary", "phone_whatsapp", "email",
-  "address_en", "address_ar", "address_fr",
-  "city_en", "city_ar", "city_fr",
+  "address_en", "address_ar",
+  "city_en", "city_ar",
   "google_map_iframe_url",
 ]);
 
@@ -91,6 +103,7 @@ export async function GET(
     getCatalogContact(catalog.id),
     getCatalogSubscription(catalog.id),
   ]);
+  const enabledLanguages = sanitizeEnabledLanguages(settings?.enabled_languages);
 
   return NextResponse.json({
     catalog: {
@@ -99,43 +112,26 @@ export async function GET(
       name: catalog.name,
       name_ar: catalog.name_ar,
       name_en: catalog.name_en,
-      name_fr: catalog.name_fr,
       description: catalog.description,
       description_ar: catalog.description_ar,
       description_en: catalog.description_en,
-      description_fr: catalog.description_fr,
       logo_url: catalog.logo_url,
       business_type: catalog.business_type,
     },
     subscription: {
-      multi_language_enabled: Boolean(subscription?.multi_language_enabled),
       ai_image_enhancement_limit: subscription?.ai_image_enhancement_limit || 0,
     },
     appearance: {
-      // ... existing fields ...
       hero_image_url: settings?.hero_image_url,
-      bg_pattern_enabled: settings?.bg_pattern_enabled,
-      bg_pattern_type: settings?.bg_pattern_type,
       color_primary: settings?.color_primary,
-      color_secondary: settings?.color_secondary,
-      color_accent: settings?.color_accent,
-      color_background: settings?.color_background,
-      color_surface: settings?.color_surface,
-      color_text: settings?.color_text,
-      color_text_muted: settings?.color_text_muted,
-      color_background_dark: settings?.color_background_dark,
-      color_surface_dark: settings?.color_surface_dark,
-      color_text_dark: settings?.color_text_dark,
-      color_text_muted_dark: settings?.color_text_muted_dark,
     },
     feature_config: {
-      enabled_languages: settings?.enabled_languages || "en",
-      default_language: settings?.default_language || "en",
+      enabled_languages: enabledLanguages,
+      default_language: sanitizeDefaultLanguage(settings?.default_language, enabledLanguages),
     },
     features: {
       booking_enabled: settings?.booking_enabled,
       whatsapp_order_enabled: settings?.whatsapp_order_enabled,
-      live_chat_enabled: settings?.live_chat_enabled,
       ai_waiter_enabled: Boolean(settings?.ai_waiter_enabled),
       ai_waiter_name: settings?.ai_waiter_name,
       ai_waiter_persona: settings?.ai_waiter_persona,
@@ -143,23 +139,13 @@ export async function GET(
     cta: {
       cta_menu_label_en: settings?.cta_menu_label_en,
       cta_menu_label_ar: settings?.cta_menu_label_ar,
-      cta_menu_label_fr: settings?.cta_menu_label_fr,
-      cta_booking_label_en: settings?.cta_booking_label_en,
-      cta_booking_label_ar: settings?.cta_booking_label_ar,
-      cta_booking_label_fr: settings?.cta_booking_label_fr,
-      cta_order_label_en: settings?.cta_order_label_en,
-      cta_order_label_ar: settings?.cta_order_label_ar,
-      cta_order_label_fr: settings?.cta_order_label_fr,
     },
     seo: {
       seo_title_en: settings?.seo_title_en,
       seo_title_ar: settings?.seo_title_ar,
-      seo_title_fr: settings?.seo_title_fr,
       seo_description_en: settings?.seo_description_en,
       seo_description_ar: settings?.seo_description_ar,
-      seo_description_fr: settings?.seo_description_fr,
       seo_keywords: settings?.seo_keywords,
-      json_ld_custom: settings?.json_ld_custom,
     },
     pricing: {
       currency_primary: settings?.currency_primary || "USD",
@@ -175,7 +161,6 @@ export async function GET(
     about: {
       about_content_en: settings?.about_content_en,
       about_content_ar: settings?.about_content_ar,
-      about_content_fr: settings?.about_content_fr,
     },
     contact: {
       phone_primary: contact?.phone_primary,
@@ -183,10 +168,8 @@ export async function GET(
       email: contact?.email,
       address_en: contact?.address_en,
       address_ar: contact?.address_ar,
-      address_fr: contact?.address_fr,
       city_en: contact?.city_en,
       city_ar: contact?.city_ar,
-      city_fr: contact?.city_fr,
       google_map_iframe_url: contact?.google_map_iframe_url,
     },
   });
@@ -204,7 +187,7 @@ export async function PUT(
     return NextResponse.json({ error: "Catalog not found" }, { status: 404 });
   }
 
-  const auth = await requireCatalogAdmin(request, catalog.id);
+  const auth = await requireCatalogAdmin(request, catalog.id, { ownerOnly: true });
   if (!auth.success) return auth.response;
 
   try {
@@ -234,10 +217,6 @@ export async function PUT(
         catalogUpdates.push("name_en = ?");
         catalogArgs.push(catalogData.name_en);
       }
-      if (catalogData.name_fr !== undefined) {
-        catalogUpdates.push("name_fr = ?");
-        catalogArgs.push(catalogData.name_fr);
-      }
       if (catalogData.description_ar !== undefined) {
         catalogUpdates.push("description_ar = ?");
         catalogArgs.push(catalogData.description_ar);
@@ -245,10 +224,6 @@ export async function PUT(
       if (catalogData.description_en !== undefined) {
         catalogUpdates.push("description_en = ?");
         catalogArgs.push(catalogData.description_en);
-      }
-      if (catalogData.description_fr !== undefined) {
-        catalogUpdates.push("description_fr = ?");
-        catalogArgs.push(catalogData.description_fr);
       }
       if (catalogData.logo_url !== undefined) {
         catalogUpdates.push("logo_url = ?");

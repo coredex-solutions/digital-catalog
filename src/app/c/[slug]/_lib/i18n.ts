@@ -1,4 +1,4 @@
-// Diner-facing strings in Arabic, English and French. Which languages a menu offers is set by
+// Diner-facing strings in Arabic and English. Which languages a menu offers is set by
 // the owner (enabled_languages); dish content falls back to English, then Arabic, when a
 // translation is missing so untranslated dishes are never hidden.
 
@@ -16,6 +16,15 @@ const en = {
   popular: "Recommended",
   soldOut: "Sold out",
   soldOutHint: "Not available right now",
+  priceFrom: "from",
+  previewBanner: "Preview — not published yet",
+  previewExit: "Exit preview",
+  options: "Choose an option",
+  optionRequired: "Choose an option to add this dish",
+  allergens: "Allergens",
+  allergensContains: "Contains",
+  allergensNone: "No listed allergens, as checked by the restaurant",
+  allergensUnknown: "Allergen information not provided. Please ask staff.",
   add: "Add",
   addToOrder: "Add to order",
   updateOrder: "Update order",
@@ -92,6 +101,18 @@ const en = {
   rateUpdated: (date: string) => `on ${date}`,
   notFoundSection: "This section is no longer on the menu",
   days: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+  // Table reservation
+  reserveTitle: "Reserve a table",
+  reserveDate: "Date",
+  reserveTime: "Time",
+  reserveGuests: "Guests",
+  reserveNotesPlaceholder: "Special occasion, high chair…",
+  reserveSend: "Send request on WhatsApp",
+  reserveHint: "The restaurant will confirm your table on WhatsApp.",
+  send: "Send",
+  // Shown when the restaurant's subscription has lapsed
+  menuUnavailable: "This menu is temporarily unavailable. Please ask the restaurant team.",
+  callRestaurant: "Call the restaurant",
   // WhatsApp order message
   msgNewOrder: "New order",
   msgOrderType: "Order type",
@@ -104,6 +125,10 @@ const en = {
   msgNote: "Note",
   msgTotal: "Total",
   msgNotes: "Notes",
+  msgReservation: "Table reservation request",
+  msgDate: "Date",
+  msgTime: "Time",
+  msgGuests: "Guests",
 };
 
 type Dictionary = typeof en;
@@ -119,6 +144,15 @@ const ar: Dictionary = {
   popular: "ننصح به",
   soldOut: "نفدت الكمية",
   soldOutHint: "غير متوفر حالياً",
+  priceFrom: "من",
+  previewBanner: "معاينة — لم تُنشر بعد",
+  previewExit: "إنهاء المعاينة",
+  options: "اختر نوعاً",
+  optionRequired: "اختر نوعاً لإضافة هذا الطبق",
+  allergens: "مسببات الحساسية",
+  allergensContains: "يحتوي على",
+  allergensNone: "لا يحتوي على مسببات الحساسية المدرجة، حسب تحقق المطعم",
+  allergensUnknown: "معلومات مسببات الحساسية غير متوفرة. يُرجى سؤال فريق العمل.",
   add: "أضف",
   addToOrder: "أضف إلى الطلب",
   updateOrder: "تحديث الطلب",
@@ -195,6 +229,16 @@ const ar: Dictionary = {
   rateUpdated: (date: string) => `بتاريخ ${date}`,
   notFoundSection: "هذا القسم لم يعد في القائمة",
   days: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
+  reserveTitle: "حجز طاولة",
+  reserveDate: "التاريخ",
+  reserveTime: "الوقت",
+  reserveGuests: "عدد الأشخاص",
+  reserveNotesPlaceholder: "مناسبة خاصة، كرسي أطفال…",
+  reserveSend: "إرسال طلب الحجز عبر واتساب",
+  reserveHint: "سيؤكد المطعم حجزك عبر واتساب.",
+  send: "إرسال",
+  menuUnavailable: "القائمة غير متاحة مؤقتاً. يرجى سؤال فريق المطعم.",
+  callRestaurant: "اتصل بالمطعم",
   msgNewOrder: "طلب جديد",
   msgOrderType: "نوع الطلب",
   msgTable: "الطاولة",
@@ -206,118 +250,26 @@ const ar: Dictionary = {
   msgNote: "ملاحظة",
   msgTotal: "المجموع",
   msgNotes: "ملاحظات",
-};
-
-const fr: Dictionary = {
-  menu: "Menu",
-  viewMenu: "Voir le menu",
-  search: "Rechercher",
-  searchPlaceholder: "Rechercher dans le menu",
-  searchEmpty: "Aucun plat ne correspond à votre recherche",
-  searchHint: "Cherchez par nom de plat ou ingrédient",
-  menuEmpty: "Le menu est en préparation. Revenez bientôt.",
-  popular: "Recommandé",
-  soldOut: "Épuisé",
-  soldOutHint: "Indisponible pour le moment",
-  add: "Ajouter",
-  addToOrder: "Ajouter à la commande",
-  updateOrder: "Mettre à jour",
-  remove: "Retirer",
-  quantity: "Quantité",
-  increase: "Augmenter la quantité",
-  decrease: "Diminuer la quantité",
-  noteLabel: "Demande spéciale",
-  notePlaceholder: "ex. sans oignons, sauce en plus",
-  close: "Fermer",
-  back: "Retour",
-  viewOrder: "Voir la commande",
-  yourOrder: "Votre commande",
-  emptyOrder: "Votre commande est vide",
-  emptyOrderHint: "Ajoutez des plats depuis le menu pour commencer",
-  items: (n: number) => (n === 1 ? "1 article" : `${n} articles`),
-  subtotal: "Total",
-  checkout: "Commander",
-  clearOrder: "Vider la commande",
-  orderType: "Type de commande",
-  dine_in: "Sur place",
-  takeaway: "À emporter",
-  delivery: "Livraison",
-  tableNumber: "Numéro de table",
-  tablePlaceholder: "ex. 12",
-  address: "Adresse de livraison",
-  addressPlaceholder: "Rue, immeuble, étage",
-  area: "Quartier",
-  areaPlaceholder: "ex. Hamra, Achrafieh",
-  name: "Votre nom",
-  phone: "Numéro de téléphone",
-  phonePlaceholder: "+961 71 123 456",
-  notes: "Remarques",
-  notesPlaceholder: "Ce que le restaurant doit savoir",
-  sendWhatsApp: "Envoyer la commande sur WhatsApp",
-  whatsappHint: "WhatsApp s'ouvre avec votre commande rédigée. Elle n'est envoyée que lorsque vous appuyez sur Envoyer.",
-  handoffTitle: "Terminez dans WhatsApp",
-  handoffBody: "Votre commande n'est passée qu'une fois envoyée dans WhatsApp. Le restaurant vous y répondra pour la confirmer.",
-  handoffAgain: "Rouvrir WhatsApp",
-  handoffDone: "C'est envoyé, vider ma commande",
-  orderUnavailable: "La commande en ligne n'est pas encore disponible pour ce restaurant.",
-  required: "Obligatoire",
-  openNow: "Ouvert",
-  closesAt: (time: string) => `Ferme à ${time}`,
-  closed: "Fermé",
-  opensAt: (time: string) => `Ouvre à ${time}`,
-  opensOn: (day: string, time: string) => `Ouvre ${day} à ${time}`,
-  call: "Appeler",
-  whatsapp: "WhatsApp",
-  directions: "Itinéraire",
-  info: "Infos",
-  reserve: "Réserver",
-  askQuestion: "Poser une question",
-  hours: "Horaires",
-  today: "Aujourd'hui",
-  closedToday: "Fermé",
-  contact: "Contact",
-  location: "Adresse",
-  openInMaps: "Ouvrir dans Plans",
-  branches: "Succursales",
-  faqs: "Questions",
-  follow: "Suivez-nous",
-  about: "À propos",
-  language: "Langue",
-  preferences: "Préférences",
-  darkMode: "Mode sombre",
-  lightMode: "Mode clair",
-  poweredBy: "Menu par Coredex",
-  pricesIn: "Prix",
-  pricesInCurrency: (currency: string) => `Prix en ${currency}`,
-  currencyUSD: "dollars US",
-  currencyLBP: "livres libanaises",
-  rateNote: (rate: string) => `1 $ = ${rate} L.L.`,
-  rateUpdated: (date: string) => `au ${date}`,
-  notFoundSection: "Cette section n'est plus au menu",
-  days: ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"],
-  msgNewOrder: "Nouvelle commande",
-  msgOrderType: "Type de commande",
-  msgTable: "Table",
-  msgAddress: "Adresse",
-  msgArea: "Quartier",
-  msgName: "Nom",
-  msgPhone: "Téléphone",
-  msgItems: "Articles",
-  msgNote: "Remarque",
-  msgTotal: "Total",
-  msgNotes: "Remarques",
+  msgReservation: "طلب حجز طاولة",
+  msgDate: "التاريخ",
+  msgTime: "الوقت",
+  msgGuests: "عدد الأشخاص",
 };
 
 export type { Dictionary };
 
 export function getDictionary(lang: Language): Dictionary {
-  return lang === "ar" ? ar : lang === "fr" ? fr : en;
+  return lang === "ar" ? ar : en;
 }
 
-/** Pick the localized field (name_ar / name_en / name_fr), falling back to English then Arabic */
+/**
+ * Pick the localized field (name_ar / name_en), falling back to English then Arabic. Only
+ * Arabic and English are read; any other language falls back the same way.
+ */
 export function localized<T extends Record<string, any>>(record: T, field: string, lang: Language): string {
+  const own = lang === "ar" || lang === "en" ? (record[`${field}_${lang}`] as string) : "";
   return (
-    (record[`${field}_${lang}`] as string) ||
+    own ||
     (record[`${field}_en`] as string) ||
     (record[`${field}_ar`] as string) ||
     (record[field] as string) ||

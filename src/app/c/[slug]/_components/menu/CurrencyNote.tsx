@@ -4,7 +4,7 @@ import { Banknote } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { cn } from "@/utils/helpers";
 
-const DATE_LOCALES = { ar: "ar-LB-u-nu-latn", en: "en-GB", fr: "fr-FR" } as const;
+const DATE_LOCALES = { ar: "ar-LB-u-nu-latn", en: "en-GB" } as const;
 
 /** SQLite stores UTC "YYYY-MM-DD HH:MM:SS"; show it as a Beirut date, e.g. "8 Oct" (with the year if it isn't this year) */
 function formatRateDate(value: string, lang: keyof typeof DATE_LOCALES): string | null {

@@ -1,14 +1,17 @@
 import { notFound } from 'next/navigation';
 import { Inter, Noto_Sans_Arabic } from 'next/font/google';
 import { getFullCatalogData } from '@/lib/catalog/queries';
+import { getMenuData, isMenuPreview } from '../_lib/menu-data';
 import type { Metadata } from 'next';
 import { CatalogProvider, type MenuData } from '../_providers/CatalogProvider';
 import AIWaiterBubble from '../_components/AIWaiterBubble';
 import { buildMenuTheme } from '../_lib/theme';
-import { getEnabledLanguages, resolveMenuLanguage, resolveMenuTheme } from '../_lib/locale';
-import { localized } from '../_lib/i18n';
+import { getMenuLanguages, resolveMenuLanguage, resolveMenuTheme } from '../_lib/locale';
+import { getSiteUrl } from '@/lib/utils/base-url';
+import { getDictionary, localized } from '../_lib/i18n';
+import { readDishInfo } from '@/lib/catalog/dish-info';
 
-// Diner menu typefaces (MENUDESIGN.md §4): Inter for English/French, Noto Sans Arabic for Arabic,
+// Diner menu typefaces (MENUDESIGN.md §4): Inter for English, Noto Sans Arabic for Arabic,
 // 400/500/600 only. Both are preloaded: most Lebanese menus are read in Arabic and English.
 const latinFont = Inter({
   subsets: ['latin', 'latin-ext'],
@@ -33,14 +36,14 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params;
-  const data = await getFullCatalogData(slug);
+  const data = await getMenuData(slug);
 
   if (!data) {
     return { title: 'Not Found' };
   }
 
-  const { catalog, settings } = data;
-  const lang = await resolveMenuLanguage(slug, getEnabledLanguages(settings?.enabled_languages), settings?.default_language);
+  const { catalog, settings, subscription } = data;
+  const lang = await resolveMenuLanguage(slug, getMenuLanguages(settings?.enabled_languages, subscription), settings?.default_language);
 
   const name = localized(catalog, 'name', lang) || catalog.name;
   const title = (settings as any)?.[`seo_title_${lang}`] || settings?.seo_title_en || name;
@@ -67,7 +70,14 @@ export async function generateMetadata({
       title,
       description,
     },
+    // An owner's preview of unpublished changes must never be indexed
+    ...((await isMenuPreview(slug)) ? { robots: { index: false, follow: false } } : {}),
   };
+}
+
+/** Drop French columns (name_fr, about_content_fr…): the menu is only shown in Arabic and English */
+function withoutFrench<T extends object>(row: T): T {
+  return Object.fromEntries(Object.entries(row).filter(([key]) => !key.endsWith('_fr'))) as T;
 }
 
 function formatSchemaHour(hour: number): string {
@@ -92,8 +102,8 @@ function generateJsonLd(data: NonNullable<Awaited<ReturnType<typeof getFullCatal
     name: catalog.name,
     description: catalog.description || settings?.seo_description_en,
     image: settings?.hero_image_url || catalog.logo_url,
-    url: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/c/${catalog.slug}`,
-    hasMenu: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/c/${catalog.slug}`,
+    url: `${getSiteUrl()}/c/${catalog.slug}/`,
+    hasMenu: `${getSiteUrl()}/c/${catalog.slug}/`,
   };
 
   if (contact) {
@@ -141,15 +151,16 @@ export default async function CatalogLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const data = await getFullCatalogData(slug);
+  const data = await getMenuData(slug);
 
   if (!data) {
     notFound();
   }
 
-  const { catalog, settings, contact, operatingHours, socialMedia, menuItems, categories, faqs, branches } = data;
+  const { catalog, settings, subscription, contact, operatingHours, socialMedia, menuItems, categories, faqs, branches } = data;
 
-  const enabledLanguages = getEnabledLanguages(settings?.enabled_languages);
+  const enabledLanguages = getMenuLanguages(settings?.enabled_languages, subscription);
+  const preview = await isMenuPreview(slug);
   const [lang, theme] = await Promise.all([
     resolveMenuLanguage(slug, enabledLanguages, settings?.default_language),
     resolveMenuTheme(),
@@ -158,6 +169,7 @@ export default async function CatalogLayout({
 
   if (data.isExpired) {
     const isAr = lang === 'ar';
+    const t = getDictionary(lang);
     return (
       <div
         className={`menu ${fontVariables} min-h-screen flex items-center justify-center p-6 font-menu-sans`}
@@ -175,16 +187,14 @@ export default async function CatalogLayout({
             {localized(catalog, 'name', lang) || catalog.name}
           </h1>
           <p className="text-menu-muted leading-relaxed mb-8">
-            {isAr
-              ? 'القائمة غير متاحة مؤقتاً. يرجى سؤال فريق المطعم.'
-              : "This menu is temporarily unavailable. Please ask the restaurant team."}
+            {t.menuUnavailable}
           </p>
           {contact?.phone_primary && (
             <a
               href={`tel:${contact.phone_primary}`}
               className="inline-flex items-center justify-center min-h-12 px-6 rounded-control bg-brand text-brand-fg font-semibold"
             >
-              {isAr ? 'اتصل بالمطعم' : 'Call the restaurant'}
+              {t.callRestaurant}
             </a>
           )}
         </div>
@@ -202,18 +212,16 @@ export default async function CatalogLayout({
       name: catalog.name,
       name_ar: catalog.name_ar,
       name_en: catalog.name_en,
-      name_fr: catalog.name_fr,
       description: catalog.description,
       description_ar: catalog.description_ar,
       description_en: catalog.description_en,
-      description_fr: catalog.description_fr,
       logo_url: catalog.logo_url,
     },
     settings: settings ? {
-      ...settings,
+      ...withoutFrench(settings),
       ai_waiter_enabled: Boolean((settings as any).ai_waiter_enabled),
     } as any : null,
-    contact: contact ? { ...contact } : null,
+    contact: contact ? withoutFrench(contact) : null,
     operatingHours: operatingHours.map((h) => ({
       day_name: h.day_name,
       open_hour: Number(h.open_hour),
@@ -231,7 +239,6 @@ export default async function CatalogLayout({
       id: c.id,
       name_ar: c.name_ar,
       name_en: c.name_en,
-      name_fr: c.name_fr,
       image_url: c.image_url,
     })),
     menuItems: (menuItems || []).map((i) => ({
@@ -239,34 +246,30 @@ export default async function CatalogLayout({
       category_id: i.category_id,
       name_ar: i.name_ar,
       name_en: i.name_en,
-      name_fr: i.name_fr,
       description_ar: i.description_ar,
       description_en: i.description_en,
-      description_fr: i.description_fr,
       price: Number(i.price),
       currency: i.currency || 'USD',
       image_url: i.image_url,
       is_featured: Boolean(Number(i.is_featured)),
       // Missing column (migration not run yet) means available
       is_available: i.is_available === undefined || i.is_available === null ? true : Boolean(Number(i.is_available)),
+      // Options, dietary tags and verified allergens (stored as JSON text)
+      ...readDishInfo(i as unknown as Record<string, unknown>),
     })),
     faqs: faqs.map((f) => ({
       id: f.id,
       question_ar: f.question_ar,
       question_en: f.question_en,
-      question_fr: f.question_fr,
       answer_ar: f.answer_ar,
       answer_en: f.answer_en,
-      answer_fr: f.answer_fr,
     })),
     branches: branches.map((b) => ({
       id: b.id,
       name_ar: b.name_ar,
       name_en: b.name_en,
-      name_fr: b.name_fr,
       address_ar: b.address_ar,
       address_en: b.address_en,
-      address_fr: b.address_fr,
       phone_numbers: parsePhoneList(b.phone_numbers),
       map_url: b.map_url,
     })),
@@ -285,6 +288,14 @@ export default async function CatalogLayout({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd }}
       />
+      {preview && (
+        <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-menu-ink px-4 py-2 text-center text-sm font-semibold text-menu-bg">
+          <span>{getDictionary(lang).previewBanner}</span>
+          <a href={`/c/${slug}/preview/?exit=1`} className="underline underline-offset-4">
+            {getDictionary(lang).previewExit}
+          </a>
+        </div>
+      )}
       {children}
       {menuData.settings?.ai_waiter_enabled && <AIWaiterBubble />}
     </CatalogProvider>

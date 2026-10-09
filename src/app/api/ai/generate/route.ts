@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parseAIJson, AI_CONSTRAINTS } from "@/lib/ai-utils";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = "llama-3.1-8b-instant";
@@ -22,16 +23,20 @@ interface GenerateRequest {
   currentContent?: {
     en?: string;
     ar?: string;
-    fr?: string;
   };
   aboutContent?: {
     en?: string;
     ar?: string;
-    fr?: string;
   };
-  languages?: ("en" | "ar" | "fr")[];
-  language?: "en" | "ar" | "fr";
+  languages?: ContentLang[];
+  language?: ContentLang;
 }
+
+/** Content is written in Arabic and English only */
+type ContentLang = "en" | "ar";
+const CONTENT_LANGS: readonly ContentLang[] = ["en", "ar"];
+const isContentLang = (value: unknown): value is ContentLang =>
+  typeof value === "string" && (CONTENT_LANGS as readonly string[]).includes(value);
 
 
 async function callGroq(prompt: string, systemPrompt: string): Promise<string> {
@@ -63,15 +68,20 @@ async function callGroq(prompt: string, systemPrompt: string): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
+  // Authenticate first so anonymous callers learn nothing about the server's configuration
+  const auth = await requireCatalogAdmin(request);
+  if (!auth.success) return auth.response;
+
   if (!GROQ_API_KEY) {
     return NextResponse.json(
-      { error: "AI service not configured. Please add GROQ_API_KEY to your environment." },
-      { status: 500 }
+      { error: "AI service is not configured on this server." },
+      { status: 503 }
     );
   }
 
-  const auth = await requireCatalogAdmin(request);
-  if (!auth.success) return auth.response;
+  // Each catalog gets its own allowance, wherever its admins are calling from
+  const rateLimit = await checkRateLimit(request, RATE_LIMITS.aiGenerate, auth.admin.catalog_id);
+  if (!rateLimit.allowed) return rateLimitResponse(RATE_LIMITS.aiGenerate, rateLimit.resetAt);
 
   try {
     const body: GenerateRequest = await request.json();
@@ -137,11 +147,10 @@ CRITICAL RULES:
 6. Naturally incorporate the provided keywords
 
 OUTPUT FORMAT:
-Return ONLY a valid JSON object with exactly three fields:
+Return ONLY a valid JSON object with exactly two fields:
 {
   "en": "English content here...",
-  "ar": "Arabic content here (Modern Standard Arabic)...",
-  "fr": "French content here (European French)..."
+  "ar": "Arabic content here (Modern Standard Arabic)..."
 }
 
 ${AI_CONSTRAINTS}`;
@@ -162,20 +171,21 @@ ${keywordList ? `- Keywords to Include: ${keywordList}` : ""}
 
 Remember: Use the ACTUAL business name "${business.name}" and city "${business.city}" - never use placeholders!
 
-Generate the content in English, Arabic, and French. Return only the JSON object.`;
+Generate the content in English and Arabic. Return only the JSON object.`;
 
       const result = await callGroq(prompt, systemPrompt);
       const parsedContent = parseAIJson(result);
 
       if (parsedContent && typeof parsedContent === 'object') {
-        return NextResponse.json({ content: parsedContent });
+        const { en, ar } = parsedContent as Record<string, unknown>;
+        return NextResponse.json({ content: { en, ar } });
       }
 
       throw new Error("Failed to generate or parse AI content");
     }
 
     if (action === "enhance_content") {
-      const targetLang = language || "en";
+      const targetLang: ContentLang = isContentLang(language) ? language : "en";
       const currentText = currentContent?.[targetLang as keyof typeof currentContent] || "";
       
       if (!currentText || currentText.length < 20) {
@@ -185,7 +195,7 @@ Generate the content in English, Arabic, and French. Return only the JSON object
         );
       }
 
-      const langName = targetLang === "ar" ? "Arabic" : targetLang === "fr" ? "French" : "English";
+      const langName = targetLang === "ar" ? "Arabic" : "English";
       
       const systemPrompt = `You are a professional copywriter. Improve the given business description to be more:
 - SEO-friendly (natural keyword placement)
@@ -232,7 +242,8 @@ Return only the enhanced ${langName} text:`;
 
     // Generate SEO titles and descriptions using AI
     if (action === "generate_seo") {
-      const { aboutContent, languages: targetLanguages } = body;
+      const { aboutContent } = body;
+      const targetLanguages = (Array.isArray(body.languages) ? body.languages : []).filter(isContentLang);
       
       if (!targetLanguages || targetLanguages.length === 0) {
         return NextResponse.json(
@@ -266,15 +277,14 @@ RULES:
 OUTPUT FORMAT - Return ONLY a valid JSON object:
 {
   "en": { "title": "...", "description": "..." },
-  "ar": { "title": "...", "description": "..." },
-  "fr": { "title": "...", "description": "..." }
+  "ar": { "title": "...", "description": "..." }
 }
 
 Include only the languages requested. No markdown, no explanation.
 ${AI_CONSTRAINTS}`;
 
       const languagesText = targetLanguages.map(l => {
-        const langName = l === "ar" ? "Arabic" : l === "fr" ? "French" : "English";
+        const langName = l === "ar" ? "Arabic" : "English";
         const content = aboutContent?.[l as keyof typeof aboutContent] || "";
         return `${langName}:
 About Content: ${content || "Not provided"}`;
@@ -297,7 +307,9 @@ Return only the JSON object with title and description for each language.`;
       const seoData = parseAIJson(result);
 
       if (seoData && typeof seoData === 'object') {
-        return NextResponse.json({ seo: seoData });
+        const seo: Record<string, unknown> = {};
+        for (const lang of targetLanguages) seo[lang] = (seoData as Record<string, unknown>)[lang];
+        return NextResponse.json({ seo });
       }
 
       throw new Error("Failed to generate or parse SEO data");
@@ -311,7 +323,7 @@ Return only the JSON object with title and description for each language.`;
   } catch (error: any) {
     console.error("AI generation error:", error);
     return NextResponse.json(
-      { error: error.message || "AI generation failed. Please try again." },
+      { error: "AI generation failed. Please try again." },
       { status: 500 }
     );
   }

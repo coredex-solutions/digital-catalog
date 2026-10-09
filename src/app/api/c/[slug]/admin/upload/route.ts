@@ -3,9 +3,12 @@ import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
 import { uploadBufferToR2, deleteFromR2 } from "@/lib/r2/upload";
+import { getR2BucketName, getR2Client, getR2PublicUrl } from "@/lib/r2/client";
+import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import { withRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 
-const MAX_IMAGES_PER_CATALOG = 500;
+// Used when a catalog row has no max_images set (matches the column default)
+const DEFAULT_MAX_IMAGES = 500;
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
 async function uploadHandler(
@@ -49,20 +52,21 @@ async function uploadHandler(
 
     const db = getDb();
 
-    // Check current image count
+    // Check current image count against this catalog's own limit
     const countResult = await db.execute({
-      sql: "SELECT current_image_count FROM catalogs WHERE id = ?",
+      sql: "SELECT current_image_count, max_images FROM catalogs WHERE id = ?",
       args: [catalog.id],
     });
 
     const currentCount = Number(countResult.rows[0]?.current_image_count || 0);
+    const maxImages = Number(countResult.rows[0]?.max_images) || DEFAULT_MAX_IMAGES;
 
-    if (currentCount >= MAX_IMAGES_PER_CATALOG) {
+    if (currentCount >= maxImages) {
       return NextResponse.json(
         {
-          error: `Image limit reached. Maximum ${MAX_IMAGES_PER_CATALOG} images per catalog.`,
+          error: `Image limit reached. Maximum ${maxImages} images per catalog.`,
           current: currentCount,
-          max: MAX_IMAGES_PER_CATALOG,
+          max: maxImages,
         },
         { status: 403 }
       );
@@ -84,7 +88,7 @@ async function uploadHandler(
     return NextResponse.json({
       success: true,
       url,
-      remaining: MAX_IMAGES_PER_CATALOG - currentCount - 1,
+      remaining: maxImages - currentCount - 1,
     });
   } catch (error: any) {
     console.error("Upload error:", error);
@@ -124,23 +128,34 @@ export async function DELETE(
   try {
     const { url } = await request.json();
 
-    if (!url) {
+    if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
-    // Verify the URL belongs to this catalog (starts with catalog.id/)
-    const urlPath = new URL(url).pathname;
-    if (!urlPath.includes(catalog.id)) {
+    // Uploads are stored under "<catalog id>/", so only URLs under that prefix are this catalog's
+    const prefix = `${getR2PublicUrl()}/${catalog.id}/`;
+    const key = url.startsWith(prefix) ? `${catalog.id}/${url.slice(prefix.length)}` : null;
+    if (!key || key.includes("..") || key.includes("?") || key.includes("#")) {
       return NextResponse.json(
         { error: "Image does not belong to this catalog" },
         { status: 403 }
       );
     }
 
-    // Delete from R2
+    // R2 deletes succeed even for missing objects, so confirm it exists to keep the count honest
+    try {
+      await getR2Client().send(new HeadObjectCommand({ Bucket: getR2BucketName(), Key: key }));
+    } catch (error: any) {
+      if (error?.name === "NotFound" || error?.$metadata?.httpStatusCode === 404) {
+        return NextResponse.json({ error: "Image not found" }, { status: 404 });
+      }
+      throw error;
+    }
+
+    // Delete from R2 (throws on failure, so the count is only lowered after a real delete)
     await deleteFromR2(url);
 
-    // Decrement image count
+    // Decrement image count, never below zero
     const db = getDb();
     await db.execute({
       sql: "UPDATE catalogs SET current_image_count = MAX(0, current_image_count - 1) WHERE id = ?",

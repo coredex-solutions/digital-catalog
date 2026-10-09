@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
+import { getAiWaiterCatalog } from "@/lib/catalog/ai-access";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
@@ -8,13 +9,13 @@ const OPENAI_VOICE = "onyx";
 const GOOGLE_VOICE = "ar-XA-Wavenet-B";
 
 const MAX_TEXT_LENGTH = 1000;
+const LANGUAGES = ["ar", "en"];
 
 async function tryStreamElementsTTS(text: string, lang: string) {
   try {
     const voiceMap: Record<string, string> = {
       ar: "Maged", // Maged is a high-quality Arabic voice
       en: "Brian",
-      fr: "Mathieu"
     };
     const voice = voiceMap[lang] || "Brian";
     const url = `https://api.streamelements.com/static/savers/voice?voice=${voice}&text=${encodeURIComponent(text)}`;
@@ -54,6 +55,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const text = searchParams.get("text");
   const lang = searchParams.get("lang") || "en";
+  const slug = searchParams.get("slug");
 
   const rateLimit = await checkRateLimit(request, RATE_LIMITS.tts);
   if (!rateLimit.allowed) {
@@ -63,6 +65,18 @@ export async function GET(request: NextRequest) {
   if (!text || text.length > MAX_TEXT_LENGTH) {
     return new Response("Invalid text", { status: 400 });
   }
+
+  if (!LANGUAGES.includes(lang)) {
+    return new Response("Invalid language", { status: 400 });
+  }
+
+  // Speech is only served for a live catalog's menu
+  const catalog = slug ? await getAiWaiterCatalog(slug) : null;
+  if (!catalog) {
+    return new Response("Catalog not found", { status: 404 });
+  }
+  // The paid providers below are reserved for catalogs that run the AI waiter
+  const allowPaid = catalog.aiWaiterEnabled && catalog.subscriptionLive;
 
   const referer = request.headers.get("referer");
   if (process.env.NODE_ENV === "production" && referer && !referer.includes(request.headers.get("host") || "")) {
@@ -86,12 +100,12 @@ export async function GET(request: NextRequest) {
     if (gtRes) return gtRes;
 
     // 4. Paid Providers
-    if (GOOGLE_API_KEY) {
+    if (allowPaid && GOOGLE_API_KEY) {
       const gRes = await tryGoogleTTS(text, lang);
       if (gRes) return gRes;
     }
 
-    if (OPENAI_API_KEY) {
+    if (allowPaid && OPENAI_API_KEY) {
       const oRes = await tryOpenAITTS(text);
       if (oRes) return oRes;
     }
@@ -108,7 +122,6 @@ async function tryUnlimitedHack(text: string, lang: string) {
   const voices: Record<string, string[]> = {
     ar: ["ar-SA-HamedNeural", "ar-SA-NaayfNeural", "ar-EG-ShakirNeural"],
     en: ["en-US-AndrewNeural", "en-US-BrianNeural"],
-    fr: ["fr-FR-HenriNeural"]
   };
 
   const selectedVoices = voices[lang] || voices.en;

@@ -22,7 +22,7 @@ export function scrollToCategory(categoryId: string, smooth = true) {
 }
 
 interface CategoryNavProps {
-  categories: { id: string; name_ar: string; name_en: string; name_fr: string }[];
+  categories: { id: string; name_ar: string; name_en: string }[];
 }
 
 /**

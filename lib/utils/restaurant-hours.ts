@@ -112,7 +112,7 @@ export function formatHour(hour: number, lang: string): string {
   const h = Math.floor(normalized);
   const m = Math.round((normalized - h) * 60);
   const date = new Date(Date.UTC(2000, 0, 1, h, m));
-  const locale = lang === "ar" ? "ar-LB-u-nu-latn" : lang === "fr" ? "fr-FR" : "en-US";
+  const locale = lang === "ar" ? "ar-LB-u-nu-latn" : "en-US";
   return new Intl.DateTimeFormat(locale, {
     hour: "numeric",
     minute: m ? "2-digit" : undefined,

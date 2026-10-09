@@ -4,6 +4,7 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SuperAdminShell } from "../../_components/SuperAdminShell";
+import { getPlanConfig, getPlanPrice } from "@/lib/plans";
 import { SuperAdminHeader, SuperAdminContent } from "../../_components/SuperAdminSidebar";
 import {
   ArrowLeft,
@@ -27,6 +28,12 @@ import {
   Plus,
   Pencil
 } from "lucide-react";
+
+/** Keep only the menu languages the platform offers (Arabic and English), defaulting to both */
+function sanitizeLanguages(value: unknown): string {
+  const list = String(value || "").split(",").map((l) => l.trim());
+  return ["ar", "en"].filter((l) => list.includes(l)).join(",") || "ar,en";
+}
 
 export default function CatalogDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -87,7 +94,6 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         suspension_reason: result.catalog.suspension_reason || "",
 
         // Subscription fields (mapped from catalog object where we joined them)
-        multi_language_enabled: Boolean(result.catalog.multi_language_enabled),
         booking_enabled: Boolean(result.catalog.booking_enabled),
         analytics_enabled: Boolean(result.catalog.analytics_enabled),
         custom_domain_enabled: Boolean(result.catalog.custom_domain_enabled),
@@ -104,8 +110,11 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         payment_notes: result.catalog.payment_notes || "",
 
         // Settings fields
-        enabled_languages: result.settings?.enabled_languages || "en",
-        default_language: result.settings?.default_language || "en",
+        // Menus are Arabic and English only; legacy values such as "fr" are dropped
+        enabled_languages: sanitizeLanguages(result.settings?.enabled_languages),
+        default_language: ["ar", "en"].includes(result.settings?.default_language)
+          ? result.settings.default_language
+          : sanitizeLanguages(result.settings?.enabled_languages).split(",")[0],
       });
     } catch (err: any) {
       setError(err.message);
@@ -156,16 +165,18 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
   });
 
   const saveFeatureAccess = () => handleSaveSection("Feature Access", {
-    multi_language_enabled: editForm.multi_language_enabled,
     booking_enabled: editForm.booking_enabled,
     analytics_enabled: editForm.analytics_enabled,
     custom_domain_enabled: editForm.custom_domain_enabled,
   });
 
-  const saveLanguageConfig = () => handleSaveSection("Language Configuration", {
-    enabled_languages: editForm.enabled_languages,
-    default_language: editForm.default_language,
-  });
+  const saveLanguageConfig = () => {
+    const enabled = sanitizeLanguages(editForm.enabled_languages);
+    return handleSaveSection("Language Configuration", {
+      enabled_languages: enabled,
+      default_language: enabled.split(",").includes(editForm.default_language) ? editForm.default_language : enabled.split(",")[0],
+    });
+  };
 
   // Admin Management
   const openAddAdmin = () => {
@@ -308,9 +319,9 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
       <SuperAdminShell>
         <div className="flex items-center justify-center h-screen -mt-20">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <div className="w-16 h-16 border-4 border-ui-line border-t-ui-primary rounded-full animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-8 h-8 bg-black rounded-full" />
+              <div className="w-8 h-8 bg-ui-bg rounded-full" />
             </div>
           </div>
         </div>
@@ -328,77 +339,75 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         <div className="flex items-center gap-4">
           <Link
             href="/superadmin/catalogs"
-            className="group flex items-center gap-2 px-3 py-1.5 text-white/40 hover:text-white transition-all bg-white/5 border border-white/5 rounded-xl text-xs font-bold uppercase tracking-widest"
+            className="group flex items-center gap-2 px-3 py-1.5 text-ui-muted hover:text-ui-ink transition-colors bg-ui-surface border border-ui-line rounded-control text-sm font-medium"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
             Back
           </Link>
-          <div className="h-6 w-px bg-white/10" />
+          <div className="h-6 w-px bg-ui-line" />
           <Link
             href={`/c/${catalog.slug}`}
             target="_blank"
-            className="flex items-center gap-2 px-4 py-2 bg-white text-black rounded-xl hover:scale-105 transition-all text-sm font-bold shadow-lg shadow-white/10"
+            className="flex items-center gap-2 px-4 py-2 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover rounded-control transition-colors text-sm font-semibold"
           >
             <ExternalLink className="w-4 h-4" />
-            Launch Catalog
+            Open menu
           </Link>
         </div>
       </SuperAdminHeader>
 
       <SuperAdminContent>
         {/* Top Stats Cards */}
-        {/* Top Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="glass p-5 rounded-3xl border border-white/5 relative overflow-hidden group">
-            <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-br ${catalog.is_suspended ? 'from-purple-500' : 'from-primary'} opacity-5 blur-2xl rounded-full translate-x-1/3 -translate-y-1/3`} />
-            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-3">Status</p>
+          <div className="glass p-5 rounded-panel border border-ui-line">
+            <p className="text-ui-muted text-xs font-bold mb-3">Status</p>
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${catalog.is_suspended ? 'bg-purple-500/10 text-purple-500' : 'bg-primary/10 text-primary'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${catalog.is_suspended ? 'bg-ui-bg text-ui-danger' : 'bg-ui-subtle text-ui-success'}`}>
                 {catalog.is_suspended ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
               </div>
-              <span className={`text-xl font-bold tracking-tight ${catalog.is_suspended ? "text-purple-400" : "text-white"}`}>
+              <span className={`text-xl font-bold ${catalog.is_suspended ? "text-ui-danger" : "text-ui-ink"}`}>
                 {catalog.is_suspended ? "Suspended" : "Active"}
               </span>
             </div>
           </div>
 
-          <div className="glass p-5 rounded-3xl border border-white/5">
-            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-3">Plan</p>
+          <div className="glass p-5 rounded-panel border border-ui-line">
+            <p className="text-ui-muted text-xs font-bold mb-3">Plan</p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-ui-subtle text-ui-primary flex items-center justify-center">
                 <CreditCard className="w-5 h-5" />
               </div>
-              <span className="text-xl font-bold text-white tracking-tight capitalize">
+              <span className="text-lg font-semibold text-ui-ink capitalize">
                 {catalog.subscription_type?.replace("_", " ")}
               </span>
             </div>
           </div>
 
-          <div className="glass p-5 rounded-3xl border border-white/5">
-            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-3">Monthly Views</p>
+          <div className="glass p-5 rounded-panel border border-ui-line">
+            <p className="text-ui-muted text-xs font-bold mb-3">Monthly Views</p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-ui-subtle text-ui-primary flex items-center justify-center">
                 <BarChart3 className="w-5 h-5" />
               </div>
-              <span className="text-2xl font-bold text-white tracking-tight">
+              <span className="text-2xl font-bold text-ui-ink">
                 {analytics?.total_views?.toLocaleString() || 0}
               </span>
             </div>
           </div>
 
-          <div className="glass p-5 rounded-3xl border border-white/5">
-            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mb-3">Product Count</p>
+          <div className="glass p-5 rounded-panel border border-ui-line">
+            <p className="text-ui-muted text-xs font-bold mb-3">Product Count</p>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-ui-subtle text-ui-primary flex items-center justify-center">
                 <Store className="w-5 h-5" />
               </div>
-              <span className="text-2xl font-bold text-white tracking-tight">{counts?.items || 0}</span>
+              <span className="text-2xl font-bold text-ui-ink">{counts?.items || 0}</span>
             </div>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-8 border-b border-white/5 mb-8">
+        <div className="flex gap-8 border-b border-ui-line mb-8">
           {[
             { id: "overview", label: "Overview" },
             { id: "subscription", label: "Subscription" },
@@ -408,12 +417,12 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`pb-4 px-1 text-xs font-bold uppercase tracking-widest transition-all relative ${activeTab === tab.id ? "text-primary" : "text-white/30 hover:text-white/60"
+              className={`pb-4 px-1 text-sm font-semibold transition-colors relative ${activeTab === tab.id ? "text-ui-primary" : "text-ui-muted hover:text-ui-ink"
                 }`}
             >
               {tab.label}
               {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary rounded-t-full shadow-[0_-4px_10px_rgba(124,58,237,0.5)]" />
+                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-ui-primary rounded-t-full" />
               )}
             </button>
           ))}
@@ -423,83 +432,82 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         {activeTab === "overview" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
-              <div className="glass rounded-[2rem] p-8 border border-white/5">
-                <h3 className="text-xl font-bold text-white mb-6 tracking-tight">Core Information</h3>
+              <div className="glass rounded-panel p-8 border border-ui-line">
+                <h3 className="text-lg font-semibold text-ui-ink mb-6">Details</h3>
                 <div className="space-y-1">
-                  <div className="flex justify-between py-4 border-b border-white/5">
-                    <span className="text-white/40 font-medium">Created On</span>
-                    <span className="text-white font-bold">{new Date(catalog.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
+                  <div className="flex justify-between py-4 border-b border-ui-line">
+                    <span className="text-ui-muted font-medium">Created On</span>
+                    <span className="text-ui-ink font-bold">{new Date(catalog.created_at).toLocaleDateString(undefined, { dateStyle: 'long' })}</span>
                   </div>
-                  <div className="flex justify-between py-4 border-b border-white/5">
-                    <span className="text-white/40 font-medium">Expires On</span>
-                    <span className="text-white font-bold">
+                  <div className="flex justify-between py-4 border-b border-ui-line">
+                    <span className="text-ui-muted font-medium">Expires On</span>
+                    <span className="text-ui-ink font-bold">
                       {catalog.expires_at ? new Date(catalog.expires_at).toLocaleDateString(undefined, { dateStyle: 'long' }) : "Unlimited"}
                     </span>
                   </div>
-                  <div className="flex justify-between py-4 border-b border-white/5">
-                    <span className="text-white/40 font-medium">Categories</span>
-                    <span className="text-white font-bold">{counts?.categories || 0} Levels</span>
+                  <div className="flex justify-between py-4 border-b border-ui-line">
+                    <span className="text-ui-muted font-medium">Categories</span>
+                    <span className="text-ui-ink font-bold">{counts?.categories || 0}</span>
                   </div>
                   <div className="flex justify-between py-4">
-                    <span className="text-white/40 font-medium">Branches</span>
-                    <span className="text-white font-bold">{counts?.branches || 0} Locations</span>
+                    <span className="text-ui-muted font-medium">Branches</span>
+                    <span className="text-ui-ink font-bold">{counts?.branches || 0}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="space-y-6">
-              <div className="glass rounded-[2rem] p-8 border border-white/5">
+              <div className="glass rounded-panel p-8 border border-ui-line">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                     <Lock className="w-5 h-5" />
                   </div>
-                  <h3 className="text-xl font-bold text-white tracking-tight">Enabled Features</h3>
+                  <h3 className="text-lg font-semibold text-ui-ink">Enabled Features</h3>
                 </div>
                 <div className="space-y-3">
                   {[
-                    { flag: catalog.multi_language_enabled, label: "Multi-language Support", icon: Globe },
                     { flag: catalog.booking_enabled, label: "Booking System", icon: Calendar },
                     { flag: catalog.analytics_enabled, label: "Detailed Analytics", icon: BarChart3 }
                   ].map((feat, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl">
+                    <div key={i} className="flex items-center justify-between p-4 bg-ui-bg border border-ui-line rounded-control">
                       <div className="flex items-center gap-4">
-                        <feat.icon className="w-5 h-5 text-white/40" />
-                        <span className="text-white font-medium">{feat.label}</span>
+                        <feat.icon className="w-5 h-5 text-ui-muted" />
+                        <span className="text-ui-ink font-medium">{feat.label}</span>
                       </div>
                       {feat.flag ? (
-                        <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20">Enabled</div>
+                        <div className="px-3 py-1 rounded-full bg-ui-subtle text-ui-success text-xs font-bold border border-ui-line">Enabled</div>
                       ) : (
-                        <div className="px-3 py-1 rounded-full bg-white/5 text-white/20 text-[10px] font-bold uppercase tracking-widest border border-white/5">Locked</div>
+                        <div className="px-3 py-1 rounded-full bg-ui-bg text-ui-muted text-xs font-bold border border-ui-line">Off</div>
                       )}
                     </div>
                   ))}
 
                   {/* AI Usage Display */}
-                  <div className="mt-6 p-6 bg-gradient-to-br from-purple-500/10 to-violet-500/10 border border-purple-500/20 rounded-[2rem]">
+                  <div className="mt-6 p-6 border border-ui-line rounded-panel">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center text-purple-400">
+                        <div className="w-8 h-8 rounded-xl bg-ui-subtle flex items-center justify-center text-ui-primary">
                           <BarChart3 className="w-4 h-4" />
                         </div>
-                        <p className="text-white font-bold text-sm tracking-tight">AI Image Enhancement</p>
+                        <p className="text-ui-ink font-bold text-sm">AI Image Enhancement</p>
                       </div>
-                      <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Monthly Credits</span>
+                      <span className="text-xs font-semibold text-ui-primary">Monthly Credits</span>
                     </div>
 
                     <div className="space-y-3">
                       <div className="flex justify-between items-end">
-                        <p className="text-2xl font-black text-white leading-none">
+                        <p className="text-2xl font-semibold text-ui-ink leading-none">
                           {catalog.ai_image_enhancement_used || 0}
-                          <span className="text-white/20 text-sm font-bold ml-1">/ {catalog.ai_image_enhancement_limit || 10}</span>
+                          <span className="text-ui-muted text-sm font-bold ml-1">/ {catalog.ai_image_enhancement_limit || 10}</span>
                         </p>
-                        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">
+                        <p className="text-xs font-bold text-ui-muted">
                           {Math.round(((catalog.ai_image_enhancement_used || 0) / (catalog.ai_image_enhancement_limit || 10)) * 100)}% Used
                         </p>
                       </div>
-                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-2 w-full bg-ui-line rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-purple-500 to-violet-500 transition-all duration-1000"
+                          className="h-full bg-ui-primary transition-all duration-1000"
                           style={{ width: `${Math.min(100, ((catalog.ai_image_enhancement_used || 0) / (catalog.ai_image_enhancement_limit || 10)) * 100)}%` }}
                         />
                       </div>
@@ -516,53 +524,49 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
           <div className="space-y-6">
             {/* Success/Error Messages */}
             {successMessage && (
-              <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary text-sm font-bold flex items-center gap-3 animate-in slide-in-from-top">
+              <div className="p-4 bg-ui-subtle border border-ui-line rounded-control text-ui-success text-sm font-bold flex items-center gap-3 animate-in slide-in-from-top">
                 <CheckCircle className="w-5 h-5" />
                 {successMessage}
               </div>
             )}
             {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold flex items-center gap-3">
+              <div className="p-4 bg-ui-surface border border-ui-danger rounded-control text-ui-danger text-sm font-bold flex items-center gap-3">
                 <XCircle className="w-5 h-5" />
                 {error}
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid.cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Plan & Status */}
-              <div className="glass rounded-[2rem] p-8 border border-white/5">
+              <div className="glass rounded-panel p-8 border border-ui-line">
                 <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                     <CreditCard className="w-5 h-5" />
                   </div>
-                  <h3 className="text-xl font-bold text-white tracking-tight">Plan & Status</h3>
+                  <h3 className="text-lg font-semibold text-ui-ink">Plan & Status</h3>
                 </div>
 
                 <div className="space-y-6">
                   {/* Plan Selection */}
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Subscription Plan</label>
+                    <label className="block text-sm font-medium text-ui-ink mb-2">Subscription Plan</label>
                     <select
                       value={editForm.subscription_type}
                       onChange={(e) => {
                         const plan = e.target.value;
-                        // Auto-apply plan defaults including price
-                        const defaults: Record<string, any> = {
-                          essential: { max_items: 50, max_categories: 5, ai_image_enhancement_limit: 10, multi_language_enabled: false, price: 99 },
-                          pro: { max_items: 200, max_categories: 20, ai_image_enhancement_limit: 50, multi_language_enabled: true, price: 299 },
-                          enterprise: { max_items: 9999, max_categories: 999, ai_image_enhancement_limit: 200, multi_language_enabled: true, price: 399 },
-                        };
-                        const planDefaults = defaults[plan] || {};
-                        const { price, ...planSettings } = planDefaults;
+                        // Auto-apply plan defaults (from lib/plans.ts) including price
+                        const config = getPlanConfig(plan);
+                        const planSettings = config ? { ...config.limits } : {};
                         setEditForm({
                           ...editForm,
                           subscription_type: plan,
                           ...planSettings,
-                          amount_paid: price || editForm.amount_paid
+                          amount_paid: config?.price || editForm.amount_paid
                         });
                       }}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer font-bold"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer font-bold"
                     >
+                      <option value="trial">Free Trial</option>
                       <option value="essential">Essential</option>
                       <option value="pro">Pro</option>
                       <option value="enterprise">Enterprise</option>
@@ -573,22 +577,22 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   </div>
 
                   {/* Status Badge */}
-                  <div className="p-4 bg-white/[0.03] rounded-2xl border border-white/5">
+                  <div className="p-4 bg-ui-bg rounded-control border border-ui-line">
                     <div className="flex items-center justify-between">
-                      <span className="text-white/40 text-sm font-medium">Current Status</span>
+                      <span className="text-ui-muted text-sm font-medium">Current Status</span>
                       {(() => {
                         const expiresAt = catalog.expires_at ? new Date(catalog.expires_at) : null;
                         const now = new Date();
                         const daysRemaining = expiresAt ? Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
 
                         if (!expiresAt) {
-                          return <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-widest">Forever Active</span>;
+                          return <span className="px-3 py-1 rounded-full bg-ui-subtle text-ui-primary text-xs font-bold">Forever Active</span>;
                         } else if (daysRemaining && daysRemaining < 0) {
-                          return <span className="px-3 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-bold uppercase tracking-widest">Expired</span>;
+                          return <span className="px-3 py-1 rounded-full bg-ui-bg border border-ui-danger text-ui-danger text-xs font-bold">Expired</span>;
                         } else if (daysRemaining && daysRemaining <= 30) {
-                          return <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold uppercase tracking-widest">Expiring Soon ({daysRemaining} days)</span>;
+                          return <span className="px-3 py-1 rounded-full bg-ui-bg border border-ui-line text-ui-warning text-xs font-bold">Expiring Soon ({daysRemaining} days)</span>;
                         } else {
-                          return <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-widest">Active ({daysRemaining} days)</span>;
+                          return <span className="px-3 py-1 rounded-full bg-ui-subtle text-ui-success text-xs font-bold">Active ({daysRemaining} days)</span>;
                         }
                       })()}
                     </div>
@@ -597,21 +601,21 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   {/* Subscription Dates */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Start Date</label>
+                      <label className="block text-sm font-medium text-ui-ink mb-2">Start Date</label>
                       <input
                         type="date"
                         value={editForm.starts_at ? editForm.starts_at.split('T')[0] : ''}
                         onChange={(e) => setEditForm({ ...editForm, starts_at: e.target.value })}
-                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                        className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Expiry Date</label>
+                      <label className="block text-sm font-medium text-ui-ink mb-2">Expiry Date</label>
                       <input
                         type="date"
                         value={editForm.expires_at ? editForm.expires_at.split('T')[0] : ''}
                         onChange={(e) => setEditForm({ ...editForm, expires_at: e.target.value || null })}
-                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                        className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all"
                       />
                     </div>
                   </div>
@@ -624,13 +628,13 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                         currentExpiry.setFullYear(currentExpiry.getFullYear() + 1);
                         setEditForm({ ...editForm, expires_at: currentExpiry.toISOString().split('T')[0] });
                       }}
-                      className="flex-1 py-3 bg-violet-600/20 text-violet-400 font-bold rounded-xl hover:bg-violet-600/30 transition-all text-sm border border-violet-500/20"
+                      className="flex-1 py-3 bg-ui-surface text-ui-primary font-semibold rounded-control hover:bg-ui-subtle transition-all text-sm border border-ui-line"
                     >
                       + Extend 1 Year
                     </button>
                     <button
                       onClick={() => setEditForm({ ...editForm, expires_at: null })}
-                      className="flex-1 py-3 bg-primary/20 text-primary font-bold rounded-xl hover:bg-primary/30 transition-all text-sm border border-primary/20"
+                      className="flex-1 py-3 bg-ui-surface text-ui-primary font-semibold rounded-control hover:bg-ui-subtle transition-all text-sm border border-ui-line"
                     >
                       Set as Forever
                     </button>
@@ -638,7 +642,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 {/* Save Plan Button */}
-                <div className="pt-6 mt-6 border-t border-white/5">
+                <div className="pt-6 mt-6 border-t border-ui-line">
                   <button
                     onClick={() => handleSaveSection("Plan & Dates", {
                       subscription_type: editForm.subscription_type,
@@ -646,7 +650,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                       expires_at: editForm.expires_at,
                     })}
                     disabled={savingSection === "Plan & Dates"}
-                    className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                    className="w-full py-3 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
                   >
                     {savingSection === "Plan & Dates" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Save Plan & Dates
@@ -655,52 +659,52 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
               </div>
 
               {/* Limits */}
-              <div className="glass rounded-[2rem] p-8 border border-white/5">
+              <div className="glass rounded-panel p-8 border border-ui-line">
                 <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400">
+                  <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                     <Store className="w-5 h-5" />
                   </div>
-                  <h3 className="text-xl font-bold text-white tracking-tight">Plan Limits</h3>
+                  <h3 className="text-lg font-semibold text-ui-ink">Plan Limits</h3>
                 </div>
 
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Max Products</label>
+                      <label className="block text-sm font-medium text-ui-ink mb-2">Max Products</label>
                       <input
                         type="number"
                         value={editForm.max_items}
                         onChange={(e) => setEditForm({ ...editForm, max_items: parseInt(e.target.value) || 0 })}
-                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-xl"
+                        className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-bold text-xl"
                       />
-                      <p className="text-[10px] text-white/20 mt-2 ml-1">Currently using: {counts?.items || 0}</p>
+                      <p className="text-xs text-ui-muted mt-2 ml-1">Currently using: {counts?.items || 0}</p>
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Max Categories</label>
+                      <label className="block text-sm font-medium text-ui-ink mb-2">Max Categories</label>
                       <input
                         type="number"
                         value={editForm.max_categories}
                         onChange={(e) => setEditForm({ ...editForm, max_categories: parseInt(e.target.value) || 0 })}
-                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold text-xl"
+                        className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-bold text-xl"
                       />
-                      <p className="text-[10px] text-white/20 mt-2 ml-1">Currently using: {counts?.categories || 0}</p>
+                      <p className="text-xs text-ui-muted mt-2 ml-1">Currently using: {counts?.categories || 0}</p>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">AI Enhancement Limit (Monthly)</label>
+                    <label className="block text-sm font-medium text-ui-ink mb-2">AI Enhancement Limit (Monthly)</label>
                     <input
                       type="number"
                       value={editForm.ai_image_enhancement_limit}
                       onChange={(e) => setEditForm({ ...editForm, ai_image_enhancement_limit: parseInt(e.target.value) || 0 })}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-bold text-xl"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-bold text-xl"
                     />
-                    <p className="text-[10px] text-white/20 mt-2 ml-1">Used this month: {catalog.ai_image_enhancement_used || 0}</p>
+                    <p className="text-xs text-ui-muted mt-2 ml-1">Used this month: {catalog.ai_image_enhancement_used || 0}</p>
                   </div>
                 </div>
 
                 {/* Save Limits Button */}
-                <div className="pt-6 mt-6 border-t border-white/5">
+                <div className="pt-6 mt-6 border-t border-ui-line">
                   <button
                     onClick={() => handleSaveSection("Limits", {
                       max_items: editForm.max_items,
@@ -708,7 +712,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                       ai_image_enhancement_limit: editForm.ai_image_enhancement_limit,
                     })}
                     disabled={savingSection === "Limits"}
-                    className="w-full py-3 bg-purple-600 text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                    className="w-full py-3 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
                   >
                     {savingSection === "Limits" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Save Limits
@@ -717,39 +721,39 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
               </div>
 
               {/* Payment Recording */}
-              <div className="lg:col-span-2 glass rounded-[2rem] p-8 border border-white/5">
+              <div className="lg:col-span-2 glass rounded-panel p-8 border border-ui-line">
                 <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                  <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-success">
                     <CreditCard className="w-5 h-5" />
                   </div>
-                  <h3 className="text-xl font-bold text-white tracking-tight">Payment Record</h3>
+                  <h3 className="text-lg font-semibold text-ui-ink">Payment Record</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Amount Paid</label>
+                    <label className="block text-sm font-medium text-ui-ink mb-2">Amount Paid</label>
                     <div className="relative">
-                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 font-bold">$</span>
+                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-ui-muted font-bold">$</span>
                       <input
                         type="number"
                         value={editForm.amount_paid}
                         onChange={(e) => setEditForm({ ...editForm, amount_paid: e.target.value })}
-                        className="w-full pl-10 pr-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all font-bold text-xl"
+                        className="w-full pl-10 pr-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-bold text-xl"
                         placeholder="0"
                       />
                     </div>
-                    <p className="text-[10px] text-white/30 mt-2 ml-1">
+                    <p className="text-xs text-ui-muted mt-2 ml-1">
                       Plan price: ${
-                        { essential: 99, pro: 299, enterprise: 399 }[editForm.subscription_type as string] || '—'
+                        getPlanPrice(editForm.subscription_type as string) || '—'
                       }/year
                     </p>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Payment Method</label>
+                    <label className="block text-sm font-medium text-ui-ink mb-2">Payment Method</label>
                     <select
                       value={editForm.payment_method}
                       onChange={(e) => setEditForm({ ...editForm, payment_method: e.target.value })}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all appearance-none cursor-pointer"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer"
                     >
                       <option value="">Select method...</option>
                       <option value="cash">Cash</option>
@@ -760,19 +764,19 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Payment Notes</label>
+                    <label className="block text-sm font-medium text-ui-ink mb-2">Payment Notes</label>
                     <input
                       type="text"
                       value={editForm.payment_notes}
                       onChange={(e) => setEditForm({ ...editForm, payment_notes: e.target.value })}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all"
                       placeholder="Receipt #, date, etc."
                     />
                   </div>
                 </div>
 
                 {/* Save Payment Button */}
-                <div className="pt-6 mt-6 border-t border-white/5">
+                <div className="pt-6 mt-6 border-t border-ui-line">
                   <button
                     onClick={() => handleSaveSection("Payment", {
                       amount_paid: parseFloat(editForm.amount_paid) || null,
@@ -780,7 +784,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                       payment_notes: editForm.payment_notes,
                     })}
                     disabled={savingSection === "Payment"}
-                    className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                    className="w-full py-3 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
                   >
                     {savingSection === "Payment" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Record Payment
@@ -796,52 +800,52 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
           <div className="space-y-6">
             {/* Success/Error Messages */}
             {successMessage && (
-              <div className="p-4 bg-primary/10 border border-primary/20 rounded-2xl text-primary text-sm font-bold flex items-center gap-3 animate-in slide-in-from-top">
+              <div className="p-4 bg-ui-subtle border border-ui-line rounded-control text-ui-success text-sm font-bold flex items-center gap-3 animate-in slide-in-from-top">
                 <CheckCircle className="w-5 h-5" />
                 {successMessage}
               </div>
             )}
             {error && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-bold flex items-center gap-3">
+              <div className="p-4 bg-ui-surface border border-ui-danger rounded-control text-ui-danger text-sm font-bold flex items-center gap-3">
                 <XCircle className="w-5 h-5" />
                 {error}
               </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="glass rounded-[2rem] p-8 border border-white/5 h-fit">
-                <h3 className="text-xl font-bold text-white mb-8 tracking-tight">Catalog Settings</h3>
+              <div className="glass rounded-panel p-8 border border-ui-line h-fit">
+                <h3 className="text-lg font-semibold text-ui-ink mb-8">Catalog Settings</h3>
 
                 <div className="space-y-6">
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Catalog Name</label>
+                    <label className="block text-sm font-medium text-ui-ink mb-2">Catalog Name</label>
                     <input
                       type="text"
                       value={editForm.name}
                       onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">URL Slug</label>
+                    <label className="block text-sm font-medium text-ui-ink mb-2">URL Slug</label>
                     <div className="relative">
-                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 font-bold">/c/</span>
+                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-ui-muted font-bold">/c/</span>
                       <input
                         type="text"
                         value={editForm.slug}
                         onChange={(e) => setEditForm({ ...editForm, slug: e.target.value })}
-                        className="w-full pl-12 pr-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono text-sm"
+                        className="w-full pl-12 pr-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-mono text-sm"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Business Category</label>
+                    <label className="block text-sm font-medium text-ui-ink mb-2">Business Category</label>
                     <select
                       value={editForm.business_type}
                       onChange={(e) => setEditForm({ ...editForm, business_type: e.target.value })}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer"
                     >
                       <option value="restaurant">Restaurant</option>
                       <option value="cafe">Cafe</option>
@@ -855,44 +859,44 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                     </select>
                   </div>
 
-                  <div className="pt-4 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="pt-4 border-t border-ui-line grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Max Products</label>
+                      <label className="block text-sm font-medium text-ui-ink mb-2">Max Products</label>
                       <input
                         type="number"
                         value={editForm.max_items}
                         onChange={(e) => setEditForm({ ...editForm, max_items: parseInt(e.target.value) || 0 })}
-                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
+                        className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-bold"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Max Categories</label>
+                      <label className="block text-sm font-medium text-ui-ink mb-2">Max Categories</label>
                       <input
                         type="number"
                         value={editForm.max_categories}
                         onChange={(e) => setEditForm({ ...editForm, max_categories: parseInt(e.target.value) || 0 })}
-                        className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold"
+                        className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-bold"
                       />
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-white/5">
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">AI Enhancement Limit</label>
+                  <div className="pt-4 border-t border-ui-line">
+                    <label className="block text-sm font-medium text-ui-ink mb-2">AI Enhancement Limit</label>
                     <input
                       type="number"
                       value={editForm.ai_image_enhancement_limit}
                       onChange={(e) => setEditForm({ ...editForm, ai_image_enhancement_limit: parseInt(e.target.value) || 0 })}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all font-bold text-xl"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-bold text-xl"
                     />
-                    <p className="text-[10px] text-white/20 mt-3 ml-1">Number of monthly professional image enhancements allowed.</p>
+                    <p className="text-xs text-ui-muted mt-3 ml-1">Number of monthly professional image enhancements allowed.</p>
                   </div>
 
                   {/* Section Save Button */}
-                  <div className="pt-6 border-t border-white/5">
+                  <div className="pt-6 border-t border-ui-line">
                     <button
                       onClick={saveCatalogSettings}
                       disabled={savingSection === "Catalog Settings"}
-                      className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                      className="w-full py-3 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
                     >
                       {savingSection === "Catalog Settings" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       Save Catalog Settings
@@ -901,46 +905,45 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
               </div>
 
-              <div className="glass rounded-[2rem] p-8 border border-white/5 h-fit flex flex-col">
-                <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Feature Access</h3>
-                <p className="text-white/30 text-sm mb-8 font-medium">Control module access for this catalog.</p>
+              <div className="glass rounded-panel p-8 border border-ui-line h-fit flex flex-col">
+                <h3 className="text-lg font-semibold text-ui-ink mb-2">Feature Access</h3>
+                <p className="text-ui-muted text-sm mb-8 font-medium">Turn features on or off for this catalog.</p>
 
                 <div className="space-y-3">
                   {[
-                    { key: "multi_language_enabled", label: "Multi-language Support", desc: "Allow multiple languages (EN, AR, FR)" },
                     { key: "booking_enabled", label: "Booking System", desc: "Enable table or appointment bookings" },
                     { key: "analytics_enabled", label: "Detailed Analytics", desc: "Track visitor behavior and clicks" },
                     { key: "custom_domain_enabled", label: "Custom Domain", desc: "Use a custom website address" },
                   ].map((feature) => (
-                    <div key={feature.key} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-[1.5rem] hover:bg-white/[0.05] transition-colors">
+                    <div key={feature.key} className="flex items-center justify-between p-4 bg-ui-surface border border-ui-line rounded-control hover:bg-ui-subtle transition-colors">
                       <div>
-                        <p className="text-white font-bold tracking-tight text-sm">{feature.label}</p>
-                        <p className="text-[10px] text-white/20 font-bold uppercase tracking-widest">{feature.desc}</p>
+                        <p className="text-ui-ink font-bold text-sm">{feature.label}</p>
+                        <p className="text-xs text-ui-muted font-bold">{feature.desc}</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
                           className="sr-only peer"
+                          aria-label={feature.label}
                           checked={!!editForm[feature.key]}
                           onChange={(e) => setEditForm({ ...editForm, [feature.key]: e.target.checked })}
                         />
-                        <div className="w-11 h-6 bg-white/10 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary shadow-inner"></div>
+                        <div className="w-11 h-6 bg-ui-line rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-ui-primary shadow-inner"></div>
                       </label>
                     </div>
                   ))}
                 </div>
 
                 {/* Languages Selection (Conditional) */}
-                <div className="mt-8 pt-8 border-t border-white/5 space-y-6">
-                  <h4 className="text-sm font-bold text-white tracking-tight">Language Configuration</h4>
+                <div className="mt-8 pt-8 border-t border-ui-line space-y-6">
+                  <h4 className="text-sm font-bold text-ui-ink">Language Configuration</h4>
 
                   <div className="space-y-4">
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] ml-1">Enabled Languages</label>
-                    <div className="grid grid-cols-3 gap-3">
+                    <p id="enabled-languages-label" className="block text-sm font-medium text-ui-ink">Enabled Languages</p>
+                    <div role="group" aria-labelledby="enabled-languages-label" className="grid grid-cols-2 gap-3">
                       {[
                         { code: "en", label: "English" },
                         { code: "ar", label: "Arabic" },
-                        { code: "fr", label: "French" },
                       ].map((l) => {
                         const langs = editForm.enabled_languages.split(",").filter(Boolean);
                         const isEnabled = langs.includes(l.code);
@@ -948,6 +951,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                           <button
                             key={l.code}
                             type="button"
+                            aria-pressed={isEnabled}
                             onClick={() => {
                               let newLangs = [...langs];
                               if (isEnabled) {
@@ -956,22 +960,13 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                                   newLangs = newLangs.filter(c => c !== l.code);
                                 }
                               } else {
-                                // Add the language
-                                if (editForm.multi_language_enabled) {
-                                  // Multi-language enabled: add to list
-                                  newLangs.push(l.code);
-                                } else {
-                                  // Multi-language disabled: replace with single language
-                                  newLangs = [l.code];
-                                  setEditForm({ ...editForm, enabled_languages: l.code, default_language: l.code });
-                                  return;
-                                }
+                                newLangs.push(l.code);
                               }
                               setEditForm({ ...editForm, enabled_languages: newLangs.join(",") });
                             }}
-                            className={`py-3 rounded-2xl border font-bold text-xs uppercase tracking-widest transition-all ${isEnabled
-                              ? "bg-primary/20 border-primary text-primary"
-                              : "bg-white/5 border-white/5 text-white/20 hover:text-white/40"
+                            className={`py-3 rounded-control border font-bold text-xs transition-all ${isEnabled
+                              ? "bg-ui-subtle border-ui-primary text-ui-primary"
+                              : "bg-ui-surface border-ui-line text-ui-muted hover:text-ui-ink"
                               }`}
                           >
                             {l.label}
@@ -982,15 +977,16 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">Primary Language</label>
+                    <label htmlFor="catalog-default-language" className="block text-sm font-medium text-ui-ink mb-2">Primary Language</label>
                     <select
+                      id="catalog-default-language"
                       value={editForm.default_language}
                       onChange={(e) => setEditForm({ ...editForm, default_language: e.target.value })}
-                      className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
+                      className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer"
                     >
                       {editForm.enabled_languages.split(",").filter(Boolean).map((code: string) => (
                         <option key={code} value={code}>
-                          {code === "en" ? "English" : code === "ar" ? "Arabic" : "French"}
+                          {code === "ar" ? "Arabic" : "English"}
                         </option>
                       ))}
                     </select>
@@ -998,11 +994,11 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 {/* Section Save Button for Features */}
-                <div className="mt-8 pt-6 border-t border-white/5">
+                <div className="mt-8 pt-6 border-t border-ui-line">
                   <button
                     onClick={saveFeatureAccess}
                     disabled={savingSection === "Feature Access"}
-                    className="w-full py-3 bg-primary text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                    className="w-full py-3 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
                   >
                     {savingSection === "Feature Access" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Save Feature Access
@@ -1010,11 +1006,11 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 {/* Section Save Button for Languages */}
-                <div className="mt-8 pt-6 border-t border-white/5">
+                <div className="mt-8 pt-6 border-t border-ui-line">
                   <button
                     onClick={saveLanguageConfig}
                     disabled={savingSection === "Language Configuration"}
-                    className="w-full py-3 bg-violet-600 text-white font-bold rounded-xl hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
+                    className="w-full py-3 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm"
                   >
                     {savingSection === "Language Configuration" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
                     Save Language Config
@@ -1024,38 +1020,39 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
 
               <div className="lg:col-span-2 pt-10 mt-4">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
+                  <div className="w-8 h-8 rounded-control bg-ui-bg border border-ui-line flex items-center justify-center text-ui-danger">
                     <ShieldAlert className="w-4 h-4" />
                   </div>
-                  <h4 className="text-white font-bold tracking-tight">Danger Zone</h4>
+                  <h4 className="text-ui-ink font-bold">Danger Zone</h4>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between glass border border-purple-500/20 p-6 rounded-[2rem] bg-purple-500/[0.02]">
+                  <div className="flex items-center justify-between glass border border-ui-line p-6 rounded-panel">
                     <div>
-                      <p className="text-purple-400 font-bold tracking-tight">Catalog Visibility</p>
-                      <p className="text-purple-400/40 text-[10px] font-bold uppercase tracking-widest">Disable or enable public access</p>
+                      <p className="text-ui-ink font-bold">Catalog Visibility</p>
+                      <p className="text-ui-muted text-xs font-bold">Disable or enable public access</p>
                     </div>
                     <button
                       onClick={() => handleSaveSection("Visibility", { is_suspended: !editForm.is_suspended })}
                       disabled={savingSection === "Visibility"}
-                      className={`px-6 py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-widest ${editForm.is_suspended
-                        ? "bg-primary text-white shadow-lg shadow-primary/20"
-                        : "bg-purple-500/20 text-purple-400 border border-purple-500/20 hover:bg-purple-500/30 text-white"
+                      className={`px-6 py-2 rounded-control text-sm font-semibold transition-colors ${editForm.is_suspended
+                        ? "bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover"
+                        : "bg-ui-surface text-ui-danger border border-ui-danger hover:bg-ui-bg"
                         }`}
                     >
                       {savingSection === "Visibility" ? <Loader2 className="w-4 h-4 animate-spin" /> : (editForm.is_suspended ? "Activate" : "Suspend")}
                     </button>
                   </div>
 
-                  <div className="flex items-center justify-between glass border border-white/5 p-6 rounded-[2rem] hover:border-purple-500/20 transition-colors group/del">
+                  <div className="flex items-center justify-between glass border border-ui-line p-6 rounded-panel hover:border-ui-danger transition-colors group/del">
                     <div>
-                      <p className="text-white/40 group-hover:text-purple-400 font-bold tracking-tight transition-colors">Delete Catalog</p>
-                      <p className="text-white/20 text-[10px] font-bold uppercase tracking-widest">Permanently remove all data</p>
+                      <p className="text-ui-ink group-hover/del:text-ui-danger font-bold transition-colors">Delete Catalog</p>
+                      <p className="text-ui-muted text-xs font-bold">Permanently remove all data</p>
                     </div>
                     <button
                       onClick={handleDelete}
-                      className="p-3 rounded-xl bg-white/5 text-white/30 hover:bg-purple-500 hover:text-white transition-all border border-white/5"
+                      aria-label="Delete catalog"
+                      className="p-3 rounded-control bg-ui-surface text-ui-danger hover:bg-ui-danger hover:text-white transition-all border border-ui-line"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -1063,8 +1060,8 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 {error && (
-                  <div className="mt-8 bg-purple-500/10 border border-purple-500/20 rounded-2xl px-5 py-4 text-purple-400 text-sm font-medium flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                  <div className="mt-8 bg-ui-surface border border-ui-danger rounded-control px-5 py-4 text-ui-danger text-sm font-medium flex items-center gap-3">
+                    <div className="w-1.5 h-1.5 rounded-full bg-ui-danger" />
                     {error}
                   </div>
                 )}
@@ -1075,15 +1072,15 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
 
         {/* TAB: ADMINS */}
         {activeTab === "admins" && (
-          <div className="glass rounded-[2rem] border border-white/5 overflow-hidden">
-            <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.02]">
+          <div className="glass rounded-panel border border-ui-line overflow-hidden">
+            <div className="p-8 border-b border-ui-line flex justify-between items-center bg-ui-bg">
               <div>
-                <h3 className="text-xl font-bold text-white tracking-tight">Admins</h3>
-                <p className="text-xs text-white/30 font-medium mt-1">{admins.length} Total Users</p>
+                <h3 className="text-lg font-semibold text-ui-ink">Admins</h3>
+                <p className="text-xs text-ui-muted font-medium mt-1">{admins.length} Total Users</p>
               </div>
               <button
                 onClick={openAddAdmin}
-                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white font-bold rounded-xl hover:scale-105 transition-all text-sm shadow-lg shadow-primary/20"
+                className="flex items-center gap-2 px-4 py-2.5 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control transition-colors text-sm"
               >
                 <Plus className="w-4 h-4" />
                 Add Admin
@@ -1091,7 +1088,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="text-white/30 text-[10px] uppercase font-bold tracking-widest bg-white/[0.03]">
+                <thead className="text-ui-muted text-xs font-bold bg-ui-bg">
                   <tr>
                     <th className="px-8 py-5">Name</th>
                     <th className="px-8 py-5">Contact</th>
@@ -1100,46 +1097,49 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                     <th className="px-8 py-5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-ui-line">
                   {admins.map((admin: any) => (
-                    <tr key={admin.id} className="group hover:bg-white/[0.02] transition-colors">
+                    <tr key={admin.id} className="group hover:bg-ui-subtle transition-colors">
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold border border-primary/20">
+                          <div className="w-9 h-9 rounded-full bg-ui-subtle text-ui-primary flex items-center justify-center font-bold border border-ui-line">
                             {admin.name.charAt(0)}
                           </div>
-                          <span className="text-white font-bold tracking-tight">{admin.name}</span>
+                          <span className="text-ui-ink font-bold">{admin.name}</span>
                         </div>
                       </td>
-                      <td className="px-8 py-6 text-white/40 font-medium">{admin.email}</td>
+                      <td className="px-8 py-6 text-ui-muted font-medium">{admin.email}</td>
                       <td className="px-8 py-6">
-                        <span className="px-3 py-1 rounded-full bg-white/5 text-white/60 text-[10px] font-bold uppercase tracking-widest border border-white/5">
+                        <span className="px-3 py-1 rounded-full bg-ui-subtle text-ui-muted text-xs font-bold border border-ui-line">
                           {admin.role}
                         </span>
                       </td>
-                      <td className="px-8 py-6 text-white/40 text-sm">
+                      <td className="px-8 py-6 text-ui-muted text-sm">
                         {admin.last_login ? new Date(admin.last_login).toLocaleDateString(undefined, { dateStyle: 'medium' }) : "Never logged in"}
                       </td>
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openEditAdmin(admin)}
-                            className="p-2 rounded-xl bg-white/5 text-white/40 hover:bg-white/10 hover:text-white transition-all border border-white/5"
+                            className="p-2 min-w-11 min-h-11 inline-flex items-center justify-center rounded-control bg-ui-surface text-ui-muted hover:bg-ui-subtle hover:text-ui-ink transition-all border border-ui-line"
                             title="Edit Admin"
+                            aria-label={`Edit admin ${admin.email}`}
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setResetAdmin(admin)}
-                            className="p-2 rounded-xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all border border-primary/20"
+                            className="p-2 min-w-11 min-h-11 inline-flex items-center justify-center rounded-control bg-ui-surface text-ui-primary hover:bg-ui-primary hover:text-ui-primary-fg transition-all border border-ui-line"
                             title="Reset Password"
+                            aria-label={`Reset password for ${admin.email}`}
                           >
                             <Key className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteAdmin(admin.id)}
-                            className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all border border-red-500/20"
+                            className="p-2 min-w-11 min-h-11 inline-flex items-center justify-center rounded-control bg-ui-surface text-ui-danger hover:bg-ui-danger hover:text-white transition-all border border-ui-line"
                             title="Remove Admin"
+                            aria-label={`Remove admin ${admin.email}`}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1150,8 +1150,8 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   {admins.length === 0 && (
                     <tr>
                       <td colSpan={5} className="px-8 py-20 text-center">
-                        <Users className="w-12 h-12 text-white/5 mx-auto mb-4" />
-                        <p className="text-white/20 font-medium">No admin accounts found.</p>
+                        <Users className="w-12 h-12 text-ui-line mx-auto mb-4" />
+                        <p className="text-ui-muted font-medium">No admin accounts found.</p>
                       </td>
                     </tr>
                   )}
@@ -1164,35 +1164,35 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         {/* Reset Password Modal */}
         {resetAdmin && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !resetting && setResetAdmin(null)} />
-            <div className="glass w-full max-w-md rounded-[2.5rem] border border-white/10 p-10 relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-              <div className="w-16 h-16 rounded-3xl bg-primary/10 text-primary flex items-center justify-center mb-6">
+            <div className="absolute inset-0 bg-black/40" onClick={() => !resetting && setResetAdmin(null)} />
+            <div className="glass w-full max-w-md rounded-panel border border-ui-line p-10 relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="w-16 h-16 rounded-panel bg-ui-subtle text-ui-primary flex items-center justify-center mb-6">
                 <Lock className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">Reset Password</h3>
-              <p className="text-white/40 mb-8 font-medium">
-                Generating a new password for <span className="text-white font-bold">{resetAdmin.name}</span>.
+              <h3 className="text-xl font-semibold text-ui-ink mb-2">Reset Password</h3>
+              <p className="text-ui-muted mb-8 font-medium">
+                Generating a new password for <span className="text-ui-ink font-bold">{resetAdmin.name}</span>.
               </p>
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3 ml-1">New Security Key</label>
+                  <label className="block text-sm font-medium text-ui-ink mb-2">New password</label>
                   <input
                     type="password"
                     autoFocus
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-mono"
                     placeholder="••••••••"
                   />
-                  <p className="text-[10px] text-white/20 mt-3 ml-1">Minimum 8 characters</p>
+                  <p className="text-xs text-ui-muted mt-3 ml-1">Minimum 8 characters</p>
                 </div>
 
                 <div className="flex flex-col gap-3 pt-4">
                   <button
                     onClick={handleResetPassword}
                     disabled={resetting || !newPassword}
-                    className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-[0_0_20px_-5px_rgba(124,58,237,0.5)] flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
                   >
                     {resetting ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldAlert className="w-5 h-5" />}
                     Update Password
@@ -1200,7 +1200,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   <button
                     onClick={() => setResetAdmin(null)}
                     disabled={resetting}
-                    className="w-full py-4 text-white/40 font-bold hover:text-white transition-colors"
+                    className="w-full py-4 text-ui-muted font-bold hover:text-ui-ink transition-colors"
                   >
                     Cancel
                   </button>
@@ -1213,61 +1213,61 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         {/* Add/Edit Admin Modal */}
         {showAdminModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !savingAdmin && setShowAdminModal(false)} />
-            <div className="glass w-full max-w-md rounded-[2.5rem] border border-white/10 p-10 relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-              <div className="w-16 h-16 rounded-3xl bg-primary/10 text-primary flex items-center justify-center mb-6">
+            <div className="absolute inset-0 bg-black/40" onClick={() => !savingAdmin && setShowAdminModal(false)} />
+            <div className="glass w-full max-w-md rounded-panel border border-ui-line p-10 relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
+              <div className="w-16 h-16 rounded-panel bg-ui-subtle text-ui-primary flex items-center justify-center mb-6">
                 {adminModalMode === "add" ? <Plus className="w-8 h-8" /> : <Pencil className="w-8 h-8" />}
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">
+              <h3 className="text-xl font-semibold text-ui-ink mb-2">
                 {adminModalMode === "add" ? "Add New Admin" : "Edit Admin"}
               </h3>
-              <p className="text-white/40 mb-8 font-medium">
+              <p className="text-ui-muted mb-8 font-medium">
                 {adminModalMode === "add" ? "Create a new admin account for this catalog." : "Update admin details."}
               </p>
 
               <div className="space-y-5">
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-2 ml-1">Full Name</label>
+                  <label className="block text-sm font-medium text-ui-ink mb-2">Full Name</label>
                   <input
                     type="text"
                     value={adminForm.name}
                     onChange={(e) => setAdminForm({ ...adminForm, name: e.target.value })}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all"
                     placeholder="John Doe"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-2 ml-1">Email Address</label>
+                  <label className="block text-sm font-medium text-ui-ink mb-2">Email Address</label>
                   <input
                     type="email"
                     value={adminForm.email}
                     onChange={(e) => setAdminForm({ ...adminForm, email: e.target.value })}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all"
                     placeholder="admin@example.com"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-2 ml-1">
-                    Password {adminModalMode === "edit" && <span className="text-white/20">(leave blank to keep current)</span>}
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
+                    Password {adminModalMode === "edit" && <span className="text-ui-muted">(leave blank to keep current)</span>}
                   </label>
                   <input
                     type="password"
                     value={adminForm.password}
                     onChange={(e) => setAdminForm({ ...adminForm, password: e.target.value })}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white placeholder-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all font-mono"
                     placeholder="••••••••"
                   />
-                  {adminModalMode === "add" && <p className="text-[10px] text-white/20 mt-2 ml-1">Minimum 8 characters</p>}
+                  {adminModalMode === "add" && <p className="text-xs text-ui-muted mt-2 ml-1">Minimum 8 characters</p>}
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-2 ml-1">Role</label>
+                  <label className="block text-sm font-medium text-ui-ink mb-2">Role</label>
                   <select
                     value={adminForm.role}
                     onChange={(e) => setAdminForm({ ...adminForm, role: e.target.value })}
-                    className="w-full px-5 py-4 bg-black/40 border border-white/5 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none cursor-pointer"
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer"
                   >
                     <option value="admin">Admin</option>
                     <option value="owner">Owner</option>
@@ -1279,7 +1279,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   <button
                     onClick={handleSaveAdmin}
                     disabled={savingAdmin}
-                    className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 shadow-[0_0_20px_-5px_rgba(124,58,237,0.5)] flex items-center justify-center gap-3"
+                    className="w-full py-4 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover font-semibold rounded-control transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
                   >
                     {savingAdmin ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     {adminModalMode === "add" ? "Create Admin" : "Update Admin"}
@@ -1287,7 +1287,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   <button
                     onClick={() => setShowAdminModal(false)}
                     disabled={savingAdmin}
-                    className="w-full py-4 text-white/40 font-bold hover:text-white transition-colors"
+                    className="w-full py-4 text-ui-muted font-bold hover:text-ui-ink transition-colors"
                   >
                     Cancel
                   </button>

@@ -23,20 +23,28 @@ export const RATE_LIMITS = {
   verifyCode: { windowMs: 10 * 60 * 1000, maxRequests: 5 }, // 5 guesses per code lifetime
 
   // Public AI endpoints (each call costs money)
-  aiChat: { windowMs: 60 * 1000, maxRequests: 15 },       // 15 msgs/min
-  tts: { windowMs: 60 * 1000, maxRequests: 30 },          // 30 clips/min
+  // Fixed buckets so the limit holds across every catalog's URL
+  aiChat: { windowMs: 60 * 1000, maxRequests: 15, keyPrefix: 'ai-chat' },  // 15 msgs/min
+  tts: { windowMs: 60 * 1000, maxRequests: 30, keyPrefix: 'ai-tts' },     // 30 clips/min
+
+  // Owner-side AI writing tools, counted per catalog rather than per IP
+  aiGenerate: { windowMs: 60 * 60 * 1000, maxRequests: 30, keyPrefix: 'ai-generate' }, // 30 calls/hour
 };
 
 /**
  * Get client identifier (IP address)
  */
 export function getClientIdentifier(request: NextRequest): string {
-  // Set by Netlify's edge and not spoofable by the client, unlike x-forwarded-for
-  const netlifyIp = request.headers.get('x-nf-client-connection-ip');
-  if (netlifyIp) {
-    return netlifyIp.trim();
+  // Set by Netlify's edge and not spoofable there. Anywhere else a client could send it,
+  // so it is only trusted when actually running on Netlify.
+  if (process.env.NETLIFY === 'true') {
+    const netlifyIp = request.headers.get('x-nf-client-connection-ip');
+    if (netlifyIp) {
+      return netlifyIp.trim();
+    }
   }
 
+  // On a VPS, nginx overwrites this with the connecting address (see deploy/nginx.conf)
   const realIp = request.headers.get('x-real-ip');
   if (realIp) {
     return realIp.trim();

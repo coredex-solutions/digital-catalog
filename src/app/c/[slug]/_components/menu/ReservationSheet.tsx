@@ -76,16 +76,16 @@ export function ReservationSheet() {
         className="flex min-h-12 w-full items-center justify-center gap-2 rounded-control bg-brand px-4 font-semibold text-brand-fg transition-transform active:scale-[0.99]"
       >
         <MessageCircle className="h-5 w-5" aria-hidden />
-        {ar ? "إرسال طلب الحجز عبر واتساب" : "Send request on WhatsApp"}
+        {t.reserveSend}
       </button>
       <p className="mt-2 text-center text-xs text-menu-muted">
-        {ar ? "سيؤكد المطعم حجزك عبر واتساب." : "The restaurant will confirm your table on WhatsApp."}
+        {t.reserveHint}
       </p>
     </div>
   );
 
   return (
-    <Sheet open={open} onClose={closeSheet} title={ar ? "حجز طاولة" : "Reserve a table"} footer={footer}>
+    <Sheet open={open} onClose={closeSheet} title={t.reserveTitle} footer={footer}>
       <form
         className="space-y-5"
         noValidate
@@ -95,7 +95,7 @@ export function ReservationSheet() {
         }}
       >
         <div className="grid grid-cols-2 gap-3">
-          <Field label={ar ? "التاريخ" : "Date"} error={errors.date}>
+          <Field label={t.reserveDate} error={errors.date}>
             {(props) => (
               <input
                 {...props}
@@ -107,7 +107,7 @@ export function ReservationSheet() {
               />
             )}
           </Field>
-          <Field label={ar ? "الوقت" : "Time"} error={errors.time}>
+          <Field label={t.reserveTime} error={errors.time}>
             {(props) => (
               <input {...props} type="time" step={900} value={form.time} onChange={(event) => update("time", event.target.value)} className={inputClass} />
             )}
@@ -116,9 +116,9 @@ export function ReservationSheet() {
 
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-semibold" id="guests-label">
-            {ar ? "عدد الأشخاص" : "Guests"}
+            {t.reserveGuests}
           </span>
-          <QuantityStepper value={guests} onChange={setGuests} label={ar ? "عدد الأشخاص" : "Guests"} />
+          <QuantityStepper value={guests} onChange={setGuests} label={t.reserveGuests} />
         </div>
 
         <Field label={t.name} error={errors.name}>
@@ -150,14 +150,14 @@ export function ReservationSheet() {
               rows={2}
               value={form.notes}
               onChange={(event) => update("notes", event.target.value.slice(0, 300))}
-              placeholder={ar ? "مناسبة خاصة، كرسي أطفال…" : "Special occasion, high chair…"}
+              placeholder={t.reserveNotesPlaceholder}
               className={`${inputClass} resize-none py-3`}
             />
           )}
         </Field>
 
         <button type="submit" className="sr-only" tabIndex={-1}>
-          {ar ? "إرسال" : "Send"}
+          {t.send}
         </button>
       </form>
     </Sheet>

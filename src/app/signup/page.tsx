@@ -3,17 +3,14 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Zap,
     ArrowRight,
     Check,
     Loader2,
     Globe,
-    ShieldCheck,
-    Building2,
     User,
     Mail,
     Lock,
-    Sparkles
+    QrCode
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -131,19 +128,13 @@ function SignupForm() {
     };
 
     return (
-        <main className="min-h-screen bg-[#020203] text-white selection:bg-primary/30 font-outfit relative overflow-hidden flex items-center justify-center p-6">
-            {/* Background Orbs */}
-            <div className="fixed inset-0 pointer-events-none opacity-40 z-0">
-                <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-primary/10 rounded-full blur-[160px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-violet-600/5 rounded-full blur-[160px]" />
-            </div>
-
+        <main lang="en" dir="ltr" className="platform min-h-screen relative flex items-center justify-center px-4 py-10">
             <div className="w-full max-w-xl relative z-10">
-                <Link href="/" className="flex items-center gap-3 mb-12 group justify-center">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform duration-500">
-                        <Zap className="text-white w-5 h-5 fill-white" />
-                    </div>
-                    <span className="text-xl font-black tracking-tighter uppercase italic">Coredex Solutions</span>
+                <Link href="/" className="flex items-center gap-2 mb-8 justify-center font-semibold">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-control bg-ui-primary text-ui-primary-fg" aria-hidden>
+                        <QrCode className="h-4 w-4" />
+                    </span>
+                    Coredex
                 </Link>
 
                 <AnimatePresence mode="wait">
@@ -153,29 +144,26 @@ function SignupForm() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95 }}
-                            className="glass-card p-10 md:p-12 rounded-[2.5rem] border border-white/5 relative overflow-hidden"
+                            className="glass-card p-6 sm:p-10 rounded-panel border border-ui-line relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 p-8 text-white/5">
-                                <Building2 className="w-32 h-32" />
-                            </div>
 
                             <div className="relative z-10">
                                 <div className="mb-10 text-center">
-                                    <h2 className="text-4xl font-black tracking-tighter mb-4 italic">
-                                        {step === 1 ? "ACCOUNT SETUP" : step === 1.5 ? "EMAIL VERIFICATION" : step === 2 ? "CATALOG DETAILS" : "DESIGN SIGNATURE"}
-                                    </h2>
+                                    <h1 className="text-2xl sm:text-3xl font-semibold mb-4">
+                                        {step === 1 ? "Create your account" : step === 1.5 ? "Check your email" : step === 2 ? "Your restaurant" : "Choose your colours"}
+                                    </h1>
                                     <div className="flex items-center justify-center gap-2 mb-4">
-                                        <span className="px-3 py-1 bg-primary/20 text-primary text-[9px] font-black uppercase tracking-widest rounded-full border border-primary/20">
-                                            {formData.plan} Plan — Free 48h Trial
+                                        <span className="px-3 py-1 bg-ui-subtle text-ui-primary text-xs font-semibold rounded-full border border-ui-line">
+                                            <span className="capitalize">{formData.plan}</span> plan · 2-day free trial
                                         </span>
                                     </div>
-                                    <p className="text-white/40 text-sm font-medium uppercase tracking-widest">
+                                    <p className="text-ui-muted text-sm font-medium">
                                         Step {step === 1.5 ? "1.5" : step} of 3 — {step === 1 ? "Owner verification" : step === 1.5 ? "Email Confirmation" : step === 2 ? "Environment config" : "Visual identity"}
                                     </p>
                                 </div>
 
                                 {error && (
-                                    <div className="mb-8 p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest text-purple-400 text-center">
+                                    <div className="mb-8 p-4 bg-ui-subtle border border-ui-line rounded-control text-xs font-semibold text-ui-primary text-center">
                                         {error}
                                     </div>
                                 )}
@@ -184,46 +172,46 @@ function SignupForm() {
                                     {step === 1 ? (
                                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Full Name</label>
+                                                <label className="text-xs font-semibold text-ui-muted ml-2">Full Name</label>
                                                 <div className="relative group">
-                                                    <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
+                                                    <User className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-ui-muted group-focus-within:text-primary transition-colors" />
                                                     <input
                                                         type="text"
                                                         required
-                                                        placeholder="e.g. Alexander Pierce"
+                                                        placeholder="Your full name"
                                                         value={formData.name}
                                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                        className="w-full pl-14 pr-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary/50 transition-all"
+                                                        className="w-full pl-14 pr-6 py-4 bg-ui-bg border border-ui-input rounded-control text-sm font-bold focus:outline-none focus:border-ui-primary transition-all"
                                                     />
                                                 </div>
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Email Address</label>
+                                                <label className="text-xs font-semibold text-ui-muted ml-2">Email Address</label>
                                                 <div className="relative group">
-                                                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
+                                                    <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-ui-muted group-focus-within:text-primary transition-colors" />
                                                     <input
                                                         type="email"
                                                         required
-                                                        placeholder="ceo@enterprise.com"
+                                                        placeholder="you@restaurant.com"
                                                         value={formData.email}
                                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                                        className="w-full pl-14 pr-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary/50 transition-all"
+                                                        className="w-full pl-14 pr-6 py-4 bg-ui-bg border border-ui-input rounded-control text-sm font-bold focus:outline-none focus:border-ui-primary transition-all"
                                                     />
                                                 </div>
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Secure Password</label>
+                                                <label className="text-xs font-semibold text-ui-muted ml-2">Secure Password</label>
                                                 <div className="relative group">
-                                                    <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
+                                                    <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-ui-muted group-focus-within:text-primary transition-colors" />
                                                     <input
                                                         type="password"
                                                         required
                                                         placeholder="••••••••"
                                                         value={formData.password}
                                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                                        className="w-full pl-14 pr-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary/50 transition-all"
+                                                        className="w-full pl-14 pr-6 py-4 bg-ui-bg border border-ui-input rounded-control text-sm font-bold focus:outline-none focus:border-ui-primary transition-all"
                                                     />
                                                 </div>
                                             </div>
@@ -232,7 +220,7 @@ function SignupForm() {
                                                 type="button"
                                                 disabled={loading}
                                                 onClick={handleSendCode}
-                                                className="w-full py-5 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-2 disabled:opacity-50"
+                                                className="w-full py-5 bg-ui-primary text-ui-primary-fg rounded-control font-semibold text-sm active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
                                             >
                                                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
                                             </button>
@@ -240,8 +228,8 @@ function SignupForm() {
                                     ) : step === 1.5 ? (
                                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-10 py-4">
                                             <div className="text-center">
-                                                <p className="text-sm text-white/40 mb-2">We sent a 6-digit code to</p>
-                                                <p className="text-sm font-black text-primary">{formData.email}</p>
+                                                <p className="text-sm text-ui-muted mb-2">We sent a 6-digit code to</p>
+                                                <p className="text-sm font-semibold text-ui-primary">{formData.email}</p>
                                             </div>
 
                                             <PinInput
@@ -254,7 +242,7 @@ function SignupForm() {
                                                 <button
                                                     type="button"
                                                     onClick={handleSendCode}
-                                                    className="text-[10px] font-black uppercase tracking-widest text-white/20 hover:text-white transition-colors"
+                                                    className="text-xs font-semibold text-ui-muted hover:text-ui-ink transition-colors"
                                                 >
                                                     Didn't receive code? Resend
                                                 </button>
@@ -263,7 +251,7 @@ function SignupForm() {
                                             <button
                                                 type="button"
                                                 onClick={() => setStep(1)}
-                                                className="w-full py-4 text-white/20 font-black uppercase tracking-widest text-[10px] hover:text-white transition-colors"
+                                                className="w-full py-4 text-ui-muted font-semibold text-xs hover:text-ui-ink transition-colors"
                                             >
                                                 Use different email
                                             </button>
@@ -271,11 +259,11 @@ function SignupForm() {
                                     ) : step === 2 ? (
                                         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Business Type</label>
+                                                <label className="text-xs font-semibold text-ui-muted ml-2">Business Type</label>
                                                 <select
                                                     value={formData.businessType}
                                                     onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
-                                                    className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer uppercase tracking-widest"
+                                                    className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-sm font-bold focus:outline-none focus:border-ui-primary transition-all appearance-none cursor-pointer"
                                                 >
                                                     <option value="restaurant">Restaurant / F&B</option>
                                                     <option value="retail">Retail Store</option>
@@ -285,32 +273,32 @@ function SignupForm() {
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Business Name</label>
+                                                <label className="text-xs font-semibold text-ui-muted ml-2">Business Name</label>
                                                 <input
                                                     type="text"
                                                     required
                                                     placeholder="e.g. Prime Steaks"
                                                     value={formData.catalogName}
                                                     onChange={(e) => setFormData({ ...formData, catalogName: e.target.value })}
-                                                    className="w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary/50 transition-all"
+                                                    className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-sm font-bold focus:outline-none focus:border-ui-primary transition-all"
                                                 />
                                             </div>
 
                                             <div className="space-y-2">
-                                                <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] ml-2">Custom URL Slug</label>
+                                                <label className="text-xs font-semibold text-ui-muted ml-2">Custom URL Slug</label>
                                                 <div className="relative group">
-                                                    <Globe className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 group-focus-within:text-primary transition-colors" />
+                                                    <Globe className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-ui-muted group-focus-within:text-primary transition-colors" />
                                                     <input
                                                         type="text"
                                                         required
                                                         placeholder="prime-steaks"
                                                         value={formData.catalogSlug}
                                                         onChange={handleSlugChange}
-                                                        className="w-full pl-14 pr-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-sm font-bold focus:outline-none focus:border-primary/50 transition-all font-mono lowercase"
+                                                        className="w-full pl-14 pr-6 py-4 bg-ui-bg border border-ui-input rounded-control text-sm font-bold focus:outline-none focus:border-ui-primary transition-all font-mono lowercase"
                                                     />
                                                 </div>
-                                                <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest mt-2 ml-2">
-                                                    Your catalog will live at: <span className="text-white/40">coredex.com/c/{formData.catalogSlug || "..."}</span>
+                                                <p className="text-xs font-bold text-ui-muted mt-2 ml-2">
+                                                    Your catalog will live at: <span className="text-ui-muted">coredex.com/c/{formData.catalogSlug || "..."}</span>
                                                 </p>
                                             </div>
 
@@ -318,7 +306,7 @@ function SignupForm() {
                                                 <button
                                                     type="button"
                                                     onClick={() => setStep(1)}
-                                                    className="flex-shrink-0 px-8 py-5 bg-white/5 border border-white/10 text-white/40 rounded-2xl font-black uppercase tracking-widest text-xs hover:text-white transition-all"
+                                                    className="flex-shrink-0 px-8 py-5 bg-ui-subtle border border-ui-line text-ui-muted rounded-control font-semibold text-xs hover:text-ui-ink transition-all"
                                                 >
                                                     Back
                                                 </button>
@@ -326,7 +314,7 @@ function SignupForm() {
                                                     type="button"
                                                     disabled={!formData.catalogName || !formData.catalogSlug}
                                                     onClick={() => setStep(3)}
-                                                    className="flex-1 py-5 bg-white text-black rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-2"
+                                                    className="flex-1 py-5 bg-ui-primary text-ui-primary-fg rounded-control font-semibold text-sm active:scale-95 transition-all shadow-xl flex items-center justify-center gap-2"
                                                 >
                                                     Continue <ArrowRight className="w-4 h-4" />
                                                 </button>
@@ -340,30 +328,30 @@ function SignupForm() {
                                                         key={theme.id}
                                                         type="button"
                                                         onClick={() => setFormData({ ...formData, themeId: theme.id })}
-                                                        className={`p-6 rounded-3xl border transition-all text-left group relative overflow-hidden ${formData.themeId === theme.id
-                                                            ? "bg-white/5 border-primary shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.1)]"
-                                                            : "bg-white/[0.02] border-white/5 hover:border-white/10"
+                                                        className={`p-6 rounded-panel border transition-all text-left group relative overflow-hidden ${formData.themeId === theme.id
+                                                            ? "bg-ui-subtle border-ui-primary"
+                                                            : "bg-ui-bg border-ui-line hover:border-ui-input"
                                                             }`}
                                                     >
                                                         <div className="flex items-center justify-between mb-2">
-                                                            <span className={`text-sm font-black uppercase tracking-widest ${formData.themeId === theme.id ? "text-primary" : "text-white/60"}`}>
+                                                            <span className={`text-sm font-semibold ${formData.themeId === theme.id ? "text-ui-primary" : "text-ui-muted"}`}>
                                                                 {theme.name}
                                                             </span>
-                                                            {formData.themeId === theme.id && <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+                                                            {formData.themeId === theme.id && <div className="w-2 h-2 rounded-full bg-ui-primary" />}
                                                         </div>
-                                                        <p className="text-[10px] text-white/30 font-medium mb-4 leading-relaxed line-clamp-1">{theme.description}</p>
+                                                        <p className="text-xs text-ui-muted font-medium mb-4 leading-relaxed line-clamp-1">{theme.description}</p>
 
                                                         {/* Preview Rectangles */}
                                                         <div className="flex gap-2">
                                                             <div className="flex -space-x-1">
-                                                                <div className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: theme.light.primary }} />
-                                                                <div className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: theme.light.background }} />
-                                                                <div className="w-6 h-6 rounded-full border border-black/20" style={{ backgroundColor: theme.dark.background }} />
+                                                                <div className="w-6 h-6 rounded-full border border-ui-line" style={{ backgroundColor: theme.light.primary }} />
+                                                                <div className="w-6 h-6 rounded-full border border-ui-line" style={{ backgroundColor: theme.light.background }} />
+                                                                <div className="w-6 h-6 rounded-full border border-ui-line" style={{ backgroundColor: theme.dark.background }} />
                                                             </div>
                                                         </div>
 
                                                         {formData.themeId === theme.id && (
-                                                            <div className="absolute inset-0 border-2 border-primary rounded-3xl pointer-events-none" />
+                                                            <div className="absolute inset-0 border-2 border-ui-primary rounded-panel pointer-events-none" />
                                                         )}
                                                     </button>
                                                 ))}
@@ -373,34 +361,22 @@ function SignupForm() {
                                                 <button
                                                     type="button"
                                                     onClick={() => setStep(2)}
-                                                    className="flex-shrink-0 px-8 py-5 bg-white/5 border border-white/10 text-white/40 rounded-2xl font-black uppercase tracking-widest text-xs hover:text-white transition-all"
+                                                    className="flex-shrink-0 px-8 py-5 bg-ui-subtle border border-ui-line text-ui-muted rounded-control font-semibold text-xs hover:text-ui-ink transition-all"
                                                 >
                                                     Back
                                                 </button>
                                                 <button
                                                     type="submit"
                                                     disabled={loading}
-                                                    className="flex-1 py-5 bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-3 disabled:opacity-50"
+                                                    className="flex-1 py-5 bg-ui-primary text-ui-primary-fg rounded-control font-semibold text-sm active:scale-95 transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
                                                 >
-                                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Launch Your Catalog <Zap className="w-4 h-4 fill-white" /></>}
+                                                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Create my menu</>}
                                                 </button>
                                             </div>
                                         </motion.div>
                                     )}
                                 </form>
 
-                                <div className="mt-12 pt-8 border-t border-white/5">
-                                    <div className="flex items-center gap-6 justify-center">
-                                        <div className="flex items-center gap-2 text-[9px] font-black text-white/20 uppercase tracking-widest">
-                                            <ShieldCheck className="w-4 h-4 text-green-500/40" />
-                                            Secure & Encrypted
-                                        </div>
-                                        <div className="flex items-center gap-2 text-[9px] font-black text-white/20 uppercase tracking-widest">
-                                            <Sparkles className="w-4 h-4 text-primary/40" />
-                                            AI Engine Ready
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </motion.div>
                     ) : (
@@ -408,22 +384,22 @@ function SignupForm() {
                             key="success"
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="glass-card p-12 rounded-[3rem] border border-green-500/20 text-center animate-pulse shadow-[0_0_80px_rgba(34,197,94,0.1)]"
+                            className="glass-card p-12 rounded-panel border border-ui-line text-center"
                         >
-                            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(34,197,94,0.4)]">
-                                <Check className="w-10 h-10 text-white stroke-[4]" />
+                            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-8">
+                                <Check className="w-10 h-10 text-ui-ink stroke-[4]" />
                             </div>
-                            <h2 className="text-4xl font-black tracking-tighter mb-4 italic">CATALOG READY</h2>
-                            <p className="text-white/40 text-sm font-black uppercase tracking-[0.2em] mb-10 leading-relaxed">
+                            <h1 className="text-3xl font-semibold mb-4">Your menu is ready</h1>
+                            <p className="text-ui-muted text-sm font-semibold mb-10 leading-relaxed">
                                 Environment ready for {formData.catalogName}.<br />
                                 Relocating to admin dashboard...
                             </p>
-                            <Loader2 className="w-8 h-8 text-green-500 animate-spin mx-auto" />
+                            <Loader2 className="w-8 h-8 text-ui-success animate-spin mx-auto" />
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                <p className="mt-12 text-center text-[10px] font-black text-white/10 uppercase tracking-[0.4em]">
+                <p className="mt-12 text-center text-xs font-semibold text-ui-input">
                     Coredex Solutions © 2026
                 </p>
             </div>
@@ -434,8 +410,8 @@ function SignupForm() {
 export default function SignupPage() {
     return (
         <Suspense fallback={
-            <main className="min-h-screen bg-[#020203] flex items-center justify-center">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <main className="platform min-h-screen flex items-center justify-center">
+                <Loader2 className="w-10 h-10 text-ui-primary animate-spin" />
             </main>
         }>
             <SignupForm />

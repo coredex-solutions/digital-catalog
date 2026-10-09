@@ -3,6 +3,17 @@ import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
 
+/** Today's calendar day in Beirut (YYYY-MM-DD): the day catalog_analytics.date is recorded under */
+const beirutToday = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Beirut" }).format(new Date());
+
+/** Shift a YYYY-MM-DD day by whole days (calendar arithmetic, no timezone involved) */
+function shiftDay(day: string, deltaDays: number): string {
+  const d = new Date(`${day}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -19,17 +30,14 @@ export async function GET(
   const auth = await requireCatalogAdmin(request, catalog.id);
   if (!auth.success) return auth.response;
 
-  // Calculate date ranges
+  // Calculate date ranges as Beirut calendar days, matching how visits are recorded
   const days = period === "7d" ? 7 : period === "90d" ? 90 : 30;
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(endDate.getDate() - days);
+  const endDate = beirutToday();
+  const startDate = shiftDay(endDate, -days);
 
   // Previous period for comparison
-  const prevEndDate = new Date(startDate);
-  prevEndDate.setDate(prevEndDate.getDate() - 1);
-  const prevStartDate = new Date(prevEndDate);
-  prevStartDate.setDate(prevStartDate.getDate() - days);
+  const prevEndDate = shiftDay(startDate, -1);
+  const prevStartDate = shiftDay(prevEndDate, -days);
 
   const db = getDb();
 
@@ -50,8 +58,8 @@ export async function GET(
     `,
     args: [
       catalog.id,
-      startDate.toISOString().split("T")[0],
-      endDate.toISOString().split("T")[0],
+      startDate,
+      endDate,
     ],
   });
 
@@ -70,8 +78,8 @@ export async function GET(
     `,
     args: [
       catalog.id,
-      startDate.toISOString().split("T")[0],
-      endDate.toISOString().split("T")[0],
+      startDate,
+      endDate,
     ],
   });
 
@@ -90,8 +98,8 @@ export async function GET(
     `,
     args: [
       catalog.id,
-      prevStartDate.toISOString().split("T")[0],
-      prevEndDate.toISOString().split("T")[0],
+      prevStartDate,
+      prevEndDate,
     ],
   });
 

@@ -746,7 +746,7 @@ export default function QRCodePage() {
         <CatalogAdminHeader title="QR Code & Print Materials" />
         <CatalogAdminContent>
           <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+            <Loader2 className="w-8 h-8 animate-spin text-ui-primary" />
           </div>
         </CatalogAdminContent>
       </CatalogAdminShell>
@@ -762,15 +762,25 @@ export default function QRCodePage() {
         }}
       />
 
-      <CatalogAdminHeader title="QR Code & Print Materials" />
+      <CatalogAdminHeader title="QR Code & Print Materials">
+        <a
+          href={`/c/${slug}/admin/qr/print`}
+          className="inline-flex min-h-11 items-center gap-2 rounded-control bg-ui-primary px-4 text-sm font-semibold text-ui-primary-fg hover:bg-ui-primary-hover"
+        >
+          Print-ready table cards
+        </a>
+      </CatalogAdminHeader>
       <CatalogAdminContent>
         <div className="space-y-8">
+          <p className="rounded-control border border-ui-line bg-ui-surface p-4 text-sm text-ui-muted">
+            For printing, use <a href={`/c/${slug}/admin/qr/print`} className="font-semibold text-ui-primary underline-offset-4 hover:underline">Print-ready table cards</a>: plain black codes with a safe margin scan most reliably. If you use colours or a logo below, test the printed code with several phones first.
+          </p>
           {/* QR Code Section */}
           <div className="grid lg:grid-cols-2 gap-8">
             {/* QR Preview */}
-            <div className="bg-slate-800 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-violet-400" />
+            <div className="bg-ui-surface rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-ui-ink mb-4 flex items-center gap-2">
+                <QrCode className="w-5 h-5 text-ui-primary" />
                 Your QR Code
               </h2>
 
@@ -781,12 +791,12 @@ export default function QRCodePage() {
                 }}
               >
                 {qrError ? (
-                  <div className="text-center text-purple-400 p-4">
+                  <div className="text-center text-ui-primary p-4">
                     <p className="font-medium">Failed to load QR Code</p>
                     <p className="text-sm mt-1">{qrError}</p>
                     <button
                       onClick={() => regenerateQR()}
-                      className="mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm"
+                      className="mt-3 px-4 py-2 bg-ui-primary hover:bg-ui-primary-hover rounded-lg text-ui-primary-fg text-sm"
                     >
                       Retry
                     </button>
@@ -802,11 +812,11 @@ export default function QRCodePage() {
                     }}
                   />
                 ) : (
-                  <div className="w-48 h-48 bg-slate-700 rounded animate-pulse" />
+                  <div className="w-48 h-48 bg-ui-surface rounded" />
                 )}
               </div>
 
-              <p className="text-center text-sm text-slate-400 mb-4 break-all">
+              <p className="text-center text-sm text-ui-muted mb-4 break-all">
                 {catalogUrl}
               </p>
 
@@ -814,14 +824,14 @@ export default function QRCodePage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => downloadQR("png")}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors"
                 >
                   <FileImage className="w-4 h-4" />
                   Download PNG
                 </button>
                 <button
                   onClick={() => downloadQR("svg")}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-ui-surface hover:bg-ui-subtle text-ui-ink rounded-lg font-medium transition-colors"
                 >
                   <FileCode className="w-4 h-4" />
                   Download SVG
@@ -830,52 +840,55 @@ export default function QRCodePage() {
             </div>
 
             {/* QR Customization */}
-            <div className="bg-slate-800 rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <Palette className="w-5 h-5 text-violet-400" />
+            <div className="bg-ui-surface rounded-xl p-6">
+              <h2 className="text-lg font-semibold text-ui-ink mb-4 flex items-center gap-2">
+                <Palette className="w-5 h-5 text-ui-primary" />
                 Customize QR Code
               </h2>
 
               <div className="space-y-6">
                 {/* Size */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
                     Size: {qrSize}px
                   </label>
                   <input
+                    aria-label="QR code size"
                     type="range"
                     min="128"
                     max="1024"
                     step="128"
                     value={qrSize}
                     onChange={(e) => setQrSize(parseInt(e.target.value))}
-                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                    className="w-full h-2 bg-ui-line rounded-lg appearance-none cursor-pointer"
                   />
                 </div>
 
                 {/* Dark Color */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
                     QR Color (Dark)
                   </label>
                   <div className="flex items-center gap-3">
                     <input
+                      aria-label="QR code colour"
                       type="color"
                       value={darkColor}
                       onChange={(e) => setDarkColor(e.target.value)}
-                      className="w-12 h-12 rounded-lg border-2 border-slate-600 cursor-pointer"
+                      className="w-12 h-12 rounded-lg border-2 border-ui-input cursor-pointer"
                     />
                     <input
+                      aria-label="QR code colour hex value"
                       type="text"
                       value={darkColor}
                       onChange={(e) => setDarkColor(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-slate-700 rounded-lg text-white border border-slate-600"
+                      className="flex-1 px-3 py-2 bg-ui-surface rounded-lg text-ui-ink border border-ui-input"
                     />
                     <button
                       onClick={() =>
                         setDarkColor(catalog?.color_primary || "#FF6B35")
                       }
-                      className="px-3 py-2 text-sm bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300"
+                      className="px-3 py-2 text-sm bg-ui-surface hover:bg-ui-subtle rounded-lg text-ui-ink"
                     >
                       Use Brand
                     </button>
@@ -884,11 +897,12 @@ export default function QRCodePage() {
 
                 {/* Light Color */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
                     Background Color
                   </label>
                   <div className="flex items-center gap-3">
                     <input
+                      aria-label="QR background colour"
                       type="color"
                       value={lightColor}
                       onChange={(e) => {
@@ -896,22 +910,23 @@ export default function QRCodePage() {
                         setTransparent(false);
                       }}
                       disabled={transparent}
-                      className="w-12 h-12 rounded-lg border-2 border-slate-600 cursor-pointer disabled:opacity-50"
+                      className="w-12 h-12 rounded-lg border-2 border-ui-input cursor-pointer disabled:opacity-50"
                     />
                     <input
+                      aria-label="QR background colour hex value"
                       type="text"
                       value={transparent ? "transparent" : lightColor}
                       disabled
-                      className="flex-1 px-3 py-2 bg-slate-700 rounded-lg text-white border border-slate-600 disabled:opacity-50"
+                      className="flex-1 px-3 py-2 bg-ui-surface rounded-lg text-ui-ink border border-ui-input disabled:opacity-50"
                     />
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={transparent}
                         onChange={(e) => setTransparent(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
+                        className="w-4 h-4 rounded border-ui-input bg-ui-surface text-ui-primary"
                       />
-                      <span className="text-sm text-slate-300">
+                      <span className="text-sm text-ui-ink">
                         Transparent
                       </span>
                     </label>
@@ -920,7 +935,7 @@ export default function QRCodePage() {
 
                 {/* Preset Colors */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-ui-ink mb-2">
                     Quick Presets
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -949,7 +964,7 @@ export default function QRCodePage() {
                             setTransparent(false);
                           }
                         }}
-                        className="px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 rounded text-slate-300"
+                        className="px-3 py-1.5 text-sm bg-ui-surface hover:bg-ui-subtle rounded text-ui-ink"
                       >
                         {preset.name}
                       </button>
@@ -961,39 +976,39 @@ export default function QRCodePage() {
           </div>
 
           {/* Print Templates Section */}
-          <div className="bg-slate-800 rounded-xl p-6">
+          <div className="bg-ui-surface rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Printer className="w-5 h-5 text-violet-400" />
+              <h2 className="text-lg font-semibold text-ui-ink flex items-center gap-2">
+                <Printer className="w-5 h-5 text-ui-primary" />
                 Printable Templates
               </h2>
               <button
                 onClick={() => setShowCustomizer(!showCustomizer)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${showCustomizer
-                    ? "bg-violet-600 text-white"
-                    : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                    ? "bg-ui-primary text-ui-primary-fg"
+                    : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                   }`}
               >
                 <Settings2 className="w-4 h-4" />
                 {showCustomizer ? "Hide Customizer" : "Customize Design"}
               </button>
             </div>
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-ui-muted text-sm mb-6">
               Select a template, customize it, and use Ctrl+P to print or save
               as PDF.
             </p>
 
             {/* Customization Panel */}
             {showCustomizer && (
-              <div className="bg-slate-900 rounded-xl p-6 mb-6 border border-slate-700">
+              <div className="bg-ui-surface rounded-xl p-6 mb-6 border border-ui-line">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-white font-medium flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-accent" />
+                  <h3 className="text-ui-ink font-medium flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-ui-accent" />
                     Template Customization
                   </h3>
                   <button
                     onClick={resetCustomization}
-                    className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 text-sm text-ui-muted hover:text-ui-ink transition-colors"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     Reset to Brand Colors
@@ -1003,18 +1018,19 @@ export default function QRCodePage() {
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Color Section */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2">
                       <Palette className="w-4 h-4" />
                       Colors
                     </h4>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs text-ui-muted mb-1">
                           Primary
                         </label>
                         <div className="flex items-center gap-2">
                           <input
+                            aria-label="Primary colour"
                             type="color"
                             value={customization.primaryColor}
                             onChange={(e) =>
@@ -1023,9 +1039,10 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-slate-600 cursor-pointer"
+                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
+                            aria-label="Primary colour hex value"
                             type="text"
                             value={customization.primaryColor}
                             onChange={(e) =>
@@ -1034,16 +1051,17 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-slate-800 rounded border border-slate-600 text-white"
+                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs text-ui-muted mb-1">
                           Secondary
                         </label>
                         <div className="flex items-center gap-2">
                           <input
+                            aria-label="Secondary colour"
                             type="color"
                             value={customization.secondaryColor}
                             onChange={(e) =>
@@ -1052,9 +1070,10 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-slate-600 cursor-pointer"
+                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
+                            aria-label="Secondary colour hex value"
                             type="text"
                             value={customization.secondaryColor}
                             onChange={(e) =>
@@ -1063,39 +1082,42 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-slate-800 rounded border border-slate-600 text-white"
+                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs text-ui-muted mb-1">
                           Accent
                         </label>
                         <div className="flex items-center gap-2">
                           <input
+                            aria-label="Accent colour"
                             type="color"
                             value={customization.accentColor}
                             onChange={(e) =>
                               updateCustomization("accentColor", e.target.value)
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-slate-600 cursor-pointer"
+                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
+                            aria-label="Accent colour hex value"
                             type="text"
                             value={customization.accentColor}
                             onChange={(e) =>
                               updateCustomization("accentColor", e.target.value)
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-slate-800 rounded border border-slate-600 text-white"
+                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs text-ui-muted mb-1">
                           Background
                         </label>
                         <div className="flex items-center gap-2">
                           <input
+                            aria-label="Background colour"
                             type="color"
                             value={customization.backgroundColor}
                             onChange={(e) =>
@@ -1104,9 +1126,10 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-slate-600 cursor-pointer"
+                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
+                            aria-label="Background colour hex value"
                             type="text"
                             value={customization.backgroundColor}
                             onChange={(e) =>
@@ -1115,39 +1138,42 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-slate-800 rounded border border-slate-600 text-white"
+                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs text-ui-muted mb-1">
                           Text Primary
                         </label>
                         <div className="flex items-center gap-2">
                           <input
+                            aria-label="Text Primary colour"
                             type="color"
                             value={customization.textPrimary}
                             onChange={(e) =>
                               updateCustomization("textPrimary", e.target.value)
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-slate-600 cursor-pointer"
+                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
+                            aria-label="Text Primary colour hex value"
                             type="text"
                             value={customization.textPrimary}
                             onChange={(e) =>
                               updateCustomization("textPrimary", e.target.value)
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-slate-800 rounded border border-slate-600 text-white"
+                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs text-ui-muted mb-1">
                           Text Secondary
                         </label>
                         <div className="flex items-center gap-2">
                           <input
+                            aria-label="Text Secondary colour"
                             type="color"
                             value={customization.textSecondary}
                             onChange={(e) =>
@@ -1156,9 +1182,10 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-slate-600 cursor-pointer"
+                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
+                            aria-label="Text Secondary colour hex value"
                             type="text"
                             value={customization.textSecondary}
                             onChange={(e) =>
@@ -1167,7 +1194,7 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-slate-800 rounded border border-slate-600 text-white"
+                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
@@ -1176,52 +1203,55 @@ export default function QRCodePage() {
 
                   {/* Text Section */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2">
                       <Type className="w-4 h-4" />
                       Text Content
                     </h4>
 
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs text-ui-muted mb-1">
                           Arabic Text
                         </label>
                         <input
+                          aria-label="Arabic Text"
                           type="text"
                           value={customization.arabicText}
                           onChange={(e) =>
                             updateCustomization("arabicText", e.target.value)
                           }
-                          className="w-full px-3 py-2 bg-slate-800 rounded-lg border border-slate-600 text-white text-right"
+                          className="w-full px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink text-right"
                           dir="rtl"
                           placeholder="قائمة الطعام"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs text-ui-muted mb-1">
                           English Text
                         </label>
                         <input
+                          aria-label="English Text"
                           type="text"
                           value={customization.englishText}
                           onChange={(e) =>
                             updateCustomization("englishText", e.target.value)
                           }
-                          className="w-full px-3 py-2 bg-slate-800 rounded-lg border border-slate-600 text-white"
+                          className="w-full px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink"
                           placeholder="Scan To View Menu"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-slate-400 mb-1">
+                        <label className="block text-xs text-ui-muted mb-1">
                           Call to Action
                         </label>
                         <input
+                          aria-label="Call to Action"
                           type="text"
                           value={customization.ctaText}
                           onChange={(e) =>
                             updateCustomization("ctaText", e.target.value)
                           }
-                          className="w-full px-3 py-2 bg-slate-800 rounded-lg border border-slate-600 text-white"
+                          className="w-full px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink"
                           placeholder="Scan Me!"
                         />
                       </div>
@@ -1230,7 +1260,7 @@ export default function QRCodePage() {
 
                   {/* Options Section */}
                   <div className="space-y-4">
-                    <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2">
                       <ImageIcon className="w-4 h-4" />
                       Display Options
                     </h4>
@@ -1243,9 +1273,9 @@ export default function QRCodePage() {
                           onChange={(e) =>
                             updateCustomization("showLogo", e.target.checked)
                           }
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
+                          className="w-4 h-4 rounded border-ui-input bg-ui-surface text-ui-primary"
                         />
-                        <span className="text-sm text-slate-300">
+                        <span className="text-sm text-ui-ink">
                           Show Logo
                         </span>
                       </label>
@@ -1259,15 +1289,16 @@ export default function QRCodePage() {
                               e.target.checked
                             )
                           }
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
+                          className="w-4 h-4 rounded border-ui-input bg-ui-surface text-ui-primary"
                         />
-                        <span className="text-sm text-slate-300">
+                        <span className="text-sm text-ui-ink">
                           Show Shop Name
                         </span>
                       </label>
                       {customization.showShopName && (
                         <div className="ml-7">
                           <input
+                            aria-label="Custom shop name"
                             type="text"
                             value={customization.customShopName}
                             onChange={(e) =>
@@ -1279,9 +1310,9 @@ export default function QRCodePage() {
                             placeholder={
                               catalog?.name || "Custom name (optional)"
                             }
-                            className="w-full px-3 py-1.5 bg-slate-700 rounded-lg text-white text-sm border border-slate-600 focus:border-violet-500 focus:outline-none"
+                            className="w-full px-3 py-1.5 bg-ui-surface rounded-lg text-ui-ink text-sm border border-ui-input focus:border-ui-primary focus:outline-none"
                           />
-                          <p className="text-[10px] text-slate-500 mt-1">
+                          <p className="text-xs text-ui-muted mt-1">
                             Leave empty to use catalog name, or enter custom
                             text (e.g., Arabic)
                           </p>
@@ -1297,19 +1328,19 @@ export default function QRCodePage() {
                               e.target.checked
                             )
                           }
-                          className="w-4 h-4 rounded border-slate-600 bg-slate-700 text-violet-500"
+                          className="w-4 h-4 rounded border-ui-input bg-ui-surface text-ui-primary"
                         />
-                        <span className="text-sm text-slate-300">
+                        <span className="text-sm text-ui-ink">
                           Show Arabic Text
                         </span>
                       </label>
 
                       {/* Dynamic Pattern Selector */}
                       <div>
-                        <label className="block text-xs text-slate-400 mb-2">
+                        <label className="block text-xs text-ui-muted mb-2">
                           Background Pattern{" "}
                           {selectedTemplate && (
-                            <span className="text-violet-400">
+                            <span className="text-ui-primary">
                               (for {selectedTemplate.replace("-", " ")})
                             </span>
                           )}
@@ -1322,8 +1353,8 @@ export default function QRCodePage() {
                                 updateCustomization("pattern", patternDef.id)
                               }
                               className={`px-3 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-1.5 ${customization.pattern === patternDef.id
-                                  ? "bg-violet-600 text-white"
-                                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                  ? "bg-ui-primary text-ui-primary-fg"
+                                  : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                                 }`}
                             >
                               <span>{patternDef.icon}</span>
@@ -1337,22 +1368,23 @@ export default function QRCodePage() {
                 </div>
 
                 {/* Advanced Settings Row */}
-                <div className="border-t border-slate-700 pt-6 mt-6">
+                <div className="border-t border-ui-line pt-6 mt-6">
                   <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Custom URL */}
                     <div className="lg:col-span-2">
-                      <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2 mb-3">
+                      <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2 mb-3">
                         <Link2 className="w-4 h-4" />
                         Custom URL (Optional)
                       </h4>
                       <div className="flex gap-2">
                         <input
+                          aria-label="Custom menu URL"
                           type="url"
                           value={customization.customUrl}
                           onChange={(e) =>
                             updateCustomization("customUrl", e.target.value)
                           }
-                          className="flex-1 px-3 py-2 bg-slate-800 rounded-lg border border-slate-600 text-white text-sm"
+                          className="flex-1 px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink text-sm"
                           placeholder={
                             catalogUrl ||
                             "Leave empty to use default catalog URL"
@@ -1361,15 +1393,16 @@ export default function QRCodePage() {
                         {customization.customUrl && (
                           <button
                             onClick={() => updateCustomization("customUrl", "")}
-                            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300"
+                            className="px-3 py-2 bg-ui-surface hover:bg-ui-subtle rounded-lg text-ui-ink"
                             title="Clear custom URL"
+                            aria-label="Clear custom URL"
                           >
                             <X className="w-4 h-4" />
                           </button>
                         )}
                       </div>
                       {customization.customUrl && (
-                        <p className="text-xs text-purple-400 mt-1 flex items-center gap-1">
+                        <p className="text-xs text-ui-primary mt-1 flex items-center gap-1">
                           ⚠️ Using custom URL instead of catalog URL
                         </p>
                       )}
@@ -1377,7 +1410,7 @@ export default function QRCodePage() {
 
                     {/* Color Presets */}
                     <div className="lg:col-span-2">
-                      <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2 mb-3">
+                      <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2 mb-3">
                         <Sparkles className="w-4 h-4" />
                         Color Theme Presets
                       </h4>
@@ -1386,21 +1419,21 @@ export default function QRCodePage() {
                           <button
                             key={preset.id}
                             onClick={() => applyColorPreset(preset.id)}
-                            className="group relative px-3 py-1.5 text-xs rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors flex items-center gap-2"
+                            className="group relative px-3 py-1.5 text-xs rounded-lg bg-ui-surface text-ui-ink hover:bg-ui-subtle transition-colors flex items-center gap-2"
                             title={preset.name}
                           >
                             {preset.colors ? (
                               <div className="flex -space-x-1">
                                 <div
-                                  className="w-3 h-3 rounded-full border border-slate-600"
+                                  className="w-3 h-3 rounded-full border border-ui-input"
                                   style={{ background: preset.colors.primary }}
                                 />
                                 <div
-                                  className="w-3 h-3 rounded-full border border-slate-600"
+                                  className="w-3 h-3 rounded-full border border-ui-input"
                                   style={{ background: preset.colors.accent }}
                                 />
                                 <div
-                                  className="w-3 h-3 rounded-full border border-slate-600"
+                                  className="w-3 h-3 rounded-full border border-ui-input"
                                   style={{
                                     background: preset.colors.secondary,
                                   }}
@@ -1409,15 +1442,15 @@ export default function QRCodePage() {
                             ) : (
                               <div className="flex -space-x-1">
                                 <div
-                                  className="w-3 h-3 rounded-full border border-slate-600"
+                                  className="w-3 h-3 rounded-full border border-ui-input"
                                   style={{ background: catalog?.color_primary }}
                                 />
                                 <div
-                                  className="w-3 h-3 rounded-full border border-slate-600"
+                                  className="w-3 h-3 rounded-full border border-ui-input"
                                   style={{ background: catalog?.color_accent }}
                                 />
                                 <div
-                                  className="w-3 h-3 rounded-full border border-slate-600"
+                                  className="w-3 h-3 rounded-full border border-ui-input"
                                   style={{
                                     background: catalog?.color_secondary,
                                   }}
@@ -1433,8 +1466,8 @@ export default function QRCodePage() {
                 </div>
 
                 {/* Typography Section - Second Row */}
-                <div className="border-t border-slate-700 pt-6 mt-6">
-                  <h4 className="text-sm font-medium text-slate-300 flex items-center gap-2 mb-4">
+                <div className="border-t border-ui-line pt-6 mt-6">
+                  <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2 mb-4">
                     <Type className="w-4 h-4" />
                     Typography
                   </h4>
@@ -1442,7 +1475,7 @@ export default function QRCodePage() {
                   <div className="grid md:grid-cols-3 gap-6">
                     {/* Font Preset */}
                     <div>
-                      <label className="block text-xs text-slate-400 mb-2">
+                      <label className="block text-xs text-ui-muted mb-2">
                         Font Style
                       </label>
                       <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
@@ -1454,8 +1487,8 @@ export default function QRCodePage() {
                                 updateCustomization("fontPreset", preset)
                               }
                               className={`px-3 py-2 text-xs rounded-lg transition-colors text-left ${customization.fontPreset === preset
-                                  ? "bg-violet-600 text-white"
-                                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                  ? "bg-ui-primary text-ui-primary-fg"
+                                  : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                                 }`}
                             >
                               <span className="font-medium block">
@@ -1469,7 +1502,7 @@ export default function QRCodePage() {
 
                     {/* Heading Weight */}
                     <div>
-                      <label className="block text-xs text-slate-400 mb-2">
+                      <label className="block text-xs text-ui-muted mb-2">
                         Heading Weight
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -1488,8 +1521,8 @@ export default function QRCodePage() {
                               updateCustomization("headingWeight", weight)
                             }
                             className={`px-3 py-1.5 text-xs rounded-lg capitalize transition-colors ${customization.headingWeight === weight
-                                ? "bg-violet-600 text-white"
-                                : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                ? "bg-ui-primary text-ui-primary-fg"
+                                : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                               }`}
                           >
                             {weight}
@@ -1500,7 +1533,7 @@ export default function QRCodePage() {
 
                     {/* Letter Spacing */}
                     <div>
-                      <label className="block text-xs text-slate-400 mb-2">
+                      <label className="block text-xs text-ui-muted mb-2">
                         Letter Spacing
                       </label>
                       <div className="flex flex-wrap gap-2">
@@ -1512,8 +1545,8 @@ export default function QRCodePage() {
                                 updateCustomization("letterSpacing", spacing)
                               }
                               className={`px-3 py-1.5 text-xs rounded-lg capitalize transition-colors ${customization.letterSpacing === spacing
-                                  ? "bg-violet-600 text-white"
-                                  : "bg-slate-700 text-slate-300 hover:bg-slate-600"
+                                  ? "bg-ui-primary text-ui-primary-fg"
+                                  : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                                 }`}
                             >
                               {spacing}
@@ -1533,20 +1566,20 @@ export default function QRCodePage() {
                   key={template.id}
                   onClick={() => setSelectedTemplate(template.id)}
                   className={`p-4 rounded-xl border-2 transition-all text-left ${selectedTemplate === template.id
-                      ? "border-violet-500 bg-violet-500/10"
-                      : "border-slate-700 bg-slate-900 hover:border-slate-600"
+                      ? "border-ui-primary bg-ui-subtle"
+                      : "border-ui-line bg-ui-surface hover:border-slate-600"
                     }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-2xl">{template.icon}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-400 capitalize">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-ui-surface text-ui-muted capitalize">
                       {template.category}
                     </span>
                   </div>
-                  <h3 className="font-medium text-white text-sm">
+                  <h3 className="font-medium text-ui-ink text-sm">
                     {template.name}
                   </h3>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-ui-muted mt-1">
                     {template.description}
                   </p>
                 </button>
@@ -1557,14 +1590,14 @@ export default function QRCodePage() {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handlePrint}
-                  className="flex items-center gap-2 py-3 px-6 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 py-3 px-6 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors"
                 >
                   <Printer className="w-4 h-4" />
                   Print / Save as PDF
                 </button>
                 <button
                   onClick={() => setShowCustomizer(true)}
-                  className="flex items-center gap-2 py-3 px-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex items-center gap-2 py-3 px-6 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors"
                 >
                   <Palette className="w-4 h-4" />
                   Customize
@@ -1572,7 +1605,7 @@ export default function QRCodePage() {
                 <button
                   onClick={batchExportTemplates}
                   disabled={isBatchExporting}
-                  className="flex items-center gap-2 py-3 px-6 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 py-3 px-6 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors disabled:opacity-50"
                 >
                   <Layers className="w-4 h-4" />
                   {isBatchExporting
@@ -1581,7 +1614,7 @@ export default function QRCodePage() {
                 </button>
                 <button
                   onClick={() => setSelectedTemplate(null)}
-                  className="py-3 px-6 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-colors"
+                  className="py-3 px-6 bg-ui-surface hover:bg-ui-subtle text-ui-ink rounded-lg font-medium transition-colors"
                 >
                   Cancel
                 </button>
@@ -1591,11 +1624,11 @@ export default function QRCodePage() {
 
           {/* Template Preview */}
           {selectedTemplate && qrDataUrl && catalog && (
-            <div className="bg-slate-800 rounded-xl p-6" ref={previewRef}>
+            <div className="bg-ui-surface rounded-xl p-6" ref={previewRef}>
               {/* Preview Header with Controls */}
               <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-violet-400" />
+                <h2 className="text-lg font-semibold text-ui-ink flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-ui-primary" />
                   Preview:{" "}
                   {PRINT_TEMPLATES.find((t) => t.id === selectedTemplate)?.name}
                 </h2>
@@ -1603,33 +1636,36 @@ export default function QRCodePage() {
                 {/* Preview Controls */}
                 <div className="flex items-center gap-4">
                   {/* Zoom Controls */}
-                  <div className="flex items-center gap-2 bg-slate-700 rounded-lg p-1">
+                  <div className="flex items-center gap-2 bg-ui-surface rounded-lg p-1">
                     <button
                       onClick={() =>
                         setPreviewScale(Math.max(50, previewScale - 10))
                       }
-                      className="p-1.5 hover:bg-slate-600 rounded transition-colors"
+                      className="p-1.5 hover:bg-ui-subtle rounded transition-colors"
                       title="Zoom Out"
+                      aria-label="Zoom Out"
                     >
-                      <ZoomOut className="w-4 h-4 text-slate-300" />
+                      <ZoomOut className="w-4 h-4 text-ui-ink" />
                     </button>
-                    <span className="text-sm text-slate-300 min-w-[4rem] text-center">
+                    <span className="text-sm text-ui-ink min-w-[4rem] text-center">
                       {previewScale}%
                     </span>
                     <button
                       onClick={() =>
                         setPreviewScale(Math.min(150, previewScale + 10))
                       }
-                      className="p-1.5 hover:bg-slate-600 rounded transition-colors"
+                      className="p-1.5 hover:bg-ui-subtle rounded transition-colors"
                       title="Zoom In"
+                      aria-label="Zoom In"
                     >
-                      <ZoomIn className="w-4 h-4 text-slate-300" />
+                      <ZoomIn className="w-4 h-4 text-ui-ink" />
                     </button>
                   </div>
 
                   {/* Scale Slider */}
                   <div className="hidden md:flex items-center gap-2">
                     <input
+                      aria-label="Preview zoom"
                       type="range"
                       min="50"
                       max="150"
@@ -1638,31 +1674,32 @@ export default function QRCodePage() {
                       onChange={(e) =>
                         setPreviewScale(parseInt(e.target.value))
                       }
-                      className="w-24 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                      className="w-24 h-2 bg-ui-surface rounded-lg appearance-none cursor-pointer"
                     />
                   </div>
 
                   {/* Reset Zoom */}
                   <button
                     onClick={() => setPreviewScale(100)}
-                    className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                    className="p-2 bg-ui-surface hover:bg-ui-subtle rounded-lg transition-colors"
                     title="Reset to 100%"
+                    aria-label="Reset to 100%"
                   >
-                    <RotateCw className="w-4 h-4 text-slate-300" />
+                    <RotateCw className="w-4 h-4 text-ui-ink" />
                   </button>
 
                   {/* Fullscreen Toggle */}
                   <button
                     onClick={toggleFullscreen}
-                    className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                    className="p-2 bg-ui-surface hover:bg-ui-subtle rounded-lg transition-colors"
                     title={
                       isFullscreen ? "Exit Fullscreen" : "Fullscreen Preview"
                     }
                   >
                     {isFullscreen ? (
-                      <Minimize2 className="w-4 h-4 text-slate-300" />
+                      <Minimize2 className="w-4 h-4 text-ui-ink" />
                     ) : (
-                      <Maximize2 className="w-4 h-4 text-slate-300" />
+                      <Maximize2 className="w-4 h-4 text-ui-ink" />
                     )}
                   </button>
                 </div>
@@ -1697,7 +1734,7 @@ export default function QRCodePage() {
 
               {/* Fullscreen Exit Hint */}
               {isFullscreen && (
-                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-sm">
+                <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/40 text-ui-ink px-4 py-2 rounded-lg text-sm">
                   Press ESC or click the minimize button to exit fullscreen
                 </div>
               )}
@@ -2008,8 +2045,8 @@ function PrintTemplatePreview({
                 )}
 
                 {showShopName && displayName && (
-                  <h1
-                    className={`text-2xl ${weightClass} uppercase mb-2`}
+                  <p
+                    className={`text-2xl ${weightClass} mb-2`}
                     style={{
                       color: textPrimary,
                       fontFamily: fonts.heading,
@@ -2017,7 +2054,7 @@ function PrintTemplatePreview({
                     }}
                   >
                     {displayName}
-                  </h1>
+                  </p>
                 )}
 
                 {/* Decorative divider */}
@@ -2050,7 +2087,7 @@ function PrintTemplatePreview({
                 <div className="relative">
                   {/* Outer glow */}
                   <div
-                    className="absolute -inset-8 rounded-2xl blur-2xl"
+                    className="absolute -inset-8 rounded-control blur-2xl"
                     style={{ background: hexToRgba(primaryColor, 0.1) }}
                   />
 
@@ -2121,7 +2158,7 @@ function PrintTemplatePreview({
                 </div>
 
                 <p
-                  className="mt-10 text-sm uppercase tracking-widest"
+                  className="mt-10 text-sm"
                   style={{
                     color: textSecondary,
                     fontFamily: fonts.body,
@@ -2206,7 +2243,7 @@ function PrintTemplatePreview({
 
           {/* Fold line */}
           <div
-            className="text-center py-2 text-[10px] uppercase tracking-[0.3em] relative overflow-hidden"
+            className="text-center py-2 text-xs relative overflow-hidden"
             style={{
               borderTop: `1px dashed ${hexToRgba(primaryColor, 0.4)}`,
               borderBottom: `1px dashed ${hexToRgba(primaryColor, 0.4)}`,
@@ -2237,7 +2274,7 @@ function PrintTemplatePreview({
 
             {/* Radial glow */}
             <div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-3xl"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full"
               style={{ background: hexToRgba(accentColor, 0.2) }}
             />
 
@@ -2257,8 +2294,8 @@ function PrintTemplatePreview({
                   </div>
                 )}
                 {showShopName && displayName && (
-                  <h1
-                    className={`text-2xl ${weightClass} uppercase mb-4`}
+                  <p
+                    className={`text-2xl ${weightClass} mb-4`}
                     style={{
                       color: textPrimary,
                       fontFamily: fonts.heading,
@@ -2266,7 +2303,7 @@ function PrintTemplatePreview({
                     }}
                   >
                     {displayName}
-                  </h1>
+                  </p>
                 )}
                 <div className="flex justify-center items-center gap-3 mb-4">
                   <div
@@ -2400,7 +2437,7 @@ function PrintTemplatePreview({
 
                   {showArabicText && (
                     <p
-                      className="text-[11px] mb-2"
+                      className="text-xs mb-2"
                       style={{
                         color: accentColor,
                         fontFamily: fonts.arabic,
@@ -2425,7 +2462,7 @@ function PrintTemplatePreview({
                   </div>
 
                   <p
-                    className="text-[9px] uppercase font-medium"
+                    className="text-xs font-medium"
                     style={{
                       color: primaryColor,
                       letterSpacing: "0.1em",
@@ -2562,7 +2599,7 @@ function PrintTemplatePreview({
                   style={{ background: primaryColor }}
                 />
                 <span
-                  className="text-[10px] uppercase tracking-[0.3em]"
+                  className="text-xs"
                   style={{ color: accentColor, fontFamily: fonts.body }}
                 >
                   Digital Menu
@@ -2603,8 +2640,8 @@ function PrintTemplatePreview({
             )}
 
             {showShopName && displayName && (
-              <h1
-                className={`text-3xl ${weightClass} uppercase text-center mb-4`}
+              <p
+                className={`text-3xl ${weightClass} text-center mb-4`}
                 style={{
                   color: textPrimary,
                   fontFamily: fonts.heading,
@@ -2612,7 +2649,7 @@ function PrintTemplatePreview({
                 }}
               >
                 {displayName}
-              </h1>
+              </p>
             )}
 
             {/* Elegant divider */}
@@ -2645,7 +2682,7 @@ function PrintTemplatePreview({
             <div className="relative">
               {/* Multi-layer glow effect */}
               <div
-                className="absolute -inset-12 rounded-full blur-3xl"
+                className="absolute -inset-12 rounded-full"
                 style={{ background: hexToRgba(primaryColor, 0.1) }}
               />
               <div
@@ -2713,7 +2750,7 @@ function PrintTemplatePreview({
                 }}
               />
               <p
-                className="text-sm uppercase tracking-widest"
+                className="text-sm"
                 style={{
                   color: textPrimary,
                   fontFamily: fonts.body,
@@ -2787,11 +2824,11 @@ function PrintTemplatePreview({
 
           {/* Artistic diagonal accent */}
           <div
-            className="absolute -top-20 -left-20 w-60 h-60 rounded-full blur-3xl"
+            className="absolute -top-20 -left-20 w-60 h-60 rounded-full"
             style={{ background: hexToRgba(primaryColor, 0.15) }}
           />
           <div
-            className="absolute -bottom-20 -right-20 w-60 h-60 rounded-full blur-3xl"
+            className="absolute -bottom-20 -right-20 w-60 h-60 rounded-full"
             style={{ background: hexToRgba(secondaryColor, 0.1) }}
           />
 
@@ -2868,7 +2905,7 @@ function PrintTemplatePreview({
               )}
               <div className="text-right">
                 <p
-                  className="text-[11px] uppercase mb-2 tracking-widest"
+                  className="text-xs mb-2"
                   style={{ color: accentColor, fontFamily: fonts.body }}
                 >
                   Digital Experience
@@ -2911,8 +2948,8 @@ function PrintTemplatePreview({
             )}
 
             {showShopName && displayName && (
-              <h1
-                className={`text-4xl ${weightClass} uppercase mb-2`}
+              <p
+                className={`text-4xl ${weightClass} mb-2`}
                 style={{
                   color: textPrimary,
                   fontFamily: fonts.heading,
@@ -2920,7 +2957,7 @@ function PrintTemplatePreview({
                 }}
               >
                 {displayName}
-              </h1>
+              </p>
             )}
 
             {/* Decorative divider */}
@@ -2959,7 +2996,7 @@ function PrintTemplatePreview({
             <div className="relative mb-8">
               {/* Outer glow rings */}
               <div
-                className="absolute -inset-12 rounded-full blur-3xl"
+                className="absolute -inset-12 rounded-full"
                 style={{ background: hexToRgba(primaryColor, 0.08) }}
               />
               <div
@@ -3030,7 +3067,7 @@ function PrintTemplatePreview({
             </div>
 
             <p
-              className="text-xl uppercase tracking-widest"
+              className="text-xl"
               style={{
                 color: textPrimary,
                 fontFamily: fonts.heading,
@@ -3072,7 +3109,7 @@ function PrintTemplatePreview({
                         0{idx + 1}
                       </span>
                       <span
-                        className="text-[10px] uppercase tracking-wider"
+                        className="text-xs"
                         style={{ color: textSecondary, fontFamily: fonts.body }}
                       >
                         {item}
@@ -3228,7 +3265,7 @@ function PrintTemplatePreview({
               <div className="text-right">
                 <div className="flex items-center gap-3 justify-end mb-2">
                   <span
-                    className="text-[10px] uppercase tracking-[0.4em]"
+                    className="text-xs"
                     style={{ color: accentColor, fontFamily: fonts.body }}
                   >
                     Digital Menu
@@ -3266,8 +3303,8 @@ function PrintTemplatePreview({
               )}
 
               {showShopName && displayName && (
-                <h1
-                  className={`text-6xl ${weightClass} uppercase mb-4`}
+                <p
+                  className={`text-6xl ${weightClass} mb-4`}
                   style={{
                     color: textPrimary,
                     fontFamily: fonts.heading,
@@ -3275,7 +3312,7 @@ function PrintTemplatePreview({
                   }}
                 >
                   {displayName}
-                </h1>
+                </p>
               )}
 
               {/* Creative divider */}
@@ -3359,7 +3396,7 @@ function PrintTemplatePreview({
 
               <div className="mt-14">
                 <p
-                  className="text-2xl uppercase tracking-widest"
+                  className="text-2xl"
                   style={{ color: textPrimary, fontFamily: fonts.heading }}
                 >
                   {englishText}
@@ -3374,7 +3411,7 @@ function PrintTemplatePreview({
             <div className="flex justify-between items-end">
               <div>
                 <div
-                  className="text-[9px] uppercase tracking-[0.2em] mb-1"
+                  className="text-xs mb-1"
                   style={{ color: hexToRgba(textSecondary, 0.5) }}
                 >
                   {shortUrl}
@@ -3391,7 +3428,7 @@ function PrintTemplatePreview({
                   {["Discover", "Experience", "Enjoy"].map((word, i) => (
                     <span
                       key={word}
-                      className="text-[9px] uppercase tracking-wider"
+                      className="text-xs"
                       style={{ color: i === 1 ? accentColor : textSecondary }}
                     >
                       {word}
@@ -3615,8 +3652,8 @@ function PrintTemplatePreview({
                   style={{ background: accentColor }}
                 />
               </div>
-              <h1
-                className={`text-2xl ${weightClass} uppercase`}
+              <p
+                className={`text-2xl ${weightClass} `}
                 style={{
                   color: textPrimary,
                   fontFamily: fonts.heading,
@@ -3624,7 +3661,7 @@ function PrintTemplatePreview({
                 }}
               >
                 {displayName}
-              </h1>
+              </p>
               <div className="flex items-center gap-1">
                 <div
                   className="w-1.5 h-1.5 rounded-full"
@@ -3719,7 +3756,7 @@ function PrintTemplatePreview({
                 }}
               />
               <p
-                className="text-xs uppercase tracking-widest"
+                className="text-xs"
                 style={{ color: textSecondary, fontFamily: fonts.body }}
               >
                 {englishText}
@@ -3822,8 +3859,8 @@ function PrintTemplatePreview({
                   />
                 )}
                 <div>
-                  <h1
-                    className={`text-xl ${weightClass} uppercase tracking-tight`}
+                  <p
+                    className={`text-xl ${weightClass} `}
                     style={{
                       color: "#1a1a1a",
                       fontFamily: fonts.heading,
@@ -3831,7 +3868,7 @@ function PrintTemplatePreview({
                     }}
                   >
                     {displayName}
-                  </h1>
+                  </p>
                   {showArabicText && (
                     <p
                       className="text-sm mt-0.5"
@@ -3895,7 +3932,7 @@ function PrintTemplatePreview({
                   />
                 </div>
                 <p
-                  className="text-[10px] uppercase tracking-[0.25em]"
+                  className="text-xs"
                   style={{ color: "#666", fontFamily: fonts.body }}
                 >
                   {englishText}
@@ -4051,7 +4088,7 @@ function PrintTemplatePreview({
                 }}
               />
               <p
-                className="text-[10px] uppercase tracking-[0.4em] px-4"
+                className="text-xs px-4"
                 style={{ color: accentColor, background: backgroundColor }}
               >
                 ✧ Est. {new Date().getFullYear()} ✧
@@ -4059,8 +4096,8 @@ function PrintTemplatePreview({
             </div>
 
             {/* Main title with vintage styling */}
-            <h1
-              className={`text-3xl ${weightClass} uppercase mb-1`}
+            <p
+              className={`text-3xl ${weightClass} mb-1`}
               style={{
                 color: primaryColor,
                 fontFamily: fonts.heading,
@@ -4069,7 +4106,7 @@ function PrintTemplatePreview({
               }}
             >
               {displayName}
-            </h1>
+            </p>
 
             {showArabicText && (
               <p
@@ -4152,7 +4189,7 @@ function PrintTemplatePreview({
               />
               <div className="px-8 py-2" style={{ background: secondaryColor }}>
                 <p
-                  className="text-sm font-bold uppercase tracking-wider"
+                  className="text-sm font-bold"
                   style={{ color: textPrimary }}
                 >
                   {ctaText}
@@ -4161,7 +4198,7 @@ function PrintTemplatePreview({
             </div>
 
             <p
-              className="text-xs mt-4 uppercase tracking-widest"
+              className="text-xs mt-4"
               style={{ color: hexToRgba(textSecondary, 0.7) }}
             >
               {englishText}
@@ -4260,11 +4297,11 @@ function PrintTemplatePreview({
 
           {/* Subtle ambient glows */}
           <div
-            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full blur-[100px]"
+            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 rounded-full"
             style={{ background: hexToRgba(primaryColor, 0.15) }}
           />
           <div
-            className="absolute bottom-1/4 left-1/3 w-48 h-48 rounded-full blur-[80px]"
+            className="absolute bottom-1/4 left-1/3 w-48 h-48 rounded-full"
             style={{ background: hexToRgba(secondaryColor, 0.1) }}
           />
 
@@ -4288,8 +4325,8 @@ function PrintTemplatePreview({
               </div>
             )}
 
-            <h1
-              className={`text-2xl ${weightClass} uppercase mb-2`}
+            <p
+              className={`text-2xl ${weightClass} mb-2`}
               style={{
                 color: textPrimary,
                 fontFamily: fonts.heading,
@@ -4298,7 +4335,7 @@ function PrintTemplatePreview({
               }}
             >
               {catalog.name}
-            </h1>
+            </p>
 
             {showArabicText && (
               <p
@@ -4340,7 +4377,7 @@ function PrintTemplatePreview({
                 }}
               />
               <p
-                className="text-sm uppercase font-mono"
+                className="text-sm font-mono"
                 style={{
                   color: secondaryColor,
                   letterSpacing: "0.2em",
@@ -4548,7 +4585,7 @@ function PrintTemplatePreview({
               </div>
             )}
 
-            <h1
+            <p
               className={`text-2xl ${weightClass}`}
               style={{
                 color: primaryColor,
@@ -4557,7 +4594,7 @@ function PrintTemplatePreview({
               }}
             >
               {displayName}
-            </h1>
+            </p>
 
             {showArabicText && (
               <p
@@ -4684,7 +4721,7 @@ function PrintTemplatePreview({
                 />
               </svg>
               <p
-                className="text-sm uppercase font-medium tracking-wider"
+                className="text-sm font-medium"
                 style={{ color: primaryColor }}
               >
                 {englishText}
@@ -4702,7 +4739,7 @@ function PrintTemplatePreview({
             </div>
 
             <p
-              className="text-[10px] mt-4 uppercase tracking-widest"
+              className="text-xs mt-4"
               style={{ color: hexToRgba(secondaryColor, 0.6) }}
             >
               ✦ Fresh • Natural • Sustainable ✦
@@ -4751,7 +4788,7 @@ function PrintTemplatePreview({
 
           {/* Top light accent */}
           <div
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-32 blur-[60px]"
+            className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-32"
             style={{ background: hexToRgba(accentColor, 0.08) }}
           />
 
@@ -4778,7 +4815,7 @@ function PrintTemplatePreview({
             {/* Center content */}
             <div className="flex-1 flex flex-col items-center justify-center text-center">
               <p
-                className="text-[10px] uppercase mb-3"
+                className="text-xs mb-3"
                 style={{
                   color: accentColor,
                   letterSpacing: "0.4em",
@@ -4788,8 +4825,8 @@ function PrintTemplatePreview({
                 Experience
               </p>
 
-              <h1
-                className={`text-2xl ${weightClass} uppercase mb-2`}
+              <p
+                className={`text-2xl ${weightClass} mb-2`}
                 style={{
                   color: textPrimary,
                   fontFamily: fonts.heading,
@@ -4797,7 +4834,7 @@ function PrintTemplatePreview({
                 }}
               >
                 {displayName}
-              </h1>
+              </p>
 
               {showArabicText && (
                 <p
@@ -4855,7 +4892,7 @@ function PrintTemplatePreview({
               </div>
 
               <p
-                className="text-xs uppercase mt-6"
+                className="text-xs mt-6"
                 style={{
                   color: hexToRgba(textPrimary, 0.5),
                   letterSpacing: "0.25em",
@@ -5028,7 +5065,7 @@ function PrintTemplatePreview({
               )}
 
               <h2
-                className={`text-xl ${weightClass} uppercase mb-6`}
+                className={`text-xl ${weightClass} mb-6`}
                 style={{
                   color: textPrimary,
                   fontFamily: fonts.heading,
@@ -5043,7 +5080,7 @@ function PrintTemplatePreview({
               <div className="relative">
                 {/* Glow effect */}
                 <div
-                  className="absolute -inset-3 rounded-2xl"
+                  className="absolute -inset-3 rounded-control"
                   style={{
                     background: `linear-gradient(${gradientDirection}deg, ${accentColor}, ${secondaryColor})`,
                     opacity: 0.3,
@@ -5103,7 +5140,7 @@ function PrintTemplatePreview({
                 }}
               >
                 <p
-                  className="text-xs uppercase font-semibold tracking-wider"
+                  className="text-xs font-semibold"
                   style={{ color: textPrimary }}
                 >
                   {ctaText}
@@ -5140,7 +5177,7 @@ function PrintTemplatePreview({
                 </div>
               </div>
               <p
-                className="text-[9px] uppercase tracking-wider"
+                className="text-xs"
                 style={{ color: hexToRgba(textPrimary, 0.5) }}
               >
                 {shortUrl}

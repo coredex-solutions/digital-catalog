@@ -18,66 +18,87 @@ interface EnhanceRequest {
   productType?: string;
 }
 
-// Check and update AI enhancement limit
-async function checkAndUpdateLimit(catalogId: string): Promise<{ allowed: boolean; remaining: number; limit: number; error?: string }> {
+const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMAGE_BYTES = 6 * 1024 * 1024; // 6MB decoded
+
+/** Decoded size of a base64 string, without decoding it */
+function base64Bytes(base64: string): number {
+  const padding = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
+  return Math.floor((base64.length * 3) / 4) - padding;
+}
+
+/**
+ * Reserve one AI enhancement for this month. The reservation is a single conditional UPDATE,
+ * so parallel requests cannot overspend the allowance; call refundEnhancement if it fails.
+ */
+async function reserveEnhancement(catalogId: string): Promise<{ allowed: boolean; remaining: number; limit: number; error?: string }> {
   const db = getDb();
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   try {
-    const subscription = await db.execute({
-      sql: `SELECT ai_image_enhancement_limit, ai_image_enhancement_used, ai_enhancement_reset_date 
-            FROM catalog_subscriptions WHERE catalog_id = ?`,
+    // Start a new month's count. Setting the reset date in the same statement means only the
+    // first request of the month resets it.
+    await db.execute({
+      sql: `UPDATE catalog_subscriptions
+            SET ai_image_enhancement_used = 0, ai_enhancement_reset_date = ?
+            WHERE catalog_id = ? AND (ai_enhancement_reset_date IS NULL OR ai_enhancement_reset_date != ?)`,
+      args: [currentMonth, catalogId, currentMonth]
+    });
+
+    const reserved = await db.execute({
+      sql: `UPDATE catalog_subscriptions
+            SET ai_image_enhancement_used = COALESCE(ai_image_enhancement_used, 0) + 1
+            WHERE catalog_id = ?
+              AND COALESCE(ai_image_enhancement_used, 0) < COALESCE(ai_image_enhancement_limit, 0)
+            RETURNING ai_image_enhancement_used as used, ai_image_enhancement_limit as lim`,
       args: [catalogId]
     });
 
-    if (!subscription.rows || subscription.rows.length === 0) {
-      return { allowed: true, remaining: 10, limit: 10 };
+    if (reserved.rowsAffected > 0) {
+      const used = Number(reserved.rows[0]?.used || 0);
+      const limit = Number(reserved.rows[0]?.lim || 0);
+      return { allowed: true, remaining: Math.max(0, limit - used), limit };
     }
 
-    const sub = subscription.rows[0];
-    let limit = (sub.ai_image_enhancement_limit as number) ?? 10;
-    let used = (sub.ai_image_enhancement_used as number) ?? 0;
-    const resetDate = sub.ai_enhancement_reset_date as string;
-
-    if (resetDate !== currentMonth) {
-      await db.execute({
-        sql: `UPDATE catalog_subscriptions 
-              SET ai_image_enhancement_used = 0, ai_enhancement_reset_date = ?
-              WHERE catalog_id = ?`,
-        args: [currentMonth, catalogId]
-      });
-      used = 0;
-    }
-
-    if (used >= limit) {
-      return {
-        allowed: false,
-        remaining: 0,
-        limit,
-        error: `تم استنفاد رصيد التحسين بالذكاء الاصطناعي (${limit}/${limit}). تواصل مع المسؤول لزيادة الرصيد.`
-      };
-    }
-
-    await db.execute({
-      sql: `UPDATE catalog_subscriptions 
-            SET ai_image_enhancement_used = ai_image_enhancement_used + 1,
-                ai_enhancement_reset_date = COALESCE(ai_enhancement_reset_date, ?)
-            WHERE catalog_id = ?`,
-      args: [currentMonth, catalogId]
+    const subscription = await db.execute({
+      sql: "SELECT ai_image_enhancement_limit FROM catalog_subscriptions WHERE catalog_id = ?",
+      args: [catalogId]
     });
-
-    return { allowed: true, remaining: limit - used - 1, limit };
+    if (subscription.rows.length === 0) {
+      return { allowed: false, remaining: 0, limit: 0, error: "لا يوجد اشتراك فعّال لهذا الكتالوج." };
+    }
+    const limit = Number(subscription.rows[0].ai_image_enhancement_limit || 0);
+    return {
+      allowed: false,
+      remaining: 0,
+      limit,
+      error: `تم استنفاد رصيد التحسين بالذكاء الاصطناعي (${limit}/${limit}). تواصل مع المسؤول لزيادة الرصيد.`
+    };
   } catch (error) {
     console.error("Failed to check AI limit:", error);
     return { allowed: false, remaining: 0, limit: 0, error: "Failed to check AI enhancement limit" };
   }
 }
 
+/** Give back a reserved enhancement when the AI call did not produce an image */
+async function refundEnhancement(catalogId: string) {
+  try {
+    await getDb().execute({
+      sql: `UPDATE catalog_subscriptions
+            SET ai_image_enhancement_used = MAX(0, COALESCE(ai_image_enhancement_used, 0) - 1)
+            WHERE catalog_id = ?`,
+      args: [catalogId]
+    });
+  } catch (error) {
+    console.error("Failed to refund AI enhancement:", error);
+  }
+}
+
 export async function POST(request: NextRequest) {
   if (!GOOGLE_API_KEY) {
     return NextResponse.json(
-      { error: "Google API key not configured. Add GOOGLE_API_KEY to your .env file." },
-      { status: 500 }
+      { error: "AI image enhancement is not configured on this server." },
+      { status: 503 }
     );
   }
 
@@ -85,6 +106,8 @@ export async function POST(request: NextRequest) {
   if (!auth.success) return auth.response;
   // Usage is billed to the caller's own catalog, never one named in the request body
   const catalogId = auth.admin.catalog_id;
+
+  let reserved = false;
 
   try {
     const body: EnhanceRequest = await request.json();
@@ -102,24 +125,36 @@ export async function POST(request: NextRequest) {
         if (!imageRes.ok) throw new Error(`Failed to fetch: ${imageRes.statusText}`);
         const arrayBuffer = await imageRes.arrayBuffer();
         imageBase64 = Buffer.from(arrayBuffer).toString("base64");
-        mimeType = imageRes.headers.get("content-type") || "image/jpeg";
+        mimeType = (imageRes.headers.get("content-type") || "image/jpeg").split(";")[0].trim();
       } catch (fetchError: any) {
         console.error("Failed to fetch image:", fetchError);
         return NextResponse.json({ error: "فشل تحميل الصورة الأصلي" }, { status: 400 });
       }
     }
 
-    if (!imageBase64) {
+    if (!imageBase64 || typeof imageBase64 !== "string") {
       return NextResponse.json({ error: "لم يتم تحميل صورة" }, { status: 400 });
     }
 
-    const limitCheck = await checkAndUpdateLimit(catalogId);
+    // Only photo formats Gemini handles, and nothing large enough to run up the bill
+    mimeType = (mimeType || "image/jpeg").toLowerCase();
+    if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+      return NextResponse.json({ error: "Only JPEG, PNG and WebP images can be enhanced" }, { status: 400 });
+    }
+    if (base64Bytes(imageBase64) > MAX_IMAGE_BYTES) {
+      return NextResponse.json({ error: "Image too large. Maximum size is 6MB" }, { status: 400 });
+    }
+    if (typeof productType !== "string" || productType.length > 40) productType = "food";
+    if (!["professional", "vibrant", "clean"].includes(style)) style = "professional";
+
+    const limitCheck = await reserveEnhancement(catalogId);
     if (!limitCheck.allowed) {
       return NextResponse.json(
         { error: limitCheck.error, remaining: 0, limit: limitCheck.limit },
         { status: 429 }
       );
     }
+    reserved = true;
 
     // Advanced prompt for Gemini 2.0 Commercial Photography
     const styleGuide = style === "vibrant"
@@ -158,7 +193,7 @@ The final output must be just the image.`;
       prompt,
       {
         inlineData: {
-          mimeType: mimeType || "image/jpeg",
+          mimeType,
           data: imageBase64
         }
       }
@@ -181,7 +216,8 @@ The final output must be just the image.`;
       }
     }
 
-    // Fallback if the image modality wasn't returned
+    // Fallback if the image modality wasn't returned; the attempt is not charged
+    await refundEnhancement(catalogId);
     return NextResponse.json(
       { error: "لم يتم استلام صورة من الذكاء الاصطناعي. قد تكون ميزة Nano Banana غير مفعلة لهذا المفتاح." },
       { status: 500 }
@@ -189,8 +225,9 @@ The final output must be just the image.`;
 
   } catch (error: any) {
     console.error("Gemini library error:", error);
+    if (reserved) await refundEnhancement(catalogId);
     return NextResponse.json(
-      { error: error.message || "فشل تحسين الصورة. حاول مرة أخرى." },
+      { error: "فشل تحسين الصورة. حاول مرة أخرى." },
       { status: 500 }
     );
   }

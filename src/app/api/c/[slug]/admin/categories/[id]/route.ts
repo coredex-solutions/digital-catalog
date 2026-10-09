@@ -20,7 +20,7 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { name_ar, name_en, name_fr, image_url, icon_name, is_active } = body;
+    const { name_ar, name_en, image_url, icon_name, is_active } = body;
 
     const db = getDb();
 
@@ -45,10 +45,6 @@ export async function PUT(
     if (name_en !== undefined) {
       updates.push("name_en = ?");
       args.push(name_en);
-    }
-    if (name_fr !== undefined) {
-      updates.push("name_fr = ?");
-      args.push(name_fr);
     }
     if (image_url !== undefined) {
       updates.push("image_url = ?");

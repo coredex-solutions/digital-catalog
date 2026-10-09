@@ -90,20 +90,20 @@ export default function CatalogsPage() {
   const getStatusBadge = (catalog: CatalogItem) => {
     if (catalog.is_suspended) {
       return (
-        <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+        <span className="text-xs px-2 py-1 rounded-full bg-ui-bg text-ui-danger border border-ui-danger">
           Suspended
         </span>
       );
     }
     if (!catalog.is_active) {
       return (
-        <span className="text-xs px-2 py-1 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">
+        <span className="text-xs px-2 py-1 rounded-full bg-ui-bg text-ui-muted border border-ui-line">
           Inactive
         </span>
       );
     }
     return (
-      <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20 shadow-[0_0_10px_-3px_rgb(16,185,129)]">
+      <span className="text-xs font-bold px-2 py-1 rounded-full bg-ui-subtle text-ui-success border border-ui-line">
         Active
       </span>
     );
@@ -114,7 +114,7 @@ export default function CatalogsPage() {
       <SuperAdminHeader title="Catalogs">
         <Link
           href="/superadmin/catalogs/new"
-          className="flex items-center gap-2 px-5 py-2.5 bg-white text-black rounded-xl hover:scale-105 transition-all font-bold text-sm shadow-lg shadow-white/10"
+          className="flex items-center gap-2 px-5 py-2.5 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover rounded-control transition-colors font-semibold text-sm"
         >
           <Plus className="w-4 h-4" />
           New Catalog
@@ -125,13 +125,13 @@ export default function CatalogsPage() {
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-ui-muted" />
             <input
               type="text"
               placeholder="Search catalogs..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full pl-10 pr-4 py-3 bg-ui-surface border border-ui-input rounded-control text-ui-ink placeholder:text-ui-muted focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary"
             />
           </div>
           <div className="flex gap-2">
@@ -139,10 +139,10 @@ export default function CatalogsPage() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all capitalize uppercase tracking-wider ${
+                className={`px-4 py-2 rounded-control text-sm font-semibold transition-all capitalize ${
                   filter === f
-                    ? "bg-white text-black shadow-lg"
-                    : "glass text-white/40 hover:text-white border border-white/5 hover:bg-white/5"
+                    ? "bg-ui-primary text-ui-primary-fg"
+                    : "bg-ui-surface text-ui-muted hover:text-ui-ink border border-ui-line hover:bg-ui-subtle"
                 }`}
               >
                 {f}
@@ -155,22 +155,22 @@ export default function CatalogsPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="glass rounded-3xl p-6 animate-pulse border border-white/5">
-                <div className="h-6 bg-white/10 rounded-full w-3/4 mb-3" />
-                <div className="h-4 bg-white/5 rounded-full w-1/2" />
+              <div key={i} className="glass rounded-panel p-6 border border-ui-line">
+                <div className="h-6 bg-ui-subtle rounded-full w-3/4 mb-3" />
+                <div className="h-4 bg-ui-subtle rounded-full w-1/2" />
               </div>
             ))}
           </div>
         ) : filteredCatalogs.length === 0 ? (
           <div className="text-center py-12">
-            <Store className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400">
+            <Store className="w-12 h-12 text-ui-input mx-auto mb-4" />
+            <p className="text-ui-muted">
               {search || filter !== "all" ? "No catalogs match your filters" : "No catalogs yet"}
             </p>
             {!search && filter === "all" && (
               <Link
                 href="/superadmin/catalogs/new"
-                className="inline-flex items-center gap-2 mt-4 text-violet-400 hover:text-violet-300"
+                className="inline-flex items-center gap-2 mt-4 text-ui-primary hover:text-ui-primary-hover"
               >
                 <Plus className="w-5 h-5" />
                 Create your first catalog
@@ -184,61 +184,61 @@ export default function CatalogsPage() {
               return (
                 <div
                   key={catalog.id}
-                  className="glass rounded-3xl overflow-hidden border border-white/5 hover:border-white/20 transition-all duration-300 group hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/5"
+                  className="glass rounded-panel overflow-hidden border border-ui-line hover:border-ui-input transition-all duration-300 group hover:shadow-md"
                 >
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center border border-white/10 group-hover:scale-110 transition-transform">
-                          <Icon className="w-6 h-6 text-white group-hover:text-primary transition-colors" />
+                        <div className="w-14 h-14 rounded-control bg-ui-subtle flex items-center justify-center border border-ui-line">
+                          <Icon className="w-6 h-6 text-ui-ink group-hover:text-ui-primary transition-colors" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-white text-lg tracking-tight group-hover:text-primary transition-colors">{catalog.name}</h3>
-                          <p className="text-xs text-white/40 font-mono">/{catalog.slug}</p>
+                          <h3 className="font-bold text-ui-ink text-lg group-hover:text-ui-primary transition-colors">{catalog.name}</h3>
+                          <p className="text-xs text-ui-muted font-mono">/{catalog.slug}</p>
                         </div>
                       </div>
                       {getStatusBadge(catalog)}
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 py-6 border-y border-white/5">
+                    <div className="grid grid-cols-3 gap-4 py-6 border-y border-ui-line">
                       <div className="text-center">
-                        <p className="text-xl font-bold text-white tracking-tighter">{catalog.category_count || 0}</p>
-                        <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Categories</p>
+                        <p className="text-xl font-bold text-ui-ink">{catalog.category_count || 0}</p>
+                        <p className="text-xs text-ui-muted font-bold">Categories</p>
                       </div>
-                      <div className="text-center border-x border-white/5">
-                        <p className="text-xl font-bold text-white tracking-tighter">{catalog.item_count || 0}</p>
-                        <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Products</p>
+                      <div className="text-center border-x border-ui-line">
+                        <p className="text-xl font-bold text-ui-ink">{catalog.item_count || 0}</p>
+                        <p className="text-xs text-ui-muted font-bold">Products</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-xl font-bold text-white tracking-tighter">{catalog.total_views || 0}</p>
-                        <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">Views</p>
+                        <p className="text-xl font-bold text-ui-ink">{catalog.total_views || 0}</p>
+                        <p className="text-xs text-ui-muted font-bold">Views</p>
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between mt-6 text-xs font-medium">
-                      <span className="text-white/40 capitalize bg-white/5 px-3 py-1 rounded-full border border-white/5">
+                      <span className="text-ui-muted capitalize bg-ui-subtle px-3 py-1 rounded-full border border-ui-line">
                         {catalog.subscription_type?.replace("_", " ") || "No subscription"}
                       </span>
                       {catalog.expires_at && (
-                        <span className="text-white/30">
+                        <span className="text-ui-muted">
                           Expires: {new Date(catalog.expires_at).toLocaleDateString()}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="flex border-t border-white/5">
+                  <div className="flex border-t border-ui-line">
                     <Link
                       href={`/c/${catalog.slug}`}
                       target="_blank"
-                      className="flex-1 flex items-center justify-center gap-2 py-4 text-white/40 hover:text-white hover:bg-white/5 transition-colors font-medium text-sm group/btn"
+                      className="flex-1 flex items-center justify-center gap-2 py-4 text-ui-muted hover:text-ui-ink hover:bg-ui-subtle transition-colors font-medium text-sm group/btn"
                     >
                       <ExternalLink className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
                       <span>View</span>
                     </Link>
                     <Link
                       href={`/superadmin/catalogs/${catalog.id}`}
-                      className="flex-1 flex items-center justify-center gap-2 py-4 text-white/40 hover:text-primary hover:bg-primary/5 transition-colors border-l border-white/5 font-medium text-sm group/btn"
+                      className="flex-1 flex items-center justify-center gap-2 py-4 text-ui-muted hover:text-ui-primary hover:bg-ui-subtle transition-colors border-l border-ui-line font-medium text-sm group/btn"
                     >
                       <Edit className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
                       <span>Manage</span>

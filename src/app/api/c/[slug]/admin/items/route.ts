@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
+import { parseItemCurrency, parseItemPrice } from "@/lib/catalog/price";
+import {
+  allergensToDb,
+  dietaryToDb,
+  lowestVariantPrice,
+  parseAllergensInput,
+  parseDietaryInput,
+  parseVariantsInput,
+  readDishInfo,
+  variantsToDb,
+} from "@/lib/catalog/dish-info";
+import { PLAN_CONFIG } from "@/lib/plans";
 import { v4 as uuidv4 } from "uuid";
 
 // GET: List all items for this catalog
@@ -40,7 +52,10 @@ export async function GET(
 
   const result = await db.execute({ sql, args });
 
-  return NextResponse.json({ items: result.rows });
+  // Options, dietary tags and allergens are stored as JSON text; send them parsed
+  const items = result.rows.map((row) => ({ ...row, ...readDishInfo(row) }));
+
+  return NextResponse.json({ items });
 }
 
 // POST: Create a new item
@@ -64,19 +79,43 @@ export async function POST(
       category_id,
       name_ar,
       name_en,
-      name_fr,
       description_ar,
       description_en,
-      description_fr,
       price,
       currency = "USD",
       image_url,
       is_featured = false,
     } = body;
 
-    if (!category_id || !name_en || price === undefined) {
+    const variants = parseVariantsInput(body.variants);
+    if (!variants.ok) return NextResponse.json({ error: variants.error }, { status: 400 });
+    const dietary = parseDietaryInput(body.dietary);
+    if (!dietary.ok) return NextResponse.json({ error: dietary.error }, { status: 400 });
+    // Omitted means not checked: allergens stay unknown until the owner verifies them
+    const allergens = parseAllergensInput(body.allergens === undefined ? null : body.allergens);
+    if (!allergens.ok) return NextResponse.json({ error: allergens.error }, { status: 400 });
+
+    // With options, the item's price is the cheapest option (for sorting and "from" prices)
+    const lowest = lowestVariantPrice(variants.value);
+
+    if (!category_id || !name_en || (price === undefined && lowest === null)) {
       return NextResponse.json(
         { error: "Category, name, and price are required" },
+        { status: 400 }
+      );
+    }
+
+    const parsedPrice = lowest ?? parseItemPrice(price);
+    if (parsedPrice === null) {
+      return NextResponse.json(
+        { error: "Price must be a number of 0 or more" },
+        { status: 400 }
+      );
+    }
+    const parsedCurrency = parseItemCurrency(currency);
+    if (parsedCurrency === null) {
+      return NextResponse.json(
+        { error: "Currency must be USD or LBP" },
         { status: 400 }
       );
     }
@@ -96,7 +135,7 @@ export async function POST(
       );
     }
 
-    // Enforce the plan's item limit (defaults match /auth/verify)
+    // Enforce the plan's item limit (Essential's limit when no subscription row has one)
     const limitResult = await db.execute({
       sql: `
         SELECT
@@ -106,7 +145,7 @@ export async function POST(
       args: [catalog.id, catalog.id],
     });
     const currentCount = Number(limitResult.rows[0]?.current_count || 0);
-    const maxAllowed = Number(limitResult.rows[0]?.max_allowed ?? 0) || 200;
+    const maxAllowed = Number(limitResult.rows[0]?.max_allowed ?? 0) || PLAN_CONFIG.essential.limits.max_items;
     if (currentCount >= maxAllowed) {
       return NextResponse.json(
         { error: `Item limit reached for your plan (${maxAllowed}). Upgrade to add more.`, current: currentCount, max: maxAllowed },
@@ -123,15 +162,34 @@ export async function POST(
 
     const id = uuidv4();
 
+    // The option columns are only written when used, so plain dishes can still be created on
+    // a database that hasn't run migration 20261010_dish_options yet
+    const extraColumns: string[] = [];
+    const extraArgs: (string | null)[] = [];
+    if (variants.value.length > 0) {
+      extraColumns.push("variants");
+      extraArgs.push(variantsToDb(variants.value));
+    }
+    if (dietary.value.length > 0) {
+      extraColumns.push("dietary");
+      extraArgs.push(dietaryToDb(dietary.value));
+    }
+    if (allergens.value !== null) {
+      extraColumns.push("allergens");
+      extraArgs.push(allergensToDb(allergens.value));
+    }
+    const extraSql = extraColumns.map((c) => `, ${c}`).join("");
+    const extraValues = extraColumns.map(() => ", ?").join("");
+
     await db.execute({
       sql: `
         INSERT INTO menu_items (
           id, catalog_id, category_id, name_ar, name_en, name_fr,
           description_ar, description_en, description_fr,
           price, currency, image_url, display_order, is_active, is_featured,
-          created_at, updated_at
+          created_at, updated_at${extraSql}
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, datetime('now'), datetime('now'))
+        VALUES (?, ?, ?, ?, ?, '', ?, ?, NULL, ?, ?, ?, ?, 1, ?, datetime('now'), datetime('now')${extraValues})
       `,
       args: [
         id,
@@ -139,15 +197,14 @@ export async function POST(
         category_id,
         name_ar || name_en,
         name_en,
-        name_fr || name_en,
         description_ar || null,
         description_en || null,
-        description_fr || null,
-        price,
-        currency,
+        parsedPrice,
+        parsedCurrency,
         image_url || null,
         nextOrder,
         is_featured ? 1 : 0,
+        ...extraArgs,
       ],
     });
 
@@ -159,7 +216,10 @@ export async function POST(
           catalog_id: catalog.id,
           category_id,
           name_en,
-          price,
+          price: parsedPrice,
+          variants: variants.value,
+          dietary: dietary.value,
+          allergens: allergens.value,
         },
       },
       { status: 201 }

@@ -11,26 +11,28 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendVerificationEmail(email: string, code: string) {
-    if (!process.env.SMTP_USER) {
-        console.warn("SMTP_USER not set. Email not sent. Code:", code);
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        // In production a missing mail setup must surface as an error, not a silent "Code sent"
+        if (process.env.NODE_ENV === "production") throw new Error("SMTP_USER / SMTP_PASS are not set");
+        console.warn(`[dev] SMTP is not configured, so no email was sent. Verification code for ${email}: ${code}`);
         return;
     }
 
+    const from = process.env.EMAIL_FROM || process.env.SMTP_USER;
     const mailOptions = {
-        from: `"Coredex Solutions" <${process.env.SMTP_USER}>`,
+        from: `"Coredex" <${from}>`,
         to: email,
-        subject: `${code} is your verification code`,
+        subject: `${code} is your Coredex verification code`,
+        text: `Your Coredex verification code is ${code}. It expires in 10 minutes. If you didn't request it, you can ignore this email.`,
         html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #020203; color: white; border-radius: 24px;">
-                <h1 style="color: #FF6B35; text-align: center; font-size: 32px; font-weight: 900; letter-spacing: -1px; font-style: italic;">COREDEX</h1>
-                <p style="text-align: center; color: #64748b; text-transform: uppercase; font-size: 12px; letter-spacing: 2px; font-weight: 800;">Identity Verification</p>
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 20px; padding: 40px; margin: 30px 0; text-align: center;">
-                    <p style="margin-bottom: 20px; color: #94a3b8;">Your verification code is:</p>
-                    <h2 style="font-size: 48px; letter-spacing: 10px; color: white; margin: 0; font-family: monospace;">${code}</h2>
+            <div style="font-family: Inter, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #F7F8F5; color: #172B26;">
+                <p style="margin: 0 0 24px; font-size: 18px; font-weight: 600; color: #0F6B5B;">Coredex</p>
+                <div style="background: #FFFFFF; border: 1px solid #DDE3DF; border-radius: 16px; padding: 28px; text-align: center;">
+                    <p style="margin: 0 0 12px; font-size: 16px;">Your verification code</p>
+                    <p style="margin: 0; font-size: 36px; font-weight: 600; letter-spacing: 8px; color: #0F6B5B;">${code}</p>
+                    <p style="margin: 16px 0 0; font-size: 14px; color: #5B6B66;">It expires in 10 minutes.</p>
                 </div>
-                <p style="text-align: center; color: #475569; font-size: 12px;">This code will expire in 10 minutes. If you didn't request this, please ignore this email.</p>
-                <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.05); margin: 30px 0;">
-                <p style="text-align: center; color: #475569; font-size: 10px; letter-spacing: 1px; font-weight: 800;">© 2026 COREDEX SOLUTIONS</p>
+                <p style="margin: 24px 0 0; font-size: 13px; color: #5B6B66;">If you didn't ask for this code, you can ignore this email.</p>
             </div>
         `,
     };

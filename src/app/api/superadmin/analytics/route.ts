@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-middleware";
 import { getDb } from "@/lib/db/client";
 
+/** Today's calendar day in Beirut (YYYY-MM-DD): the day catalog_analytics.date is recorded under */
+const beirutToday = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Beirut" }).format(new Date());
+
+/** Shift a YYYY-MM-DD day by whole days (calendar arithmetic, no timezone involved) */
+function shiftDay(day: string, deltaDays: number): string {
+  const d = new Date(`${day}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + deltaDays);
+  return d.toISOString().slice(0, 10);
+}
+
 // GET: Get platform-wide analytics
 export async function GET(request: NextRequest) {
   const auth = await requireSuperAdmin(request);
@@ -15,6 +26,11 @@ export async function GET(request: NextRequest) {
   if (range === "7d") daysBack = 7;
   else if (range === "90d") daysBack = 90;
 
+  // Beirut calendar days, matching how catalog_analytics.date is recorded
+  const today = beirutToday();
+  const periodStart = shiftDay(today, -daysBack);
+  const prevPeriodStart = shiftDay(today, -daysBack * 2);
+
   try {
     const db = getDb();
 
@@ -23,9 +39,9 @@ export async function GET(request: NextRequest) {
       sql: `
         SELECT SUM(page_views) as total
         FROM catalog_analytics
-        WHERE date >= DATE('now', ?)
+        WHERE date >= ?
       `,
-      args: [`-${daysBack} days`],
+      args: [periodStart],
     });
 
     // Get views for previous period (for comparison)
@@ -33,10 +49,10 @@ export async function GET(request: NextRequest) {
       sql: `
         SELECT SUM(page_views) as total
         FROM catalog_analytics
-        WHERE date >= DATE('now', ?)
-          AND date < DATE('now', ?)
+        WHERE date >= ?
+          AND date < ?
       `,
-      args: [`-${daysBack * 2} days`, `-${daysBack} days`],
+      args: [prevPeriodStart, periodStart],
     });
 
     // Get WhatsApp clicks
@@ -44,19 +60,19 @@ export async function GET(request: NextRequest) {
       sql: `
         SELECT SUM(whatsapp_order_clicks) as total
         FROM catalog_analytics
-        WHERE date >= DATE('now', ?)
+        WHERE date >= ?
       `,
-      args: [`-${daysBack} days`],
+      args: [periodStart],
     });
 
     const prevWhatsappResult = await db.execute({
       sql: `
         SELECT SUM(whatsapp_order_clicks) as total
         FROM catalog_analytics
-        WHERE date >= DATE('now', ?)
-          AND date < DATE('now', ?)
+        WHERE date >= ?
+          AND date < ?
       `,
-      args: [`-${daysBack * 2} days`, `-${daysBack} days`],
+      args: [prevPeriodStart, periodStart],
     });
 
     // Get bookings
@@ -64,19 +80,19 @@ export async function GET(request: NextRequest) {
       sql: `
         SELECT SUM(booking_confirm_clicks) as total
         FROM catalog_analytics
-        WHERE date >= DATE('now', ?)
+        WHERE date >= ?
       `,
-      args: [`-${daysBack} days`],
+      args: [periodStart],
     });
 
     const prevBookingsResult = await db.execute({
       sql: `
         SELECT SUM(booking_confirm_clicks) as total
         FROM catalog_analytics
-        WHERE date >= DATE('now', ?)
-          AND date < DATE('now', ?)
+        WHERE date >= ?
+          AND date < ?
       `,
-      args: [`-${daysBack * 2} days`, `-${daysBack} days`],
+      args: [prevPeriodStart, periodStart],
     });
 
     // Top catalogs
@@ -91,12 +107,12 @@ export async function GET(request: NextRequest) {
           COALESCE(SUM(ca.booking_confirm_clicks), 0) as bookings
         FROM catalogs c
         LEFT JOIN catalog_analytics ca ON c.id = ca.catalog_id
-          AND ca.date >= DATE('now', ?)
+          AND ca.date >= ?
         GROUP BY c.id
         ORDER BY views DESC
         LIMIT 10
       `,
-      args: [`-${daysBack} days`],
+      args: [periodStart],
     });
 
     // Helper to calculate percentage change

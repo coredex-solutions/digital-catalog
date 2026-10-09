@@ -9,8 +9,6 @@
     "start": "next start",
     "lint": "next lint",
     "compress-images": "node compress-images.js",
-    "seed": "tsx scripts/seed-db.ts",
-    "create-admin": "tsx scripts/create-admin.ts",
     "migrate-v2": "tsx scripts/migrate-v2.ts",
     "create-superadmin": "tsx scripts/create-superadmin.ts"
   },

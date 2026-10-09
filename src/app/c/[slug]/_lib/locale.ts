@@ -7,13 +7,34 @@ import type { Language } from "@/types";
 export const LANG_COOKIE = (slug: string) => `menu_lang_${slug}`;
 export const THEME_COOKIE = "menu_theme";
 
-/** Languages the owner enabled, in the order they listed them; Arabic and English by default */
+/** Languages the menu can be shown in. Only Arabic and English are supported. */
+export const SUPPORTED_LANGUAGES: readonly Language[] = ["ar", "en"];
+
+export function isMenuLanguage(value: unknown): value is Language {
+  return typeof value === "string" && (SUPPORTED_LANGUAGES as readonly string[]).includes(value);
+}
+
+/**
+ * Languages the owner enabled, in the order they listed them; Arabic and English by default.
+ * Codes that are no longer supported (e.g. "fr" saved by older versions) are ignored.
+ */
 export function getEnabledLanguages(enabled?: string | null): Language[] {
   const codes = (enabled || "ar,en")
     .split(",")
     .map((s) => s.trim().toLowerCase())
-    .filter((c): c is Language => c === "ar" || c === "en" || c === "fr");
+    .filter(isMenuLanguage);
   return codes.length > 0 ? [...new Set(codes)] : ["ar", "en"];
+}
+
+/**
+ * Languages the menu offers. Arabic and English are included in every plan, so this is the
+ * owner's choice; the subscription argument is kept for callers.
+ */
+export function getMenuLanguages(
+  enabled: string | null | undefined,
+  _subscription?: unknown
+): Language[] {
+  return getEnabledLanguages(enabled);
 }
 
 export async function resolveMenuLanguage(
@@ -22,18 +43,20 @@ export async function resolveMenuLanguage(
   defaultLanguage?: string | null
 ): Promise<Language> {
   const cookieStore = await cookies();
-  const fromCookie = cookieStore.get(LANG_COOKIE(slug))?.value as Language | undefined;
-  if (fromCookie && enabledLanguages.includes(fromCookie)) return fromCookie;
+  // A stale cookie (e.g. "fr" from an older version) is ignored
+  const fromCookie = cookieStore.get(LANG_COOKIE(slug))?.value;
+  if (isMenuLanguage(fromCookie) && enabledLanguages.includes(fromCookie)) return fromCookie;
 
   // First enabled language the browser asks for, e.g. "ar-LB,ar;q=0.9,en;q=0.8"
   const acceptLanguage = (await headers()).get("accept-language") || "";
   for (const part of acceptLanguage.split(",")) {
-    const code = part.split(";")[0].trim().slice(0, 2).toLowerCase() as Language;
-    if (enabledLanguages.includes(code)) return code;
+    const code = part.split(";")[0].trim().slice(0, 2).toLowerCase();
+    if (isMenuLanguage(code) && enabledLanguages.includes(code)) return code;
   }
 
-  const fallback = (defaultLanguage || "").toLowerCase() as Language;
-  return enabledLanguages.includes(fallback) ? fallback : enabledLanguages[0];
+  const fallback = (defaultLanguage || "").toLowerCase();
+  if (isMenuLanguage(fallback) && enabledLanguages.includes(fallback)) return fallback;
+  return enabledLanguages[0] ?? "ar";
 }
 
 export async function resolveMenuTheme(): Promise<"light" | "dark"> {

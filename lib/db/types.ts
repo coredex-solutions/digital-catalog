@@ -6,10 +6,10 @@
 export type BusinessType = 'restaurant' | 'retail' | 'cafe' | 'salon' | 'bakery' | 'pharmacy' | 'grocery' | 'other';
 
 // Subscription types
-export type SubscriptionType = 'essential' | 'pro' | 'enterprise' | 'yearly' | 'forever' | 'custom_years';
+export type SubscriptionType = 'trial' | 'essential' | 'pro' | 'enterprise' | 'yearly' | 'forever' | 'custom_years';
 
 // Languages supported
-export type Language = 'ar' | 'en' | 'fr';
+export type Language = 'ar' | 'en';
 
 // ============================================
 // Core Entities

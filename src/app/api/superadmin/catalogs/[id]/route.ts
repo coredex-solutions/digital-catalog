@@ -174,7 +174,7 @@ export async function PUT(
     const subArgs: (string | number | null)[] = [];
     const allowedSubFields = [
       'subscription_type', 'starts_at', 'expires_at',
-      'multi_language_enabled', 'booking_enabled', 'analytics_enabled', 'custom_domain_enabled',
+      'booking_enabled', 'analytics_enabled', 'custom_domain_enabled',
       'ai_image_enhancement_limit', 'max_items', 'max_categories',
       'amount_paid', 'payment_method', 'payment_notes'
     ];
@@ -203,10 +203,24 @@ export async function PUT(
     const settingsArgs: (string | number | null)[] = [];
     const allowedSettingsFields = ['enabled_languages', 'default_language'];
 
+    // Menus are Arabic and English only: anything else (e.g. a legacy "fr") is stripped
+    const MENU_LANGUAGES = ['ar', 'en'];
+    let enabledLanguages: string[] | null = null;
+    if (body.enabled_languages !== undefined) {
+      const requested = String(body.enabled_languages || '').split(',').map((l: string) => l.trim());
+      enabledLanguages = MENU_LANGUAGES.filter((l) => requested.includes(l));
+      if (enabledLanguages.length === 0) enabledLanguages = [...MENU_LANGUAGES];
+    }
     for (const field of allowedSettingsFields) {
-      if (body[field] !== undefined) {
-        settingsUpdates.push(`${field} = ?`);
-        settingsArgs.push(body[field]);
+      if (body[field] === undefined) continue;
+      if (field === 'enabled_languages') {
+        settingsUpdates.push('enabled_languages = ?');
+        settingsArgs.push(enabledLanguages!.join(','));
+      } else if (field === 'default_language') {
+        const allowed = enabledLanguages ?? MENU_LANGUAGES;
+        const requested = String(body.default_language);
+        settingsUpdates.push('default_language = ?');
+        settingsArgs.push(allowed.includes(requested) ? requested : allowed[0]);
       }
     }
 

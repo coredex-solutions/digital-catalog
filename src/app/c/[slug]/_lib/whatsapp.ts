@@ -3,6 +3,7 @@
 import type { Language } from "@/types";
 import { formatPrice, formatTotal, type PriceConfig } from "@/lib/catalog/price";
 import { getDictionary, localized } from "./i18n";
+import { variantName } from "@/lib/catalog/dish-info";
 
 export type OrderType = "dine_in" | "takeaway" | "delivery";
 
@@ -28,11 +29,14 @@ export function whatsappLink(phone: string, text?: string): string {
 export interface OrderLine {
   name_ar: string;
   name_en: string;
-  name_fr: string;
+  /** Ignored; older callers still pass it. Messages are only built in Arabic or English. */
+  name_fr?: string;
   price: number;
   currency?: string | null;
   quantity: number;
   note?: string;
+  /** The chosen option, shown after the dish name: "Chicken shawarma (Large)" */
+  variant?: { name_en: string; name_ar: string };
 }
 
 export interface OrderDetails {
@@ -70,7 +74,8 @@ export function buildOrderMessage(
 
   for (const line of lines) {
     const price = formatPrice(line.price * line.quantity, line.currency, priceConfig, lang);
-    out.push(`• ${line.quantity} × ${localized(line, "name", lang)} — ${price.primary}`);
+    const option = line.variant ? ` (${variantName(line.variant, lang)})` : "";
+    out.push(`• ${line.quantity} × ${localized(line, "name", lang)}${option} — ${price.primary}`);
     if (line.note) out.push(`   ${t.msgNote}: ${line.note}`);
   }
 
@@ -97,16 +102,16 @@ export interface ReservationDetails {
 }
 
 export function buildReservationMessage(details: ReservationDetails, lang: Language): string {
-  const ar = lang === "ar";
+  const t = getDictionary(lang);
   const out = [
-    `*${ar ? "طلب حجز طاولة" : "Table reservation request"} · ${details.restaurantName}*`,
+    `*${t.msgReservation} · ${details.restaurantName}*`,
     "",
-    `*${ar ? "الاسم" : "Name"}:* ${details.name}`,
-    `*${ar ? "الهاتف" : "Phone"}:* ${details.phone}`,
-    `*${ar ? "التاريخ" : "Date"}:* ${details.date}`,
-    `*${ar ? "الوقت" : "Time"}:* ${details.time}`,
-    `*${ar ? "عدد الأشخاص" : "Guests"}:* ${details.guests}`,
+    `*${t.msgName}:* ${details.name}`,
+    `*${t.msgPhone}:* ${details.phone}`,
+    `*${t.msgDate}:* ${details.date}`,
+    `*${t.msgTime}:* ${details.time}`,
+    `*${t.msgGuests}:* ${details.guests}`,
   ];
-  if (details.notes) out.push(`*${ar ? "ملاحظات" : "Notes"}:* ${details.notes}`);
+  if (details.notes) out.push(`*${t.msgNotes}:* ${details.notes}`);
   return out.join("\n");
 }

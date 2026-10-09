@@ -65,17 +65,15 @@ export async function POST(
           name_ar, name_en, name_fr,
           address_ar, address_en, address_fr,
           phone_numbers, map_url, display_order, is_active
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, '', ?, ?, '', ?, ?, ?, ?)
       `,
             args: [
                 id,
                 auth.catalogId,
                 body.name_ar || '',
                 body.name_en || '',
-                body.name_fr || '',
                 body.address_ar || '',
                 body.address_en || '',
-                body.address_fr || '',
                 body.phone_numbers || null,
                 body.map_url || null,
                 body.display_order || 0,
@@ -110,8 +108,9 @@ export async function PUT(
     const args: (string | number | null)[] = [];
 
     const allowedFields = [
-        'name_ar', 'name_en', 'name_fr',
-        'address_ar', 'address_en', 'address_fr',
+        // French is no longer edited; its columns stay but are never written
+        'name_ar', 'name_en',
+        'address_ar', 'address_en',
         'phone_numbers', 'map_url', 'display_order', 'is_active'
     ];
 

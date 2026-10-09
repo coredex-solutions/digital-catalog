@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
+import { getBaseUrl } from "@/lib/utils/base-url";
 import QRCode from "qrcode";
+
+const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+// Printed codes always keep the standard 4-module quiet zone so phones can scan them
+const QUIET_ZONE = 4;
 
 // GET: Generate QR code for the catalog
 export async function GET(
@@ -21,13 +26,17 @@ export async function GET(
 
   const searchParams = request.nextUrl.searchParams;
   const format = searchParams.get("format") || "png"; // 'png' | 'svg' | 'base64'
-  const size = parseInt(searchParams.get("size") || "1024");
+  const requestedSize = parseInt(searchParams.get("size") || "1024", 10);
+  const size = Number.isFinite(requestedSize) ? Math.min(4096, Math.max(64, requestedSize)) : 1024;
   const darkColor = searchParams.get("dark") || "#000000";
   const lightColor = searchParams.get("light") || "#ffffff";
-  const includeMargin = searchParams.get("margin") !== "false";
+
+  if (!HEX_COLOR.test(darkColor) || (lightColor !== "transparent" && !HEX_COLOR.test(lightColor))) {
+    return NextResponse.json({ error: "Colors must be #RRGGBB" }, { status: 400 });
+  }
 
   // Construct the catalog URL
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.com";
+  const baseUrl = getBaseUrl(request);
   const catalogUrl = `${baseUrl}/c/${slug}`;
 
   try {
@@ -39,7 +48,7 @@ export async function GET(
           dark: darkColor,
           light: lightColor === "transparent" ? "#ffffff00" : lightColor,
         },
-        margin: includeMargin ? 4 : 0,
+        margin: QUIET_ZONE,
         width: size,
         errorCorrectionLevel: "H", // High error correction for logo placement
       });
@@ -59,7 +68,7 @@ export async function GET(
           dark: darkColor,
           light: lightColor === "transparent" ? "#ffffff00" : lightColor,
         },
-        margin: includeMargin ? 4 : 0,
+        margin: QUIET_ZONE,
         errorCorrectionLevel: "H",
       });
 
@@ -77,7 +86,7 @@ export async function GET(
           dark: darkColor,
           light: lightColor === "transparent" ? "#ffffff00" : lightColor,
         },
-        margin: includeMargin ? 4 : 0,
+        margin: QUIET_ZONE,
         errorCorrectionLevel: "H",
       });
 

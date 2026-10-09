@@ -1,11 +1,10 @@
 // Centralized type definitions
-export type Language = "ar" | "en" | "fr";
+export type Language = "ar" | "en";
 
 // Localized string object for multilingual content
 export interface LocalizedString {
   ar: string;
   en: string;
-  fr: string;
 }
 
 // Language option for selection page
@@ -37,10 +36,8 @@ export interface CatalogContactData {
   email?: string | null;
   address_ar?: string | null;
   address_en?: string | null;
-  address_fr?: string | null;
   city_ar?: string | null;
   city_en?: string | null;
-  city_fr?: string | null;
   google_map_iframe_url?: string | null;
 }
 
@@ -69,13 +66,10 @@ export interface CatalogSettingsData {
   whatsapp_order_enabled?: boolean;
   cta_menu_label_ar?: string;
   cta_menu_label_en?: string;
-  cta_menu_label_fr?: string;
   cta_booking_label_ar?: string;
   cta_booking_label_en?: string;
-  cta_booking_label_fr?: string;
   cta_order_label_ar?: string;
   cta_order_label_en?: string;
-  cta_order_label_fr?: string;
   default_language?: Language;
   enabled_languages?: string;
   ai_waiter_enabled?: boolean;
@@ -85,17 +79,14 @@ export interface CatalogSettingsData {
   // SEO Fields
   seo_title_ar?: string | null;
   seo_title_en?: string | null;
-  seo_title_fr?: string | null;
   seo_description_ar?: string | null;
   seo_description_en?: string | null;
-  seo_description_fr?: string | null;
   seo_keywords?: string | null;
   json_ld_custom?: string | null;
 
   // About Fields
   about_content_ar?: string | null;
   about_content_en?: string | null;
-  about_content_fr?: string | null;
 
   // Pricing (dual USD / LBP)
   currency_primary?: string | null;
@@ -117,11 +108,9 @@ export interface CatalogUIData {
     name: string;
     name_ar?: string | null;
     name_en?: string | null;
-    name_fr?: string | null;
     description?: string | null;
     description_ar?: string | null;
     description_en?: string | null;
-    description_fr?: string | null;
     logo_url?: string | null;
   };
   settings: CatalogSettingsData | null;

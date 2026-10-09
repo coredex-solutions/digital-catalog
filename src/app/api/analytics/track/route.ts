@@ -3,130 +3,76 @@ import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit/middleware';
 import { getDb } from '@/lib/db/client';
 import { v4 as uuidv4 } from 'uuid';
 
+// Days are counted in the restaurants' time zone, not the server's (UTC)
+const beirutDay = (date: Date) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Beirut' }).format(date); // YYYY-MM-DD
+
+// Which daily counter each event adds to
+const EVENT_COLUMNS = {
+  page_view: { page_views: 1, whatsapp_order_clicks: 0, booking_confirm_clicks: 0 },
+  whatsapp_click: { page_views: 0, whatsapp_order_clicks: 1, booking_confirm_clicks: 0 },
+  booking_confirm: { page_views: 0, whatsapp_order_clicks: 0, booking_confirm_clicks: 1 },
+} as const;
+type TrackedEvent = keyof typeof EVENT_COLUMNS;
+
 async function handler(request: NextRequest) {
   try {
     const { catalog_id, event, fingerprint } = await request.json();
 
-    if (!catalog_id || !event) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (typeof catalog_id !== 'string' || !(event in EVENT_COLUMNS)) {
+      return NextResponse.json({ error: 'Missing or invalid fields' }, { status: 400 });
     }
+    const counts = EVENT_COLUMNS[event as TrackedEvent];
+    const visitor = typeof fingerprint === 'string' && fingerprint ? fingerprint.slice(0, 128) : null;
 
     const db = getDb();
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const now = new Date();
+    const today = beirutDay(now);
 
-    // Check if catalog exists and is active
     const catalogCheck = await db.execute({
       sql: 'SELECT id FROM catalogs WHERE id = ? AND is_active = 1 AND is_suspended = 0',
       args: [catalog_id],
     });
-
     if (catalogCheck.rows.length === 0) {
       return NextResponse.json({ error: 'Catalog not found' }, { status: 404 });
     }
 
-    // Handle different event types
-    if (event === 'page_view') {
-      // Check if this is a unique visitor
-      let isUnique = false;
-      
-      if (fingerprint) {
-        const visitorCheck = await db.execute({
-          sql: 'SELECT id FROM catalog_visitors WHERE catalog_id = ? AND fingerprint = ?',
-          args: [catalog_id, fingerprint],
-        });
-
-        if (visitorCheck.rows.length === 0) {
-          // New visitor
-          isUnique = true;
-          await db.execute({
-            sql: `
-              INSERT INTO catalog_visitors (id, catalog_id, fingerprint, first_visit, last_visit, visit_count)
-              VALUES (?, ?, ?, datetime('now'), datetime('now'), 1)
-            `,
-            args: [uuidv4(), catalog_id, fingerprint],
-          });
-        } else {
-          // Returning visitor - update last visit
-          await db.execute({
-            sql: `
-              UPDATE catalog_visitors 
-              SET last_visit = datetime('now'), visit_count = visit_count + 1
-              WHERE catalog_id = ? AND fingerprint = ?
-            `,
-            args: [catalog_id, fingerprint],
-          });
-        }
-      }
-
-      // Update or insert daily analytics
-      const existing = await db.execute({
-        sql: 'SELECT id, page_views, unique_visitors FROM catalog_analytics WHERE catalog_id = ? AND date = ?',
-        args: [catalog_id, today],
+    // A visitor counts once per day: new to this menu, or last seen on an earlier day
+    let uniqueToday = 0;
+    if (event === 'page_view' && visitor) {
+      const previous = await db.execute({
+        sql: 'SELECT last_visit FROM catalog_visitors WHERE catalog_id = ? AND fingerprint = ?',
+        args: [catalog_id, visitor],
       });
+      const lastVisit = previous.rows[0]?.last_visit;
+      // last_visit is stored as SQLite UTC datetime ("YYYY-MM-DD HH:MM:SS")
+      const lastDay = lastVisit ? beirutDay(new Date(String(lastVisit).replace(' ', 'T') + 'Z')) : null;
+      uniqueToday = lastDay === today ? 0 : 1;
 
-      if (existing.rows.length > 0) {
-        // Update existing record
-        await db.execute({
-          sql: `
-            UPDATE catalog_analytics 
-            SET page_views = page_views + 1${isUnique ? ', unique_visitors = unique_visitors + 1' : ''}
-            WHERE catalog_id = ? AND date = ?
-          `,
-          args: [catalog_id, today],
-        });
-      } else {
-        // Create new record for today
-        await db.execute({
-          sql: `
-            INSERT INTO catalog_analytics (id, catalog_id, date, page_views, unique_visitors, whatsapp_order_clicks, booking_confirm_clicks, created_at)
-            VALUES (?, ?, ?, 1, ?, 0, 0, datetime('now'))
-          `,
-          args: [uuidv4(), catalog_id, today, isUnique ? 1 : 0],
-        });
-      }
-    } else if (event === 'whatsapp_click') {
-      // Update WhatsApp clicks
-      const existing = await db.execute({
-        sql: 'SELECT id FROM catalog_analytics WHERE catalog_id = ? AND date = ?',
-        args: [catalog_id, today],
+      await db.execute({
+        sql: `
+          INSERT INTO catalog_visitors (id, catalog_id, fingerprint, first_visit, last_visit, visit_count)
+          VALUES (?, ?, ?, datetime('now'), datetime('now'), 1)
+          ON CONFLICT(catalog_id, fingerprint)
+          DO UPDATE SET last_visit = datetime('now'), visit_count = visit_count + 1
+        `,
+        args: [uuidv4(), catalog_id, visitor],
       });
-
-      if (existing.rows.length > 0) {
-        await db.execute({
-          sql: 'UPDATE catalog_analytics SET whatsapp_order_clicks = whatsapp_order_clicks + 1 WHERE catalog_id = ? AND date = ?',
-          args: [catalog_id, today],
-        });
-      } else {
-        await db.execute({
-          sql: `
-            INSERT INTO catalog_analytics (id, catalog_id, date, page_views, unique_visitors, whatsapp_order_clicks, booking_confirm_clicks, created_at)
-            VALUES (?, ?, ?, 0, 0, 1, 0, datetime('now'))
-          `,
-          args: [uuidv4(), catalog_id, today],
-        });
-      }
-    } else if (event === 'booking_confirm') {
-      // Update booking confirmation clicks
-      const existing = await db.execute({
-        sql: 'SELECT id FROM catalog_analytics WHERE catalog_id = ? AND date = ?',
-        args: [catalog_id, today],
-      });
-
-      if (existing.rows.length > 0) {
-        await db.execute({
-          sql: 'UPDATE catalog_analytics SET booking_confirm_clicks = booking_confirm_clicks + 1 WHERE catalog_id = ? AND date = ?',
-          args: [catalog_id, today],
-        });
-      } else {
-        await db.execute({
-          sql: `
-            INSERT INTO catalog_analytics (id, catalog_id, date, page_views, unique_visitors, whatsapp_order_clicks, booking_confirm_clicks, created_at)
-            VALUES (?, ?, ?, 0, 0, 0, 1, datetime('now'))
-          `,
-          args: [uuidv4(), catalog_id, today],
-        });
-      }
     }
+
+    // One row per catalog per day; concurrent events add up instead of racing on insert
+    await db.execute({
+      sql: `
+        INSERT INTO catalog_analytics (id, catalog_id, date, page_views, unique_visitors, whatsapp_order_clicks, booking_confirm_clicks, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(catalog_id, date) DO UPDATE SET
+          page_views = page_views + excluded.page_views,
+          unique_visitors = unique_visitors + excluded.unique_visitors,
+          whatsapp_order_clicks = whatsapp_order_clicks + excluded.whatsapp_order_clicks,
+          booking_confirm_clicks = booking_confirm_clicks + excluded.booking_confirm_clicks
+      `,
+      args: [uuidv4(), catalog_id, today, counts.page_views, uniqueToday, counts.whatsapp_order_clicks, counts.booking_confirm_clicks],
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

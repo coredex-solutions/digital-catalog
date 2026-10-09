@@ -2,24 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useParams } from "next/navigation";
-import {
-  LayoutDashboard,
-  FolderKanban,
-  Package,
-  Settings,
-  LogOut,
-  Store,
-  BarChart3,
-  FileText,
-  ExternalLink,
-  QrCode,
-  Clock,
-  MessageCircle,
-  Brain,
-  CreditCard,
-  MapPin
-} from "lucide-react";
+import { LogOut, Store, ExternalLink } from "lucide-react";
 import { clsx } from "clsx";
+import { getAdminNavItems, isNavItemActive } from "./adminNav";
 
 interface CatalogInfo {
   id: string;
@@ -29,7 +14,6 @@ interface CatalogInfo {
 }
 
 interface Features {
-  multi_language_enabled: boolean;
   booking_enabled: boolean;
   analytics_enabled: boolean;
   ai_waiter_enabled: boolean;
@@ -57,24 +41,7 @@ export function CatalogAdminSidebar({
   const params = useParams();
   const slug = params.slug as string;
 
-  const basePath = `/c/${slug}/admin`;
-
-  const navItems = [
-    { href: basePath, label: "Dashboard", icon: LayoutDashboard, exact: true },
-    { href: `${basePath}/categories`, label: "Categories", icon: FolderKanban },
-    { href: `${basePath}/items`, label: "Products", icon: Package },
-    { href: `${basePath}/about`, label: "About & SEO", icon: FileText },
-    { href: `${basePath}/hours`, label: "Business Hours", icon: Clock },
-    { href: `${basePath}/faqs`, label: "FAQs", icon: MessageCircle },
-    { href: `${basePath}/branches`, label: "Branches", icon: MapPin },
-    { href: `${basePath}/ai-waiter`, label: "AI Waiter", icon: Brain },
-    ...(features?.analytics_enabled
-      ? [{ href: `${basePath}/analytics`, label: "Analytics", icon: BarChart3 }]
-      : []),
-    { href: `${basePath}/qr`, label: "QR Codes", icon: QrCode },
-    { href: `${basePath}/settings`, label: "Settings", icon: Settings },
-    { href: `${basePath}/billing`, label: "Billing & Plan", icon: CreditCard },
-  ];
+  const navItems = getAdminNavItems(slug, features);
 
   const handleLogout = () => {
     localStorage.removeItem(`catalog_admin_token_${slug}`);
@@ -82,24 +49,22 @@ export function CatalogAdminSidebar({
   };
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-72 bg-[#050505]/40 backdrop-blur-[30px] border-r border-white/5 flex flex-col z-40">
+    <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 bg-ui-surface border-r border-ui-line flex-col z-40" aria-label="Admin navigation">
       {/* Brand Header */}
-      <div className="p-8 pb-10">
-        <div className="flex flex-col gap-6">
+      <div className="p-6 pb-6">
+        <div className="flex flex-col gap-4">
           <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center relative group"
+            className="w-14 h-14 rounded-control flex items-center justify-center relative group"
           >
-            <div className="absolute inset-0 rounded-2xl animate-pulse blur-xl opacity-20 transition-all group-hover:opacity-40"
-              style={{ background: `var(--color-primary)` }} />
-            <div className="absolute inset-0 rounded-2xl border border-white/10 group-hover:border-white/20 transition-all" />
-            <div className="relative z-10 w-full h-full rounded-2xl flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 rounded-control border border-ui-line group-hover:border-ui-input transition-all" />
+            <div className="relative z-10 w-full h-full rounded-control flex items-center justify-center overflow-hidden">
               <div className="absolute inset-0 opacity-20" style={{ background: `linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)` }} />
-              <Store className="w-6 h-6 text-white" />
+              <Store className="w-6 h-6 text-ui-ink" />
             </div>
           </div>
           <div>
-            <h1 className="text-lg font-black text-white tracking-tighter leading-none">{catalog.name}</h1>
-            <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mt-2 font-mono">
+            <p className="text-lg font-semibold text-ui-ink leading-none">{catalog.name}</p>
+            <p className="text-xs text-ui-muted mt-2">
               Business Type: {catalog.business_type}
             </p>
           </div>
@@ -109,26 +74,22 @@ export function CatalogAdminSidebar({
       {/* Navigation Matrix */}
       <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
         {navItems.map((item) => {
-          const isActive = item.exact
-            ? pathname === item.href
-            : pathname.startsWith(item.href);
+          const isActive = isNavItemActive(item, pathname);
 
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? "page" : undefined}
               className={clsx(
-                "flex items-center gap-3 px-5 py-3.5 rounded-2xl transition-all duration-300 relative group",
+                "flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control transition-all duration-300 relative group",
                 isActive
-                  ? "text-white"
-                  : "text-white/30 hover:text-white hover:bg-white/[0.03]"
+                  ? "text-ui-ink"
+                  : "text-ui-muted hover:text-ui-ink hover:bg-ui-subtle"
               )}
             >
               {isActive && (
-                <div
-                  className="absolute inset-0 rounded-2xl opacity-10 blur-md transition-all animate-pulse"
-                  style={{ backgroundColor: `var(--color-primary)` }}
-                />
+                <div className="absolute inset-0 rounded-control bg-ui-subtle" />
               )}
               {isActive && (
                 <div
@@ -136,33 +97,33 @@ export function CatalogAdminSidebar({
                   style={{ backgroundColor: `var(--color-primary)` }}
                 />
               )}
-              <item.icon className={clsx("w-5 h-5 relative z-10 transition-transform duration-500", !isActive && "group-hover:scale-110")} />
-              <span className="text-[11px] font-black uppercase tracking-[0.15em] relative z-10">{item.label}</span>
+              <item.icon className="w-5 h-5 relative z-10" strokeWidth={isActive ? 2.5 : 2} aria-hidden />
+              <span className={clsx("text-sm relative z-10", isActive ? "font-semibold" : "font-medium")}>{item.label}</span>
             </Link>
           );
         })}
 
-        <div className="h-px bg-white/5 mx-4 my-6" />
+        <div className="h-px bg-ui-line mx-4 my-4" />
 
         <a
           href={`/c/${slug}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 px-5 py-3.5 rounded-2xl text-white/30 hover:text-white hover:bg-white/[0.03] transition-all group"
+          className="flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control text-ui-muted hover:text-ui-ink hover:bg-ui-subtle transition-all group"
         >
           <ExternalLink className="w-5 h-5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          <span className="text-[11px] font-black uppercase tracking-[0.15em]">View Catalog</span>
+          <span className="text-sm font-medium">View Catalog</span>
         </a>
       </nav>
 
       {/* Control Footer */}
-      <div className="p-6">
+      <div className="p-4">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-5 py-4 rounded-2xl text-white/20 hover:text-purple-400 hover:bg-purple-500/5 border border-transparent hover:border-purple-500/10 transition-all w-full group"
+          className="flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control text-ui-muted hover:text-ui-primary hover:bg-ui-subtle border border-transparent hover:border-ui-line transition-all w-full group"
         >
           <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-          <span className="text-[11px] font-black uppercase tracking-[0.15em]">Sign Out</span>
+          <span className="text-sm font-medium">Sign Out</span>
         </button>
       </div>
     </aside>
@@ -177,13 +138,13 @@ export function CatalogAdminHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <header className="px-10 py-8 border-b border-white/5 bg-white/[0.01] backdrop-blur-xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-black text-white tracking-tighter uppercase">{title}</h1>
-          <div className="h-1 w-10 bg-primary mt-2 rounded-full opacity-50 shadow-[0_0_10px_var(--color-primary)]" />
+    <header className="px-4 py-4 sm:px-6 sm:py-6 lg:px-10 lg:py-8 border-b border-ui-line bg-ui-bg">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-semibold text-ui-ink">{title}</h1>
+          <div className="h-1 w-10 bg-ui-primary mt-2 rounded-full opacity-50" aria-hidden />
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4">
           {children}
         </div>
       </div>
@@ -197,7 +158,7 @@ export function CatalogAdminContent({
   children: React.ReactNode;
 }) {
   return (
-    <main className="p-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <main className="px-4 py-4 sm:p-6 lg:p-10 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="max-w-[1600px] mx-auto">
         {children}
       </div>

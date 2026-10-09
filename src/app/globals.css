@@ -29,44 +29,12 @@
   }
 
   body {
-    background: var(--background-hex);
-    color: var(--text-primary);
+    background: #F7F8F5;
+    color: #172B26;
     font-feature-settings: "rlig" 1, "calt" 1;
     min-height: 100vh;
     transition: background 0.5s ease;
   }
-}
-
-/* Dynamic Patterns */
-html[data-pattern="geometric"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-color: rgba(var(--pattern-rgb), 0.04);
-  mask-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  mask-size: 60px 60px;
-  z-index: -1;
-  pointer-events: none;
-}
-
-html[data-pattern="dots"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background-image: radial-gradient(rgba(var(--pattern-rgb), 0.08) 1px, transparent 1px);
-  background-size: 30px 30px;
-  z-index: -1;
-  pointer-events: none;
-}
-
-html[data-pattern="lines"] body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: linear-gradient(0deg, rgba(var(--pattern-rgb), 0.04) 1px, transparent 1px);
-  background-size: 100% 40px;
-  z-index: -1;
-  pointer-events: none;
 }
 
 @layer components {
@@ -77,55 +45,6 @@ html[data-pattern="lines"] body::before {
   .glass-card {
     @apply glass rounded-3xl transition-all duration-500 hover:bg-white/[0.05] hover:border-white/[0.15] hover:shadow-2xl;
   }
-
-  .text-glow {
-    text-shadow: 0 0 20px var(--primary);
-    opacity: 0.8;
-  }
-
-  .neon-border {
-    position: relative;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .neon-border::before {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    background: linear-gradient(90deg, transparent, var(--primary), transparent);
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .neon-border:hover::before {
-    opacity: 0.3;
-  }
-}
-
-/* Animations */
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.mesh-gradient {
-  background:
-    radial-gradient(at 0% 0%, var(--background-hex) 0, transparent 50%),
-    radial-gradient(at 50% 0%, var(--primary) 0, transparent 50%),
-    radial-gradient(at 100% 0%, var(--secondary) 0, transparent 50%);
-  opacity: 0.4;
 }
 
 /* Scrollbar Customization */
@@ -138,7 +57,7 @@ html[data-pattern="lines"] body::before {
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+  @apply bg-black/15 rounded-full hover:bg-black/25 transition-colors;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
@@ -153,6 +72,185 @@ html[data-pattern="lines"] body::before {
   scrollbar-width: none;
   /* Firefox */
 }
+/* ============================================
+   Platform theme (marketing site, signup, merchant app)
+   Pine & Ivory tokens from MENUDESIGN.md §3. Scoped to .platform so pages move over one at a
+   time; Tailwind exposes them as ui-* colours.
+   ============================================ */
+.platform {
+  color-scheme: light;
+  --ui-bg: #F7F8F5;
+  --ui-surface: #FFFFFF;
+  --ui-ink: #172B26;
+  --ui-muted: #58665F;
+  --ui-primary: #0F6B5B;
+  --ui-primary-fg: #FFFFFF;
+  --ui-primary-hover: #0B5145;
+  --ui-subtle: #E8F3ED;
+  --ui-accent: #B94A28;
+  --ui-accent-fg: #FFFFFF;
+  --ui-line: #DCE4DE;
+  --ui-input: #7D8D84;
+  --ui-success: #166534;
+  --ui-warning: #92400E;
+  --ui-danger: #B91C1C;
+  --radius-control: 10px;
+  --radius-panel: 16px;
+
+  background-color: var(--ui-bg);
+  color: var(--ui-ink);
+  font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+.platform[lang="ar"] {
+  font-family: var(--font-platform-arabic), var(--font-inter), system-ui, sans-serif;
+  line-height: 1.7;
+}
+
+.platform[lang="ar"] * {
+  letter-spacing: 0 !important;
+}
+
+.platform[lang="ar"] :is(p, li, dd, label) {
+  line-height: 1.75;
+}
+
+.platform[lang="ar"] :is(h1, h2, h3) {
+  line-height: 1.4;
+}
+
+/* Legacy admin classes and variables, re-pointed at the platform palette */
+.platform {
+  --primary: #0F6B5B;
+  --primary-foreground: #FFFFFF;
+  --color-primary: #0F6B5B;
+  --color-secondary: #58665F;
+  --color-accent: #B94A28;
+}
+
+.platform .glass,
+.platform .glass-card,
+.platform .glass-card:hover {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-line);
+  border-radius: var(--radius-panel);
+  box-shadow: 0 1px 2px rgba(23, 43, 38, 0.06);
+  backdrop-filter: none;
+}
+
+body:has(.platform) {
+  background: #F7F8F5;
+  color: #172B26;
+}
+
+.platform input[type="range"],
+.platform input[type="checkbox"],
+.platform input[type="radio"] {
+  accent-color: var(--ui-primary);
+}
+
+.platform :focus-visible {
+  outline: 2px solid var(--ui-primary);
+  outline-offset: 3px;
+  border-radius: var(--radius-control);
+}
+
+/* Default border colour without outranking Tailwind border-* utilities (zero specificity) */
+:where(.platform *) {
+  border-color: var(--ui-line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform *,
+  .platform *::before,
+  .platform *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Marketing site motion (landing page) ----------
+   Entrance reveals, floating cards, a dish marquee and a QR scan line. All of it is
+   decorative: with prefers-reduced-motion everything is shown still and in place. */
+.platform [data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 600ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.platform [data-reveal="shown"] {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes site-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes site-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes site-marquee-rtl {
+  from { transform: translateX(0); }
+  to { transform: translateX(50%); }
+}
+
+@keyframes site-scan {
+  0% { top: 8%; }
+  50% { top: 88%; }
+  100% { top: 8%; }
+}
+
+@keyframes site-pop {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes site-word {
+  from { opacity: 0; transform: translateY(0.4em); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes site-dot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+.platform .site-float { animation: site-float 6s ease-in-out infinite; }
+.platform .site-float-slow { animation: site-float 8s ease-in-out infinite; animation-delay: -2s; }
+.platform .site-marquee { animation: site-marquee 40s linear infinite; }
+.platform[dir="rtl"] .site-marquee { animation-name: site-marquee-rtl; }
+.platform .site-marquee-wrap:hover .site-marquee { animation-play-state: paused; }
+.platform .site-scan { animation: site-scan 3.2s ease-in-out infinite; }
+.platform .site-pop { animation: site-pop 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.platform .site-word { animation: site-word 450ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.platform .site-dot { animation: site-dot 1.2s ease-in-out infinite; }
+
+/* Soft pine glow and dot grid behind the hero */
+.platform .site-hero-bg {
+  background:
+    radial-gradient(60% 50% at 80% 20%, rgba(15, 107, 91, 0.14), transparent 70%),
+    radial-gradient(40% 40% at 10% 90%, rgba(185, 74, 40, 0.08), transparent 70%),
+    radial-gradient(rgba(23, 43, 38, 0.08) 1px, transparent 1px) 0 0 / 22px 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform [data-reveal] { opacity: 1; transform: none; transition: none; }
+  .platform .site-float,
+  .platform .site-float-slow,
+  .platform .site-marquee,
+  .platform .site-scan,
+  .platform .site-pop,
+  .platform .site-word,
+  .platform .site-dot { animation: none !important; }
+}
+
 /* ============================================
    Diner menu theme (/c/[slug])
    Pine & Ivory neutrals from MENUDESIGN.md. Scoped to .menu so the admin and landing pages

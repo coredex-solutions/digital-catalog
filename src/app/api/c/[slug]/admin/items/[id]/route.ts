@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
+import { parseItemCurrency, parseItemPrice } from "@/lib/catalog/price";
+import {
+  allergensToDb,
+  dietaryToDb,
+  lowestVariantPrice,
+  parseAllergensInput,
+  parseDietaryInput,
+  parseVariantsInput,
+  variantsToDb,
+} from "@/lib/catalog/dish-info";
 
 // PUT: Update item
 export async function PUT(
@@ -20,6 +30,43 @@ export async function PUT(
 
   try {
     const body = await request.json();
+
+    // Normalize price and currency before anything is written
+    if (body.price !== undefined) {
+      const price = parseItemPrice(body.price);
+      if (price === null) {
+        return NextResponse.json({ error: "Price must be a number of 0 or more" }, { status: 400 });
+      }
+      body.price = price;
+    }
+    if (body.currency !== undefined) {
+      const currency = parseItemCurrency(body.currency);
+      if (currency === null) {
+        return NextResponse.json({ error: "Currency must be USD or LBP" }, { status: 400 });
+      }
+      body.currency = currency;
+    }
+
+    // Options, dietary tags and allergens are validated and stored as JSON text. Allergens:
+    // null marks them not checked (unknown), an array (even empty) is the owner's verified list.
+    if (body.variants !== undefined) {
+      const variants = parseVariantsInput(body.variants);
+      if (!variants.ok) return NextResponse.json({ error: variants.error }, { status: 400 });
+      body.variants = variantsToDb(variants.value);
+      // With options, the item's price is the cheapest option (for sorting and "from" prices)
+      const lowest = lowestVariantPrice(variants.value);
+      if (lowest !== null) body.price = lowest;
+    }
+    if (body.dietary !== undefined) {
+      const dietary = parseDietaryInput(body.dietary);
+      if (!dietary.ok) return NextResponse.json({ error: dietary.error }, { status: 400 });
+      body.dietary = dietaryToDb(dietary.value);
+    }
+    if (body.allergens !== undefined) {
+      const allergens = parseAllergensInput(body.allergens);
+      if (!allergens.ok) return NextResponse.json({ error: allergens.error }, { status: 400 });
+      body.allergens = allergensToDb(allergens.value);
+    }
 
     const db = getDb();
 
@@ -52,19 +99,28 @@ export async function PUT(
       "category_id",
       "name_ar",
       "name_en",
-      "name_fr",
       "description_ar",
       "description_en",
-      "description_fr",
       "price",
       "currency",
       "image_url",
       "is_active",
       "is_featured",
       "is_available",
+      "variants",
+      "dietary",
+      "allergens",
     ];
 
     for (const field of fields) {
+      // JSON fields are already converted; null clears them (allergens: null = not checked)
+      if (field === "variants" || field === "dietary" || field === "allergens") {
+        if (body[field] !== undefined) {
+          updates.push(`${field} = ?`);
+          args.push(body[field]);
+        }
+        continue;
+      }
       if (body[field] !== undefined) {
         updates.push(`${field} = ?`);
         if (field === "is_active" || field === "is_featured" || field === "is_available") {

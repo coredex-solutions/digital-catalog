@@ -5,19 +5,20 @@ import type { Language } from "@/types";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { cn } from "@/utils/helpers";
 
-const LABELS: Record<Language, string> = { ar: "العربية", en: "English", fr: "Français" };
-// Short labels keep three languages on one line in the header; screen readers get the full name
-const SHORT_LABELS: Record<Language, string> = { ar: "عربي", en: "EN", fr: "FR" };
+const LABELS: Record<Language, string> = { ar: "العربية", en: "English" };
+// Short labels for the compact header chip; screen readers get the full name
+const SHORT_LABELS: Record<Language, string> = { ar: "عربي", en: "EN" };
 
 /**
- * With two languages: one button that switches to the other (labelled in that language, so
- * it's readable by someone who can't read the current one). With three: a segmented control.
+ * Arabic / English switch. The chip is one button that switches to the other language
+ * (labelled in that language, so it's readable by someone who can't read the current one);
+ * the segmented variant shows both.
  */
 export function LanguageToggle({ className, variant = "chip" }: { className?: string; variant?: "chip" | "segmented" }) {
   const { lang, enabledLanguages, setLanguage, t } = useCatalog();
   if (enabledLanguages.length < 2) return null;
 
-  if (variant === "segmented" || enabledLanguages.length > 2) {
+  if (variant === "segmented") {
     return (
       <div className={cn("inline-flex rounded-control border border-menu-line bg-menu-surface p-0.5 shadow-menu-sm", className)} role="radiogroup" aria-label={t.language}>
         {enabledLanguages.map((code) => (
@@ -34,7 +35,7 @@ export function LanguageToggle({ className, variant = "chip" }: { className?: st
               code === lang ? "bg-brand text-brand-fg" : "text-menu-muted hover:text-menu-ink"
             )}
           >
-            {variant === "segmented" ? LABELS[code] : SHORT_LABELS[code]}
+            {LABELS[code]}
           </button>
         ))}
       </div>
@@ -54,7 +55,7 @@ export function LanguageToggle({ className, variant = "chip" }: { className?: st
       aria-label={`${t.language}: ${LABELS[other]}`}
     >
       <Languages className="h-4 w-4" aria-hidden />
-      <span>{LABELS[other]}</span>
+      <span>{SHORT_LABELS[other]}</span>
     </button>
   );
 }

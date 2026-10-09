@@ -4,6 +4,9 @@ import { getDb } from "@/lib/db/client";
 import { v4 as uuidv4 } from "uuid";
 import type { BusinessType, SubscriptionType } from "@/lib/db/types";
 import { sendEmail, emailTemplates } from "@/lib/email/send";
+import { getPlanForSubscriptionType, getSubscriptionExpiry, isSubscriptionType } from "@/lib/plans";
+import { getBaseUrl } from "@/lib/utils/base-url";
+import { initialVersionStatement } from "@/lib/catalog/publishing";
 
 // GET: List all catalogs with stats
 export async function GET(request: NextRequest) {
@@ -57,7 +60,6 @@ export async function POST(request: NextRequest) {
       payment_method,
       payment_notes,
       // Features
-      multi_language_enabled = false,
       booking_enabled = true,
       analytics_enabled = true,
       // Admin details
@@ -82,6 +84,21 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    if (!isSubscriptionType(subscription_type)) {
+      return NextResponse.json(
+        { error: "Unknown subscription type" },
+        { status: 400 }
+      );
+    }
+    if (subscription_type === "custom_years" && !(Number.isInteger(Number(custom_years)) && Number(custom_years) >= 1)) {
+      return NextResponse.json(
+        { error: "Custom years must be a whole number of 1 or more" },
+        { status: 400 }
+      );
+    }
+    // Limits come from the plan; legacy duration types get Essential's
+    const plan = getPlanForSubscriptionType(subscription_type);
 
     const db = getDb();
 
@@ -114,20 +131,9 @@ export async function POST(request: NextRequest) {
       ],
     });
 
-    // Calculate subscription dates
+    // Calculate subscription dates ('forever' = no expiration)
     const startsAt = new Date().toISOString();
-    let expiresAt: string | null = null;
-
-    if (subscription_type === "yearly") {
-      const expires = new Date();
-      expires.setFullYear(expires.getFullYear() + 1);
-      expiresAt = expires.toISOString();
-    } else if (subscription_type === "custom_years" && custom_years) {
-      const expires = new Date();
-      expires.setFullYear(expires.getFullYear() + custom_years);
-      expiresAt = expires.toISOString();
-    }
-    // 'forever' = no expiration (null)
+    const expiresAt = getSubscriptionExpiry(subscription_type as SubscriptionType, custom_years);
 
     // Create subscription
     const subscriptionId = uuidv4();
@@ -136,9 +142,10 @@ export async function POST(request: NextRequest) {
         INSERT INTO catalog_subscriptions (
           id, catalog_id, subscription_type, custom_years, starts_at, expires_at,
           multi_language_enabled, booking_enabled, analytics_enabled,
+          max_items, max_categories, ai_image_enhancement_limit,
           amount_paid, currency, payment_method, payment_notes, is_active, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
       `,
       args: [
         subscriptionId,
@@ -147,9 +154,12 @@ export async function POST(request: NextRequest) {
         custom_years || null,
         startsAt,
         expiresAt,
-        multi_language_enabled ? 1 : 0,
+        1, // multi_language_enabled: every plan has Arabic and English
         booking_enabled ? 1 : 0,
         analytics_enabled ? 1 : 0,
+        plan.limits.max_items,
+        plan.limits.max_categories,
+        plan.limits.ai_image_enhancement_limit,
         amount_paid || null,
         currency,
         payment_method || null,
@@ -160,11 +170,14 @@ export async function POST(request: NextRequest) {
     // Create default settings
     await db.execute({
       sql: `
-        INSERT INTO catalog_settings (catalog_id, updated_at)
-        VALUES (?, datetime('now'))
+        INSERT INTO catalog_settings (catalog_id, enabled_languages, updated_at)
+        VALUES (?, 'ar,en', datetime('now'))
       `,
       args: [catalogId],
     });
+
+    // Start in draft mode: nothing is public until the owner publishes
+    await db.execute(initialVersionStatement(catalogId));
 
     // Create default contact
     await db.execute({
@@ -197,8 +210,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Send welcome email with credentials
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.com";
+      const baseUrl = getBaseUrl(request);
       const loginUrl = `${baseUrl}/c/${slug}/admin/login`;
       const catalogUrl = `${baseUrl}/c/${slug}`;
 
@@ -226,25 +238,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Initialize default operating hours
-    const days = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-    ];
-    for (const day of days) {
-      await db.execute({
-        sql: `
-          INSERT INTO operating_hours (catalog_id, day_name, open_hour, close_hour, is_closed, updated_at)
-          VALUES (?, ?, 9, 22, 0, datetime('now'))
-        `,
-        args: [catalogId, day],
-      });
-    }
+    // No default operating hours: the owner enters their own, and the menu shows no
+    // open/closed badge until they do
 
     // Initialize default social media entries
     const platforms = ["instagram", "facebook", "twitter", "tiktok", "youtube"];
@@ -258,50 +253,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Apply seed template based on business type
-    const { getSeedTemplate } = await import("@/lib/seed/templates");
-    const template = getSeedTemplate(business_type as BusinessType);
-
-    let categoryOrder = 0;
-    for (const category of template) {
-      const categoryId = uuidv4();
-      await db.execute({
-        sql: `
-          INSERT INTO categories (id, catalog_id, name_ar, name_en, name_fr, icon_name, display_order, is_active, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
-        `,
-        args: [
-          categoryId,
-          catalogId,
-          category.name_ar,
-          category.name_en,
-          category.name_fr,
-          category.icon_name,
-          categoryOrder++,
-        ],
-      });
-
-      let itemOrder = 0;
-      for (const item of category.items) {
-        await db.execute({
-          sql: `
-            INSERT INTO menu_items (id, catalog_id, category_id, name_ar, name_en, name_fr, description_en, price, currency, display_order, is_active, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'USD', ?, 1, datetime('now'), datetime('now'))
-          `,
-          args: [
-            uuidv4(),
-            catalogId,
-            categoryId,
-            item.name_ar,
-            item.name_en,
-            item.name_fr,
-            item.description_en || null,
-            item.price,
-            itemOrder++,
-          ],
-        });
-      }
-    }
+    // No sample dishes: the menu starts empty so no invented prices go live
 
     return NextResponse.json(
       {

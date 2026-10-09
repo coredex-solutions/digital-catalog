@@ -21,10 +21,8 @@ export function normalizeSearchText(text: string | null | undefined): string {
 interface SearchableItem {
   name_ar?: string | null;
   name_en?: string | null;
-  name_fr?: string | null;
   description_ar?: string | null;
   description_en?: string | null;
-  description_fr?: string | null;
 }
 
 /** Every word of the query must appear somewhere in the item's names or descriptions */
@@ -33,7 +31,7 @@ export function matchesQuery(item: SearchableItem, query: string): boolean {
   if (words.length === 0) return true;
 
   const haystack = normalizeSearchText(
-    [item.name_ar, item.name_en, item.name_fr, item.description_ar, item.description_en, item.description_fr].join(" ")
+    [item.name_ar, item.name_en, item.description_ar, item.description_en].join(" ")
   );
   return words.every((word) => haystack.includes(word));
 }

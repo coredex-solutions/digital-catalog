@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import { CatalogAdminHeader, CatalogAdminContent } from "../_components/CatalogAdminSidebar";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { motion, AnimatePresence, Reorder, useDragControls, type DragControls } from "framer-motion";
 import {
     MapPin,
     Plus,
@@ -21,14 +21,30 @@ interface Branch {
     id: string;
     name_ar: string;
     name_en: string;
-    name_fr: string;
     address_ar: string;
     address_en: string;
-    address_fr: string;
     phone_numbers: string | null;
     map_url: string | null;
     display_order: number;
     is_active: number;
+}
+
+/** Reorderable row that only drags from its grip, so swiping over a card still scrolls on phones */
+function BranchReorderItem({
+    value,
+    className,
+    children,
+}: {
+    value: Branch;
+    className: string;
+    children: (controls: DragControls) => React.ReactNode;
+}) {
+    const controls = useDragControls();
+    return (
+        <Reorder.Item value={value} dragListener={false} dragControls={controls} className={className}>
+            {children(controls)}
+        </Reorder.Item>
+    );
 }
 
 export default function BranchesPage() {
@@ -48,17 +64,13 @@ function BranchesPageContent() {
     const [showModal, setShowModal] = useState(false);
     const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
     const [saving, setSaving] = useState(false);
-    const [activeLang, setActiveLang] = useState<"ar" | "en" | "fr">("en");
-    const [isMultiLang, setIsMultiLang] = useState(false);
-    const [enabledLangs, setEnabledLangs] = useState("en");
+    const [activeLang, setActiveLang] = useState<"ar" | "en">("en");
 
     const [formData, setFormData] = useState({
         name_ar: "",
         name_en: "",
-        name_fr: "",
         address_ar: "",
         address_en: "",
-        address_fr: "",
         phone_numbers: "",
         map_url: "",
     });
@@ -80,9 +92,7 @@ function BranchesPageContent() {
     useEffect(() => {
         fetchBranches();
         if (features) {
-            setIsMultiLang(features.multi_language_enabled);
-            setEnabledLangs(features.enabled_languages);
-            setActiveLang(features.default_language as any || "en");
+            setActiveLang(features.default_language === "ar" ? "ar" : "en");
         }
     }, [slug, features]);
 
@@ -92,10 +102,8 @@ function BranchesPageContent() {
         setFormData({
             name_ar: "",
             name_en: "",
-            name_fr: "",
             address_ar: "",
             address_en: "",
-            address_fr: "",
             phone_numbers: "",
             map_url: "",
         });
@@ -109,10 +117,8 @@ function BranchesPageContent() {
         setFormData({
             name_ar: branch.name_ar,
             name_en: branch.name_en,
-            name_fr: branch.name_fr,
             address_ar: branch.address_ar,
             address_en: branch.address_en,
-            address_fr: branch.address_fr,
             phone_numbers: branch.phone_numbers || "",
             map_url: branch.map_url || "",
         });
@@ -187,7 +193,8 @@ function BranchesPageContent() {
         }
     };
 
-    const langTabs = enabledLangs.split(",").filter(Boolean);
+    // Every plan edits Arabic and English
+    const langTabs = ["en", "ar"] as const;
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -195,7 +202,7 @@ function BranchesPageContent() {
                 <button
                     onClick={openAddModal}
                     disabled={isViewer}
-                    className="flex items-center gap-2 px-6 py-3 bg-primary text-white font-black text-[11px] uppercase tracking-widest rounded-2xl hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                    className="flex items-center gap-2 px-6 py-3 bg-ui-primary text-ui-primary-fg font-semibold text-xs rounded-control transition-all shadow-lg disabled:opacity-50"
                 >
                     <Plus className="w-4 h-4" />
                     Add Branch
@@ -205,16 +212,16 @@ function BranchesPageContent() {
             <CatalogAdminContent>
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                        <Loader2 className="w-8 h-8 animate-spin text-ui-primary" />
                     </div>
                 ) : branches.length === 0 ? (
-                    <div className="glass-card rounded-[3rem] p-20 text-center border border-white/5">
-                        <MapPin className="w-16 h-16 text-white/5 mx-auto mb-6" />
-                        <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] mb-8">No branches found</p>
+                    <div className="glass-card rounded-panel p-8 sm:p-20 text-center border border-ui-line">
+                        <MapPin className="w-16 h-16 text-ui-line mx-auto mb-6" />
+                        <p className="text-xs font-semibold text-ui-muted mb-8">No branches found</p>
                         {!isViewer && (
                             <button
                                 onClick={openAddModal}
-                                className="text-[11px] font-black text-primary uppercase tracking-widest hover:scale-105 transition-all"
+                                className="text-xs font-semibold text-ui-primary transition-all"
                             >
                                 Create your first branch
                             </button>
@@ -228,39 +235,45 @@ function BranchesPageContent() {
                         className="space-y-4"
                     >
                         {branches.map((branch) => (
-                            <Reorder.Item
+                            <BranchReorderItem
                                 key={branch.id}
                                 value={branch}
-                                className="glass-card rounded-[2rem] p-8 border border-white/5 hover:border-white/10 transition-all group cursor-grab active:cursor-grabbing"
+                                className="glass-card rounded-panel p-4 sm:p-8 border border-ui-line hover:border-ui-input transition-all group"
                             >
-                                <div className="flex items-start gap-6">
-                                    <div className="opacity-10 group-hover:opacity-30 transition-opacity mt-1">
-                                        <GripVertical className="w-5 h-5 text-white" />
-                                    </div>
+                                {(dragControls) => (
+                                <div className="flex items-start gap-2 sm:gap-6">
+                                    <button
+                                        type="button"
+                                        onPointerDown={(e) => dragControls.start(e)}
+                                        className="-ms-2 -mt-1 flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-control text-ui-muted hover:bg-ui-subtle active:cursor-grabbing"
+                                        aria-label={`Drag to reorder ${branch.name_en || branch.name_ar}`}
+                                    >
+                                        <GripVertical className="w-5 h-5" aria-hidden />
+                                    </button>
 
-                                    <div className="flex-1">
-                                        <div className="flex items-start justify-between">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
                                             <div>
-                                                <h3 className="text-xl font-black text-white tracking-tight group-hover:text-primary transition-colors">
+                                                <h3 className="text-xl font-semibold text-ui-ink group-hover:text-ui-primary transition-colors">
                                                     {branch.name_en || branch.name_ar}
                                                 </h3>
-                                                <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] mt-2 flex items-center gap-2">
+                                                <p className="text-xs font-semibold text-ui-muted mt-2 flex items-center gap-2">
                                                     <Map className="w-3.5 h-3.5" />
                                                     {branch.address_en || branch.address_ar}
                                                 </p>
                                                 {branch.phone_numbers && (
-                                                    <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mt-2 flex items-center gap-2 font-mono">
+                                                    <p className="text-xs font-semibold text-ui-muted mt-2 flex items-center gap-2 font-mono">
                                                         <Phone className="w-3.5 h-3.5" />
                                                         {branch.phone_numbers}
                                                     </p>
                                                 )}
                                             </div>
 
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-3 sm:gap-4">
                                                 <span
-                                                    className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${branch.is_active === 1
-                                                        ? "bg-violet-500/10 text-violet-400 border border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.1)]"
-                                                        : "bg-white/5 text-white/20 border border-white/5"
+                                                    className={`px-3 py-1 rounded-lg text-xs font-semibold ${branch.is_active === 1
+                                                        ? "bg-ui-subtle text-ui-primary border border-ui-line"
+                                                        : "bg-ui-subtle text-ui-muted border border-ui-line"
                                                         }`}
                                                 >
                                                     {branch.is_active === 1 ? "Live" : "Inactive"}
@@ -269,13 +282,15 @@ function BranchesPageContent() {
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => openEditModal(branch)}
-                                                            className="w-10 h-10 bg-white/5 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center text-white/40 hover:text-white"
+                                                            aria-label={`Edit ${branch.name_en || branch.name_ar}`}
+                                                            className="w-11 h-11 bg-ui-subtle rounded-xl hover:bg-ui-subtle transition-all flex items-center justify-center text-ui-muted hover:text-ui-ink"
                                                         >
                                                             <Pencil className="w-4 h-4" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDelete(branch.id)}
-                                                            className="w-10 h-10 bg-purple-500/10 rounded-xl hover:bg-purple-500/20 transition-all flex items-center justify-center text-purple-400 hover:text-purple-300"
+                                                            aria-label={`Delete ${branch.name_en || branch.name_ar}`}
+                                                            className="w-11 h-11 bg-ui-subtle rounded-xl hover:bg-ui-subtle transition-all flex items-center justify-center text-ui-primary hover:text-ui-primary"
                                                         >
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
@@ -285,7 +300,8 @@ function BranchesPageContent() {
                                         </div>
                                     </div>
                                 </div>
-                            </Reorder.Item>
+                                )}
+                            </BranchReorderItem>
                         ))}
                     </Reorder.Group>
                 )}
@@ -293,68 +309,67 @@ function BranchesPageContent() {
                 {/* Modal */}
                 <AnimatePresence>
                     {showModal && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#050505]/60 backdrop-blur-md animate-in fade-in duration-300">
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-6 bg-black/40 animate-in fade-in duration-300">
                             <motion.div
                                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                className="glass-card w-full max-w-2xl overflow-hidden border-white/10"
+                                className="glass-card w-full max-w-2xl overflow-hidden border-ui-line flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] max-sm:!rounded-none max-sm:!border-0"
                             >
-                                <div className="flex items-center justify-between p-8 border-b border-white/5 bg-white/[0.01]">
+                                <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-4 sm:p-8 border-b border-ui-line bg-ui-bg">
                                     <div>
-                                        <h2 className="text-xl font-black text-white tracking-tighter uppercase whitespace-nowrap">
+                                        <h2 className="text-xl font-semibold text-ui-ink whitespace-nowrap">
                                             {editingBranch ? "Edit Branch" : "Add New Branch"}
                                         </h2>
-                                        <div className="h-0.5 w-8 bg-primary mt-2 rounded-full opacity-50" />
+                                        <div className="h-0.5 w-8 bg-ui-primary mt-2 rounded-full opacity-50" />
                                     </div>
                                     <button
                                         onClick={() => setShowModal(false)}
-                                        className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                                        className="w-11 h-11 shrink-0 bg-ui-subtle rounded-xl flex items-center justify-center text-ui-muted hover:text-ui-ink hover:bg-ui-subtle transition-all"
+                                        aria-label="Close"
                                     >
                                         <X className="w-5 h-5" />
                                     </button>
                                 </div>
 
-                                <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                                <div className="p-5 sm:p-8 space-y-8 flex-1 min-h-0 sm:max-h-[70vh] overflow-y-auto custom-scrollbar">
                                     {/* Language Selection */}
-                                    {isMultiLang && langTabs.length > 1 && (
-                                        <div className="flex p-1.5 bg-white/[0.02] border border-white/5 rounded-2xl">
-                                            {langTabs.map((lang) => (
-                                                <button
-                                                    key={lang}
-                                                    type="button"
-                                                    onClick={() => setActiveLang(lang as any)}
-                                                    className={`flex-1 py-3 text-[10px] font-black transition-all rounded-xl uppercase tracking-widest ${activeLang === lang
-                                                        ? "bg-white text-black shadow-lg"
-                                                        : "text-white/30 hover:text-white"
-                                                        }`}
-                                                >
-                                                    {lang === "ar" ? "العربية" : lang.toUpperCase()}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
+                                    <div className="flex p-1.5 bg-ui-bg border border-ui-line rounded-control">
+                                        {langTabs.map((lang) => (
+                                            <button
+                                                key={lang}
+                                                type="button"
+                                                onClick={() => setActiveLang(lang)}
+                                                className={`flex-1 py-3 text-xs font-semibold transition-all rounded-xl ${activeLang === lang
+                                                    ? "bg-ui-primary text-ui-primary-fg shadow-lg"
+                                                    : "text-ui-muted hover:text-ui-ink"
+                                                    }`}
+                                            >
+                                                {lang === "ar" ? "العربية" : lang.toUpperCase()}
+                                            </button>
+                                        ))}
+                                    </div>
 
                                     <div className="space-y-6">
                                         <div>
-                                            <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-3">Branch Name ({activeLang.toUpperCase()})</label>
+                                            <label className="text-xs font-semibold text-ui-muted block mb-3">Branch Name ({activeLang.toUpperCase()})</label>
                                             <input
                                                 type="text"
                                                 value={formData[`name_${activeLang}` as keyof typeof formData]}
                                                 onChange={(e) => setFormData({ ...formData, [`name_${activeLang}`]: e.target.value })}
-                                                className={`w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all ${activeLang === 'ar' ? 'text-right' : ''}`}
+                                                className={`w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all ${activeLang === 'ar' ? 'text-right' : ''}`}
                                                 dir={activeLang === 'ar' ? 'rtl' : 'ltr'}
                                                 placeholder={activeLang === 'ar' ? 'اسم الفرع' : 'Branch Name'}
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-3">Address ({activeLang.toUpperCase()})</label>
+                                            <label className="text-xs font-semibold text-ui-muted block mb-3">Address ({activeLang.toUpperCase()})</label>
                                             <textarea
                                                 value={formData[`address_${activeLang}` as keyof typeof formData]}
                                                 onChange={(e) => setFormData({ ...formData, [`address_${activeLang}`]: e.target.value })}
                                                 rows={3}
-                                                className={`w-full px-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all resize-none ${activeLang === 'ar' ? 'text-right' : ''}`}
+                                                className={`w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all resize-none ${activeLang === 'ar' ? 'text-right' : ''}`}
                                                 dir={activeLang === 'ar' ? 'rtl' : 'ltr'}
                                                 placeholder={activeLang === 'ar' ? 'العنوان بالتفصيل' : 'Full Address'}
                                             />
@@ -362,32 +377,32 @@ function BranchesPageContent() {
 
                                         <div className="grid md:grid-cols-2 gap-6">
                                             <div>
-                                                <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-3">Phone Numbers</label>
+                                                <label className="text-xs font-semibold text-ui-muted block mb-3">Phone Numbers</label>
                                                 <div className="relative">
-                                                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-primary">
+                                                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-ui-primary">
                                                         <Phone className="w-4 h-4" />
                                                     </div>
                                                     <input
                                                         type="text"
                                                         value={formData.phone_numbers}
                                                         onChange={(e) => setFormData({ ...formData, phone_numbers: e.target.value })}
-                                                        className="w-full pl-14 pr-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all font-mono"
+                                                        className="w-full pl-14 pr-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all font-mono"
                                                         placeholder="+1 234 567 8900"
                                                     />
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <label className="text-[10px] font-black text-white/30 uppercase tracking-[0.2em] block mb-3">Maps URL</label>
+                                                <label className="text-xs font-semibold text-ui-muted block mb-3">Maps URL</label>
                                                 <div className="relative">
-                                                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-primary">
+                                                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-ui-primary">
                                                         <Map className="w-4 h-4" />
                                                     </div>
                                                     <input
                                                         type="url"
                                                         value={formData.map_url}
                                                         onChange={(e) => setFormData({ ...formData, map_url: e.target.value })}
-                                                        className="w-full pl-14 pr-6 py-4 bg-white/[0.03] border border-white/5 rounded-2xl text-white font-black tracking-tight focus:outline-none focus:border-primary/50 transition-all"
+                                                        className="w-full pl-14 pr-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all"
                                                         placeholder="Google Maps link"
                                                     />
                                                 </div>
@@ -396,10 +411,10 @@ function BranchesPageContent() {
                                     </div>
                                 </div>
 
-                                <div className="flex gap-4 p-8 border-t border-white/5 bg-white/[0.01]">
+                                <div className="shrink-0 flex gap-3 sm:gap-4 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-8 border-t border-ui-line bg-ui-bg">
                                     <button
                                         onClick={() => setShowModal(false)}
-                                        className="flex-1 px-8 py-4 bg-white/5 text-white/40 rounded-2xl hover:text-white hover:bg-white/10 transition-all text-[11px] font-black uppercase tracking-widest"
+                                        className="flex-1 px-5 sm:px-8 py-4 bg-ui-subtle text-ui-muted rounded-control hover:text-ui-ink hover:bg-ui-subtle transition-all text-xs font-semibold"
                                     >
                                         Cancel
                                     </button>
@@ -407,7 +422,7 @@ function BranchesPageContent() {
                                         <button
                                             onClick={handleSave}
                                             disabled={saving}
-                                            className="flex-1 px-8 py-4 bg-primary text-white rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all flex items-center justify-center gap-3 group"
+                                            className="flex-1 px-5 sm:px-8 py-4 bg-ui-primary text-ui-primary-fg rounded-control font-semibold text-xs transition-all flex items-center justify-center gap-3 group"
                                         >
                                             {saving ? (
                                                 <Loader2 className="w-4 h-4 animate-spin" />

@@ -37,7 +37,7 @@ export async function GET(
     return NextResponse.json({ questions: queueRes.rows });
   } catch (error: any) {
     console.error("Fetch Training Queue Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to fetch training queue" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch training queue" }, { status: 500 });
   }
 }
 
@@ -47,10 +47,11 @@ export async function POST(
 ) {
   const { slug } = await params;
   const db = getDb();
-  const body = await request.json();
-  const { action = 'answer', question_id, question_en, answer, category, source_type = 'manual' } = body;
 
   try {
+    const body = await request.json();
+    const { action = 'answer', question_id, question_en, answer, category, source_type = 'manual' } = body;
+
     const catalogRes = await db.execute({
       sql: "SELECT id, name, business_type FROM catalogs WHERE slug = ?",
       args: [slug]
@@ -129,7 +130,6 @@ Return exactly ${targetCount} high-value, item-specific questions as a JSON arra
     "id": "generated_id",
     "question_en": "Question mentioning [Item Name]",
     "question_ar": "Question in Arabic",
-    "question_fr": "Question in French",
     "category": "menu",
     "priority": 1-5,
     "context": "Context for why this item needs more detail"
@@ -177,9 +177,10 @@ Based on this data, find the biggest knowledge gaps. Focus on items NOT in the e
       // 2. Save new questions to queue
       for (const q of questions) {
         const id = `tq_${Math.random().toString(36).substring(2, 11)}`;
+        // question_fr is NOT NULL in the schema; French is no longer generated, so it is stored empty
         await db.execute({
-          sql: "INSERT INTO catalog_ai_training_queue (id, catalog_id, question_en, question_ar, question_fr, category, priority, context) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          args: [id, catalogId, q.question_en, q.question_ar, q.question_fr || '', q.category || 'menu', q.priority || 3, q.context || '']
+          sql: "INSERT INTO catalog_ai_training_queue (id, catalog_id, question_en, question_ar, question_fr, category, priority, context) VALUES (?, ?, ?, ?, '', ?, ?, ?)",
+          args: [id, catalogId, q.question_en, q.question_ar, q.category || 'menu', q.priority || 3, q.context || '']
         });
       }
 
@@ -204,8 +205,8 @@ Based on this data, find the biggest knowledge gaps. Focus on items NOT in the e
       // Remove from queue
       if (question_id) {
         await db.execute({
-          sql: "DELETE FROM catalog_ai_training_queue WHERE id = ? OR question_en = ?",
-          args: [question_id, question_en]
+          sql: "DELETE FROM catalog_ai_training_queue WHERE catalog_id = ? AND (id = ? OR question_en = ?)",
+          args: [catalogId, question_id, question_en]
         });
       }
 
@@ -214,7 +215,8 @@ Based on this data, find the biggest knowledge gaps. Focus on items NOT in the e
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error: any) {
+    // Upstream AI errors can carry request details, so they are only logged
     console.error("AI Training Action Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to process training action" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to process training action" }, { status: 500 });
   }
 }

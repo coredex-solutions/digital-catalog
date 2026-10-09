@@ -7,10 +7,13 @@ import { withRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { CATALOG_THEMES, DEFAULT_THEME_ID } from "@/config/themes";
 import type { BusinessType } from "@/lib/db/types";
+import { PLAN_CONFIG } from "@/lib/plans";
+import { initialVersionStatement } from "@/lib/catalog/publishing";
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const BUSINESS_TYPES: BusinessType[] = ["restaurant", "retail", "cafe", "salon", "bakery", "pharmacy", "grocery", "other"];
-const PAID_PLANS = ["pro", "enterprise"];
+// Any paid plan picked at signup is queued for approval; the account starts on the trial
+const PAID_PLANS = ["essential", "pro", "enterprise"];
 const MIN_PASSWORD_LENGTH = 8;
 
 async function handler(request: NextRequest) {
@@ -80,11 +83,12 @@ async function handler(request: NextRequest) {
         // Every trial runs on Essential limits; a paid plan picked at signup becomes a
         // pending upgrade request for a super admin to approve (see /api/superadmin/requests).
         const requestedPlan = String(plan || "essential").toLowerCase();
-        const maxItems = 200;
-        const maxCategories = 20;
-        const aiLimit = 5;
-        const multiLang = 0;
-        const analytics = 1;
+        const trial = PLAN_CONFIG.trial;
+        const maxItems = trial.limits.max_items;
+        const maxCategories = trial.limits.max_categories;
+        const aiLimit = trial.limits.ai_image_enhancement_limit;
+        const multiLang = trial.features.multi_language_enabled ? 1 : 0;
+        const analytics = trial.features.analytics_enabled ? 1 : 0;
 
         // Find selected theme colors
         const selectedTheme = CATALOG_THEMES.find(t => t.id === themeId) || CATALOG_THEMES.find(t => t.id === DEFAULT_THEME_ID)!;
@@ -110,18 +114,18 @@ async function handler(request: NextRequest) {
                 multi_language_enabled, booking_enabled, analytics_enabled,
                 custom_domain_enabled, ai_image_enhancement_limit,
                 max_items, max_categories, is_active
-              ) VALUES (?, ?, ?, datetime('now'), datetime('now', '+2 days'), ?, 1, ?, 0, ?, ?, ?, 1)`,
-                args: [subId, catalogId, "essential", multiLang, analytics, aiLimit, maxItems, maxCategories],
+              ) VALUES (?, ?, ?, datetime('now'), datetime('now', ?), ?, 1, ?, 0, ?, ?, ?, 1)`,
+                args: [subId, catalogId, trial.id, `+${trial.durationDays} days`, multiLang, analytics, aiLimit, maxItems, maxCategories],
             },
-            // D. Initialize Settings with Theme Colors
+            // D. Initialize Settings with Theme Colors (menus are Arabic and English; the column default still lists French)
             {
                 sql: `INSERT INTO catalog_settings (
-                    catalog_id,
+                    catalog_id, enabled_languages,
                     color_primary, color_secondary, color_accent,
                     color_background, color_surface, color_text, color_text_muted,
                     color_background_dark, color_surface_dark, color_text_dark, color_text_muted_dark,
                     updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+                ) VALUES (?, 'ar,en', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
                 args: [
                     catalogId,
                     selectedTheme.light.primary, selectedTheme.light.secondary, selectedTheme.light.accent,
@@ -136,17 +140,11 @@ async function handler(request: NextRequest) {
             },
         ];
 
-        // F. Initialize Operating Hours
-        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        for (const day of days) {
-            statements.push({
-                sql: `INSERT INTO operating_hours (catalog_id, day_name, open_hour, close_hour, is_closed, updated_at)
-                  VALUES (?, ?, 9, 22, 0, datetime('now'))`,
-                args: [catalogId, day],
-            });
-        }
+        // No opening hours or sample dishes are created: the menu must not show invented
+        // prices or "Open now" before the owner has entered their own. The hours page
+        // pre-fills a suggestion for the owner to confirm.
 
-        // G. Initialize Social Media
+        // F. Initialize Social Media
         const platforms = ["instagram", "facebook", "tiktok", "whatsapp"];
         for (const p of platforms) {
             statements.push({
@@ -156,30 +154,9 @@ async function handler(request: NextRequest) {
             });
         }
 
-        // H. Seed Template Data
-        try {
-            const { getSeedTemplate } = await import("@/lib/seed/templates");
-            const template = getSeedTemplate(resolvedBusinessType);
-
-            for (const category of template) {
-                const categoryId = uuidv4();
-                statements.push({
-                    sql: `INSERT INTO categories (id, catalog_id, name_ar, name_en, name_fr, icon_name, display_order, is_active, created_at, updated_at)
-                  VALUES (?, ?, ?, ?, ?, ?, 0, 1, datetime('now'), datetime('now'))`,
-                    args: [categoryId, catalogId, category.name_ar, category.name_en, category.name_fr, category.icon_name],
-                });
-
-                for (const item of category.items) {
-                    statements.push({
-                        sql: `INSERT INTO menu_items (id, catalog_id, category_id, name_ar, name_en, name_fr, description_en, price, currency, display_order, is_active, created_at, updated_at)
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'USD', 0, 1, datetime('now'), datetime('now'))`,
-                        args: [uuidv4(), catalogId, categoryId, item.name_ar, item.name_en, item.name_fr, item.description_en || "", item.price],
-                    });
-                }
-            }
-        } catch (seedErr) {
-            console.error("Non-fatal seeding error:", seedErr);
-        }
+        // G. An empty published version: the menu starts in draft mode, so nothing the owner
+        // adds is public until they preview and publish it
+        statements.push(initialVersionStatement(catalogId));
 
         try {
             await db.batch(statements, "write");

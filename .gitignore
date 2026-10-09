@@ -24,11 +24,11 @@ dist-ssr
 *.sw?
 
 
-#next.js
+# next.js
 .next
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-out
+out/
+*.tsbuildinfo
+
+# env (keep the example tracked)
+.env*
+!.env.example

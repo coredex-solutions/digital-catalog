@@ -7,7 +7,8 @@
  */
 
 import { config } from "dotenv";
-config(); // Load .env file
+config({ path: ".env.local" }); // Local secrets first (same as the app)
+config();
 
 import { getDb } from "../lib/db/client";
 import { hashPassword } from "../lib/auth/password";

@@ -4,12 +4,13 @@ import { MenuImage } from "./MenuImage";
 import { ShoppingBag } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { localized } from "../../_lib/i18n";
+import { variantName } from "@/lib/catalog/dish-info";
 import { Price } from "./Price";
 import { QuantityStepper } from "./QuantityStepper";
 import { Sheet } from "./Sheet";
 
 export function CartSheet() {
-  const { activeSheet, closeSheet, openSheet, cart, cartTotal, cartItemCount, updateQuantity, clearCart, lang, t } = useCatalog();
+  const { activeSheet, closeSheet, openSheet, cart, cartTotal, cartItemCount, updateLineQuantity, clearCart, lang, t } = useCatalog();
   const open = activeSheet === "cart";
 
   const footer =
@@ -49,7 +50,7 @@ export function CartSheet() {
         <>
           <ul className="divide-y divide-[var(--menu-line)]">
             {cart.map((line) => (
-              <li key={line.id} className="flex gap-3 py-4">
+              <li key={line.key} className="flex gap-3 py-4">
                 {line.image_url && (
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-menu-raised">
                     <MenuImage src={line.image_url} alt="" fill sizes="64px" className="object-cover" />
@@ -57,13 +58,14 @@ export function CartSheet() {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold leading-snug">{localized(line, "name", lang)}</p>
+                  {line.variant && <p className="mt-0.5 text-sm font-medium">{variantName(line.variant, lang)}</p>}
                   {line.note && <p className="mt-0.5 text-sm text-menu-muted">{line.note}</p>}
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                     <Price amount={line.price * line.quantity} currency={line.currency} className="text-sm" />
                     <QuantityStepper
                       value={line.quantity}
                       min={0}
-                      onChange={(quantity) => updateQuantity(line.id, quantity)}
+                      onChange={(quantity) => updateLineQuantity(line.key, quantity)}
                       label={`${t.quantity}: ${localized(line, "name", lang)}`}
                     />
                   </div>

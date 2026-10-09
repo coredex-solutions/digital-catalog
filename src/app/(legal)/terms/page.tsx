@@ -1,103 +1,84 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | Digital Catalog",
-  description: "Terms of Service for Digital Catalog platform",
+  title: "Terms of service",
+  description: "The terms for restaurants and cafés using Coredex digital menus.",
 };
 
-export default function TermsOfServicePage() {
+const UPDATED = "9 October 2026";
+
+export default function TermsPage() {
   return (
-    <>
-      <h1>Terms of Service</h1>
-      <p className="text-slate-400">Last updated: {new Date().toLocaleDateString()}</p>
+    <article>
+      <h1>Terms of service</h1>
+      <p className="text-ui-muted">Last updated {UPDATED}</p>
 
-      <h2>1. Acceptance of Terms</h2>
       <p>
-        By accessing and using the Digital Catalog platform ("Service"), you agree to be bound by these 
-        Terms of Service ("Terms"). If you do not agree to these Terms, please do not use the Service.
+        These terms apply to restaurants, cafés and other businesses (&ldquo;you&rdquo;) that create a menu with
+        Coredex. By creating an account you agree to them. Questions:{" "}
+        <a href="mailto:info@coredex.solutions">info@coredex.solutions</a>.
       </p>
 
-      <h2>2. Description of Service</h2>
+      <h2>The service</h2>
       <p>
-        Digital Catalog is a software-as-a-service (SaaS) platform that allows businesses to create 
-        and manage digital product catalogs, menus, and storefronts. The Service includes:
+        Coredex lets you publish a digital menu at a web address and QR code, in Arabic and English. Guests can send you orders and reservation requests through WhatsApp. Coredex passes the
+        message to WhatsApp; it does not take, confirm or track orders, and it does not process payments from guests.
       </p>
+
+      <h2>Your account</h2>
       <ul>
-        <li>Digital catalog creation and customization</li>
-        <li>Product and category management</li>
-        <li>QR code generation for catalog access</li>
-        <li>Analytics and visitor tracking</li>
-        <li>Integration with WhatsApp for orders</li>
+        <li>Give accurate details and keep your password private. You are responsible for what is done with your account.</li>
+        <li>One account per business, unless we agree otherwise.</li>
       </ul>
 
-      <h2>3. User Accounts</h2>
-      <p>
-        To use certain features of the Service, you must create an account. You agree to:
-      </p>
+      <h2>Your menu content</h2>
       <ul>
-        <li>Provide accurate and complete information</li>
-        <li>Maintain the security of your account credentials</li>
-        <li>Notify us immediately of any unauthorized access</li>
-        <li>Accept responsibility for all activities under your account</li>
+        <li>You own your content: dishes, prices, photos, descriptions and other information.</li>
+        <li>You let us store and display it so your menu works, including on your public menu page and in search engines.</li>
+        <li>You are responsible for its accuracy, including prices, the exchange rate you set, allergens and availability, and for having the rights to the photos you upload.</li>
+        <li>Content must be lawful and must not mislead guests.</li>
       </ul>
 
-      <h2>4. Subscription and Payments</h2>
+      <h2>AI features</h2>
       <p>
-        Access to the Service requires a paid subscription. Subscription terms include:
+        AI features (such as the AI waiter, writing help and photo enhancement) can make mistakes. Check AI-written
+        text and AI-edited photos before you publish them. Photos changed by AI should still show the dish as it is served.
       </p>
+
+      <h2>Plans and trial</h2>
       <ul>
-        <li>Yearly subscriptions renew automatically unless cancelled</li>
-        <li>Lifetime ("forever") subscriptions provide permanent access</li>
-        <li>Custom term subscriptions are available upon request</li>
-        <li>Refunds are provided at our discretion and in accordance with applicable law</li>
+        <li>New accounts start with a free 2-day trial.</li>
+        <li>Plans are paid yearly, at the prices shown on our website when you subscribe. Payment is arranged directly with us.</li>
+        <li>Each plan has limits, for example on the number of dishes and categories, and some features are only in higher plans.</li>
+        <li>When a trial or plan ends, your menu stays online for 7 more days so you can renew. After that, the menu stops being shown to guests and editing is paused until you renew. Your content is kept.</li>
       </ul>
 
-      <h2>5. Acceptable Use</h2>
-      <p>You agree not to:</p>
-      <ul>
-        <li>Use the Service for any illegal purposes</li>
-        <li>Upload content that infringes intellectual property rights</li>
-        <li>Attempt to gain unauthorized access to the Service</li>
-        <li>Interfere with or disrupt the Service</li>
-        <li>Use automated systems to access the Service without permission</li>
-        <li>Upload malicious content or attempt to harm other users</li>
-      </ul>
-
-      <h2>6. Content Ownership</h2>
+      <h2>Acceptable use</h2>
       <p>
-        You retain ownership of all content you upload to the Service. By uploading content, you grant us 
-        a license to display and distribute that content as necessary to provide the Service.
+        Do not use Coredex to break the law, to send spam, to try to access other accounts or to disrupt the service.
+        We may suspend accounts that do.
       </p>
 
-      <h2>7. Service Availability</h2>
+      <h2>Availability</h2>
       <p>
-        We strive to maintain high availability but do not guarantee uninterrupted access. We may 
-        temporarily suspend the Service for maintenance, updates, or security reasons.
+        We work to keep Coredex available and secure, but we cannot promise it will never be interrupted. We may
+        change or improve features over time.
       </p>
 
-      <h2>8. Limitation of Liability</h2>
+      <h2>Liability</h2>
       <p>
-        To the maximum extent permitted by law, we shall not be liable for any indirect, incidental, 
-        special, consequential, or punitive damages arising from your use of the Service.
+        Coredex is provided as is. To the extent the law allows, we are not liable for indirect losses, such as lost
+        orders or profits, and our total liability is limited to the amount you paid us in the 12 months before the claim.
       </p>
 
-      <h2>9. Termination</h2>
+      <h2>Ending the service</h2>
       <p>
-        We may suspend or terminate your access to the Service at any time for violation of these Terms. 
-        Upon termination, your right to use the Service will immediately cease.
+        You can stop using Coredex at any time and ask us to delete your account. We may end or suspend an account
+        that breaks these terms, after notice where reasonable.
       </p>
 
-      <h2>10. Changes to Terms</h2>
-      <p>
-        We reserve the right to modify these Terms at any time. We will notify users of significant 
-        changes. Continued use of the Service after changes constitutes acceptance of the modified Terms.
-      </p>
-
-      <h2>11. Contact</h2>
-      <p>
-        For questions about these Terms, please contact us through the platform.
-      </p>
-    </>
+      <h2>Changes</h2>
+      <p>If we change these terms we will update the date above and tell owners by email about significant changes.</p>
+    </article>
   );
 }
-

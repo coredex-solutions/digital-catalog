@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getFullCatalogData } from '@/lib/catalog/queries';
+import { getMenuData, isMenuPreview } from '../_lib/menu-data';
 import { CatalogAnalyticsTracker } from '../_components/AnalyticsTracker';
 import { MenuView } from '../_components/menu/MenuView';
 
@@ -10,7 +10,9 @@ export default async function CatalogMenuPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const data = await getFullCatalogData(slug);
+  const data = await getMenuData(slug);
+  // Owner previews are not guest visits
+  const preview = await isMenuPreview(slug);
 
   if (!data) {
     notFound();
@@ -18,7 +20,7 @@ export default async function CatalogMenuPage({
 
   return (
     <>
-      <CatalogAnalyticsTracker catalogId={data.catalog.id} />
+      {!preview && <CatalogAnalyticsTracker catalogId={data.catalog.id} />}
       <MenuView />
     </>
   );

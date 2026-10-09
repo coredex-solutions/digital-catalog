@@ -59,24 +59,6 @@ const translations = {
     voiceLanguage: "لغة الصوت",
     send: "إرسال",
   },
-  fr: {
-    title: "Questions sur le menu",
-    subtitle: "Assistant IA. Vérifiez les allergies avec le personnel.",
-    placeholder: "Posez une question sur un plat...",
-    noMicTitle: "Aucun microphone détecté",
-    voiceInputTitle: "Entrée vocale",
-    greeting: "Bonjour ! Posez-moi vos questions sur les plats, je vous aide à choisir. Pour les allergies ou régimes, merci de confirmer avec le personnel.",
-    noMicAlert: "Aucun microphone détecté sur votre appareil.",
-    noSpeechAlert: "La reconnaissance vocale n'est pas prise en charge par votre navigateur.",
-    noHttpsAlert: "Les fonctions vocales nécessitent une connexion sécurisée (HTTPS). Veuillez utiliser HTTPS pour activer le microphone.",
-    mute: "Couper les réponses vocales",
-    unmute: "Activer les réponses vocales",
-    close: "Fermer",
-    listen: "Écouter",
-    thinking: "Rédaction de la réponse",
-    voiceLanguage: "Langue de la voix",
-    send: "Envoyer",
-  },
 };
 
 export default function AIWaiterBubble() {
@@ -88,6 +70,7 @@ export default function AIWaiterBubble() {
     updateQuantity,
     removeFromCart,
     setIsCartOpen,
+    openItem,
     menuItems,
     cart,
   } = useCatalog();
@@ -118,7 +101,6 @@ export default function AIWaiterBubble() {
 
   useEffect(() => {
     if (catalogLang === "ar") setActiveVoiceLang("ar-SA");
-    else if (catalogLang === "fr") setActiveVoiceLang("fr-FR");
     else setActiveVoiceLang("en-US");
   }, [catalogLang]);
 
@@ -279,13 +261,15 @@ export default function AIWaiterBubble() {
 
         // HANDLE ACTIONS
         if (data.actions && Array.isArray(data.actions)) {
+          // A dish with options can't be added without the guest choosing one: open it instead
+          let dishToChoose: (typeof menuItems)[number] | null = null;
           data.actions.forEach((action: any) => {
             const { type, itemId, quantity } = action;
 
             if (type === "ADD_TO_CART") {
               const item = (menuItems || []).find((i: any) => i.id === itemId);
-              if (item) {
-                addToCart(item, quantity || 1);
+              if (item && !addToCart(item, quantity || 1) && item.variants?.length) {
+                dishToChoose = item;
               }
             } else if (type === "UPDATE_CART") {
               updateQuantity(itemId, quantity);
@@ -294,8 +278,11 @@ export default function AIWaiterBubble() {
             }
           });
 
-          // Open cart once if any actions were performed
-          if (data.actions.length > 0) {
+          // Show the dish to choose an option for, otherwise the updated cart
+          if (dishToChoose) {
+            const dish = dishToChoose;
+            setTimeout(() => openItem(dish), 800);
+          } else if (data.actions.length > 0) {
             setTimeout(() => setIsCartOpen(true), 800);
           }
         }
@@ -328,13 +315,13 @@ export default function AIWaiterBubble() {
 
     // Smart language detection for TTS
     const hasArabic = /[\u0600-\u06FF]/.test(text);
-    const audioLang = forcedLang || (hasArabic ? "ar" : "en");
+    const audioLang = forcedLang === "ar" || forcedLang === "en" ? forcedLang : hasArabic ? "ar" : "en";
 
     // For primary supported languages, use our reliable internal TTS proxy
-    if (["ar", "en", "fr"].includes(audioLang)) {
+    if (["ar", "en"].includes(audioLang)) {
       setIsSpeaking(true);
 
-      const url = `/api/ai/tts?lang=${audioLang}&text=${encodeURIComponent(text)}`;
+      const url = `/api/ai/tts?slug=${encodeURIComponent(slug)}&lang=${audioLang}&text=${encodeURIComponent(text)}`;
 
       const audio = new Audio(url);
       audioRef.current = audio;
@@ -373,9 +360,6 @@ export default function AIWaiterBubble() {
     if (activeVoiceLang === "ar-SA") {
       selectedVoice = voices.find(v => v.lang.startsWith("ar"));
       targetLang = "ar-SA";
-    } else if (activeVoiceLang === "fr-FR") {
-      selectedVoice = voices.find(v => v.lang.startsWith("fr"));
-      targetLang = "fr-FR";
     } else {
       selectedVoice = voices.find(v => v.lang.startsWith("en"));
       targetLang = "en-US";
@@ -523,8 +507,7 @@ export default function AIWaiterBubble() {
           <div className="flex items-center gap-2" role="radiogroup" aria-label={t.voiceLanguage}>
             {[
               { code: "en-US", label: "English" },
-              { code: "ar-SA", label: "العربية" },
-              { code: "fr-FR", label: "Français" }
+              { code: "ar-SA", label: "العربية" }
             ].map((l) => (
               <button
                 key={l.code}

@@ -4,6 +4,9 @@ import { getDb } from '@/lib/db/client';
 import { hashPassword } from '@/lib/auth/password';
 import { v4 as uuidv4 } from 'uuid';
 
+// Never select password_hash: these rows are sent to the browser
+const ADMIN_COLUMNS = 'ca.id, ca.catalog_id, ca.email, ca.name, ca.role, ca.is_active, ca.created_at, ca.last_login';
+
 // GET: List admins (optionally by catalog)
 export async function GET(request: NextRequest) {
   const auth = await requireSuperAdmin(request);
@@ -18,7 +21,7 @@ export async function GET(request: NextRequest) {
   if (catalogId) {
     result = await db.execute({
       sql: `
-        SELECT ca.*, c.name as catalog_name, c.slug as catalog_slug
+        SELECT ${ADMIN_COLUMNS}, c.name as catalog_name, c.slug as catalog_slug
         FROM catalog_admins ca
         JOIN catalogs c ON c.id = ca.catalog_id
         WHERE ca.catalog_id = ?
@@ -28,7 +31,7 @@ export async function GET(request: NextRequest) {
     });
   } else {
     result = await db.execute(`
-      SELECT ca.*, c.name as catalog_name, c.slug as catalog_slug
+      SELECT ${ADMIN_COLUMNS}, c.name as catalog_name, c.slug as catalog_slug
       FROM catalog_admins ca
       JOIN catalogs c ON c.id = ca.catalog_id
       ORDER BY ca.created_at DESC

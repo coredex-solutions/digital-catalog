@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
+import { isPaidPlanId } from "@/lib/plans";
 import { v4 as uuidv4 } from "uuid";
 
 export async function POST(
@@ -13,13 +14,15 @@ export async function POST(
     if (!catalog) return NextResponse.json({ error: "Catalog not found" }, { status: 404 });
 
     // Expired catalogs must still be able to ask for a renewal
-    const auth = await requireCatalogAdmin(request, catalog.id, { allowExpired: true });
+    const auth = await requireCatalogAdmin(request, catalog.id, { allowExpired: true, ownerOnly: true });
     if (!auth.success) return auth.response;
 
-    const body = await request.json();
-    const { planName } = body;
+    const body = await request.json().catch(() => null);
+    const planName = body?.planName;
 
     if (!planName) return NextResponse.json({ error: "Missing plan name" }, { status: 400 });
+    // Only real paid plans can be requested; the current plan is allowed so owners can renew
+    if (!isPaidPlanId(planName)) return NextResponse.json({ error: "Unknown plan" }, { status: 400 });
 
     const db = getDb();
     try {

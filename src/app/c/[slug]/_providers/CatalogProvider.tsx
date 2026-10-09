@@ -23,6 +23,7 @@ import type {
 import { getPriceConfig, formatTotal, type PriceConfig, type FormattedPrice } from "@/lib/catalog/price";
 import { getDictionary, type Dictionary } from "../_lib/i18n";
 import { parseOrderTypes, type OrderType } from "../_lib/whatsapp";
+import type { AllergenCode, DietaryCode, DishVariant } from "@/lib/catalog/dish-info";
 
 // Menu item interface
 export interface MenuItem {
@@ -30,29 +31,63 @@ export interface MenuItem {
   category_id?: string;
   name_ar: string;
   name_en: string;
-  name_fr: string;
   description_ar?: string | null;
   description_en?: string | null;
-  description_fr?: string | null;
   price: number;
   currency?: string;
   image_url?: string | null;
   is_featured?: boolean;
   /** False while the dish is sold out: it stays on the menu but can't be ordered */
   is_available?: boolean;
+  /** Options with their own price (e.g. Regular / Large); one must be chosen to order */
+  variants?: DishVariant[];
+  dietary?: DietaryCode[];
+  /** null = the restaurant hasn't verified allergens (unknown); [] = verified, none listed */
+  allergens?: AllergenCode[] | null;
 }
 
-// Cart item interface
+// Cart item interface. The same dish with a different option or special request is kept as a
+// separate line, so a line is identified by `key` (dish id + option + note), not by the dish id.
 export interface CartItem extends MenuItem {
+  key: string;
   quantity: number;
   note?: string;
+  /** The chosen option; `price` is then that option's price */
+  variant?: DishVariant;
+}
+
+/** Most of one line a diner can order (matches the quantity stepper) */
+export const MAX_LINE_QUANTITY = 99;
+
+function normalizeNote(note?: string | null): string {
+  return (note || "").trim().slice(0, 200);
+}
+
+/** Identifies a cart line: the dish, its option and its (trimmed) special request */
+export function cartLineKey(itemId: string, note?: string | null, variantId?: string | null): string {
+  const normalized = normalizeNote(note);
+  const base = variantId ? `${itemId}\u0001${variantId}` : itemId;
+  return normalized ? `${base}\u0000${normalized}` : base;
+}
+
+/** True when the dish has options, so one must be picked before it can be ordered */
+export function needsVariant(item: Pick<MenuItem, "variants">): boolean {
+  return (item.variants?.length ?? 0) > 0;
+}
+
+function clampQuantity(quantity: number): number {
+  return Math.min(MAX_LINE_QUANTITY, Math.max(0, Math.floor(Number(quantity) || 0)));
+}
+
+/** How many of a dish are in the order, across all its lines */
+export function cartQuantityOf(cart: CartItem[], itemId: string): number {
+  return cart.reduce((sum, line) => (line.id === itemId ? sum + line.quantity : sum), 0);
 }
 
 export interface MenuCategory {
   id: string;
   name_ar: string;
   name_en: string;
-  name_fr: string;
   image_url?: string | null;
 }
 
@@ -60,20 +95,16 @@ export interface MenuFaq {
   id: string;
   question_ar: string;
   question_en: string;
-  question_fr: string;
   answer_ar: string;
   answer_en: string;
-  answer_fr: string;
 }
 
 export interface MenuBranch {
   id: string;
   name_ar: string;
   name_en: string;
-  name_fr: string;
   address_ar: string;
   address_en: string;
-  address_fr: string;
   phone_numbers: string[];
   map_url: string | null;
 }
@@ -120,8 +151,14 @@ interface CatalogContextType {
 
   // Cart
   cart: CartItem[];
-  addToCart: (item: MenuItem, quantity?: number, note?: string) => void;
+  /** Adds to the line with the same dish, option and note, or starts a new line. Dishes with
+   *  options are only added with a valid option id (returns false otherwise). */
+  addToCart: (item: MenuItem, quantity?: number, note?: string, variantId?: string) => boolean;
+  /** Set one line's quantity (0 removes it), by line key */
+  updateLineQuantity: (lineKey: string, quantity: number) => void;
+  /** Remove every line of a dish (used by the AI waiter, which works with dish ids) */
   removeFromCart: (itemId: string) => void;
+  /** Set how many of a dish are in the order across its lines (used by the AI waiter) */
   updateQuantity: (itemId: string, quantity: number) => void;
   clearCart: () => void;
   cartItemCount: number;
@@ -200,43 +237,80 @@ export function CatalogProvider({
   const cartItemCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
   const cartTotal = useMemo(() => formatTotal(cart, priceConfig, lang), [cart, priceConfig, lang]);
 
-  const addToCart = useCallback((item: MenuItem, quantity: number = 1, note?: string) => {
-    if (item.is_available === false) return;
+  const addToCart = useCallback((item: MenuItem, quantity: number = 1, note?: string, variantId?: string) => {
+    if (item.is_available === false) return false;
+    const amount = clampQuantity(quantity);
+    if (amount <= 0) return false;
+    const variant = needsVariant(item) ? item.variants!.find((v) => v.id === variantId) : undefined;
+    if (needsVariant(item) && !variant) return false;
+    const normalized = normalizeNote(note);
+    const key = cartLineKey(item.id, normalized, variant?.id);
     setCart((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.id === item.id
-            ? { ...i, quantity: i.quantity + quantity, note: note !== undefined ? note : i.note }
-            : i
+      if (prev.some((line) => line.key === key)) {
+        return prev.map((line) =>
+          line.key === key ? { ...line, quantity: clampQuantity(line.quantity + amount) } : line
         );
       }
       return [
         ...prev,
         {
+          key,
           id: item.id,
           category_id: item.category_id,
           name_ar: item.name_ar,
           name_en: item.name_en,
-          name_fr: item.name_fr,
-          price: item.price,
+          price: variant ? variant.price : item.price,
           currency: item.currency,
           image_url: item.image_url,
-          quantity,
-          note: note || undefined,
+          quantity: amount,
+          note: normalized || undefined,
+          variant,
         },
       ];
     });
+    return true;
+  }, []);
+
+  const updateLineQuantity = useCallback((lineKey: string, quantity: number) => {
+    const next = clampQuantity(quantity);
+    setCart((prev) =>
+      next <= 0
+        ? prev.filter((line) => line.key !== lineKey)
+        : prev.map((line) => (line.key === lineKey ? { ...line, quantity: next } : line))
+    );
   }, []);
 
   const removeFromCart = useCallback((itemId: string) => {
-    setCart((prev) => prev.filter((i) => i.id !== itemId));
+    setCart((prev) => prev.filter((line) => line.id !== itemId));
   }, []);
 
+  // Dish-level update for the AI waiter: grows the plain line (no note) or the first line,
+  // and shrinks from the most recently added lines first.
   const updateQuantity = useCallback((itemId: string, quantity: number) => {
-    setCart((prev) =>
-      quantity <= 0 ? prev.filter((i) => i.id !== itemId) : prev.map((i) => (i.id === itemId ? { ...i, quantity } : i))
-    );
+    const target = clampQuantity(quantity);
+    setCart((prev) => {
+      const lines = prev.filter((line) => line.id === itemId);
+      if (lines.length === 0) return prev;
+      const current = lines.reduce((sum, line) => sum + line.quantity, 0);
+      if (target === current) return prev;
+      if (target > current) {
+        const grow = lines.find((line) => !line.note) || lines[0];
+        return prev.map((line) =>
+          line.key === grow.key ? { ...line, quantity: clampQuantity(line.quantity + target - current) } : line
+        );
+      }
+      let excess = current - target;
+      const reduced = new Map<string, number>();
+      for (const line of [...lines].reverse()) {
+        const take = Math.min(line.quantity, excess);
+        reduced.set(line.key, line.quantity - take);
+        excess -= take;
+        if (excess <= 0) break;
+      }
+      return prev
+        .map((line) => (reduced.has(line.key) ? { ...line, quantity: reduced.get(line.key)! } : line))
+        .filter((line) => line.quantity > 0);
+    });
   }, []);
 
   const clearCart = useCallback(() => setCart([]), []);
@@ -320,13 +394,38 @@ export function CatalogProvider({
       const savedCart = localStorage.getItem(`${storagePrefix}cart`);
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
-        // Drop lines whose dishes are no longer on the menu or are sold out, and refresh prices
+        // Drop lines whose dishes are no longer on the menu or are sold out, and refresh prices.
+        // Carts saved by older versions had no line keys (one line per dish); keys are rebuilt
+        // from dish id + note, and lines that now share a key are merged.
         const byId = new Map(menuItems.filter((i) => i.is_available !== false).map((i) => [i.id, i]));
-        setCart(
-          (Array.isArray(parsed) ? parsed : [])
-            .filter((line: CartItem) => byId.has(line.id) && line.quantity > 0)
-            .map((line: CartItem) => ({ ...byId.get(line.id)!, quantity: line.quantity, note: line.note }))
-        );
+        const restored = new Map<string, CartItem>();
+        for (const line of Array.isArray(parsed) ? parsed : []) {
+          if (!line || typeof line !== "object") continue;
+          const item = byId.get(String(line.id));
+          const quantity = clampQuantity(line.quantity);
+          if (!item || quantity <= 0) continue;
+          const note = normalizeNote(typeof line.note === "string" ? line.note : "");
+          // A dish with options needs a still-existing option; otherwise the line is dropped
+          const savedVariantId = line.variant && typeof line.variant.id === "string" ? line.variant.id : null;
+          const variant = needsVariant(item) ? item.variants!.find((v) => v.id === savedVariantId) : undefined;
+          if (needsVariant(item) && !variant) continue;
+          const key = cartLineKey(item.id, note, variant?.id);
+          const existing = restored.get(key);
+          restored.set(key, {
+            key,
+            id: item.id,
+            category_id: item.category_id,
+            name_ar: item.name_ar,
+            name_en: item.name_en,
+            price: variant ? variant.price : item.price,
+            currency: item.currency,
+            image_url: item.image_url,
+            quantity: clampQuantity((existing?.quantity || 0) + quantity),
+            note: note || undefined,
+            variant,
+          });
+        }
+        setCart([...restored.values()]);
       }
     } catch {
       // Ignore an invalid saved cart
@@ -349,13 +448,15 @@ export function CatalogProvider({
       setTableState(savedTable);
     }
 
-    // ?lang=ar links switch the language once, then the cookie remembers it
-    const langParam = params.get("lang") as Language | null;
-    if (langParam && enabledLanguages.includes(langParam) && langParam !== lang) {
+    // ?lang=ar links switch the language once, then the cookie remembers it. Unsupported values
+    // (e.g. an old ?lang=fr link) are dropped and the menu stays in the resolved language.
+    const langParam = params.get("lang")?.toLowerCase();
+    if (langParam) {
       params.delete("lang");
       const query = params.toString();
       window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
-      setLanguage(langParam);
+      const next = enabledLanguages.find((code) => code === langParam);
+      if (next && next !== lang) setLanguage(next);
     }
     // Run once on mount; later changes come from user actions
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -397,6 +498,7 @@ export function CatalogProvider({
     setTable,
     cart,
     addToCart,
+    updateLineQuantity,
     removeFromCart,
     updateQuantity,
     clearCart,

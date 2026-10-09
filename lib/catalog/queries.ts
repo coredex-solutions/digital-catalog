@@ -1,5 +1,7 @@
 import { cache } from 'react';
 import { getDb } from '../db/client';
+import { getPublicMenu } from './publishing';
+import { getSubscriptionState } from '../plans';
 import type {
   Branch,
   Catalog,
@@ -121,9 +123,10 @@ export async function getCategoryItems(catalogId: string, categoryId: string): P
   const db = getDb();
   const result = await db.execute({
     sql: `
-      SELECT * FROM menu_items 
-      WHERE catalog_id = ? AND category_id = ? AND is_active = 1 
-      ORDER BY display_order ASC
+      SELECT m.* FROM menu_items m
+      JOIN categories c ON c.id = m.category_id AND c.catalog_id = m.catalog_id
+      WHERE m.catalog_id = ? AND m.category_id = ? AND m.is_active = 1 AND c.is_active = 1
+      ORDER BY m.display_order ASC
     `,
     args: [catalogId, categoryId],
   });
@@ -132,12 +135,19 @@ export async function getCategoryItems(catalogId: string, categoryId: string): P
 }
 
 /**
- * Get all menu items for catalog
+ * Get all menu items the guest menu shows: active items in active categories of this catalog.
+ * Items in a hidden category are left out, so search, sections, cart restore and the AI
+ * waiter all see the same dishes.
  */
 export async function getCatalogItems(catalogId: string): Promise<MenuItem[]> {
   const db = getDb();
   const result = await db.execute({
-    sql: 'SELECT * FROM menu_items WHERE catalog_id = ? AND is_active = 1 ORDER BY display_order ASC',
+    sql: `
+      SELECT m.* FROM menu_items m
+      JOIN categories c ON c.id = m.category_id AND c.catalog_id = m.catalog_id
+      WHERE m.catalog_id = ? AND m.is_active = 1 AND c.is_active = 1
+      ORDER BY m.display_order ASC
+    `,
     args: [catalogId],
   });
 
@@ -213,27 +223,29 @@ export async function getCatalogBranches(catalogId: string): Promise<Branch[]> {
 /**
  * Get full catalog data for rendering.
  * Wrapped in React cache() so the layout, metadata and page share one load per request.
+ * Categories and dishes come from the latest published version (see publishing.ts); `preview`
+ * shows the owner's unpublished draft instead.
  */
-export const getFullCatalogData = cache(async (slug: string) => {
+export const getFullCatalogData = cache(async (slug: string, preview: boolean = false) => {
   const catalog = await getCatalogBySlug(slug);
   if (!catalog) return null;
 
-  const [settings, contact, subscription, categories, operatingHours, socialMedia, faqs, menuItems, branches] = await Promise.all([
+  const [settings, contact, subscription, menu, operatingHours, socialMedia, faqs, branches] = await Promise.all([
     getCatalogSettings(catalog.id),
     getCatalogContact(catalog.id),
     getCatalogSubscription(catalog.id),
-    getCatalogCategories(catalog.id),
+    getPublicMenu(catalog.id, { preview }),
     getCatalogOperatingHours(catalog.id),
     getCatalogSocialMedia(catalog.id),
     getCatalogFAQs(catalog.id),
-    getCatalogItems(catalog.id),
     getCatalogBranches(catalog.id),
   ]);
+  const categories = menu.categories as unknown as Category[];
+  const menuItems = menu.items as unknown as MenuItem[];
 
-  // Check if subscription is expired
-  const isExpired = subscription?.expires_at
-    ? new Date(subscription.expires_at) < new Date()
-    : false;
+  // Offline only once the grace period after the plan's end has passed
+  const { state: subscriptionState, offlineAt } = getSubscriptionState(subscription?.expires_at);
+  const isExpired = subscriptionState === 'expired';
 
   return {
     catalog,
@@ -247,6 +259,8 @@ export const getFullCatalogData = cache(async (slug: string) => {
     menuItems,
     branches,
     isExpired,
+    subscriptionState,
+    offlineAt,
     subscriptionType: subscription?.subscription_type || 'essential',
   };
 });

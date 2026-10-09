@@ -72,25 +72,25 @@ function StatCard({
   const isPositive = change !== undefined && change >= 0;
 
   return (
-    <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
+    <div className="bg-ui-bg rounded-control p-4 sm:p-6 border border-ui-line">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-slate-400 text-sm font-medium">{label}</p>
-          <p className="text-3xl font-bold text-white mt-1">
+          <p className="text-ui-muted text-sm font-medium">{label}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-ui-ink mt-1 tabular-nums">
             {value.toLocaleString()}
           </p>
           {change !== undefined && (
-            <div className="flex items-center gap-1 mt-2">
+            <div className="flex flex-wrap items-center gap-1 mt-2">
               {isPositive ? (
-                <TrendingUp className="w-4 h-4 text-green-400" />
+                <TrendingUp className="w-4 h-4 text-ui-success" />
               ) : (
-                <TrendingDown className="w-4 h-4 text-purple-400" />
+                <TrendingDown className="w-4 h-4 text-ui-primary" />
               )}
-              <span className={isPositive ? "text-green-400" : "text-purple-400"}>
+              <span className={isPositive ? "text-ui-success" : "text-ui-primary"}>
                 {isPositive ? "+" : ""}
                 {change.toFixed(1)}%
               </span>
-              <span className="text-slate-500 text-sm">vs last period</span>
+              <span className="text-ui-muted text-sm">vs last period</span>
             </div>
           )}
         </div>
@@ -147,7 +147,8 @@ export default function AnalyticsPage() {
         <select
           value={period}
           onChange={(e) => setPeriod(e.target.value as any)}
-          className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white focus:outline-none"
+          aria-label="Time period"
+          className="min-h-11 px-4 py-2 bg-ui-bg border border-ui-input rounded-xl text-ui-ink focus:outline-none"
         >
           <option value="7d">Last 7 days</option>
           <option value="30d">Last 30 days</option>
@@ -157,21 +158,21 @@ export default function AnalyticsPage() {
 
       <CatalogAdminContent>
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {[...Array(4)].map((_, i) => (
               <div
                 key={i}
-                className="bg-slate-800/50 rounded-2xl p-6 animate-pulse"
+                className="bg-ui-bg rounded-control p-4 sm:p-6"
               >
-                <div className="h-4 bg-slate-700 rounded w-24 mb-3" />
-                <div className="h-8 bg-slate-700 rounded w-16" />
+                <div className="h-4 bg-ui-surface rounded w-24 mb-3" />
+                <div className="h-8 bg-ui-surface rounded w-16" />
               </div>
             ))}
           </div>
         ) : analytics ? (
           <div className="space-y-8">
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
               <StatCard
                 icon={Eye}
                 label="Page Views"
@@ -191,7 +192,7 @@ export default function AnalyticsPage() {
                 label="WhatsApp Orders"
                 value={analytics.totals.whatsapp_order_clicks}
                 change={analytics.comparison.whatsapp_change}
-                color="#25D366"
+                color="#166534"
               />
               <StatCard
                 icon={CalendarCheck}
@@ -203,20 +204,21 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Traffic Chart */}
-            <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
-              <h3 className="font-semibold text-white mb-6 flex items-center gap-2">
+            <div className="bg-ui-bg rounded-control p-4 sm:p-6 border border-ui-line">
+              <h3 className="font-semibold text-ui-ink mb-6 flex items-center gap-2">
                 <BarChart3
                   className="w-5 h-5"
                   style={{ color: "var(--color-primary)" }}
                 />
                 Traffic Overview
               </h3>
-              <div className="h-80">
+              <div className="h-64 sm:h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
                     data={[...analytics.daily].reverse().map((d) => ({
                       ...d,
                       date: new Date(d.date).toLocaleDateString("en-US", {
+                        timeZone: "UTC",
                         month: "short",
                         day: "numeric",
                       }),
@@ -308,8 +310,8 @@ export default function AnalyticsPage() {
 
             {/* Engagement Chart */}
             <div className="grid lg:grid-cols-2 gap-6">
-              <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
-                <h3 className="font-semibold text-white mb-6">
+              <div className="bg-ui-bg rounded-control p-4 sm:p-6 border border-ui-line">
+                <h3 className="font-semibold text-ui-ink mb-6">
                   WhatsApp & Booking Clicks
                 </h3>
                 <div className="h-64">
@@ -321,6 +323,7 @@ export default function AnalyticsPage() {
                         .map((d) => ({
                           ...d,
                           date: new Date(d.date).toLocaleDateString("en-US", {
+                            timeZone: "UTC",
                             month: "short",
                             day: "numeric",
                           }),
@@ -352,7 +355,7 @@ export default function AnalyticsPage() {
                       <Bar
                         dataKey="whatsapp_order_clicks"
                         name="WhatsApp"
-                        fill="#25D366"
+                        fill="#166534"
                         radius={[4, 4, 0, 0]}
                       />
                       <Bar
@@ -367,14 +370,14 @@ export default function AnalyticsPage() {
               </div>
 
               {/* Daily Table */}
-              <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700/50">
-                <h3 className="font-semibold text-white mb-4">
+              <div className="bg-ui-bg rounded-control p-4 sm:p-6 border border-ui-line">
+                <h3 className="font-semibold text-ui-ink mb-4">
                   Daily Breakdown
                 </h3>
                 <div className="overflow-y-auto max-h-64">
                   <table className="w-full text-sm">
-                    <thead className="sticky top-0 bg-slate-800">
-                      <tr className="text-slate-400 border-b border-slate-700/50">
+                    <thead className="sticky top-0 bg-ui-surface">
+                      <tr className="text-ui-muted border-b border-ui-line">
                         <th className="text-left py-2 px-2">Date</th>
                         <th className="text-right py-2 px-2">Views</th>
                         <th className="text-right py-2 px-2">Visitors</th>
@@ -384,19 +387,20 @@ export default function AnalyticsPage() {
                       {analytics.daily.map((day) => (
                         <tr
                           key={day.date}
-                          className="border-b border-slate-700/30 hover:bg-slate-700/20"
+                          className="border-b border-ui-line hover:bg-ui-subtle"
                         >
-                          <td className="py-2 px-2 text-white">
+                          <td className="py-2 px-2 text-ui-ink">
                             {new Date(day.date).toLocaleDateString("en-US", {
+                              timeZone: "UTC",
                               weekday: "short",
                               month: "short",
                               day: "numeric",
                             })}
                           </td>
-                          <td className="text-right py-2 px-2 text-slate-300">
+                          <td className="text-right py-2 px-2 text-ui-ink">
                             {day.page_views.toLocaleString()}
                           </td>
-                          <td className="text-right py-2 px-2 text-slate-300">
+                          <td className="text-right py-2 px-2 text-ui-ink">
                             {day.unique_visitors.toLocaleString()}
                           </td>
                         </tr>
@@ -405,7 +409,7 @@ export default function AnalyticsPage() {
                         <tr>
                           <td
                             colSpan={3}
-                            className="text-center py-8 text-slate-500"
+                            className="text-center py-5 sm:py-8 text-ui-muted"
                           >
                             No data available
                           </td>
@@ -418,7 +422,7 @@ export default function AnalyticsPage() {
             </div>
           </div>
         ) : (
-          <div className="text-center text-slate-500 py-12">
+          <div className="text-center text-ui-muted py-12">
             Failed to load analytics data
           </div>
         )}

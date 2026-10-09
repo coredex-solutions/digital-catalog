@@ -28,22 +28,18 @@ export async function GET(
     about: {
       about_content_ar: settings?.about_content_ar || "",
       about_content_en: settings?.about_content_en || "",
-      about_content_fr: settings?.about_content_fr || "",
     },
     seo: {
       seo_title_ar: settings?.seo_title_ar || "",
       seo_title_en: settings?.seo_title_en || "",
-      seo_title_fr: settings?.seo_title_fr || "",
       seo_description_ar: settings?.seo_description_ar || "",
       seo_description_en: settings?.seo_description_en || "",
-      seo_description_fr: settings?.seo_description_fr || "",
       seo_keywords: settings?.seo_keywords || "",
-      json_ld_custom: settings?.json_ld_custom || "",
     },
   });
 }
 
-// PUT: Update about/SEO settings
+// PUT: Update about/SEO settings (Arabic and English only; French and custom JSON-LD are no longer edited)
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -63,28 +59,12 @@ export async function PUT(
     const {
       about_content_ar,
       about_content_en,
-      about_content_fr,
       seo_title_ar,
       seo_title_en,
-      seo_title_fr,
       seo_description_ar,
       seo_description_en,
-      seo_description_fr,
       seo_keywords,
-      json_ld_custom,
     } = body;
-
-    // Validate JSON-LD if provided
-    if (json_ld_custom) {
-      try {
-        JSON.parse(json_ld_custom);
-      } catch {
-        return NextResponse.json(
-          { error: "Invalid JSON-LD format" },
-          { status: 400 }
-        );
-      }
-    }
 
     const db = getDb();
 
@@ -93,30 +73,22 @@ export async function PUT(
         UPDATE catalog_settings SET
           about_content_ar = COALESCE(?, about_content_ar),
           about_content_en = COALESCE(?, about_content_en),
-          about_content_fr = COALESCE(?, about_content_fr),
           seo_title_ar = COALESCE(?, seo_title_ar),
           seo_title_en = COALESCE(?, seo_title_en),
-          seo_title_fr = COALESCE(?, seo_title_fr),
           seo_description_ar = COALESCE(?, seo_description_ar),
           seo_description_en = COALESCE(?, seo_description_en),
-          seo_description_fr = COALESCE(?, seo_description_fr),
           seo_keywords = COALESCE(?, seo_keywords),
-          json_ld_custom = COALESCE(?, json_ld_custom),
           updated_at = datetime('now')
         WHERE catalog_id = ?
       `,
       args: [
         about_content_ar,
         about_content_en,
-        about_content_fr,
         seo_title_ar,
         seo_title_en,
-        seo_title_fr,
         seo_description_ar,
         seo_description_en,
-        seo_description_fr,
         seo_keywords,
-        json_ld_custom,
         catalog.id,
       ],
     });

@@ -2,7 +2,8 @@
 
 import { MenuImage } from "./MenuImage";
 import { CircleSlash, Plus, Star } from "lucide-react";
-import { useCatalog, type MenuItem } from "../../_providers/CatalogProvider";
+import { cartQuantityOf, needsVariant, useCatalog, type MenuItem } from "../../_providers/CatalogProvider";
+import { dietaryLabel, lowestVariantPrice } from "@/lib/catalog/dish-info";
 import { localized } from "../../_lib/i18n";
 import { Price } from "./Price";
 import { cn } from "@/utils/helpers";
@@ -21,13 +22,18 @@ export function ItemRow({ item, priority }: ItemRowProps) {
   const { lang, t, openItem, addToCart, cart, orderingEnabled } = useCatalog();
   const name = localized(item, "name", lang);
   const description = localized(item, "description", lang);
-  const inCart = cart.find((line) => line.id === item.id)?.quantity ?? 0;
+  // All lines of this dish (different special requests are separate lines)
+  const inCart = cartQuantityOf(cart, item.id);
   const soldOut = item.is_available === false;
+  // Dishes with options are added from the dish sheet, where the option is chosen
+  const hasOptions = needsVariant(item);
+  const fromPrice = lowestVariantPrice(item.variants);
+  const dietary = (item.dietary || []).map((code) => dietaryLabel(code, lang)).join(" · ");
 
   const addButton = orderingEnabled && !soldOut && (
     <button
       type="button"
-      onClick={() => addToCart(item, 1)}
+      onClick={() => (hasOptions ? openItem(item) : addToCart(item, 1))}
       className={cn(
         "relative z-10 flex h-11 min-w-11 items-center justify-center rounded-control px-3 text-sm font-semibold shadow-menu-sm transition-transform active:scale-95",
         inCart > 0
@@ -59,9 +65,17 @@ export function ItemRow({ item, priority }: ItemRowProps) {
           </button>
         </h3>
         {description && <p className="mt-1 line-clamp-2 text-sm text-menu-muted">{description}</p>}
+        {dietary && <p className="mt-1 text-xs font-medium text-menu-muted">{dietary}</p>}
         <div className="mt-auto flex items-end justify-between gap-3 pt-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <Price amount={item.price} currency={item.currency} className="text-base" />
+            {fromPrice !== null ? (
+              <span className="inline-flex flex-wrap items-baseline gap-x-1.5 text-base">
+                <span className="text-sm text-menu-muted">{t.priceFrom}</span>
+                <Price amount={fromPrice} currency={item.currency} />
+              </span>
+            ) : (
+              <Price amount={item.price} currency={item.currency} className="text-base" />
+            )}
             {soldOut && (
               <span className="inline-flex items-center gap-1 text-sm font-medium text-menu-warning">
                 <CircleSlash className="h-4 w-4" aria-hidden />

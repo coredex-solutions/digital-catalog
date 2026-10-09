@@ -1,10 +1,10 @@
-import { getFullCatalogData } from "@/lib/catalog/queries";
+import { getMenuData } from "../../_lib/menu-data";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Phone } from "lucide-react";
-import { getEnabledLanguages, resolveMenuLanguage } from "../../_lib/locale";
+import { getMenuLanguages, resolveMenuLanguage } from "../../_lib/locale";
 import { getDictionary, localized } from "../../_lib/i18n";
 import { mapsLink, telLink } from "../../_lib/links";
 import { OpenStatusBadge } from "../../_components/menu/OpenStatusBadge";
@@ -14,9 +14,9 @@ interface Props {
 }
 
 async function load(slug: string) {
-    const data = await getFullCatalogData(slug);
+    const data = await getMenuData(slug);
     if (!data) return null;
-    const lang = await resolveMenuLanguage(slug, getEnabledLanguages(data.settings?.enabled_languages), data.settings?.default_language);
+    const lang = await resolveMenuLanguage(slug, getMenuLanguages(data.settings?.enabled_languages, data.subscription), data.settings?.default_language);
     return { data, lang };
 }
 

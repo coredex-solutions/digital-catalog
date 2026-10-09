@@ -1,260 +1,269 @@
-// Script to seed a demo catalog with sample data
+// Seeds the public demo menu at /c/demo: a sample Lebanese restaurant with
+// dual USD/LBP prices, dine-in/takeaway/delivery ordering, Arabic and English text.
+// Re-running replaces the demo catalog (and only the demo catalog).
+//
+//   npx tsx scripts/seed-demo.ts
+//
+// The demo admin password comes from DEMO_ADMIN_PASSWORD, or is generated and printed once.
 import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 dotenv.config();
 
-import { createClient } from '@libsql/client';
+import { createClient, type InStatement } from '@libsql/client';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
+import { publishMenu } from '../lib/catalog/publishing';
 
 const db = createClient({
     url: process.env.TURSO_DATABASE_URL!,
     authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
+const SLUG = 'demo';
+const CATALOG_ID = 'demo-catalog-001';
+const ADMIN_EMAIL = 'demo@example.com';
+// Orders and calls from the demo go to the Coredex sales number
+const PHONE = '+966540679669';
+const LBP_RATE = 89500;
+
+// Free photos from Unsplash (unsplash.com/license) or the local landing images
+const unsplash = (id: string, w = 600, h = 450) =>
+    `https://images.unsplash.com/${id}?w=${w}&h=${h}&fit=crop&q=80`;
+
+type Item = {
+    id: string; cat: string; price: number; img?: string; featured?: boolean; soldOut?: boolean;
+    en: [string, string]; ar: [string, string];
+    // Options with their own price; dietary tags; allergens only where "verified" (else unknown)
+    variants?: { id: string; name_en: string; name_ar: string; price: number }[];
+    dietary?: string[]; allergens?: string[];
+};
+
+const CATEGORIES = [
+    { id: 'cat-cold', icon: 'Salad', en: 'Cold mezze', ar: 'مازة باردة' },
+    { id: 'cat-hot', icon: 'Flame', en: 'Hot mezze', ar: 'مازة ساخنة' },
+    { id: 'cat-grills', icon: 'Beef', en: 'Grills', ar: 'مشاوي' },
+    { id: 'cat-sandwiches', icon: 'Sandwich', en: 'Sandwiches', ar: 'سندويشات' },
+    { id: 'cat-desserts', icon: 'Cake', en: 'Desserts', ar: 'حلويات' },
+    { id: 'cat-drinks', icon: 'CupSoda', en: 'Drinks', ar: 'مشروبات' },
+];
+
+const ITEMS: Item[] = [
+    // Cold mezze
+    { id: 'item-hummus', dietary: ['vegetarian', 'vegan'], allergens: ['sesame'], cat: 'cat-cold', price: 4, featured: true, img: unsplash('photo-1637949385162-e416fb15b2ce'),
+      en: ['Hummus', 'Chickpeas, tahini, lemon and olive oil'],
+      ar: ['حمص', 'حمص بالطحينة والليمون وزيت الزيتون'] },
+    { id: 'item-tabbouleh', dietary: ['vegetarian', 'vegan'], cat: 'cat-cold', price: 5, img: unsplash('photo-1786174044919-c2119725afa1'),
+      en: ['Tabbouleh', 'Parsley, tomato, bulgur, mint and lemon'],
+      ar: ['تبولة', 'بقدونس، بندورة، برغل، نعنع وليمون'] },
+    { id: 'item-fattoush', dietary: ['vegetarian', 'vegan'], cat: 'cat-cold', price: 5,
+      en: ['Fattoush', 'Garden vegetables, toasted bread and sumac dressing'],
+      ar: ['فتوش', 'خضار مشكلة، خبز محمص وصلصة السماق'] },
+    { id: 'item-baba', dietary: ['vegetarian', 'vegan'], allergens: ['sesame'], cat: 'cat-cold', price: 4.5, img: '/landing/baba-ganoush.png',
+      en: ['Baba ghanoush', 'Smoked eggplant, tahini and pomegranate'],
+      ar: ['بابا غنوج', 'باذنجان مشوي مع الطحينة والرمان'] },
+    { id: 'item-labneh', cat: 'cat-cold', price: 4,
+      en: ['Labneh', 'Strained yogurt, olive oil and dried mint'],
+      ar: ['لبنة', 'لبنة مع زيت الزيتون والنعنع اليابس'] },
+
+    // Hot mezze
+    { id: 'item-falafel', dietary: ['vegetarian', 'vegan'], allergens: ['sesame', 'gluten'], cat: 'cat-hot', price: 4, img: unsplash('photo-1593001872095-7d5b3868fb1d'),
+      en: ['Falafel', 'Six pieces with tahini sauce'],
+      ar: ['فلافل', 'ست حبات مع الطراطور'] },
+    { id: 'item-kibbeh', cat: 'cat-hot', price: 6, featured: true, img: '/landing/kibbeh.png',
+      en: ['Fried kibbeh', 'Bulgur shells filled with spiced meat and pine nuts'],
+      ar: ['كبة مقلية', 'برغل محشو باللحمة المتبّلة والصنوبر'] },
+    { id: 'item-hummus-meat', cat: 'cat-hot', price: 7, img: unsplash('photo-1783696074463-3fb850d181a1'),
+      en: ['Hummus with meat', 'Hummus topped with sautéed beef and pine nuts'],
+      ar: ['حمص باللحمة', 'حمص مع لحمة مقلية وصنوبر'] },
+    { id: 'item-batata', dietary: ['vegetarian', 'spicy'], cat: 'cat-hot', price: 4,
+      en: ['Batata harra', 'Spicy potatoes with garlic, coriander and chili'],
+      ar: ['بطاطا حرة', 'بطاطا مع الثوم والكزبرة والفلفل الحار'] },
+
+    // Grills
+    { id: 'item-mixed-grill', cat: 'cat-grills', price: 18, featured: true, img: unsplash('photo-1771285119318-b342c3ecc51c'),
+      en: ['Mixed grill', 'Kafta, shish taouk and lamb cubes with grilled vegetables'],
+      ar: ['مشاوي مشكلة', 'كفتة، شيش طاووق ولحم غنم مع خضار مشوية'] },
+    { id: 'item-taouk', cat: 'cat-grills', price: 11, img: unsplash('photo-1779086646395-00668466d0d0'),
+      en: ['Shish taouk', 'Marinated chicken skewers with garlic sauce and fries'],
+      ar: ['شيش طاووق', 'أسياخ دجاج متبّلة مع الثوم والبطاطا'] },
+    { id: 'item-kafta', cat: 'cat-grills', price: 12, img: unsplash('photo-1603360946369-dc9bb6258143'),
+      en: ['Kafta skewers', 'Minced beef with parsley and onion, with fries and tomatoes'],
+      ar: ['كفتة مشوية', 'لحمة مفرومة مع بقدونس وبصل، مع بطاطا وبندورة'] },
+
+    // Sandwiches
+    { id: 'item-shawarma', variants: [{ id: 'regular', name_en: 'Regular', name_ar: 'عادي', price: 6 }, { id: 'large', name_en: 'Large', name_ar: 'كبير', price: 8 }], cat: 'cat-sandwiches', price: 6, featured: true, img: unsplash('photo-1529006557810-274b9b2fc783'),
+      en: ['Chicken shawarma', 'Garlic sauce, pickles and fries in Lebanese bread'],
+      ar: ['شاورما دجاج', 'ثوم، كبيس وبطاطا بخبز لبناني'] },
+    { id: 'item-falafel-wrap', cat: 'cat-sandwiches', price: 4, img: unsplash('photo-1760888548893-bc2f7e09e972'),
+      en: ['Falafel wrap', 'Falafel, tahini, tomato, parsley and pickles'],
+      ar: ['سندويش فلافل', 'فلافل، طراطور، بندورة، بقدونس وكبيس'] },
+    { id: 'item-kafta-sandwich', cat: 'cat-sandwiches', price: 5,
+      en: ['Kafta sandwich', 'Grilled kafta, hummus, tomato and onion'],
+      ar: ['سندويش كفتة', 'كفتة مشوية، حمص، بندورة وبصل'] },
+
+    // Desserts
+    { id: 'item-baklava', allergens: ['gluten', 'tree_nuts', 'milk'], cat: 'cat-desserts', price: 5, img: unsplash('photo-1761828122856-8703baac8e86'),
+      en: ['Baklava', 'Filo pastry with pistachios and syrup, four pieces'],
+      ar: ['بقلاوة', 'عجينة رقائق بالفستق والقطر، أربع قطع'] },
+    { id: 'item-ish-bulbul', cat: 'cat-desserts', price: 4, img: unsplash('photo-1778447812923-88a9e3e6b567'),
+      en: ['Ish el bulbul', 'Crisp kataifi nest filled with pistachios'],
+      ar: ['عش البلبل', 'عجينة كنافة مقرمشة محشوة بالفستق'] },
+
+    // Drinks
+    { id: 'item-lemonade', cat: 'cat-drinks', price: 3, img: unsplash('photo-1555949366-819808d99159'),
+      en: ['Lemonade with mint', 'Fresh lemons and mint'],
+      ar: ['ليموناضة بالنعناع', 'ليمون طازج ونعناع'] },
+    { id: 'item-orange', variants: [{ id: 'small', name_en: 'Small', name_ar: 'صغير', price: 3 }, { id: 'large', name_en: 'Large', name_ar: 'كبير', price: 4 }], cat: 'cat-drinks', price: 3, img: unsplash('photo-1600271886742-f049cd451bba'),
+      en: ['Fresh orange juice', 'Squeezed to order'],
+      ar: ['عصير برتقال طازج', 'يُعصر عند الطلب'] },
+    { id: 'item-coffee', cat: 'cat-drinks', price: 2, img: unsplash('photo-1757079649052-a24c6ab32c64'),
+      en: ['Lebanese coffee', 'Cardamom coffee, served in a small cup'],
+      ar: ['قهوة عربية', 'قهوة بالهيل بفنجان صغير'] },
+    { id: 'item-jallab', cat: 'cat-drinks', price: 3, soldOut: true,
+      en: ['Jallab', 'Grape molasses and rose water with pine nuts and raisins'],
+      ar: ['جلاب', 'دبس العنب وماء الورد مع الصنوبر والزبيب'] },
+    { id: 'item-ayran', allergens: ['milk'], cat: 'cat-drinks', price: 2,
+      en: ['Ayran', 'Chilled salted yogurt drink'],
+      ar: ['عيران', 'لبن بارد مملّح'] },
+];
+
+const FAQS = [
+    {
+        en: ['Do you deliver?', 'Yes, within Beirut. Choose “Delivery” when you send your order and we confirm the fee on WhatsApp.'],
+        ar: ['هل لديكم توصيل؟', 'نعم، داخل بيروت. اختر "توصيل" عند إرسال طلبك ونؤكد رسم التوصيل عبر واتساب.'],
+    },
+    {
+        en: ['Can I pay in dollars or Lebanese pounds?', 'Both. Prices show in dollars and in pounds at the rate on the menu.'],
+        ar: ['هل يمكنني الدفع بالدولار أو بالليرة؟', 'الاثنان. الأسعار معروضة بالدولار وبالليرة حسب السعر المذكور في القائمة.'],
+    },
+    {
+        en: ['Is this a real restaurant?', 'No. This is a Coredex demo menu so you can try ordering. Orders sent from it go to the Coredex team.'],
+        ar: ['هل هذا مطعم حقيقي؟', 'لا. هذه قائمة تجريبية من Coredex لتجربة الطلب. الطلبات المرسلة منها تصل إلى فريق Coredex.'],
+    },
+];
+
 async function seedDemo() {
-    console.log('🚀 Seeding demo catalog...');
+    console.log('Seeding the demo catalog...');
 
-    const catalogId = 'demo-catalog-001';
-    const adminId = 'demo-admin-001';
-    const adminEmail = 'demo@primesteaks.com';
-    const adminPassword = 'demo1234';
+    const adminPassword = process.env.DEMO_ADMIN_PASSWORD || randomBytes(12).toString('base64url');
     const passwordHash = await bcrypt.hash(adminPassword, 10);
-
     const now = new Date().toISOString();
-    const oneYearLater = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+    const nextYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Check if demo already exists
-    const existing = await db.execute({
-        sql: 'SELECT id FROM catalogs WHERE slug = ?',
-        args: ['demo'],
-    });
+    // Child tables first, so an old demo is fully removed even without ON DELETE CASCADE
+    const old = await db.execute({ sql: 'SELECT id FROM catalogs WHERE slug = ?', args: [SLUG] });
+    const cleanup: InStatement[] = old.rows.flatMap((row) => [
+        ...['catalog_menu_versions', 'menu_items', 'categories', 'operating_hours', 'branches', 'faqs', 'social_media', 'catalog_contact',
+            'catalog_settings', 'catalog_admins', 'catalog_subscriptions'].map((table) => ({
+            sql: `DELETE FROM ${table} WHERE catalog_id = ?`, args: [row.id as string],
+        })),
+        { sql: 'DELETE FROM catalogs WHERE id = ?', args: [row.id as string] },
+    ]);
 
-    if (existing.rows.length > 0) {
-        console.log('⚠️ Demo catalog already exists. Deleting and recreating...');
-        // cascading delete will handle most related tables
-        await db.execute({ sql: 'DELETE FROM catalogs WHERE slug = ?', args: ['demo'] });
-    }
-
-    // 1. Create Catalog
-    await db.execute({
-        sql: `INSERT INTO catalogs (id, slug, name, name_en, name_ar, name_fr, business_type, description, description_en, description_ar, description_fr, logo_url, is_active, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
-        args: [
-            catalogId,
-            'demo',
-            'Prime Steaks',
-            'Prime Steaks',
-            'برايم ستيكس',
-            'Prime Steaks',
-            'restaurant',
-            'Experience the finest cuts of premium steaks, expertly prepared by our master chefs.',
-            'Experience the finest cuts of premium steaks, expertly prepared by our master chefs.',
-            'استمتع بأجود شرائح اللحم الفاخرة، المحضرة بخبرة من قبل طهاتنا المتميزين.',
-            'Découvrez les meilleures coupes de steaks de qualité supérieure, préparées avec expertise par nos maîtres cuisiniers.',
-            'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&h=200&fit=crop',
-            now,
-            now,
-        ],
-    });
-    console.log('✅ Created catalog');
-
-    // 2. Create Subscription
-    await db.execute({
-        sql: `INSERT INTO catalog_subscriptions (
-            id, catalog_id, subscription_type, starts_at, expires_at, 
-            multi_language_enabled, booking_enabled, analytics_enabled,
-            ai_image_enhancement_limit, max_items, max_categories, is_active, created_at
-          ) VALUES (?, ?, ?, ?, ?, 1, 1, 1, 100, 500, 50, 1, ?)`,
-        args: [
-            'demo-sub-001',
-            catalogId,
-            'enterprise',
-            now,
-            oneYearLater,
-            now,
-        ],
-    });
-    console.log('✅ Created subscription');
-
-    // 3. Create Settings
-    await db.execute({
-        sql: `INSERT INTO catalog_settings (
-            catalog_id, color_primary, hero_image_url,
-            enabled_languages, default_language,
-            seo_title_en, seo_description_en, seo_title_ar, seo_description_ar
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [
-            catalogId,
-            '#0F6B5B',
-            'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=1200&h=600&fit=crop',
-            'en,ar',
-            'en',
-            'Prime Steaks | Premium Restaurant',
-            'Experience world-class dining with our selection of premium Wagyu and dry-aged steaks.',
-            'برايم ستيكس | مطعم فاخر',
-            'استمتع بتجربة طعام عالمية مع مجموعتنا من ستيكات واغيو والستيكات المعتقة.',
-        ],
-    });
-    console.log('✅ Created settings');
-
-    // 4. Create Contact Info
-    await db.execute({
-        sql: `INSERT INTO catalog_contact (
-            catalog_id, phone_primary, phone_whatsapp, email,
-            address_en, address_ar, city_en, city_ar, country_en, country_ar
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        args: [
-            catalogId,
-            '+966540679669',
-            '+966540679669',
-            'reservations@primesteaks.com',
-            'King Fahd Road, Olaya District',
-            'طريق الملك فهد، حي العليا',
-            'Riyadh',
-            'الرياض',
-            'Saudi Arabia',
-            'المملكة العربية السعودية',
-        ],
-    });
-    console.log('✅ Created contact info');
-
-    // 4.5 Create Catalog Admin
-    await db.execute({
-        sql: `INSERT INTO catalog_admins (id, catalog_id, email, password_hash, name, role, is_active, created_at)
-          VALUES (?, ?, ?, ?, ?, 'admin', 1, ?)`,
-        args: [
-            adminId,
-            catalogId,
-            adminEmail,
-            passwordHash,
-            'Demo Admin',
-            now,
-        ],
-    });
-    console.log(`✅ Created catalog admin: ${adminEmail} / ${adminPassword}`);
-
-    // 5. Create Categories
-    const categories = [
-        { id: 'cat-steaks', name_en: 'Premium Steaks', name_ar: 'ستيكات فاخرة', name_fr: 'Steaks Premium', icon: 'Beef', order: 0 },
-        { id: 'cat-sides', name_en: 'Sides', name_ar: 'أطباق جانبية', name_fr: 'Accompagnements', icon: 'Salad', order: 1 },
-        { id: 'cat-appetizers', name_en: 'Appetizers', name_ar: 'مقبلات', name_fr: 'Entrées', icon: 'UtensilsCrossed', order: 2 },
-        { id: 'cat-drinks', name_en: 'Beverages', name_ar: 'مشروبات', name_fr: 'Boissons', icon: 'Wine', order: 3 },
-        { id: 'cat-desserts', name_en: 'Desserts', name_ar: 'حلويات', name_fr: 'Desserts', icon: 'Cake', order: 4 },
-    ];
-
-    for (const cat of categories) {
-        await db.execute({
-            sql: `INSERT INTO categories (id, catalog_id, name_en, name_ar, name_fr, icon_name, display_order, is_active, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
-            args: [cat.id, catalogId, cat.name_en, cat.name_ar, cat.name_fr, cat.icon, cat.order, now],
-        });
-    }
-    console.log('✅ Created 5 categories');
-
-    // 6. Create Items
-    const items = [
-        // Premium Steaks
-        { id: 'item-001', cat: 'cat-steaks', name_en: 'Wagyu A5 Ribeye', name_ar: 'ريب آي واغيو A5', name_fr: 'Wagyu A5 Ribeye', price: 189, desc_en: 'Japanese A5 Wagyu, 12oz, served with truffle butter', desc_ar: 'واغيو ياباني درجة A5، 12 أونصة، مع زبدة الكمأة', desc_fr: 'Wagyu japonais A5, 12oz, servi avec beurre de truffe', img: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?w=400&h=300&fit=crop', order: 0 },
-        { id: 'item-002', cat: 'cat-steaks', name_en: 'Prime Filet Mignon', name_ar: 'فيليه مينيون برايم', name_fr: 'Filet Mignon Prime', price: 145, desc_en: 'USDA Prime, 10oz, butter-basted to perfection', desc_ar: 'لحم أمريكي درجة برايم، 10 أونصة، مطهو بالزبدة', desc_fr: 'USDA Prime, 10oz, cuit au beurre', img: 'https://images.unsplash.com/photo-1558030006-450675393462?w=400&h=300&fit=crop', order: 1 },
-        { id: 'item-003', cat: 'cat-steaks', name_en: 'Tomahawk 32oz', name_ar: 'توماهوك 32 أونصة', name_fr: 'Tomahawk 32oz', price: 225, desc_en: 'Bone-in ribeye, dry-aged 45 days, for sharing', desc_ar: 'ريب آي بالعظم، معتق 45 يوم، للمشاركة', desc_fr: 'Côte de boeuf avec os, affinée 45 jours, à partager', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&h=300&fit=crop', order: 2 },
-        { id: 'item-004', cat: 'cat-steaks', name_en: 'NY Strip', name_ar: 'نيويورك ستريب', name_fr: 'Faux-filet NY', price: 125, desc_en: 'Classic NY strip, 14oz, chargrilled', desc_ar: 'ستريب نيويورك كلاسيكي، 14 أونصة، مشوي على الفحم', desc_fr: 'Faux-filet classique NY, 14oz, grillé au charbon', img: 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?w=400&h=300&fit=crop', order: 3 },
-
-        // Sides
-        { id: 'item-005', cat: 'cat-sides', name_en: 'Truffle Mashed Potatoes', name_ar: 'بطاطس مهروسة بالكمأة', name_fr: 'Purée à la Truffe', price: 18, desc_en: 'Creamy potatoes with black truffle oil', desc_ar: 'بطاطس كريمية مع زيت الكمأة السوداء', desc_fr: 'Pommes de terre crémeuses à l\'huile de truffe noire', img: 'https://images.unsplash.com/photo-1596560548464-f010549b84d7?w=400&h=300&fit=crop', order: 0 },
-        { id: 'item-006', cat: 'cat-sides', name_en: 'Grilled Asparagus', name_ar: 'هليون مشوي', name_fr: 'Asperges Grillées', price: 16, desc_en: 'With parmesan and lemon zest', desc_ar: 'مع البارميزان وقشر الليمون', desc_fr: 'Avec parmesan et zeste de citron', img: 'https://images.unsplash.com/photo-1515516969-d4008cc6241a?w=400&h=300&fit=crop', order: 1 },
-        { id: 'item-007', cat: 'cat-sides', name_en: 'Caesar Salad', name_ar: 'سلطة سيزر', name_fr: 'Salade César', price: 14, desc_en: 'Romaine, parmesan, house-made dressing', desc_ar: 'خس روماني، بارميزان، صلصة منزلية', desc_fr: 'Romaine, parmesan, vinaigrette maison', img: 'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=400&h=300&fit=crop', order: 2 },
-
-        // Appetizers
-        { id: 'item-008', cat: 'cat-appetizers', name_en: 'Wagyu Tartare', name_ar: 'تارتار واغيو', name_fr: 'Tartare de Wagyu', price: 38, desc_en: 'Hand-cut wagyu with quail egg and caviar', desc_ar: 'واغيو مقطع يدوياً مع بيض السمان والكافيار', desc_fr: 'Wagyu coupé à la main avec oeuf de caille et caviar', img: 'https://images.unsplash.com/photo-1626645738196-c2a72c7d0e6a?w=400&h=300&fit=crop', order: 0 },
-        { id: 'item-009', cat: 'cat-appetizers', name_en: 'Lobster Bisque', name_ar: 'شوربة اللوبستر', name_fr: 'Bisque de Homard', price: 28, desc_en: 'Rich cream soup with Maine lobster', desc_ar: 'شوربة كريمية غنية مع لوبستر', desc_fr: 'Soupe crémeuse riche au homard du Maine', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&h=300&fit=crop', order: 1 },
-
-        // Drinks
-        { id: 'item-010', cat: 'cat-drinks', name_en: 'Signature Mocktail', name_ar: 'موكتيل خاص', name_fr: 'Mocktail Signature', price: 22, desc_en: 'Berry blend with fresh mint', desc_ar: 'مزيج التوت مع النعناع الطازج', desc_fr: 'Mélange de baies avec menthe fraîche', img: 'https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=400&h=300&fit=crop', order: 0 },
-        { id: 'item-011', cat: 'cat-drinks', name_en: 'Fresh Orange Juice', name_ar: 'عصير برتقال طازج', name_fr: 'Jus d\'Orange Frais', price: 12, desc_en: 'Freshly squeezed', desc_ar: 'معصور طازجاً', desc_fr: 'Fraîchement pressé', img: 'https://images.unsplash.com/photo-1621506289937-a8e4df240d0b?w=400&h=300&fit=crop', order: 1 },
-
-        // Desserts
-        { id: 'item-012', cat: 'cat-desserts', name_en: 'Chocolate Lava Cake', name_ar: 'كيك الشوكولاتة السائلة', name_fr: 'Fondant au Chocolat', price: 18, desc_en: 'Warm chocolate cake with vanilla ice cream', desc_ar: 'كيك شوكولاتة دافئ مع آيس كريم فانيلا', desc_fr: 'Gâteau au chocolat chaud avec glace vanille', img: 'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=400&h=300&fit=crop', order: 0 },
-        { id: 'item-013', cat: 'cat-desserts', name_en: 'Crème Brûlée', name_ar: 'كريم بروليه', name_fr: 'Crème Brûlée', price: 16, desc_en: 'Classic French custard with caramelized sugar', desc_ar: 'كاسترد فرنسي كلاسيكي مع سكر محروق', desc_fr: 'Crème classique française au sucre caramélisée', img: 'https://images.unsplash.com/photo-1470124182917-cc6e71b22ecc?w=400&h=300&fit=crop', order: 1 },
-    ];
-
-    for (const item of items) {
-        await db.execute({
-            sql: `INSERT INTO menu_items (
-              id, catalog_id, category_id, name_en, name_ar, name_fr, description_en, description_ar, description_fr,
-              price, image_url, display_order, is_active, is_featured, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+    // The *_fr columns still exist (some are NOT NULL) but the product has no French: they get ''
+    const statements: InStatement[] = [
+        ...cleanup,
+        {
+            sql: `INSERT INTO catalogs (id, slug, name, name_en, name_ar, name_fr, business_type,
+                    description, description_en, description_ar, description_fr, logo_url, is_active, created_at, updated_at)
+                  VALUES (?, ?, ?, ?, ?, ?, 'restaurant', ?, ?, ?, ?, ?, 1, ?, ?)`,
             args: [
-                item.id, catalogId, item.cat, item.name_en, item.name_ar, item.name_fr,
-                item.desc_en, item.desc_ar, item.desc_fr, item.price, item.img, item.order,
-                item.order < 2 ? 1 : 0, // First 2 items in each category are featured
+                CATALOG_ID, SLUG, 'Sofra', 'Sofra', 'سفرة', '',
+                'Lebanese mezze, grills and sandwiches. A Coredex demo menu.',
+                'Lebanese mezze, grills and sandwiches. A Coredex demo menu.',
+                'مازة ومشاوي وسندويشات لبنانية. قائمة تجريبية من Coredex.',
+                '',
+                '/landing/hummus.png', now, now,
+            ],
+        },
+        {
+            sql: `INSERT INTO catalog_subscriptions (id, catalog_id, subscription_type, starts_at, expires_at,
+                    multi_language_enabled, booking_enabled, analytics_enabled,
+                    ai_image_enhancement_limit, max_items, max_categories, is_active, created_at)
+                  VALUES (?, ?, 'enterprise', ?, ?, 1, 1, 1, 0, 500, 50, 1, ?)`,
+            args: ['demo-sub-001', CATALOG_ID, now, nextYear, now],
+        },
+        {
+            sql: `INSERT INTO catalog_settings (catalog_id, color_primary, hero_image_url, enabled_languages, default_language,
+                    currency_primary, lbp_exchange_rate, lbp_rate_updated_at, show_dual_currency, order_types,
+                    delivery_note_en, delivery_note_ar, booking_enabled, whatsapp_order_enabled,
+                    seo_title_en, seo_description_en, seo_title_ar, seo_description_ar, seo_title_fr, seo_description_fr)
+                  VALUES (?, '#0F6B5B', ?, 'ar,en', 'en', 'USD', ?, ?, 1, 'dine_in,takeaway,delivery',
+                    ?, ?, 1, 1, ?, ?, ?, ?, ?, ?)`,
+            args: [
+                CATALOG_ID, unsplash('photo-1767114915974-3481fa23cbb0', 1200, 600), LBP_RATE, now,
+                'Delivery within Beirut. We confirm the fee on WhatsApp.',
+                'توصيل داخل بيروت. نؤكد رسم التوصيل عبر واتساب.',
+                'Sofra · Coredex demo menu', 'Try a Coredex QR menu: Lebanese dishes priced in dollars and pounds, ordered through WhatsApp.',
+                'سفرة · قائمة Coredex التجريبية', 'جرّب قائمة QR من Coredex: أطباق لبنانية بالدولار والليرة، والطلب عبر واتساب.',
+                '', '',
+            ],
+        },
+        {
+            sql: `INSERT INTO catalog_contact (catalog_id, phone_primary, phone_whatsapp, email,
+                    address_en, address_ar, address_fr, city_en, city_ar, city_fr, country_en, country_ar, country_fr)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, 'Beirut', 'بيروت', '', 'Lebanon', 'لبنان', '')`,
+            args: [
+                CATALOG_ID, PHONE, PHONE, 'info@coredex.solutions',
+                'Demo address, Hamra', 'عنوان تجريبي، الحمرا', '',
+            ],
+        },
+        {
+            sql: `INSERT INTO catalog_admins (id, catalog_id, email, password_hash, name, role, is_active, created_at)
+                  VALUES ('demo-admin-001', ?, ?, ?, 'Demo Admin', 'admin', 1, ?)`,
+            args: [CATALOG_ID, ADMIN_EMAIL, passwordHash, now],
+        },
+        ...CATEGORIES.map((cat, order) => ({
+            sql: `INSERT INTO categories (id, catalog_id, name_en, name_ar, name_fr, icon_name, display_order, is_active, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+            args: [cat.id, CATALOG_ID, cat.en, cat.ar, '', cat.icon, order, now],
+        })),
+        ...ITEMS.map((item, order) => ({
+            sql: `INSERT INTO menu_items (id, catalog_id, category_id, name_en, name_ar, name_fr,
+                    description_en, description_ar, description_fr, price, currency, image_url,
+                    display_order, is_active, is_featured, is_available, variants, dietary, allergens, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'USD', ?, ?, 1, ?, ?, ?, ?, ?, ?)`,
+            args: [
+                item.id, CATALOG_ID, item.cat, item.en[0], item.ar[0], '',
+                item.en[1], item.ar[1], '', item.price, item.img ?? null,
+                order, item.featured ? 1 : 0, item.soldOut ? 0 : 1,
+                item.variants ? JSON.stringify(item.variants) : null,
+                item.dietary ? JSON.stringify(item.dietary) : null,
+                // Only dishes the "restaurant" verified get a list; the rest stay unknown (NULL)
+                item.allergens ? JSON.stringify(item.allergens) : null,
                 now,
             ],
-        });
-    }
-    console.log('✅ Created 13 menu items');
-
-    // 7. Create Operating Hours
-    const days = [
-        { name: 'Monday', open: 12.0, close: 23.0 },
-        { name: 'Tuesday', open: 12.0, close: 23.0 },
-        { name: 'Wednesday', open: 12.0, close: 23.0 },
-        { name: 'Thursday', open: 12.0, close: 23.0 },
-        { name: 'Friday', open: 13.0, close: 23.0 },
-        { name: 'Saturday', open: 12.0, close: 23.0 },
-        { name: 'Sunday', open: 12.0, close: 23.0 },
-    ];
-    for (const day of days) {
-        await db.execute({
-            sql: `INSERT INTO operating_hours (catalog_id, day_name, open_hour, close_hour, is_closed)
-            VALUES (?, ?, ?, ?, ?)`,
-            args: [
-                catalogId,
-                day.name,
-                day.open,
-                day.close,
-                0,
-            ],
-        });
-    }
-    console.log('✅ Created operating hours');
-
-    // 8. Create Branches
-    await db.execute({
-        sql: `INSERT INTO branches (id, catalog_id, name_en, name_ar, name_fr, address_en, address_ar, address_fr, phone_numbers, map_url, display_order, is_active)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-        args: [
-            'demo-branch-001',
-            catalogId,
-            'Main Branch - Riyadh',
-            'الفرع الرئيسي - الرياض',
-            'Siège Social - Riyad',
-            'King Fahd Road, Olaya District, Riyadh',
-            'طريق الملك فهد، حي العليا، الرياض',
-            'Route King Fahd, Quartier Olaya, Riyad',
-            JSON.stringify(['+966540679669']),
-            'https://maps.google.com/?q=24.7136,46.6753',
-            0,
-        ],
-    });
-    console.log('✅ Created branch');
-
-    // 9. Create FAQs
-    const faqs = [
-        { q_en: 'Do you accept reservations?', a_en: 'Yes! We highly recommend making reservations, especially for weekend dinners. You can book via WhatsApp or phone.', q_ar: 'هل تقبلون الحجوزات؟', a_ar: 'نعم! نوصي بشدة بالحجز المسبق، خاصة لعشاء نهاية الأسبوع. يمكنك الحجز عبر الواتساب أو الهاتف.', q_fr: 'Acceptez-vous les réservations?', a_fr: 'Oui! Nous recommandons vivement de réserver, surtout pour les dîners du week-end. Vous pouvez réserver via WhatsApp ou par téléphone.' },
-        { q_en: 'What payment methods do you accept?', a_en: 'We accept all major credit cards, Apple Pay, and cash.', q_ar: 'ما هي طرق الدفع المقبولة؟', a_ar: 'نقبل جميع بطاقات الائتمان الرئيسية، وأبل باي، والنقد.', q_fr: 'Quels modes de paiement acceptez-vous?', a_fr: 'Nous acceptons toutes les principales cartes de crédit, Apple Pay et les espèces.' },
-        { q_en: 'Is there parking available?', a_en: 'Yes, we have complimentary valet parking for all our guests.', q_ar: 'هل يتوفر موقف سيارات؟', a_ar: 'نعم، لدينا خدمة صف السيارات المجانية لجميع ضيوفنا.', q_fr: 'Un parking est-il disponible?', a_fr: 'Oui, nous disposons d\'un service de voiturier gratuit pour tous nos clients.' },
-    ];
-
-    for (let i = 0; i < faqs.length; i++) {
-        await db.execute({
+        })),
+        ...['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => ({
+            sql: `INSERT INTO operating_hours (catalog_id, day_name, open_hour, close_hour, is_closed) VALUES (?, ?, ?, ?, 0)`,
+            args: [CATALOG_ID, day, 11, day === 'Friday' || day === 'Saturday' ? 24 : 23],
+        })),
+        {
+            sql: `INSERT INTO branches (id, catalog_id, name_en, name_ar, name_fr, address_en, address_ar, address_fr,
+                    phone_numbers, map_url, display_order, is_active)
+                  VALUES ('demo-branch-001', ?, 'Hamra', 'الحمرا', '', 'Demo address, Hamra, Beirut',
+                    'عنوان تجريبي، الحمرا، بيروت', '', ?, ?, 0, 1)`,
+            args: [CATALOG_ID, JSON.stringify([PHONE]), 'https://maps.google.com/?q=Hamra+Street+Beirut'],
+        },
+        ...FAQS.map((faq, i) => ({
             sql: `INSERT INTO faqs (id, catalog_id, question_en, answer_en, question_ar, answer_ar, question_fr, answer_fr, display_order, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-            args: [`demo-faq-${i}`, catalogId, faqs[i].q_en, faqs[i].a_en, faqs[i].q_ar, faqs[i].a_ar, faqs[i].q_fr, faqs[i].a_fr, i],
-        });
-    }
-    console.log('✅ Created 3 FAQs');
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+            args: [`demo-faq-${i}`, CATALOG_ID, faq.en[0], faq.en[1], faq.ar[0], faq.ar[1], '', '', i],
+        })),
+    ];
 
-    console.log('\n🎉 Demo catalog seeded successfully!');
-    console.log('📍 Visit: http://localhost:3000/c/demo');
+    // One transaction: the demo is either fully replaced or left as it was
+    await db.batch(statements, 'write');
+
+    // Publish it, so guests see the menu (new menus start as unpublished drafts)
+    await publishMenu(CATALOG_ID, ADMIN_EMAIL, 'Demo menu');
+
+    console.log(`Created "${SLUG}": ${CATEGORIES.length} categories, ${ITEMS.length} dishes, ${FAQS.length} FAQs`);
+    console.log(`Demo admin: ${ADMIN_EMAIL} / ${adminPassword}  (save this password; it is not stored anywhere else)`);
+    console.log('Menu: /c/demo   Admin: /c/demo/admin');
 }
 
-seedDemo().catch(console.error);
+seedDemo().catch((error) => {
+    console.error(error);
+    process.exit(1);
+});

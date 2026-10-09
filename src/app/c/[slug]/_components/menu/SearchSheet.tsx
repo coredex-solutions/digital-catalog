@@ -69,7 +69,10 @@ export function SearchSheet() {
                   )}
                   {item.is_available === false && <span className="block text-sm font-medium text-menu-warning">{t.soldOut}</span>}
                 </span>
-                <Price amount={item.price} currency={item.currency} className="shrink-0 text-sm" stacked secondaryClassName="text-end" />
+                <span className="flex shrink-0 flex-col items-end text-sm">
+                  {item.variants && item.variants.length > 0 && <span className="text-xs text-menu-muted">{t.priceFrom}</span>}
+                  <Price amount={item.price} currency={item.currency} stacked secondaryClassName="text-end" />
+                </span>
               </button>
             </li>
           ))}
