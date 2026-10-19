@@ -25,11 +25,11 @@ export async function sendVerificationEmail(email: string, code: string) {
         subject: `${code} is your Coredex verification code`,
         text: `Your Coredex verification code is ${code}. It expires in 10 minutes. If you didn't request it, you can ignore this email.`,
         html: `
-            <div style="font-family: Inter, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #F7F8F5; color: #172B26;">
-                <p style="margin: 0 0 24px; font-size: 18px; font-weight: 600; color: #0F6B5B;">Coredex</p>
+            <div style="font-family: Inter, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #F7F8FC; color: #17152E;">
+                <p style="margin: 0 0 24px; font-size: 18px; font-weight: 600; color: #4028C9;">Coredex</p>
                 <div style="background: #FFFFFF; border: 1px solid #DDE3DF; border-radius: 16px; padding: 28px; text-align: center;">
                     <p style="margin: 0 0 12px; font-size: 16px;">Your verification code</p>
-                    <p style="margin: 0; font-size: 36px; font-weight: 600; letter-spacing: 8px; color: #0F6B5B;">${code}</p>
+                    <p style="margin: 0; font-size: 36px; font-weight: 600; letter-spacing: 8px; color: #4028C9;">${code}</p>
                     <p style="margin: 16px 0 0; font-size: 14px; color: #5B6B66;">It expires in 10 minutes.</p>
                 </div>
                 <p style="margin: 24px 0 0; font-size: 13px; color: #5B6B66;">If you didn't ask for this code, you can ignore this email.</p>

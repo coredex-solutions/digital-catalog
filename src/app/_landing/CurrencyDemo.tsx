@@ -12,7 +12,7 @@ export function CurrencyDemo({ t, lang }: { t: SiteCopy["currency"]; lang: SiteL
   const config: PriceConfig = { primary, lbpRate: rate, rateUpdatedAt: null, showDual: true };
 
   return (
-    <div className="rounded-panel border border-ui-line bg-ui-surface p-5 shadow-[0_24px_48px_-32px_rgba(23,43,38,0.4)] sm:p-6">
+    <div className="rounded-panel border border-ui-line bg-ui-surface p-5 shadow-[0_24px_48px_-32px_rgba(23,21,46,0.4)] sm:p-6">
       <ul className="divide-y divide-[var(--ui-line)]">
         {t.items.map((item) => {
           const price = formatPrice(item.price, "USD", config, lang);

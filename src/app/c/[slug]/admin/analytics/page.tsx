@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
 
             {/* Traffic Chart */}
             <div className="bg-ui-bg rounded-control p-4 sm:p-6 border border-ui-line">
-              <h3 className="font-semibold text-ui-ink mb-6 flex items-center gap-2">
+              <h3 className="font-semibold text-ui-heading mb-6 flex items-center gap-2">
                 <BarChart3
                   className="w-5 h-5"
                   style={{ color: "var(--color-primary)" }}
@@ -311,7 +311,7 @@ export default function AnalyticsPage() {
             {/* Engagement Chart */}
             <div className="grid lg:grid-cols-2 gap-6">
               <div className="bg-ui-bg rounded-control p-4 sm:p-6 border border-ui-line">
-                <h3 className="font-semibold text-ui-ink mb-6">
+                <h3 className="font-semibold text-ui-heading mb-6">
                   WhatsApp & Booking Clicks
                 </h3>
                 <div className="h-64">
@@ -371,7 +371,7 @@ export default function AnalyticsPage() {
 
               {/* Daily Table */}
               <div className="bg-ui-bg rounded-control p-4 sm:p-6 border border-ui-line">
-                <h3 className="font-semibold text-ui-ink mb-4">
+                <h3 className="font-semibold text-ui-heading mb-4">
                   Daily Breakdown
                 </h3>
                 <div className="overflow-y-auto max-h-64">

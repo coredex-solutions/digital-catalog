@@ -81,7 +81,7 @@ const MARQUEE_DISHES = [
   { img: "/landing/mansaf.png", key: "mansaf", price: 14 },
 ] as const;
 
-const cardShadow = "shadow-[0_16px_32px_-16px_rgba(23,43,38,0.35)]";
+const cardShadow = "shadow-[0_16px_32px_-16px_rgba(23,21,46,0.35)]";
 
 function SectionIntro({ eyebrow, title, body, center }: { eyebrow?: string; title: string; body?: string; center?: boolean }) {
   return (
@@ -100,7 +100,7 @@ function FeatureGrid({ items, icons }: { items: { title: string; body: string }[
         const Icon = icons[index];
         return (
           <Reveal as="li" key={item.title} delay={(index % 3) * 90}>
-            <div className="group h-full rounded-panel border border-ui-line bg-ui-surface p-5 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_16px_32px_-20px_rgba(23,43,38,0.35)]">
+            <div className="group h-full rounded-panel border border-ui-line bg-ui-surface p-5 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_16px_32px_-20px_rgba(23,21,46,0.35)]">
               <span className="flex h-11 w-11 items-center justify-center rounded-control bg-ui-subtle text-ui-primary transition-colors duration-200 group-hover:bg-ui-primary group-hover:text-ui-primary-fg">
                 <Icon className="h-5 w-5" aria-hidden />
               </span>
@@ -119,9 +119,9 @@ function HeroVisual({ lang, t, demoQr }: { lang: SiteLang; t: ReturnType<typeof 
   const hummus = formatPrice(4, "USD", PREVIEW_PRICES, lang);
   return (
     <div className="site-pop relative mx-auto w-[300px] sm:w-[320px]" style={{ animationDelay: "150ms" }}>
-      <div className="absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(15,107,91,0.22),transparent)]" aria-hidden />
+      <div className="absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(64,40,201,0.22),transparent)]" aria-hidden />
       <figure id="demo" className="scroll-mt-24">
-        <div className="overflow-hidden rounded-[2.25rem] border-[10px] border-ui-ink bg-ui-surface shadow-[0_32px_64px_-24px_rgba(23,43,38,0.5)]">
+        <div className="overflow-hidden rounded-[2.25rem] border-[10px] border-ui-ink bg-ui-surface shadow-[0_32px_64px_-24px_rgba(23,21,46,0.5)]">
           {demoQr ? (
             <iframe src={`${DEMO_PATH}?lang=${lang}`} title={t.preview.label} loading="lazy" className="block h-[580px] w-full" />
           ) : (
@@ -166,13 +166,13 @@ function HeroVisual({ lang, t, demoQr }: { lang: SiteLang; t: ReturnType<typeof 
         <div className={`site-float absolute -start-20 bottom-24 hidden rounded-panel border border-ui-line bg-ui-surface p-3 sm:block lg:-start-28 ${cardShadow}`} style={{ animationDelay: "-3s" }}>
           <div className="relative h-24 w-24 overflow-hidden rounded-control">
             <div className="h-full w-full [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: demoQr }} />
-            <span className="site-scan absolute inset-x-1 h-0.5 rounded-full bg-ui-primary shadow-[0_0_12px_2px_rgba(15,107,91,0.6)]" />
+            <span className="site-scan absolute inset-x-1 h-0.5 rounded-full bg-ui-primary shadow-[0_0_12px_2px_rgba(64,40,201,0.6)]" />
           </div>
           <p className="mt-2 text-center text-xs font-semibold">{t.floats.scan}</p>
         </div>
         )}
 
-        <div className="site-float-slow absolute -end-16 top-6 hidden rounded-full border border-ui-line bg-ui-surface px-3 py-1.5 text-sm font-semibold shadow-[0_12px_24px_-12px_rgba(23,43,38,0.35)] sm:block lg:-end-20">
+        <div className="site-float-slow absolute -end-16 top-6 hidden rounded-full border border-ui-line bg-ui-surface px-3 py-1.5 text-sm font-semibold shadow-[0_12px_24px_-12px_rgba(23,21,46,0.35)] sm:block lg:-end-20">
           {t.floats.lang}
         </div>
       </div>
@@ -225,7 +225,7 @@ export default async function LandingPage() {
   // The live demo needs a catalog with the demo slug; without one, demo links and the QR are hidden
   const hasDemo = await getCatalogBySlug(DEMO_PATH.split("/").pop()!).then(Boolean, () => false);
   // Real QR code to the live demo (scannable from a laptop screen), with a 4-module quiet zone
-  const demoQr = hasDemo ? await QRCode.toString(await demoUrl(), { type: "svg", margin: 4, color: { dark: "#172B26", light: "#FFFFFF" } }) : null;
+  const demoQr = hasDemo ? await QRCode.toString(await demoUrl(), { type: "svg", margin: 4, color: { dark: "#17152E", light: "#FFFFFF" } }) : null;
 
   return (
     <div lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} className={`platform ${arabicFont.variable} min-h-screen overflow-x-clip antialiased`}>
@@ -235,12 +235,13 @@ export default async function LandingPage() {
 
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-ui-line bg-ui-bg">
+        <div aria-hidden className="h-[3px] bg-brand-gradient" />
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-control bg-ui-primary text-ui-primary-fg" aria-hidden>
+            <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
               <QrCode className="h-4 w-4" />
             </span>
-            <span dir="ltr">Coredex</span>
+            <span dir="ltr" className="text-ui-primary">Coredex</span>
           </Link>
           <nav aria-label="Main" className="ms-6 hidden items-center gap-1 md:flex">
             {[
@@ -382,7 +383,7 @@ export default async function LandingPage() {
                     key={plan.id}
                     delay={index * 100}
                     className={`relative flex flex-col rounded-panel bg-ui-surface p-6 ${
-                      highlight ? "border-2 border-ui-primary shadow-[0_24px_48px_-28px_rgba(15,107,91,0.55)]" : "border border-ui-line"
+                      highlight ? "border-2 border-ui-primary shadow-[0_24px_48px_-28px_rgba(64,40,201,0.55)]" : "border border-ui-line"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -438,7 +439,7 @@ export default async function LandingPage() {
         <section id="contact" className="px-4 py-20 sm:px-6">
           <Reveal className="relative mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] bg-ui-primary px-6 py-12 text-ui-primary-fg sm:px-12 sm:py-16">
             <div className="relative z-10 max-w-xl">
-              <h2 className="text-[1.75rem] font-semibold leading-tight sm:text-4xl">{t.cta.title}</h2>
+              <h2 className="text-[1.75rem] font-semibold leading-tight text-ui-primary-fg sm:text-4xl">{t.cta.title}</h2>
               <p className="mt-4 text-lg opacity-90">{t.cta.body}</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/signup" className="inline-flex min-h-[52px] items-center justify-center rounded-control bg-ui-surface px-6 font-semibold text-ui-ink transition-colors hover:bg-ui-subtle">
@@ -461,6 +462,7 @@ export default async function LandingPage() {
                 </a>
               </p>
             </div>
+            <div aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-brand-gradient" />
             {/* Dish photos fanned out on large screens */}
             <div aria-hidden className="pointer-events-none absolute -end-6 top-1/2 hidden -translate-y-1/2 lg:block">
               <div className="relative h-80 w-96">

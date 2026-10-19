@@ -20,7 +20,7 @@ export default function PlatformPage() {
       <SuperAdminContent>
         <div className="max-w-4xl space-y-6">
           <section className="bg-ui-surface rounded-panel p-6 border border-ui-line" aria-labelledby="support-heading">
-            <h2 id="support-heading" className="font-semibold text-ui-ink mb-4 flex items-center gap-2">
+            <h2 id="support-heading" className="font-semibold text-ui-heading mb-4 flex items-center gap-2">
               <Mail className="w-5 h-5 text-ui-primary" aria-hidden />
               Support contact
             </h2>
@@ -34,7 +34,7 @@ export default function PlatformPage() {
           </section>
 
           <section className="bg-ui-surface rounded-panel p-6 border border-ui-line" aria-labelledby="languages-heading">
-            <h2 id="languages-heading" className="font-semibold text-ui-ink mb-4 flex items-center gap-2">
+            <h2 id="languages-heading" className="font-semibold text-ui-heading mb-4 flex items-center gap-2">
               <Languages className="w-5 h-5 text-ui-primary" aria-hidden />
               Languages
             </h2>
@@ -44,7 +44,7 @@ export default function PlatformPage() {
           </section>
 
           <section className="bg-ui-surface rounded-panel p-6 border border-ui-line" aria-labelledby="plans-heading">
-            <h2 id="plans-heading" className="font-semibold text-ui-ink mb-1 flex items-center gap-2">
+            <h2 id="plans-heading" className="font-semibold text-ui-heading mb-1 flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-ui-primary" aria-hidden />
               Plans
             </h2>

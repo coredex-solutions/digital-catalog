@@ -1,12 +1,12 @@
-// Server-side theme for the diner menu. The neutral palette (Pine & Ivory, MENUDESIGN.md) lives
+// Server-side theme for the diner menu. The neutral palette (Coredex Violet & Indigo, DESIGN.md) lives
 // in globals.css under `.menu`; each restaurant contributes only its brand colour, from which
 // we derive variants that keep WCAG AA contrast on both the light and dark backgrounds.
 
 import type { CSSProperties } from "react";
 
-const LIGHT_BG = "#F7F8F5"; // must match --menu-bg in globals.css
-const DARK_BG = "#0F1714"; // must match --menu-bg in [data-theme="dark"]
-const FALLBACK_BRAND = "#0F6B5B"; // platform pine
+const LIGHT_BG = "#F7F8FC"; // must match --menu-bg in globals.css
+const DARK_BG = "#100F1F"; // must match --menu-bg in [data-theme="dark"]
+const FALLBACK_BRAND = "#4028C9"; // Coredex violet
 
 type RGB = [number, number, number];
 
@@ -53,12 +53,12 @@ export function buildMenuTheme(brandColor: string | null | undefined): CSSProper
   const lightBg = parseHex(LIGHT_BG)!;
   const darkBg = parseHex(DARK_BG)!;
   const white: RGB = [255, 255, 255];
-  const ink: RGB = [23, 43, 38]; // --menu-ink
+  const ink: RGB = [23, 21, 46]; // --menu-ink
 
   // Solid brand buttons: pick white or ink text, whichever reads better. Mid-tone brand
   // colours that reach 4.5:1 with neither are darkened until white text does.
   let brand = parseHex(brandColor) || parseHex(FALLBACK_BRAND)!;
-  let onBrand = contrast(brand, white) >= contrast(brand, ink) ? "#FFFFFF" : "#172B26";
+  let onBrand = contrast(brand, white) >= contrast(brand, ink) ? "#FFFFFF" : "#17152E";
   if (Math.max(contrast(brand, white), contrast(brand, ink)) < 4.5) {
     brand = ensureContrast(brand, white, 4.5);
     onBrand = "#FFFFFF";

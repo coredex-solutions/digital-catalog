@@ -199,7 +199,7 @@ function OperatingHoursPageContent() {
           </div>
         ) : (
           <div className="glass rounded-panel p-5 sm:p-8 lg:p-10 border border-ui-line">
-            <h3 className="font-semibold text-ui-ink mb-6 flex items-center gap-2">
+            <h3 className="font-semibold text-ui-heading mb-6 flex items-center gap-2">
               <Clock className="w-5 h-5" style={{ color: "var(--color-primary)" }} />
               Weekly Schedule
             </h3>

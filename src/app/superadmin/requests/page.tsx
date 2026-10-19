@@ -110,7 +110,7 @@ export default function RequestsPage() {
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-3 mb-1">
-                                                <h3 className="text-lg font-bold text-ui-ink">{req.catalog_name}</h3>
+                                                <h3 className="text-lg font-bold text-ui-heading">{req.catalog_name}</h3>
                                                 <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${getStatusColor(req.status)}`}>
                                                     {req.status}
                                                 </span>

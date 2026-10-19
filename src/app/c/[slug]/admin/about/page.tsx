@@ -470,7 +470,7 @@ function AboutSEOPageContent() {
               <div className="glass-card p-6 space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h3 className="text-sm font-bold text-ui-ink">About Content ({activeLang.toUpperCase()})</h3>
+                    <h3 className="text-sm font-bold text-ui-heading">About Content ({activeLang.toUpperCase()})</h3>
                     <p className="text-xs text-ui-muted mt-0.5">Tell customers about your business</p>
                   </div>
                   <div className="flex gap-2">
@@ -509,7 +509,7 @@ function AboutSEOPageContent() {
               <div className="space-y-6">
                 <div className="glass-card p-6 space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h3 className="text-sm font-bold text-ui-ink">SEO Settings ({activeLang.toUpperCase()})</h3>
+                    <h3 className="text-sm font-bold text-ui-heading">SEO Settings ({activeLang.toUpperCase()})</h3>
 
                     {/* Pro AI Auto-Generate Dropdown */}
                     <div className="relative">
@@ -641,7 +641,7 @@ function AboutSEOPageContent() {
                           <Sparkles className="w-5 h-5 text-ui-primary" />
                         </div>
                         <div>
-                          <h3 className="text-base font-bold text-ui-ink">مُنشئ المحتوى بالذكاء الاصطناعي</h3>
+                          <h3 className="text-base font-bold text-ui-heading">مُنشئ المحتوى بالذكاء الاصطناعي</h3>
                           <p className="text-xs text-ui-muted">الخطوة {wizardStep} من 3</p>
                         </div>
                       </div>

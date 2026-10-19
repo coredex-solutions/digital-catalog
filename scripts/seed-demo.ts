@@ -188,7 +188,7 @@ async function seedDemo() {
                     currency_primary, lbp_exchange_rate, lbp_rate_updated_at, show_dual_currency, order_types,
                     delivery_note_en, delivery_note_ar, booking_enabled, whatsapp_order_enabled,
                     seo_title_en, seo_description_en, seo_title_ar, seo_description_ar, seo_title_fr, seo_description_fr)
-                  VALUES (?, '#0F6B5B', ?, 'ar,en', 'en', 'USD', ?, ?, 1, 'dine_in,takeaway,delivery',
+                  VALUES (?, '#4028C9', ?, 'ar,en', 'en', 'USD', ?, ?, 1, 'dine_in,takeaway,delivery',
                     ?, ?, 1, 1, ?, ?, ?, ?, ?, ?)`,
             args: [
                 CATALOG_ID, unsplash('photo-1767114915974-3481fa23cbb0', 1200, 600), LBP_RATE, now,

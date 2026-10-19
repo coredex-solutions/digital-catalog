@@ -487,7 +487,7 @@ export function CatalogProvider({
     setLanguage,
     theme,
     toggleTheme,
-    colorPrimary: settings?.color_primary || "#0F6B5B",
+    colorPrimary: settings?.color_primary || "#4028C9",
     priceConfig,
     bookingEnabled,
     orderingEnabled,

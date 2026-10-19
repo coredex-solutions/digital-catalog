@@ -149,7 +149,7 @@ function FAQsPageContent() {
         ) : faqs.length === 0 ? (
           <div className="text-center py-20 glass rounded-panel border border-ui-line">
             <MessageCircle className="w-16 h-16 text-ui-line mx-auto mb-6" />
-            <h3 className="text-xl font-bold text-ui-ink mb-2">No FAQs Yet</h3>
+            <h3 className="text-xl font-bold text-ui-heading mb-2">No FAQs Yet</h3>
             <p className="text-ui-muted mb-6">
               Add frequently asked questions to help your customers in the live chat.
             </p>

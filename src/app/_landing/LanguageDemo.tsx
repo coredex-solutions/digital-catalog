@@ -39,7 +39,7 @@ export function LanguageDemo({ t, lang }: { t: SiteCopy["language"]; lang: SiteL
   const ui = UI[shown];
 
   return (
-    <div className="rounded-panel border border-ui-line bg-ui-surface p-4 shadow-[0_24px_48px_-32px_rgba(23,43,38,0.4)] sm:p-5">
+    <div className="rounded-panel border border-ui-line bg-ui-surface p-4 shadow-[0_24px_48px_-32px_rgba(23,21,46,0.4)] sm:p-5">
       <button
         type="button"
         onClick={() => setShown(shown === "ar" ? "en" : "ar")}

@@ -285,7 +285,7 @@ function SettingsPageContent() {
     return (
       <div className="glass-card p-5 sm:p-8 lg:p-10 flex flex-col h-full bg-ui-bg border border-ui-line rounded-panel transition-all duration-500 hover:bg-ui-subtle group/card">
         <div className="flex items-center justify-between mb-8">
-          <h3 className="text-xs font-semibold text-ui-ink opacity-50">{label}</h3>
+          <h3 className="text-xs font-semibold text-ui-muted">{label}</h3>
           {hint && <span className="text-xs font-semibold text-ui-muted">{hint}</span>}
         </div>
 
@@ -428,7 +428,7 @@ function SettingsPageContent() {
                         <div className="w-8 h-8 rounded-lg bg-ui-subtle flex items-center justify-center">
                           <Layout className="w-4 h-4 text-ui-primary" />
                         </div>
-                        <h3 className="text-xs font-semibold text-ui-ink opacity-50">Business Identity</h3>
+                        <h3 className="text-xs font-semibold text-ui-muted">Business Identity</h3>
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-8">
@@ -512,7 +512,7 @@ function SettingsPageContent() {
                         <div className="w-8 h-8 rounded-lg bg-ui-subtle flex items-center justify-center">
                           <Palette className="w-4 h-4 text-ui-primary" aria-hidden />
                         </div>
-                        <h3 id="brand-colour-heading" className="text-base font-semibold text-ui-ink">Brand colour</h3>
+                        <h3 id="brand-colour-heading" className="text-base font-semibold text-ui-heading">Brand colour</h3>
                       </div>
                       <p className="text-sm text-ui-muted mb-6 max-w-prose">
                         Your menu uses one colour: this one. It fills the selected category, buttons and highlights. We adjust it automatically so text stays readable in light and dark mode.
@@ -569,7 +569,7 @@ function SettingsPageContent() {
                         <div className="w-8 h-8 rounded-lg bg-ui-subtle flex items-center justify-center">
                           <Smartphone className="w-4 h-4 text-ui-primary" aria-hidden />
                         </div>
-                        <h3 className="text-sm font-semibold text-ui-ink">Live preview</h3>
+                        <h3 className="text-sm font-semibold text-ui-heading">Live preview</h3>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <div role="group" aria-label="Preview theme" className="flex p-1 bg-ui-surface border border-ui-line rounded-control">
@@ -635,7 +635,7 @@ function SettingsPageContent() {
               {activeTab === "contact" && (
                 <div className="space-y-8">
                   <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-10">
-                    <h3 className="text-xs font-semibold text-ui-ink opacity-50">Contact Information</h3>
+                    <h3 className="text-xs font-semibold text-ui-muted">Contact Information</h3>
                     <div className="grid md:grid-cols-2 gap-8">
                       <div className="space-y-4">
                         <label htmlFor="contact-phone_primary" className="text-xs font-semibold text-ui-muted ml-2 block">Primary Phone</label>
@@ -675,7 +675,7 @@ function SettingsPageContent() {
                   </div>
 
                   <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-10">
-                    <h3 className="text-xs font-semibold text-ui-ink opacity-50">Business Address</h3>
+                    <h3 className="text-xs font-semibold text-ui-muted">Business Address</h3>
 
                     <div className="space-y-8">
                       {/* Address Matrix */}
@@ -735,7 +735,7 @@ function SettingsPageContent() {
                 <div className="space-y-8">
                   <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-8">
                     <div>
-                      <h3 className="text-lg font-bold text-ui-ink">Prices</h3>
+                      <h3 className="text-lg font-bold text-ui-heading">Prices</h3>
                       <p className="mt-1 text-sm text-ui-muted">Prices show in the currency you entered them in. Add your exchange rate to also show them in the other currency.</p>
                     </div>
 
@@ -784,7 +784,7 @@ function SettingsPageContent() {
 
                   <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-8">
                     <div>
-                      <h3 className="text-lg font-bold text-ui-ink">WhatsApp orders</h3>
+                      <h3 className="text-lg font-bold text-ui-heading">WhatsApp orders</h3>
                       <p className="mt-1 text-sm text-ui-muted">Choose how guests can order. Orders arrive on the WhatsApp number from the Contact tab.</p>
                     </div>
 
@@ -857,7 +857,7 @@ function SettingsPageContent() {
               {activeTab === "features" && (
                 <div className="space-y-8">
                   <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-6">
-                    <h3 className="text-xs font-semibold text-ui-ink mb-10 opacity-50">Feature Toggles</h3>
+                    <h3 className="text-xs font-semibold text-ui-muted mb-10">Feature Toggles</h3>
                     <ToggleSwitch
                       label="WhatsApp Ordering"
                       description="Allow customers to send orders via WhatsApp"
@@ -879,7 +879,7 @@ function SettingsPageContent() {
                   </div>
 
                   <div className="glass-card p-5 sm:p-8 lg:p-10">
-                    <h3 className="text-xs font-semibold text-ui-ink mb-10 opacity-50">Button Labels (Localization)</h3>
+                    <h3 className="text-xs font-semibold text-ui-muted mb-10">Button Labels (Localization)</h3>
                     <div className="space-y-12">
                       {[
                         { id: 'cta_menu_label', title: 'Menu button on your About page' },
@@ -936,7 +936,7 @@ function SettingsPageContent() {
               {activeTab === "ai" && (
                 <div className="space-y-8">
                   <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-10">
-                    <h3 className="text-xs font-semibold text-ui-ink opacity-50">AI Waiter Persona</h3>
+                    <h3 className="text-xs font-semibold text-ui-muted">AI Waiter Persona</h3>
                     <div className="grid md:grid-cols-2 gap-8">
                       <div className="space-y-4">
                         <label htmlFor="ai-waiter-name" className="text-xs font-semibold text-ui-muted ml-2">AI Identity (Name)</label>

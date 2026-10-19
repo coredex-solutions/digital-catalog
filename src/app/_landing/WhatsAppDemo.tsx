@@ -67,7 +67,7 @@ export function WhatsAppDemo({ t, lang }: { t: SiteCopy["whatsappDemo"]; lang: S
   }, []);
 
   return (
-    <div ref={ref} className="overflow-hidden rounded-panel border border-ui-line bg-ui-surface shadow-[0_24px_48px_-32px_rgba(23,43,38,0.4)]">
+    <div ref={ref} className="overflow-hidden rounded-panel border border-ui-line bg-ui-surface shadow-[0_24px_48px_-32px_rgba(23,21,46,0.4)]">
       {/* Chat header */}
       <div className="flex items-center gap-3 bg-ui-primary px-4 py-3 text-ui-primary-fg">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15" aria-hidden>

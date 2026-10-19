@@ -193,7 +193,7 @@ export default function CatalogsPage() {
                           <Icon className="w-6 h-6 text-ui-ink group-hover:text-ui-primary transition-colors" />
                         </div>
                         <div>
-                          <h3 className="font-bold text-ui-ink text-lg group-hover:text-ui-primary transition-colors">{catalog.name}</h3>
+                          <h3 className="font-bold text-ui-heading text-lg group-hover:text-ui-primary transition-colors">{catalog.name}</h3>
                           <p className="text-xs text-ui-muted font-mono">/{catalog.slug}</p>
                         </div>
                       </div>

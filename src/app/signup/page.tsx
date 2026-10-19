@@ -131,10 +131,10 @@ function SignupForm() {
         <main lang="en" dir="ltr" className="platform min-h-screen relative flex items-center justify-center px-4 py-10">
             <div className="w-full max-w-xl relative z-10">
                 <Link href="/" className="flex items-center gap-2 mb-8 justify-center font-semibold">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-control bg-ui-primary text-ui-primary-fg" aria-hidden>
+                    <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
                         <QrCode className="h-4 w-4" />
                     </span>
-                    Coredex
+                    <span className="text-ui-primary">Coredex</span>
                 </Link>
 
                 <AnimatePresence mode="wait">

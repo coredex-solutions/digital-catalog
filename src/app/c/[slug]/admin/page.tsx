@@ -59,7 +59,7 @@ function StatCard({
               {label}
             </span>
             <div className="flex items-baseline gap-2">
-              <h3 className="text-2xl sm:text-4xl font-semibold text-ui-ink tabular-nums">
+              <h3 className="text-2xl sm:text-4xl font-semibold text-ui-heading tabular-nums">
                 {value}
               </h3>
               {trend && (
@@ -205,7 +205,7 @@ export default function CatalogAdminDashboard() {
                       <action.icon className="w-6 h-6 text-ui-muted group-hover:text-ui-ink" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-ui-ink group-hover:text-ui-primary transition-colors">{action.title}</h3>
+                      <h3 className="text-lg font-semibold text-ui-heading group-hover:text-ui-primary transition-colors">{action.title}</h3>
                       <p className="text-xs font-semibold text-ui-muted mt-2 leading-relaxed">
                         {action.desc}
                       </p>
@@ -223,7 +223,7 @@ export default function CatalogAdminDashboard() {
                     <TrendingUp className="w-5 h-5" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-semibold text-ui-ink">Catalog Analytics</h2>
+                    <h2 className="text-lg font-semibold text-ui-heading">Catalog Analytics</h2>
                     <p className="text-xs font-semibold text-ui-muted mt-1">Track how customers interact with your catalog</p>
                   </div>
                 </div>

@@ -195,7 +195,7 @@ export default function NewCatalogPage() {
           {/* Step 1: Basic Info */}
           {step === 1 && (
             <div className="bg-ui-surface rounded-panel p-8 border border-ui-line animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-xl font-semibold text-ui-ink mb-8 flex items-center gap-3">
+              <h2 className="text-xl font-semibold text-ui-heading mb-8 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                   <Zap className="w-5 h-5" />
                 </div>
@@ -284,7 +284,7 @@ export default function NewCatalogPage() {
           {/* Step 2: Subscription */}
           {step === 2 && (
             <div className="bg-ui-surface rounded-panel p-8 border border-ui-line animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-xl font-semibold text-ui-ink mb-8 flex items-center gap-3">
+              <h2 className="text-xl font-semibold text-ui-heading mb-8 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                   <Package className="w-5 h-5" />
                 </div>
@@ -418,7 +418,7 @@ export default function NewCatalogPage() {
           {/* Step 3: Admin Account */}
           {step === 3 && (
             <div className="bg-ui-surface rounded-panel p-8 border border-ui-line animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-xl font-semibold text-ui-ink mb-2 flex items-center gap-3">
+              <h2 className="text-xl font-semibold text-ui-heading mb-2 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                   <ShieldCheck className="w-5 h-5" />
                 </div>

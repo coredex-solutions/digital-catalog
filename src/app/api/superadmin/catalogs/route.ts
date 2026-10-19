@@ -170,8 +170,8 @@ export async function POST(request: NextRequest) {
     // Create default settings
     await db.execute({
       sql: `
-        INSERT INTO catalog_settings (catalog_id, enabled_languages, updated_at)
-        VALUES (?, 'ar,en', datetime('now'))
+        INSERT INTO catalog_settings (catalog_id, enabled_languages, color_primary, updated_at)
+        VALUES (?, 'ar,en', '#4028C9', datetime('now'))
       `,
       args: [catalogId],
     });

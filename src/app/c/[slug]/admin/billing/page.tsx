@@ -97,7 +97,7 @@ function BillingPageContent() {
                                 </div>
                                 <div>
                                     <p className="text-xs font-semibold text-ui-muted">Active Subscription</p>
-                                    <h2 className="text-2xl sm:text-3xl font-semibold text-ui-ink">
+                                    <h2 className="text-2xl sm:text-3xl font-semibold text-ui-heading">
                                         {isTrial ? currentPlanName : <>{currentPlanName} <span className="text-ui-primary">Plan</span></>}
                                     </h2>
                                     {isTrial && (

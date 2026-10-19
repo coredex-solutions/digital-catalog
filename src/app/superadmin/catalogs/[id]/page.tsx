@@ -433,7 +433,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
               <div className="glass rounded-panel p-8 border border-ui-line">
-                <h3 className="text-lg font-semibold text-ui-ink mb-6">Details</h3>
+                <h3 className="text-lg font-semibold text-ui-heading mb-6">Details</h3>
                 <div className="space-y-1">
                   <div className="flex justify-between py-4 border-b border-ui-line">
                     <span className="text-ui-muted font-medium">Created On</span>
@@ -463,7 +463,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                     <Lock className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-semibold text-ui-ink">Enabled Features</h3>
+                  <h3 className="text-lg font-semibold text-ui-heading">Enabled Features</h3>
                 </div>
                 <div className="space-y-3">
                   {[
@@ -543,7 +543,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                     <CreditCard className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-semibold text-ui-ink">Plan & Status</h3>
+                  <h3 className="text-lg font-semibold text-ui-heading">Plan & Status</h3>
                 </div>
 
                 <div className="space-y-6">
@@ -664,7 +664,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-primary">
                     <Store className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-semibold text-ui-ink">Plan Limits</h3>
+                  <h3 className="text-lg font-semibold text-ui-heading">Plan Limits</h3>
                 </div>
 
                 <div className="space-y-6">
@@ -726,7 +726,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   <div className="w-10 h-10 rounded-control bg-ui-subtle flex items-center justify-center text-ui-success">
                     <CreditCard className="w-5 h-5" />
                   </div>
-                  <h3 className="text-lg font-semibold text-ui-ink">Payment Record</h3>
+                  <h3 className="text-lg font-semibold text-ui-heading">Payment Record</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -814,7 +814,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="glass rounded-panel p-8 border border-ui-line h-fit">
-                <h3 className="text-lg font-semibold text-ui-ink mb-8">Catalog Settings</h3>
+                <h3 className="text-lg font-semibold text-ui-heading mb-8">Catalog Settings</h3>
 
                 <div className="space-y-6">
                   <div>
@@ -906,7 +906,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
               </div>
 
               <div className="glass rounded-panel p-8 border border-ui-line h-fit flex flex-col">
-                <h3 className="text-lg font-semibold text-ui-ink mb-2">Feature Access</h3>
+                <h3 className="text-lg font-semibold text-ui-heading mb-2">Feature Access</h3>
                 <p className="text-ui-muted text-sm mb-8 font-medium">Turn features on or off for this catalog.</p>
 
                 <div className="space-y-3">
@@ -1075,7 +1075,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
           <div className="glass rounded-panel border border-ui-line overflow-hidden">
             <div className="p-8 border-b border-ui-line flex justify-between items-center bg-ui-bg">
               <div>
-                <h3 className="text-lg font-semibold text-ui-ink">Admins</h3>
+                <h3 className="text-lg font-semibold text-ui-heading">Admins</h3>
                 <p className="text-xs text-ui-muted font-medium mt-1">{admins.length} Total Users</p>
               </div>
               <button
@@ -1169,7 +1169,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
               <div className="w-16 h-16 rounded-panel bg-ui-subtle text-ui-primary flex items-center justify-center mb-6">
                 <Lock className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-semibold text-ui-ink mb-2">Reset Password</h3>
+              <h3 className="text-xl font-semibold text-ui-heading mb-2">Reset Password</h3>
               <p className="text-ui-muted mb-8 font-medium">
                 Generating a new password for <span className="text-ui-ink font-bold">{resetAdmin.name}</span>.
               </p>
@@ -1218,7 +1218,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
               <div className="w-16 h-16 rounded-panel bg-ui-subtle text-ui-primary flex items-center justify-center mb-6">
                 {adminModalMode === "add" ? <Plus className="w-8 h-8" /> : <Pencil className="w-8 h-8" />}
               </div>
-              <h3 className="text-xl font-semibold text-ui-ink mb-2">
+              <h3 className="text-xl font-semibold text-ui-heading mb-2">
                 {adminModalMode === "add" ? "Add New Admin" : "Edit Admin"}
               </h3>
               <p className="text-ui-muted mb-8 font-medium">

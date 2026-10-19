@@ -59,7 +59,7 @@ export default function CatalogAdminLoginPage() {
                <Store className="w-8 h-8 text-ui-ink transition-transform duration-500" />
             </div>
           </div>
-          <h1 className="text-3xl font-semibold text-ui-ink leading-none">Admin Login</h1>
+          <h1 className="text-3xl font-semibold text-ui-heading leading-none">Admin Login</h1>
           <p className="text-sm text-ui-muted mt-3">
             Catalog: {slug}
           </p>

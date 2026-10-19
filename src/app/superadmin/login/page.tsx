@@ -54,7 +54,7 @@ export default function SuperAdminLoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-panel bg-ui-primary mb-6">
             <Shield className="w-8 h-8 text-ui-primary-fg" />
           </div>
-          <h1 className="text-3xl font-semibold text-ui-ink mb-2">Super Admin sign in</h1>
+          <h1 className="text-3xl font-semibold text-ui-heading mb-2">Super Admin sign in</h1>
           <p className="text-ui-muted font-medium">Coredex Solutions</p>
         </div>
 

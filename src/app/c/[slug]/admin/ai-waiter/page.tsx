@@ -285,7 +285,7 @@ export default function AIWaiterTraining() {
               <CheckCircle2 className="w-12 h-12 text-ui-success" />
             </div>
             <div className="space-y-4">
-              <h2 className="text-3xl font-bold text-ui-ink">Knowledge Base Updated!</h2>
+              <h2 className="text-3xl font-bold text-ui-heading">Knowledge Base Updated!</h2>
               <p className="text-ui-muted text-lg">Your AI Waiter is now much smarter and ready to serve your customers.</p>
             </div>
             <button
@@ -337,7 +337,7 @@ export default function AIWaiterTraining() {
                     </div>
 
                     <div className="space-y-6">
-                      <h2 className="text-2xl md:text-4xl font-bold text-ui-ink leading-tight">
+                      <h2 className="text-2xl md:text-4xl font-bold text-ui-heading leading-tight">
                         {currentQuestion.question_ar}
                       </h2>
                       <p className="text-lg sm:text-xl text-ui-muted">
@@ -443,7 +443,7 @@ export default function AIWaiterTraining() {
               <AlertCircle className="w-10 h-10 text-ui-muted" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-xl font-bold text-ui-ink">No questions needed right now</h3>
+              <h3 className="text-xl font-bold text-ui-heading">No questions needed right now</h3>
               <p className="text-ui-muted">Your AI Waiter seems to have enough knowledge for your current menu.</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">

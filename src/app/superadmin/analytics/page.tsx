@@ -167,7 +167,7 @@ export default function AnalyticsPage() {
             {/* Top Catalogs */}
             <div className="bg-ui-surface rounded-panel border border-ui-line overflow-hidden">
               <div className="px-6 py-4 border-b border-ui-line">
-                <h3 className="font-semibold text-ui-ink flex items-center gap-2">
+                <h3 className="font-semibold text-ui-heading flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-ui-primary" />
                   Top Performing Catalogs
                 </h3>

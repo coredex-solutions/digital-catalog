@@ -114,6 +114,29 @@ export interface CatalogTheme {
 
 export const CATALOG_THEMES: CatalogTheme[] = [
     {
+        id: "coredex-violet",
+        name: "Coredex Violet",
+        description: "Violet buttons on cool, quiet neutrals. The default Coredex look.",
+        light: {
+            primary: "#4028C9",
+            secondary: "#221E84",
+            accent: "#4028C922",
+            background: "#F7F8FC",
+            surface: "#FFFFFF",
+            text: "#17152E",
+            textMuted: "#62657A",
+        },
+        dark: {
+            primary: "#8F7CF5",
+            secondary: "#4028C9",
+            accent: "#8F7CF533",
+            background: "#100F1F",
+            surface: "#19182E",
+            text: "#EEEEF7",
+            textMuted: "#A9ABC2",
+        }
+    },
+    {
         id: "botanical-mint",
         name: "Botanical Mint",
         description: "Elegant, organic, and sophisticated. Perfectly suited for healthy eateries and garden cafes.",
@@ -299,4 +322,4 @@ export const CATALOG_THEMES: CatalogTheme[] = [
     }
 ];
 
-export const DEFAULT_THEME_ID = "botanical-mint";
+export const DEFAULT_THEME_ID = "coredex-violet";

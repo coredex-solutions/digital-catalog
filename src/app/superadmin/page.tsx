@@ -77,7 +77,7 @@ function StatCard({
               {label}
             </span>
             <div className="flex items-baseline gap-2">
-              <h3 className="text-3xl font-semibold text-ui-ink">
+              <h3 className="text-3xl font-semibold text-ui-heading">
                 {value}
               </h3>
               {trend && (
@@ -191,7 +191,7 @@ export default function SuperAdminDashboard() {
                 <div className="px-8 py-6 border-b border-ui-line flex items-center justify-between bg-ui-bg">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-ui-primary" />
-                    <h2 className="text-sm font-semibold text-ui-ink">Recent Catalogs</h2>
+                    <h2 className="text-sm font-semibold text-ui-heading">Recent Catalogs</h2>
                   </div>
                   <Link 
                     href="/superadmin/catalogs" 
@@ -240,7 +240,7 @@ export default function SuperAdminDashboard() {
               <div className="glass rounded-panel border border-ui-line overflow-hidden">
                 <div className="px-8 py-6 border-b border-ui-line flex items-center gap-3 bg-ui-bg">
                   <AlertTriangle className="w-4 h-4 text-ui-warning" />
-                  <h2 className="text-sm font-semibold text-ui-ink">Expiring Soon</h2>
+                  <h2 className="text-sm font-semibold text-ui-heading">Expiring Soon</h2>
                 </div>
                 <div className="p-2">
                   <div className="divide-y divide-ui-line">
@@ -289,7 +289,7 @@ export default function SuperAdminDashboard() {
                     <TrendingUp className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-ui-ink">Subscription Plans</h2>
+                    <h2 className="text-xl font-semibold text-ui-heading">Subscription Plans</h2>
                     <p className="text-xs font-bold text-ui-muted mt-1">Distribution of active service plans</p>
                   </div>
                 </div>

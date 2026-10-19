@@ -254,7 +254,7 @@ function BranchesPageContent() {
                                     <div className="flex-1 min-w-0">
                                         <div className="flex flex-wrap items-start justify-between gap-3">
                                             <div>
-                                                <h3 className="text-xl font-semibold text-ui-ink group-hover:text-ui-primary transition-colors">
+                                                <h3 className="text-xl font-semibold text-ui-heading group-hover:text-ui-primary transition-colors">
                                                     {branch.name_en || branch.name_ar}
                                                 </h3>
                                                 <p className="text-xs font-semibold text-ui-muted mt-2 flex items-center gap-2">
@@ -318,7 +318,7 @@ function BranchesPageContent() {
                             >
                                 <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-4 sm:p-8 border-b border-ui-line bg-ui-bg">
                                     <div>
-                                        <h2 className="text-xl font-semibold text-ui-ink whitespace-nowrap">
+                                        <h2 className="text-xl font-semibold text-ui-heading whitespace-nowrap">
                                             {editingBranch ? "Edit Branch" : "Add New Branch"}
                                         </h2>
                                         <div className="h-0.5 w-8 bg-ui-primary mt-2 rounded-full opacity-50" />

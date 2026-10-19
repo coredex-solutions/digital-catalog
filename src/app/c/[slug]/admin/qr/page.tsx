@@ -779,7 +779,7 @@ export default function QRCodePage() {
           <div className="grid lg:grid-cols-2 gap-8">
             {/* QR Preview */}
             <div className="bg-ui-surface rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-ui-ink mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-ui-heading mb-4 flex items-center gap-2">
                 <QrCode className="w-5 h-5 text-ui-primary" />
                 Your QR Code
               </h2>
@@ -841,7 +841,7 @@ export default function QRCodePage() {
 
             {/* QR Customization */}
             <div className="bg-ui-surface rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-ui-ink mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-ui-heading mb-4 flex items-center gap-2">
                 <Palette className="w-5 h-5 text-ui-primary" />
                 Customize QR Code
               </h2>
@@ -978,7 +978,7 @@ export default function QRCodePage() {
           {/* Print Templates Section */}
           <div className="bg-ui-surface rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-ui-ink flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-ui-heading flex items-center gap-2">
                 <Printer className="w-5 h-5 text-ui-primary" />
                 Printable Templates
               </h2>
@@ -1002,8 +1002,8 @@ export default function QRCodePage() {
             {showCustomizer && (
               <div className="bg-ui-surface rounded-xl p-6 mb-6 border border-ui-line">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-ui-ink font-medium flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-ui-accent" />
+                  <h3 className="text-ui-heading font-medium flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-ui-ai" />
                     Template Customization
                   </h3>
                   <button
@@ -1567,7 +1567,7 @@ export default function QRCodePage() {
                   onClick={() => setSelectedTemplate(template.id)}
                   className={`p-4 rounded-xl border-2 transition-all text-left ${selectedTemplate === template.id
                       ? "border-ui-primary bg-ui-subtle"
-                      : "border-ui-line bg-ui-surface hover:border-slate-600"
+                      : "border-ui-line bg-ui-surface hover:border-ui-input"
                     }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
@@ -1576,7 +1576,7 @@ export default function QRCodePage() {
                       {template.category}
                     </span>
                   </div>
-                  <h3 className="font-medium text-ui-ink text-sm">
+                  <h3 className="font-medium text-ui-heading text-sm">
                     {template.name}
                   </h3>
                   <p className="text-xs text-ui-muted mt-1">
@@ -1627,7 +1627,7 @@ export default function QRCodePage() {
             <div className="bg-ui-surface rounded-xl p-6" ref={previewRef}>
               {/* Preview Header with Controls */}
               <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-                <h2 className="text-lg font-semibold text-ui-ink flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-ui-heading flex items-center gap-2">
                   <Eye className="w-5 h-5 text-ui-primary" />
                   Preview:{" "}
                   {PRINT_TEMPLATES.find((t) => t.id === selectedTemplate)?.name}

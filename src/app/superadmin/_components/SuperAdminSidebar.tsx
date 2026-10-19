@@ -89,7 +89,7 @@ export function SuperAdminHeader({ title, children }: { title: string; children?
   return (
     <header className="bg-ui-surface border-b border-ui-line px-8 py-6 sticky top-0 z-30">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ui-ink">{title}</h1>
+        <h1 className="text-2xl font-bold text-ui-heading">{title}</h1>
         {children}
       </div>
     </header>

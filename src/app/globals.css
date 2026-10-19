@@ -29,8 +29,8 @@
   }
 
   body {
-    background: #F7F8F5;
-    color: #172B26;
+    background: #F7F8FC;
+    color: #17152E;
     font-feature-settings: "rlig" 1, "calt" 1;
     min-height: 100vh;
     transition: background 0.5s ease;
@@ -74,26 +74,34 @@
 }
 /* ============================================
    Platform theme (marketing site, signup, merchant app)
-   Pine & Ivory tokens from MENUDESIGN.md §3. Scoped to .platform so pages move over one at a
-   time; Tailwind exposes them as ui-* colours.
+   Coredex Violet & Indigo (DESIGN.md §3). The five brand colours (#4028C9, #221E84, #9824F8,
+   #326BDD, #3DBBD1) come from the Coredex Solutions logo; neutrals and hover shades are UI
+   extensions. Scoped to .platform; Tailwind exposes them as ui-* colours.
+   Never put white text on cyan (2.28:1); cyan takes indigo text.
    ============================================ */
 .platform {
   color-scheme: light;
-  --ui-bg: #F7F8F5;
+  --ui-bg: #F7F8FC;
   --ui-surface: #FFFFFF;
-  --ui-ink: #172B26;
-  --ui-muted: #58665F;
-  --ui-primary: #0F6B5B;
+  --ui-ink: #17152E;
+  --ui-heading: #221E84;
+  --ui-muted: #62657A;
+  --ui-primary: #4028C9;
   --ui-primary-fg: #FFFFFF;
-  --ui-primary-hover: #0B5145;
-  --ui-subtle: #E8F3ED;
-  --ui-accent: #B94A28;
-  --ui-accent-fg: #FFFFFF;
-  --ui-line: #DCE4DE;
-  --ui-input: #7D8D84;
+  --ui-primary-hover: #3220A6;
+  --ui-subtle: #EFEDFF;
+  --ui-blue: #326BDD;
+  --ui-accent: #3DBBD1;
+  --ui-accent-fg: #221E84;
+  --ui-ai: #9824F8;
+  --ui-ai-fg: #FFFFFF;
+  --ui-line: #E0E3EF;
+  --ui-input: #7B8198;
+  --ui-focus: #4028C9;
   --ui-success: #166534;
   --ui-warning: #92400E;
   --ui-danger: #B91C1C;
+  --ui-gradient: linear-gradient(45deg, #9824F8 0%, #326BDD 45%, #3DBBD1 85%);
   --radius-control: 10px;
   --radius-panel: 16px;
 
@@ -101,6 +109,11 @@
   color: var(--ui-ink);
   font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.5;
+}
+
+/* Headings default to logo indigo; a colour utility on the heading still wins */
+:where(.platform) :where(h1, h2, h3) {
+  color: var(--ui-heading);
 }
 
 .platform[lang="ar"] {
@@ -120,13 +133,18 @@
   line-height: 1.4;
 }
 
+/* Brand gradient: logo mark, thin dividers and small decorative graphics only, never behind text */
+.bg-brand-gradient {
+  background-image: linear-gradient(45deg, #9824F8 0%, #326BDD 45%, #3DBBD1 85%);
+}
+
 /* Legacy admin classes and variables, re-pointed at the platform palette */
 .platform {
-  --primary: #0F6B5B;
+  --primary: #4028C9;
   --primary-foreground: #FFFFFF;
-  --color-primary: #0F6B5B;
-  --color-secondary: #58665F;
-  --color-accent: #B94A28;
+  --color-primary: #4028C9;
+  --color-secondary: #62657A;
+  --color-accent: #3DBBD1;
 }
 
 .platform .glass,
@@ -135,13 +153,13 @@
   background: var(--ui-surface);
   border: 1px solid var(--ui-line);
   border-radius: var(--radius-panel);
-  box-shadow: 0 1px 2px rgba(23, 43, 38, 0.06);
+  box-shadow: 0 1px 2px rgba(23, 21, 46, 0.06);
   backdrop-filter: none;
 }
 
 body:has(.platform) {
-  background: #F7F8F5;
-  color: #172B26;
+  background: #F7F8FC;
+  color: #17152E;
 }
 
 .platform input[type="range"],
@@ -151,7 +169,7 @@ body:has(.platform) {
 }
 
 .platform :focus-visible {
-  outline: 2px solid var(--ui-primary);
+  outline: 2px solid var(--ui-focus);
   outline-offset: 3px;
   border-radius: var(--radius-control);
 }
@@ -232,12 +250,12 @@ body:has(.platform) {
 .platform .site-word { animation: site-word 450ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 .platform .site-dot { animation: site-dot 1.2s ease-in-out infinite; }
 
-/* Soft pine glow and dot grid behind the hero */
+/* Soft violet and cyan glow and a dot grid behind the hero (decorative only) */
 .platform .site-hero-bg {
   background:
-    radial-gradient(60% 50% at 80% 20%, rgba(15, 107, 91, 0.14), transparent 70%),
-    radial-gradient(40% 40% at 10% 90%, rgba(185, 74, 40, 0.08), transparent 70%),
-    radial-gradient(rgba(23, 43, 38, 0.08) 1px, transparent 1px) 0 0 / 22px 22px;
+    radial-gradient(60% 50% at 80% 20%, rgba(64, 40, 201, 0.12), transparent 70%),
+    radial-gradient(40% 40% at 10% 90%, rgba(61, 187, 209, 0.12), transparent 70%),
+    radial-gradient(rgba(34, 30, 132, 0.08) 1px, transparent 1px) 0 0 / 22px 22px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -253,21 +271,22 @@ body:has(.platform) {
 
 /* ============================================
    Diner menu theme (/c/[slug])
-   Pine & Ivory neutrals from MENUDESIGN.md. Scoped to .menu so the admin and landing pages
-   are unaffected. Each restaurant contributes only its brand colour: --brand, --brand-fg,
-   --brand-ink-*, --brand-soft-* are injected by src/app/c/[slug]/_lib/theme.ts with
-   checked contrast. Keep the light/dark backgrounds in sync with theme.ts.
+   Cool Coredex neutrals (DESIGN.md §3) as the default guest theme. Scoped to .menu so the admin
+   and landing pages are unaffected. Each restaurant contributes only its brand colour: --brand,
+   --brand-fg, --brand-ink-*, --brand-soft-* are injected by src/app/c/[slug]/_lib/theme.ts with
+   checked contrast (default brand: Coredex violet). Keep the light/dark backgrounds in sync
+   with theme.ts.
    ============================================ */
 .menu {
-  --menu-bg: #F7F8F5;
+  --menu-bg: #F7F8FC;
   --menu-surface: #FFFFFF;
-  --menu-raised: #EEF1ED;
-  --menu-subtle: #E8F3ED;
-  --menu-ink: #172B26;
-  --menu-muted: #58665F;
-  --menu-line: #DCE4DE;
-  --menu-input-border: #7D8D84;
-  --menu-accent: #B94A28;
+  --menu-raised: #EEF0F7;
+  --menu-subtle: #EFEDFF;
+  --menu-ink: #17152E;
+  --menu-muted: #62657A;
+  --menu-line: #E0E3EF;
+  --menu-input-border: #7B8198;
+  --menu-accent: #3DBBD1;
   --menu-success: #166534;
   --menu-warning: #92400E;
   --menu-danger: #B91C1C;
@@ -276,9 +295,9 @@ body:has(.platform) {
   --menu-focus: var(--brand-ink);
   --radius-control: 10px;
   --radius-panel: 16px;
-  --menu-shadow-sm: 0 1px 2px rgba(23, 43, 38, 0.06);
-  --menu-shadow-md: 0 4px 16px -6px rgba(23, 43, 38, 0.16);
-  --menu-shadow-lg: 0 -6px 24px -10px rgba(23, 43, 38, 0.22);
+  --menu-shadow-sm: 0 1px 2px rgba(23, 21, 46, 0.06);
+  --menu-shadow-md: 0 4px 16px -6px rgba(23, 21, 46, 0.16);
+  --menu-shadow-lg: 0 -6px 24px -10px rgba(23, 21, 46, 0.22);
   --menu-font-sans: var(--font-menu-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   --menu-font-display: var(--menu-font-sans);
 
@@ -310,15 +329,15 @@ body:has(.platform) {
 
 /* Dark mode is its own tested token set, not an inversion of the light one */
 .menu[data-theme="dark"] {
-  --menu-bg: #0F1714;
-  --menu-surface: #17221E;
-  --menu-raised: #1F2B27;
-  --menu-subtle: #17352D;
-  --menu-ink: #EDF3EF;
-  --menu-muted: #A7B5AE;
-  --menu-line: #2A3833;
-  --menu-input-border: #74867D;
-  --menu-accent: #E4825F;
+  --menu-bg: #100F1F;
+  --menu-surface: #19182E;
+  --menu-raised: #22213A;
+  --menu-subtle: #262250;
+  --menu-ink: #EEEEF7;
+  --menu-muted: #A9ABC2;
+  --menu-line: #2E2D49;
+  --menu-input-border: #7D819C;
+  --menu-accent: #3DBBD1;
   --menu-success: #6FD69A;
   --menu-warning: #F2B661;
   --menu-danger: #F7958B;
@@ -332,13 +351,13 @@ body:has(.platform) {
 
 /* Match the page behind the menu (overscroll, safe areas) to the menu background */
 body:has(.menu) {
-  background: #F7F8F5;
-  color: #172B26;
+  background: #F7F8FC;
+  color: #17152E;
 }
 
 body:has(.menu[data-theme="dark"]) {
-  background: #0F1714;
-  color: #EDF3EF;
+  background: #100F1F;
+  color: #EEEEF7;
 }
 
 /* Prices and totals line up */
