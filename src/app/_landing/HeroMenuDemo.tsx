@@ -170,7 +170,6 @@ export function HeroMenuDemo({ lang: siteLang }: { lang: SiteLang }) {
       lang={lang}
       dir={lang === "ar" ? "rtl" : "ltr"}
       className="relative h-[580px] overflow-hidden bg-ui-bg text-ui-ink"
-      style={lang === "ar" ? { fontFamily: "var(--font-platform-arabic), sans-serif" } : undefined}
     >
       <div ref={scrollRef} className="relative h-full overflow-y-auto overscroll-contain pb-20 [scrollbar-width:none]">
         {/* Cover */}

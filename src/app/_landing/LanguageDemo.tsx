@@ -50,7 +50,7 @@ export function LanguageDemo({ t, lang }: { t: SiteCopy["language"]; lang: SiteL
         <span lang={shown === lang ? (lang === "ar" ? "en" : "ar") : lang}>{shown === lang ? t.switchTo : t.switchBack}</span>
       </button>
 
-      <div key={shown} lang={shown} dir={shown === "ar" ? "rtl" : "ltr"} className="site-pop mt-4" style={shown === "ar" ? { fontFamily: "var(--font-platform-arabic), sans-serif" } : undefined}>
+      <div key={shown} lang={shown} dir={shown === "ar" ? "rtl" : "ltr"} className="site-pop mt-4">
         <div className="flex min-h-11 items-center gap-2 rounded-control border border-ui-input px-3 text-sm text-ui-muted">
           <Search className="h-4 w-4" aria-hidden />
           {ui.search}

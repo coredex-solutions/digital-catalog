@@ -7,6 +7,9 @@ import {
   CatalogAdminHeader,
   CatalogAdminContent,
 } from "../_components/CatalogAdminSidebar";
+import { ADMIN_NAV_LABELS } from "../_components/adminNav";
+import { useAdminLang, useCopy } from "../_lib/i18n";
+import { translateApiMessage } from "../_lib/api-errors";
 import {
   Download,
   Loader2,
@@ -26,7 +29,6 @@ import {
   Minimize2,
   ZoomIn,
   ZoomOut,
-  Layers,
   RotateCw,
   Check,
   X,
@@ -474,9 +476,314 @@ const PRINT_TEMPLATES = [
   },
 ];
 
+const en = {
+  loading: "Loading…",
+  printReady: "Print-ready table cards",
+  introBefore: "For printing, use ",
+  introAfter:
+    ": plain black codes with a safe margin scan most reliably. If you use colours or a logo below, test the printed code with several phones first.",
+  yourQr: "Your QR code",
+  qrFailed: "Couldn't load the QR code",
+  noToken: "You're signed out. Please sign in again.",
+  failedStatus: (status: number) => `Something went wrong (error ${status}). Please try again.`,
+  networkError: "Couldn't reach the server. Check your connection and try again.",
+  tryAgain: "Try again",
+  qrAlt: "QR code for your menu",
+  downloadPng: "Download PNG",
+  downloadSvg: "Download SVG",
+  customizeQr: "Customise the QR code",
+  size: (px: number) => `Size: ${px}px`,
+  sizeAria: "QR code size",
+  codeColour: "Code colour",
+  codeColourAria: "QR code colour",
+  hexAria: (label: string) => `${label}, hex value`,
+  useBrand: "Use brand colour",
+  backgroundColour: "Background colour",
+  backgroundColourAria: "QR background colour",
+  transparentValue: "transparent",
+  transparent: "Transparent",
+  quickPresets: "Quick presets",
+  qrPresets: { classic: "Classic", slate: "Slate", brand: "Brand", transparent: "Transparent" } as Record<string, string>,
+  printableTemplates: "Printable templates",
+  hideCustomizer: "Hide design options",
+  customizeDesign: "Customise design",
+  templatesIntro: "Choose a template and customise it, then use the print button to print it or save it as a PDF.",
+  templateCustomization: "Design options",
+  resetBrand: "Reset to brand colours",
+  colours: "Colours",
+  colourLabels: {
+    primaryColor: "Primary",
+    secondaryColor: "Secondary",
+    accentColor: "Accent",
+    backgroundColor: "Background",
+    textPrimary: "Main text",
+    textSecondary: "Secondary text",
+  },
+  colourAria: (label: string) => `${label} colour`,
+  textContent: "Text",
+  arabicText: "Arabic text",
+  englishText: "English text",
+  cta: "Call to action",
+  ctaPlaceholder: "Scan Me!",
+  displayOptions: "Show on the design",
+  showLogo: "Show logo",
+  showShopName: "Show business name",
+  customShopNameAria: "Business name on the design",
+  customShopNamePlaceholder: "Business name (optional)",
+  customShopNameHint: "Leave empty to use your menu's name, or type another name (for example in Arabic).",
+  showArabicText: "Show Arabic text",
+  backgroundPattern: "Background pattern",
+  patternFor: (template: string) => `(for ${template})`,
+  patternNames: {} as Record<string, string>,
+  customUrl: "Custom link (optional)",
+  customUrlAria: "Custom menu link",
+  customUrlPlaceholder: "Leave empty to use your menu link",
+  clearCustomUrl: "Clear custom link",
+  customUrlWarning: "The design uses your custom link instead of your menu link.",
+  colourThemes: "Colour themes",
+  colourPresets: {
+    brand: "Brand",
+    golden: "Golden Hour",
+    ocean: "Ocean Depths",
+    forest: "Forest",
+    sunset: "Sunset",
+    midnight: "Midnight",
+    rosegold: "Rose Gold",
+    mono: "Monochrome",
+    white: "Clean White",
+  } as Record<string, string>,
+  typography: "Typography",
+  fontStyle: "Font style",
+  fontPresets: {
+    elegant: "Elegant Serif",
+    modern: "Modern Sans",
+    luxury: "Luxury Classic",
+    minimal: "Minimal Clean",
+    bold: "Bold Impact",
+    editorial: "Editorial",
+    geometric: "Geometric",
+    artisan: "Artisan Craft",
+    futuristic: "Futuristic",
+    handcrafted: "Handcrafted",
+  } as Record<FontPreset, string>,
+  headingWeight: "Heading weight",
+  weights: { light: "Light", normal: "Normal", medium: "Medium", semibold: "Semibold", bold: "Bold" } as Record<
+    TemplateCustomization["headingWeight"],
+    string
+  >,
+  letterSpacing: "Letter spacing",
+  spacings: { tight: "Tight", normal: "Normal", wide: "Wide", wider: "Wider" } as Record<
+    TemplateCustomization["letterSpacing"],
+    string
+  >,
+  templates: {
+    "table-tent": { name: "Table Tent", description: "Folded card that stands on the table" },
+    "business-card": { name: "Business Cards", description: "8 cards per sheet" },
+    "window-sticker": { name: "Window Sticker", description: "Large 6×6 inch format" },
+    "a5-flyer": { name: "A5 Flyer", description: "Half-page flyer" },
+    poster: { name: "A4 Poster", description: "Full-page poster" },
+    "elegant-gold": { name: "Elegant Gold", description: "Luxury gold accents" },
+    minimalist: { name: "Minimalist", description: "Clean and simple" },
+    "retro-diner": { name: "Retro Diner", description: "Vintage 1950s style" },
+    "neon-glow": { name: "Neon Glow", description: "Bright neon style" },
+    "organic-natural": { name: "Organic Natural", description: "Natural green theme" },
+    "luxury-dark": { name: "Luxury Dark", description: "Premium dark design" },
+    "social-square": { name: "Social Media", description: "Square image for Instagram" },
+  } as Record<string, { name: string; description: string }>,
+  categories: {
+    table: "Table",
+    cards: "Cards",
+    signage: "Signage",
+    flyer: "Flyer",
+    poster: "Poster",
+    premium: "Premium",
+    modern: "Modern",
+    themed: "Themed",
+    digital: "Digital",
+  } as Record<string, string>,
+  printSave: "Print or save as PDF",
+  customize: "Customise",
+  cancel: "Cancel",
+  preview: (name: string) => `Preview: ${name}`,
+  zoomOut: "Zoom out",
+  zoomIn: "Zoom in",
+  previewZoom: "Preview zoom",
+  resetZoom: "Reset to 100%",
+  exitFullscreen: "Exit full screen",
+  fullscreen: "Full-screen preview",
+  fullscreenHint: "Press Esc or the minimise button to exit full screen",
+  foldLine: "✂ Fold line ✂",
+  templateNotFound: "Template not found",
+};
+const ar: typeof en = {
+  loading: "جارٍ التحميل…",
+  printReady: "بطاقات طاولات جاهزة للطباعة",
+  introBefore: "للطباعة استخدم ",
+  introAfter:
+    ": الرموز السوداء البسيطة مع هامش آمن تُمسح بسهولة أكبر. إذا استخدمت الألوان أو الشعار أدناه، جرّب الرمز المطبوع بعدة هواتف أولاً.",
+  yourQr: "رمز QR الخاص بك",
+  qrFailed: "تعذّر تحميل رمز QR",
+  noToken: "تم تسجيل خروجك. يُرجى تسجيل الدخول مجدداً.",
+  failedStatus: (status) => `حدث خطأ (رمز ${status}). يُرجى المحاولة مرة أخرى.`,
+  networkError: "تعذّر الاتصال بالخادم. تحقّق من الاتصال وحاول مجدداً.",
+  tryAgain: "حاول مجدداً",
+  qrAlt: "رمز QR لقائمتك",
+  downloadPng: "تنزيل PNG",
+  downloadSvg: "تنزيل SVG",
+  customizeQr: "تخصيص رمز QR",
+  size: (px) => `الحجم: ${px}px`,
+  sizeAria: "حجم رمز QR",
+  codeColour: "لون الرمز",
+  codeColourAria: "لون رمز QR",
+  hexAria: (label) => `${label}، القيمة السداسية`,
+  useBrand: "استخدم لون الهوية",
+  backgroundColour: "لون الخلفية",
+  backgroundColourAria: "لون خلفية رمز QR",
+  transparentValue: "شفاف",
+  transparent: "شفاف",
+  quickPresets: "ألوان جاهزة",
+  qrPresets: { classic: "كلاسيكي", slate: "رمادي داكن", brand: "ألوان الهوية", transparent: "شفاف" },
+  printableTemplates: "قوالب للطباعة",
+  hideCustomizer: "إخفاء خيارات التصميم",
+  customizeDesign: "تخصيص التصميم",
+  templatesIntro: "اختر قالباً وخصّصه، ثم استخدم زر الطباعة لطباعته أو حفظه كملف PDF.",
+  templateCustomization: "خيارات التصميم",
+  resetBrand: "العودة إلى ألوان الهوية",
+  colours: "الألوان",
+  colourLabels: {
+    primaryColor: "اللون الأساسي",
+    secondaryColor: "اللون الثانوي",
+    accentColor: "لون التمييز",
+    backgroundColor: "لون الخلفية",
+    textPrimary: "لون النص الرئيسي",
+    textSecondary: "لون النص الثانوي",
+  },
+  colourAria: (label) => label,
+  textContent: "النصوص",
+  arabicText: "النص العربي",
+  englishText: "النص الإنجليزي",
+  cta: "عبارة الدعوة",
+  ctaPlaceholder: "امسح الرمز!",
+  displayOptions: "ما يظهر على التصميم",
+  showLogo: "إظهار الشعار",
+  showShopName: "إظهار اسم المحل",
+  customShopNameAria: "اسم المحل على التصميم",
+  customShopNamePlaceholder: "اسم المحل (اختياري)",
+  customShopNameHint: "اتركه فارغاً لاستخدام اسم قائمتك، أو اكتب اسماً آخر (مثلاً بالعربية).",
+  showArabicText: "إظهار النص العربي",
+  backgroundPattern: "نقشة الخلفية",
+  patternFor: (template) => `(لقالب ${template})`,
+  patternNames: {
+    None: "بلا",
+    Grid: "شبكة",
+    Dots: "نقاط",
+    "Art Deco": "آرت ديكو",
+    Geometric: "هندسي",
+    Stripes: "خطوط",
+    Texture: "ملمس",
+    Circles: "دوائر",
+    Waves: "أمواج",
+    Crosshatch: "خطوط متقاطعة",
+    Halftone: "نقاط طباعية",
+    Radial: "دوائر متمركزة",
+    Diamonds: "معيّنات",
+    Marble: "رخام",
+    Filigree: "زخرفة",
+    Lines: "خطوط",
+    Zigzag: "متعرّج",
+    Confetti: "قصاصات ملونة",
+    Circuit: "دارة إلكترونية",
+    Scanlines: "خطوط أفقية",
+    Hexagons: "سداسيات",
+    Botanical: "أوراق نباتية",
+    Seeds: "بذور",
+    Paper: "ورق",
+    Velvet: "مخمل",
+    Moire: "تموّج",
+    Bubbles: "فقاعات",
+    Shapes: "أشكال",
+    Flow: "انسياب",
+  },
+  customUrl: "رابط مخصّص (اختياري)",
+  customUrlAria: "رابط مخصّص للقائمة",
+  customUrlPlaceholder: "اتركه فارغاً لاستخدام رابط قائمتك",
+  clearCustomUrl: "مسح الرابط المخصّص",
+  customUrlWarning: "يستخدم التصميم رابطك المخصّص بدلاً من رابط قائمتك.",
+  colourThemes: "مجموعات ألوان",
+  colourPresets: {
+    brand: "ألوان الهوية",
+    golden: "الساعة الذهبية",
+    ocean: "أعماق المحيط",
+    forest: "الغابة",
+    sunset: "الغروب",
+    midnight: "منتصف الليل",
+    rosegold: "ذهبي وردي",
+    mono: "أحادي اللون",
+    white: "أبيض ناصع",
+  },
+  typography: "الخطوط",
+  fontStyle: "نمط الخط",
+  fontPresets: {
+    elegant: "كلاسيكي أنيق",
+    modern: "عصري بسيط",
+    luxury: "فاخر تقليدي",
+    minimal: "بسيط ونظيف",
+    bold: "عريض ولافت",
+    editorial: "صحفي",
+    geometric: "هندسي",
+    artisan: "حِرفي",
+    futuristic: "مستقبلي",
+    handcrafted: "بطابع يدوي",
+  },
+  headingWeight: "سماكة العنوان",
+  weights: { light: "خفيف", normal: "عادي", medium: "متوسط", semibold: "شبه عريض", bold: "عريض" },
+  letterSpacing: "تباعد الأحرف",
+  spacings: { tight: "ضيّق", normal: "عادي", wide: "واسع", wider: "أوسع" },
+  templates: {
+    "table-tent": { name: "بطاقة طاولة", description: "بطاقة مطوية تقف على الطاولة" },
+    "business-card": { name: "بطاقات صغيرة", description: "8 بطاقات في كل ورقة" },
+    "window-sticker": { name: "ملصق للواجهة", description: "مقاس كبير 6×6 إنش" },
+    "a5-flyer": { name: "منشور A5", description: "منشور بحجم نصف صفحة" },
+    poster: { name: "ملصق A4", description: "ملصق بحجم صفحة كاملة" },
+    "elegant-gold": { name: "ذهبي أنيق", description: "لمسات ذهبية فاخرة" },
+    minimalist: { name: "بسيط", description: "تصميم نظيف وبسيط" },
+    "retro-diner": { name: "مطعم كلاسيكي", description: "بطابع الخمسينيات" },
+    "neon-glow": { name: "نيون مضيء", description: "بأسلوب النيون الساطع" },
+    "organic-natural": { name: "طبيعي", description: "بطابع أخضر طبيعي" },
+    "luxury-dark": { name: "داكن فاخر", description: "تصميم داكن راقٍ" },
+    "social-square": { name: "مواقع التواصل", description: "صورة مربعة لإنستغرام" },
+  },
+  categories: {
+    table: "طاولة",
+    cards: "بطاقات",
+    signage: "لافتة",
+    flyer: "منشور",
+    poster: "ملصق",
+    premium: "فاخر",
+    modern: "عصري",
+    themed: "بطابع خاص",
+    digital: "رقمي",
+  },
+  printSave: "طباعة أو حفظ كملف PDF",
+  customize: "تخصيص",
+  cancel: "إلغاء",
+  preview: (name) => `معاينة: ${name}`,
+  zoomOut: "تصغير",
+  zoomIn: "تكبير",
+  previewZoom: "تكبير المعاينة",
+  resetZoom: "العودة إلى 100%",
+  exitFullscreen: "الخروج من ملء الشاشة",
+  fullscreen: "معاينة بملء الشاشة",
+  fullscreenHint: "اضغط Esc أو زر التصغير للخروج من ملء الشاشة",
+  foldLine: "✂ خط الطيّ ✂",
+  templateNotFound: "القالب غير موجود",
+};
+
 export default function QRCodePage() {
   const params = useParams();
   const slug = params.slug as string;
+  const t = useCopy({ en, ar });
+  const lang = useAdminLang();
 
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [catalogUrl, setCatalogUrl] = useState<string>("");
@@ -501,8 +808,6 @@ export default function QRCodePage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Batch export state
-  const [isBatchExporting, setIsBatchExporting] = useState(false);
-  const [batchProgress, setBatchProgress] = useState(0);
 
   const printRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -526,7 +831,7 @@ export default function QRCodePage() {
 
       try {
         // Fetch catalog info
-        const settingsRes = await fetch(`/api/c/${slug}/admin/settings`, {
+        const settingsRes = await fetch(`/api/c/${slug}/admin/settings/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -589,7 +894,7 @@ export default function QRCodePage() {
     const authToken =
       token || localStorage.getItem(`catalog_admin_token_${slug}`);
     if (!authToken) {
-      setQrError("No auth token found");
+      setQrError(t.noToken);
       return;
     }
 
@@ -610,11 +915,13 @@ export default function QRCodePage() {
         setCatalogUrl(data.catalogUrl);
       } else {
         const errorData = await res.json().catch(() => ({}));
-        setQrError(errorData.error || `Failed with status ${res.status}`);
+        setQrError(
+          errorData.error ? translateApiMessage(errorData.error, lang) : t.failedStatus(res.status)
+        );
         console.error("QR fetch failed:", res.status, errorData);
       }
     } catch (error) {
-      setQrError("Network error fetching QR code");
+      setQrError(t.networkError);
       console.error("QR fetch error:", error);
     }
   };
@@ -706,34 +1013,6 @@ export default function QRCodePage() {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  // Batch export all templates
-  const batchExportTemplates = async () => {
-    if (!qrDataUrl || !catalog) return;
-
-    setIsBatchExporting(true);
-    setBatchProgress(0);
-
-    try {
-      // Use html2canvas if available, otherwise just print
-      const templates = PRINT_TEMPLATES;
-      for (let i = 0; i < templates.length; i++) {
-        setBatchProgress(Math.round(((i + 1) / templates.length) * 100));
-        // Small delay for visual feedback
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-
-      // Open print dialog with all templates option
-      alert(
-        "Batch export prepared! Use Ctrl+P to print all templates as PDF. Each template will be on a separate page."
-      );
-    } catch (error) {
-      console.error("Batch export error:", error);
-    } finally {
-      setIsBatchExporting(false);
-      setBatchProgress(0);
-    }
-  };
-
   useEffect(() => {
     if (!loading) {
       regenerateQR();
@@ -743,10 +1022,11 @@ export default function QRCodePage() {
   if (loading) {
     return (
       <CatalogAdminShell>
-        <CatalogAdminHeader title="QR Code & Print Materials" />
+        <CatalogAdminHeader title={ADMIN_NAV_LABELS[lang].qr} />
         <CatalogAdminContent>
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="w-8 h-8 animate-spin text-ui-primary" />
+          <div className="flex items-center justify-center h-64" role="status">
+            <Loader2 className="w-8 h-8 animate-spin text-ui-primary" aria-hidden />
+            <span className="sr-only">{t.loading}</span>
           </div>
         </CatalogAdminContent>
       </CatalogAdminShell>
@@ -762,49 +1042,49 @@ export default function QRCodePage() {
         }}
       />
 
-      <CatalogAdminHeader title="QR Code & Print Materials">
+      <CatalogAdminHeader title={ADMIN_NAV_LABELS[lang].qr}>
         <a
           href={`/c/${slug}/admin/qr/print`}
           className="inline-flex min-h-11 items-center gap-2 rounded-control bg-ui-primary px-4 text-sm font-semibold text-ui-primary-fg hover:bg-ui-primary-hover"
         >
-          Print-ready table cards
+          {t.printReady}
         </a>
       </CatalogAdminHeader>
       <CatalogAdminContent>
         <div className="space-y-8">
           <p className="rounded-control border border-ui-line bg-ui-surface p-4 text-sm text-ui-muted">
-            For printing, use <a href={`/c/${slug}/admin/qr/print`} className="font-semibold text-ui-primary underline-offset-4 hover:underline">Print-ready table cards</a>: plain black codes with a safe margin scan most reliably. If you use colours or a logo below, test the printed code with several phones first.
+            {t.introBefore}<a href={`/c/${slug}/admin/qr/print`} className="font-semibold text-ui-primary underline-offset-4 hover:underline">{t.printReady}</a>{t.introAfter}
           </p>
           {/* QR Code Section */}
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* QR Preview */}
             <div className="bg-ui-surface rounded-xl p-6">
               <h2 className="text-lg font-semibold text-ui-heading mb-4 flex items-center gap-2">
-                <QrCode className="w-5 h-5 text-ui-primary" />
-                Your QR Code
+                <QrCode className="w-5 h-5 text-ui-primary" aria-hidden />
+                {t.yourQr}
               </h2>
 
               <div
-                className="flex items-center justify-center p-8 rounded-xl mb-4"
+                className="flex items-center justify-center p-4 sm:p-8 rounded-xl mb-4"
                 style={{
                   backgroundColor: transparent ? "#1e293b" : lightColor,
                 }}
               >
                 {qrError ? (
                   <div className="text-center text-ui-primary p-4">
-                    <p className="font-medium">Failed to load QR Code</p>
+                    <p className="font-medium">{t.qrFailed}</p>
                     <p className="text-sm mt-1">{qrError}</p>
                     <button
                       onClick={() => regenerateQR()}
                       className="mt-3 px-4 py-2 bg-ui-primary hover:bg-ui-primary-hover rounded-lg text-ui-primary-fg text-sm"
                     >
-                      Retry
+                      {t.tryAgain}
                     </button>
                   </div>
                 ) : qrDataUrl ? (
                   <img
                     src={qrDataUrl}
-                    alt="Catalog QR Code"
+                    alt={t.qrAlt}
                     className="max-w-full h-auto"
                     style={{
                       width: Math.min(qrSize, 300),
@@ -816,7 +1096,7 @@ export default function QRCodePage() {
                 )}
               </div>
 
-              <p className="text-center text-sm text-ui-muted mb-4 break-all">
+              <p className="text-center text-sm text-ui-muted mb-4 break-all" dir="ltr">
                 {catalogUrl}
               </p>
 
@@ -826,15 +1106,15 @@ export default function QRCodePage() {
                   onClick={() => downloadQR("png")}
                   className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors"
                 >
-                  <FileImage className="w-4 h-4" />
-                  Download PNG
+                  <FileImage className="w-4 h-4" aria-hidden />
+                  {t.downloadPng}
                 </button>
                 <button
                   onClick={() => downloadQR("svg")}
                   className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-ui-surface hover:bg-ui-subtle text-ui-ink rounded-lg font-medium transition-colors"
                 >
-                  <FileCode className="w-4 h-4" />
-                  Download SVG
+                  <FileCode className="w-4 h-4" aria-hidden />
+                  {t.downloadSvg}
                 </button>
               </div>
             </div>
@@ -842,18 +1122,18 @@ export default function QRCodePage() {
             {/* QR Customization */}
             <div className="bg-ui-surface rounded-xl p-6">
               <h2 className="text-lg font-semibold text-ui-heading mb-4 flex items-center gap-2">
-                <Palette className="w-5 h-5 text-ui-primary" />
-                Customize QR Code
+                <Palette className="w-5 h-5 text-ui-primary" aria-hidden />
+                {t.customizeQr}
               </h2>
 
               <div className="space-y-6">
                 {/* Size */}
                 <div>
                   <label className="block text-sm font-medium text-ui-ink mb-2">
-                    Size: {qrSize}px
+                    {t.size(qrSize)}
                   </label>
                   <input
-                    aria-label="QR code size"
+                    aria-label={t.sizeAria}
                     type="range"
                     min="128"
                     max="1024"
@@ -867,22 +1147,23 @@ export default function QRCodePage() {
                 {/* Dark Color */}
                 <div>
                   <label className="block text-sm font-medium text-ui-ink mb-2">
-                    QR Color (Dark)
+                    {t.codeColour}
                   </label>
                   <div className="flex items-center gap-3">
                     <input
-                      aria-label="QR code colour"
+                      aria-label={t.codeColourAria}
                       type="color"
                       value={darkColor}
                       onChange={(e) => setDarkColor(e.target.value)}
                       className="w-12 h-12 rounded-lg border-2 border-ui-input cursor-pointer"
                     />
                     <input
-                      aria-label="QR code colour hex value"
+                      aria-label={t.hexAria(t.codeColourAria)}
                       type="text"
+                      dir="ltr"
                       value={darkColor}
                       onChange={(e) => setDarkColor(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-ui-surface rounded-lg text-ui-ink border border-ui-input"
+                      className="min-w-0 flex-1 px-3 py-2 bg-ui-surface rounded-lg text-ui-ink border border-ui-input"
                     />
                     <button
                       onClick={() =>
@@ -890,7 +1171,7 @@ export default function QRCodePage() {
                       }
                       className="px-3 py-2 text-sm bg-ui-surface hover:bg-ui-subtle rounded-lg text-ui-ink"
                     >
-                      Use Brand
+                      {t.useBrand}
                     </button>
                   </div>
                 </div>
@@ -898,11 +1179,11 @@ export default function QRCodePage() {
                 {/* Light Color */}
                 <div>
                   <label className="block text-sm font-medium text-ui-ink mb-2">
-                    Background Color
+                    {t.backgroundColour}
                   </label>
                   <div className="flex items-center gap-3">
                     <input
-                      aria-label="QR background colour"
+                      aria-label={t.backgroundColourAria}
                       type="color"
                       value={lightColor}
                       onChange={(e) => {
@@ -913,11 +1194,12 @@ export default function QRCodePage() {
                       className="w-12 h-12 rounded-lg border-2 border-ui-input cursor-pointer disabled:opacity-50"
                     />
                     <input
-                      aria-label="QR background colour hex value"
+                      aria-label={t.hexAria(t.backgroundColourAria)}
                       type="text"
-                      value={transparent ? "transparent" : lightColor}
+                      dir="ltr"
+                      value={transparent ? t.transparentValue : lightColor}
                       disabled
-                      className="flex-1 px-3 py-2 bg-ui-surface rounded-lg text-ui-ink border border-ui-input disabled:opacity-50"
+                      className="min-w-0 flex-1 px-3 py-2 bg-ui-surface rounded-lg text-ui-ink border border-ui-input disabled:opacity-50"
                     />
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
@@ -927,7 +1209,7 @@ export default function QRCodePage() {
                         className="w-4 h-4 rounded border-ui-input bg-ui-surface text-ui-primary"
                       />
                       <span className="text-sm text-ui-ink">
-                        Transparent
+                        {t.transparent}
                       </span>
                     </label>
                   </div>
@@ -936,25 +1218,25 @@ export default function QRCodePage() {
                 {/* Preset Colors */}
                 <div>
                   <label className="block text-sm font-medium text-ui-ink mb-2">
-                    Quick Presets
+                    {t.quickPresets}
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { dark: "#000000", light: "#ffffff", name: "Classic" },
-                      { dark: "#1e293b", light: "#ffffff", name: "Slate" },
+                      { dark: "#000000", light: "#ffffff", id: "classic" },
+                      { dark: "#1e293b", light: "#ffffff", id: "slate" },
                       {
                         dark: catalog?.color_primary || "#FF6B35",
                         light: "#ffffff",
-                        name: "Brand",
+                        id: "brand",
                       },
                       {
                         dark: "#000000",
                         light: "transparent",
-                        name: "Transparent",
+                        id: "transparent",
                       },
                     ].map((preset) => (
                       <button
-                        key={preset.name}
+                        key={preset.id}
                         onClick={() => {
                           setDarkColor(preset.dark);
                           if (preset.light === "transparent") {
@@ -966,7 +1248,7 @@ export default function QRCodePage() {
                         }}
                         className="px-3 py-1.5 text-sm bg-ui-surface hover:bg-ui-subtle rounded text-ui-ink"
                       >
-                        {preset.name}
+                        {t.qrPresets[preset.id]}
                       </button>
                     ))}
                   </div>
@@ -979,8 +1261,8 @@ export default function QRCodePage() {
           <div className="bg-ui-surface rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-ui-heading flex items-center gap-2">
-                <Printer className="w-5 h-5 text-ui-primary" />
-                Printable Templates
+                <Printer className="w-5 h-5 text-ui-primary" aria-hidden />
+                {t.printableTemplates}
               </h2>
               <button
                 onClick={() => setShowCustomizer(!showCustomizer)}
@@ -989,13 +1271,12 @@ export default function QRCodePage() {
                     : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                   }`}
               >
-                <Settings2 className="w-4 h-4" />
-                {showCustomizer ? "Hide Customizer" : "Customize Design"}
+                <Settings2 className="w-4 h-4" aria-hidden />
+                {showCustomizer ? t.hideCustomizer : t.customizeDesign}
               </button>
             </div>
             <p className="text-ui-muted text-sm mb-6">
-              Select a template, customize it, and use Ctrl+P to print or save
-              as PDF.
+              {t.templatesIntro}
             </p>
 
             {/* Customization Panel */}
@@ -1003,34 +1284,34 @@ export default function QRCodePage() {
               <div className="bg-ui-surface rounded-xl p-6 mb-6 border border-ui-line">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-ui-heading font-medium flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-ui-ai" />
-                    Template Customization
+                    <Sparkles className="w-4 h-4 text-ui-ai" aria-hidden />
+                    {t.templateCustomization}
                   </h3>
                   <button
                     onClick={resetCustomization}
                     className="flex items-center gap-1.5 text-sm text-ui-muted hover:text-ui-ink transition-colors"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Reset to Brand Colors
+                    <RotateCcw className="w-3.5 h-3.5" aria-hidden />
+                    {t.resetBrand}
                   </button>
                 </div>
 
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {/* Color Section */}
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2">
-                      <Palette className="w-4 h-4" />
-                      Colors
+                      <Palette className="w-4 h-4" aria-hidden />
+                      {t.colours}
                     </h4>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
-                          Primary
+                          {t.colourLabels.primaryColor}
                         </label>
                         <div className="flex items-center gap-2">
                           <input
-                            aria-label="Primary colour"
+                            aria-label={t.colourAria(t.colourLabels.primaryColor)}
                             type="color"
                             value={customization.primaryColor}
                             onChange={(e) =>
@@ -1042,8 +1323,9 @@ export default function QRCodePage() {
                             className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
-                            aria-label="Primary colour hex value"
+                            aria-label={t.hexAria(t.colourAria(t.colourLabels.primaryColor))}
                             type="text"
+                            dir="ltr"
                             value={customization.primaryColor}
                             onChange={(e) =>
                               updateCustomization(
@@ -1057,11 +1339,11 @@ export default function QRCodePage() {
                       </div>
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
-                          Secondary
+                          {t.colourLabels.secondaryColor}
                         </label>
                         <div className="flex items-center gap-2">
                           <input
-                            aria-label="Secondary colour"
+                            aria-label={t.colourAria(t.colourLabels.secondaryColor)}
                             type="color"
                             value={customization.secondaryColor}
                             onChange={(e) =>
@@ -1073,8 +1355,9 @@ export default function QRCodePage() {
                             className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
-                            aria-label="Secondary colour hex value"
+                            aria-label={t.hexAria(t.colourAria(t.colourLabels.secondaryColor))}
                             type="text"
+                            dir="ltr"
                             value={customization.secondaryColor}
                             onChange={(e) =>
                               updateCustomization(
@@ -1088,11 +1371,11 @@ export default function QRCodePage() {
                       </div>
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
-                          Accent
+                          {t.colourLabels.accentColor}
                         </label>
                         <div className="flex items-center gap-2">
                           <input
-                            aria-label="Accent colour"
+                            aria-label={t.colourAria(t.colourLabels.accentColor)}
                             type="color"
                             value={customization.accentColor}
                             onChange={(e) =>
@@ -1101,8 +1384,9 @@ export default function QRCodePage() {
                             className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
-                            aria-label="Accent colour hex value"
+                            aria-label={t.hexAria(t.colourAria(t.colourLabels.accentColor))}
                             type="text"
+                            dir="ltr"
                             value={customization.accentColor}
                             onChange={(e) =>
                               updateCustomization("accentColor", e.target.value)
@@ -1113,11 +1397,11 @@ export default function QRCodePage() {
                       </div>
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
-                          Background
+                          {t.colourLabels.backgroundColor}
                         </label>
                         <div className="flex items-center gap-2">
                           <input
-                            aria-label="Background colour"
+                            aria-label={t.colourAria(t.colourLabels.backgroundColor)}
                             type="color"
                             value={customization.backgroundColor}
                             onChange={(e) =>
@@ -1129,8 +1413,9 @@ export default function QRCodePage() {
                             className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
-                            aria-label="Background colour hex value"
+                            aria-label={t.hexAria(t.colourAria(t.colourLabels.backgroundColor))}
                             type="text"
+                            dir="ltr"
                             value={customization.backgroundColor}
                             onChange={(e) =>
                               updateCustomization(
@@ -1144,11 +1429,11 @@ export default function QRCodePage() {
                       </div>
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
-                          Text Primary
+                          {t.colourLabels.textPrimary}
                         </label>
                         <div className="flex items-center gap-2">
                           <input
-                            aria-label="Text Primary colour"
+                            aria-label={t.colourAria(t.colourLabels.textPrimary)}
                             type="color"
                             value={customization.textPrimary}
                             onChange={(e) =>
@@ -1157,8 +1442,9 @@ export default function QRCodePage() {
                             className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
-                            aria-label="Text Primary colour hex value"
+                            aria-label={t.hexAria(t.colourAria(t.colourLabels.textPrimary))}
                             type="text"
+                            dir="ltr"
                             value={customization.textPrimary}
                             onChange={(e) =>
                               updateCustomization("textPrimary", e.target.value)
@@ -1169,11 +1455,11 @@ export default function QRCodePage() {
                       </div>
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
-                          Text Secondary
+                          {t.colourLabels.textSecondary}
                         </label>
                         <div className="flex items-center gap-2">
                           <input
-                            aria-label="Text Secondary colour"
+                            aria-label={t.colourAria(t.colourLabels.textSecondary)}
                             type="color"
                             value={customization.textSecondary}
                             onChange={(e) =>
@@ -1185,8 +1471,9 @@ export default function QRCodePage() {
                             className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
-                            aria-label="Text Secondary colour hex value"
+                            aria-label={t.hexAria(t.colourAria(t.colourLabels.textSecondary))}
                             type="text"
+                            dir="ltr"
                             value={customization.textSecondary}
                             onChange={(e) =>
                               updateCustomization(
@@ -1204,55 +1491,57 @@ export default function QRCodePage() {
                   {/* Text Section */}
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2">
-                      <Type className="w-4 h-4" />
-                      Text Content
+                      <Type className="w-4 h-4" aria-hidden />
+                      {t.textContent}
                     </h4>
 
                     <div className="space-y-3">
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
-                          Arabic Text
+                          {t.arabicText}
                         </label>
                         <input
-                          aria-label="Arabic Text"
+                          aria-label={t.arabicText}
                           type="text"
                           value={customization.arabicText}
                           onChange={(e) =>
                             updateCustomization("arabicText", e.target.value)
                           }
-                          className="w-full px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink text-right"
+                          className="w-full px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink text-start"
                           dir="rtl"
                           placeholder="قائمة الطعام"
                         />
                       </div>
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
-                          English Text
+                          {t.englishText}
                         </label>
                         <input
-                          aria-label="English Text"
+                          aria-label={t.englishText}
                           type="text"
                           value={customization.englishText}
                           onChange={(e) =>
                             updateCustomization("englishText", e.target.value)
                           }
                           className="w-full px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink"
+                          dir="ltr"
                           placeholder="Scan To View Menu"
                         />
                       </div>
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
-                          Call to Action
+                          {t.cta}
                         </label>
                         <input
-                          aria-label="Call to Action"
+                          aria-label={t.cta}
                           type="text"
                           value={customization.ctaText}
                           onChange={(e) =>
                             updateCustomization("ctaText", e.target.value)
                           }
                           className="w-full px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink"
-                          placeholder="Scan Me!"
+                          dir="auto"
+                          placeholder={t.ctaPlaceholder}
                         />
                       </div>
                     </div>
@@ -1261,8 +1550,8 @@ export default function QRCodePage() {
                   {/* Options Section */}
                   <div className="space-y-4">
                     <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4" />
-                      Display Options
+                      <ImageIcon className="w-4 h-4" aria-hidden />
+                      {t.displayOptions}
                     </h4>
 
                     <div className="space-y-3">
@@ -1276,7 +1565,7 @@ export default function QRCodePage() {
                           className="w-4 h-4 rounded border-ui-input bg-ui-surface text-ui-primary"
                         />
                         <span className="text-sm text-ui-ink">
-                          Show Logo
+                          {t.showLogo}
                         </span>
                       </label>
                       <label className="flex items-center gap-3 cursor-pointer">
@@ -1292,13 +1581,14 @@ export default function QRCodePage() {
                           className="w-4 h-4 rounded border-ui-input bg-ui-surface text-ui-primary"
                         />
                         <span className="text-sm text-ui-ink">
-                          Show Shop Name
+                          {t.showShopName}
                         </span>
                       </label>
                       {customization.showShopName && (
-                        <div className="ml-7">
+                        <div className="ms-7">
                           <input
-                            aria-label="Custom shop name"
+                            aria-label={t.customShopNameAria}
+                            dir="auto"
                             type="text"
                             value={customization.customShopName}
                             onChange={(e) =>
@@ -1308,13 +1598,12 @@ export default function QRCodePage() {
                               )
                             }
                             placeholder={
-                              catalog?.name || "Custom name (optional)"
+                              catalog?.name || t.customShopNamePlaceholder
                             }
                             className="w-full px-3 py-1.5 bg-ui-surface rounded-lg text-ui-ink text-sm border border-ui-input focus:border-ui-primary focus:outline-none"
                           />
                           <p className="text-xs text-ui-muted mt-1">
-                            Leave empty to use catalog name, or enter custom
-                            text (e.g., Arabic)
+                            {t.customShopNameHint}
                           </p>
                         </div>
                       )}
@@ -1331,17 +1620,17 @@ export default function QRCodePage() {
                           className="w-4 h-4 rounded border-ui-input bg-ui-surface text-ui-primary"
                         />
                         <span className="text-sm text-ui-ink">
-                          Show Arabic Text
+                          {t.showArabicText}
                         </span>
                       </label>
 
                       {/* Dynamic Pattern Selector */}
                       <div>
                         <label className="block text-xs text-ui-muted mb-2">
-                          Background Pattern{" "}
+                          {t.backgroundPattern}{" "}
                           {selectedTemplate && (
                             <span className="text-ui-primary">
-                              (for {selectedTemplate.replace("-", " ")})
+                              {t.patternFor(t.templates[selectedTemplate]?.name ?? selectedTemplate)}
                             </span>
                           )}
                         </label>
@@ -1357,8 +1646,8 @@ export default function QRCodePage() {
                                   : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                                 }`}
                             >
-                              <span>{patternDef.icon}</span>
-                              <span>{patternDef.name}</span>
+                              <span aria-hidden>{patternDef.icon}</span>
+                              <span>{t.patternNames[patternDef.name] ?? patternDef.name}</span>
                             </button>
                           ))}
                         </div>
@@ -1369,41 +1658,42 @@ export default function QRCodePage() {
 
                 {/* Advanced Settings Row */}
                 <div className="border-t border-ui-line pt-6 mt-6">
-                  <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {/* Custom URL */}
                     <div className="lg:col-span-2">
                       <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2 mb-3">
-                        <Link2 className="w-4 h-4" />
-                        Custom URL (Optional)
+                        <Link2 className="w-4 h-4" aria-hidden />
+                        {t.customUrl}
                       </h4>
                       <div className="flex gap-2">
                         <input
-                          aria-label="Custom menu URL"
+                          aria-label={t.customUrlAria}
                           type="url"
+                          dir="ltr"
                           value={customization.customUrl}
                           onChange={(e) =>
                             updateCustomization("customUrl", e.target.value)
                           }
-                          className="flex-1 px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink text-sm"
+                          className="min-w-0 flex-1 px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink text-sm"
                           placeholder={
                             catalogUrl ||
-                            "Leave empty to use default catalog URL"
+                            t.customUrlPlaceholder
                           }
                         />
                         {customization.customUrl && (
                           <button
                             onClick={() => updateCustomization("customUrl", "")}
                             className="px-3 py-2 bg-ui-surface hover:bg-ui-subtle rounded-lg text-ui-ink"
-                            title="Clear custom URL"
-                            aria-label="Clear custom URL"
+                            title={t.clearCustomUrl}
+                            aria-label={t.clearCustomUrl}
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-4 h-4" aria-hidden />
                           </button>
                         )}
                       </div>
                       {customization.customUrl && (
                         <p className="text-xs text-ui-primary mt-1 flex items-center gap-1">
-                          ⚠️ Using custom URL instead of catalog URL
+                          <span aria-hidden>⚠️</span> {t.customUrlWarning}
                         </p>
                       )}
                     </div>
@@ -1411,8 +1701,8 @@ export default function QRCodePage() {
                     {/* Color Presets */}
                     <div className="lg:col-span-2">
                       <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2 mb-3">
-                        <Sparkles className="w-4 h-4" />
-                        Color Theme Presets
+                        <Sparkles className="w-4 h-4" aria-hidden />
+                        {t.colourThemes}
                       </h4>
                       <div className="flex flex-wrap gap-2">
                         {COLOR_PRESETS.map((preset) => (
@@ -1420,10 +1710,10 @@ export default function QRCodePage() {
                             key={preset.id}
                             onClick={() => applyColorPreset(preset.id)}
                             className="group relative px-3 py-1.5 text-xs rounded-lg bg-ui-surface text-ui-ink hover:bg-ui-subtle transition-colors flex items-center gap-2"
-                            title={preset.name}
+                            title={t.colourPresets[preset.id] ?? preset.name}
                           >
                             {preset.colors ? (
-                              <div className="flex -space-x-1">
+                              <div className="flex -space-x-1 rtl:space-x-reverse" aria-hidden>
                                 <div
                                   className="w-3 h-3 rounded-full border border-ui-input"
                                   style={{ background: preset.colors.primary }}
@@ -1440,7 +1730,7 @@ export default function QRCodePage() {
                                 />
                               </div>
                             ) : (
-                              <div className="flex -space-x-1">
+                              <div className="flex -space-x-1 rtl:space-x-reverse" aria-hidden>
                                 <div
                                   className="w-3 h-3 rounded-full border border-ui-input"
                                   style={{ background: catalog?.color_primary }}
@@ -1457,7 +1747,7 @@ export default function QRCodePage() {
                                 />
                               </div>
                             )}
-                            <span>{preset.name}</span>
+                            <span>{t.colourPresets[preset.id] ?? preset.name}</span>
                           </button>
                         ))}
                       </div>
@@ -1468,17 +1758,17 @@ export default function QRCodePage() {
                 {/* Typography Section - Second Row */}
                 <div className="border-t border-ui-line pt-6 mt-6">
                   <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2 mb-4">
-                    <Type className="w-4 h-4" />
-                    Typography
+                    <Type className="w-4 h-4" aria-hidden />
+                    {t.typography}
                   </h4>
 
-                  <div className="grid md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Font Preset */}
                     <div>
                       <label className="block text-xs text-ui-muted mb-2">
-                        Font Style
+                        {t.fontStyle}
                       </label>
-                      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                      <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pe-1">
                         {(Object.keys(FONT_PRESETS) as FontPreset[]).map(
                           (preset) => (
                             <button
@@ -1486,13 +1776,13 @@ export default function QRCodePage() {
                               onClick={() =>
                                 updateCustomization("fontPreset", preset)
                               }
-                              className={`px-3 py-2 text-xs rounded-lg transition-colors text-left ${customization.fontPreset === preset
+                              className={`px-3 py-2 text-xs rounded-lg transition-colors text-start ${customization.fontPreset === preset
                                   ? "bg-ui-primary text-ui-primary-fg"
                                   : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                                 }`}
                             >
                               <span className="font-medium block">
-                                {FONT_PRESETS[preset].name}
+                                {t.fontPresets[preset]}
                               </span>
                             </button>
                           )
@@ -1503,7 +1793,7 @@ export default function QRCodePage() {
                     {/* Heading Weight */}
                     <div>
                       <label className="block text-xs text-ui-muted mb-2">
-                        Heading Weight
+                        {t.headingWeight}
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {(
@@ -1520,12 +1810,12 @@ export default function QRCodePage() {
                             onClick={() =>
                               updateCustomization("headingWeight", weight)
                             }
-                            className={`px-3 py-1.5 text-xs rounded-lg capitalize transition-colors ${customization.headingWeight === weight
+                            className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${customization.headingWeight === weight
                                 ? "bg-ui-primary text-ui-primary-fg"
                                 : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                               }`}
                           >
-                            {weight}
+                            {t.weights[weight]}
                           </button>
                         ))}
                       </div>
@@ -1534,7 +1824,7 @@ export default function QRCodePage() {
                     {/* Letter Spacing */}
                     <div>
                       <label className="block text-xs text-ui-muted mb-2">
-                        Letter Spacing
+                        {t.letterSpacing}
                       </label>
                       <div className="flex flex-wrap gap-2">
                         {(["tight", "normal", "wide", "wider"] as const).map(
@@ -1544,12 +1834,12 @@ export default function QRCodePage() {
                               onClick={() =>
                                 updateCustomization("letterSpacing", spacing)
                               }
-                              className={`px-3 py-1.5 text-xs rounded-lg capitalize transition-colors ${customization.letterSpacing === spacing
+                              className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${customization.letterSpacing === spacing
                                   ? "bg-ui-primary text-ui-primary-fg"
                                   : "bg-ui-surface text-ui-ink hover:bg-ui-subtle"
                                 }`}
                             >
-                              {spacing}
+                              {t.spacings[spacing]}
                             </button>
                           )
                         )}
@@ -1560,27 +1850,27 @@ export default function QRCodePage() {
               </div>
             )}
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {PRINT_TEMPLATES.map((template) => (
                 <button
                   key={template.id}
                   onClick={() => setSelectedTemplate(template.id)}
-                  className={`p-4 rounded-xl border-2 transition-all text-left ${selectedTemplate === template.id
+                  className={`p-4 rounded-xl border-2 transition-all text-start ${selectedTemplate === template.id
                       ? "border-ui-primary bg-ui-subtle"
                       : "border-ui-line bg-ui-surface hover:border-ui-input"
                     }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">{template.icon}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-ui-surface text-ui-muted capitalize">
-                      {template.category}
+                    <span className="text-2xl" aria-hidden>{template.icon}</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-ui-surface text-ui-muted">
+                      {t.categories[template.category] ?? template.category}
                     </span>
                   </div>
                   <h3 className="font-medium text-ui-heading text-sm">
-                    {template.name}
+                    {t.templates[template.id]?.name ?? template.name}
                   </h3>
                   <p className="text-xs text-ui-muted mt-1">
-                    {template.description}
+                    {t.templates[template.id]?.description ?? template.description}
                   </p>
                 </button>
               ))}
@@ -1592,31 +1882,21 @@ export default function QRCodePage() {
                   onClick={handlePrint}
                   className="flex items-center gap-2 py-3 px-6 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors"
                 >
-                  <Printer className="w-4 h-4" />
-                  Print / Save as PDF
+                  <Printer className="w-4 h-4" aria-hidden />
+                  {t.printSave}
                 </button>
                 <button
                   onClick={() => setShowCustomizer(true)}
                   className="flex items-center gap-2 py-3 px-6 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors"
                 >
-                  <Palette className="w-4 h-4" />
-                  Customize
-                </button>
-                <button
-                  onClick={batchExportTemplates}
-                  disabled={isBatchExporting}
-                  className="flex items-center gap-2 py-3 px-6 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors disabled:opacity-50"
-                >
-                  <Layers className="w-4 h-4" />
-                  {isBatchExporting
-                    ? `Exporting... ${batchProgress}%`
-                    : "Export All Templates"}
+                  <Palette className="w-4 h-4" aria-hidden />
+                  {t.customize}
                 </button>
                 <button
                   onClick={() => setSelectedTemplate(null)}
                   className="py-3 px-6 bg-ui-surface hover:bg-ui-subtle text-ui-ink rounded-lg font-medium transition-colors"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
               </div>
             )}
@@ -1628,9 +1908,12 @@ export default function QRCodePage() {
               {/* Preview Header with Controls */}
               <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
                 <h2 className="text-lg font-semibold text-ui-heading flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-ui-primary" />
-                  Preview:{" "}
-                  {PRINT_TEMPLATES.find((t) => t.id === selectedTemplate)?.name}
+                  <Eye className="w-5 h-5 text-ui-primary" aria-hidden />
+                  {t.preview(
+                    t.templates[selectedTemplate]?.name ??
+                      PRINT_TEMPLATES.find((tpl) => tpl.id === selectedTemplate)?.name ??
+                      ""
+                  )}
                 </h2>
 
                 {/* Preview Controls */}
@@ -1642,12 +1925,12 @@ export default function QRCodePage() {
                         setPreviewScale(Math.max(50, previewScale - 10))
                       }
                       className="p-1.5 hover:bg-ui-subtle rounded transition-colors"
-                      title="Zoom Out"
-                      aria-label="Zoom Out"
+                      title={t.zoomOut}
+                      aria-label={t.zoomOut}
                     >
-                      <ZoomOut className="w-4 h-4 text-ui-ink" />
+                      <ZoomOut className="w-4 h-4 text-ui-ink" aria-hidden />
                     </button>
-                    <span className="text-sm text-ui-ink min-w-[4rem] text-center">
+                    <span className="text-sm text-ui-ink min-w-[4rem] text-center" dir="ltr">
                       {previewScale}%
                     </span>
                     <button
@@ -1655,17 +1938,17 @@ export default function QRCodePage() {
                         setPreviewScale(Math.min(150, previewScale + 10))
                       }
                       className="p-1.5 hover:bg-ui-subtle rounded transition-colors"
-                      title="Zoom In"
-                      aria-label="Zoom In"
+                      title={t.zoomIn}
+                      aria-label={t.zoomIn}
                     >
-                      <ZoomIn className="w-4 h-4 text-ui-ink" />
+                      <ZoomIn className="w-4 h-4 text-ui-ink" aria-hidden />
                     </button>
                   </div>
 
                   {/* Scale Slider */}
                   <div className="hidden md:flex items-center gap-2">
                     <input
-                      aria-label="Preview zoom"
+                      aria-label={t.previewZoom}
                       type="range"
                       min="50"
                       max="150"
@@ -1682,24 +1965,23 @@ export default function QRCodePage() {
                   <button
                     onClick={() => setPreviewScale(100)}
                     className="p-2 bg-ui-surface hover:bg-ui-subtle rounded-lg transition-colors"
-                    title="Reset to 100%"
-                    aria-label="Reset to 100%"
+                    title={t.resetZoom}
+                    aria-label={t.resetZoom}
                   >
-                    <RotateCw className="w-4 h-4 text-ui-ink" />
+                    <RotateCw className="w-4 h-4 text-ui-ink" aria-hidden />
                   </button>
 
                   {/* Fullscreen Toggle */}
                   <button
                     onClick={toggleFullscreen}
                     className="p-2 bg-ui-surface hover:bg-ui-subtle rounded-lg transition-colors"
-                    title={
-                      isFullscreen ? "Exit Fullscreen" : "Fullscreen Preview"
-                    }
+                    title={isFullscreen ? t.exitFullscreen : t.fullscreen}
+                    aria-label={isFullscreen ? t.exitFullscreen : t.fullscreen}
                   >
                     {isFullscreen ? (
-                      <Minimize2 className="w-4 h-4 text-ui-ink" />
+                      <Minimize2 className="w-4 h-4 text-ui-ink" aria-hidden />
                     ) : (
-                      <Maximize2 className="w-4 h-4 text-ui-ink" />
+                      <Maximize2 className="w-4 h-4 text-ui-ink" aria-hidden />
                     )}
                   </button>
                 </div>
@@ -1716,6 +1998,7 @@ export default function QRCodePage() {
                 }}
               >
                 <div
+                  dir="ltr"
                   style={{
                     transform: `scale(${previewScale / 100})`,
                     transformOrigin: "top center",
@@ -1735,7 +2018,7 @@ export default function QRCodePage() {
               {/* Fullscreen Exit Hint */}
               {isFullscreen && (
                 <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-black/40 text-ui-ink px-4 py-2 rounded-lg text-sm">
-                  Press ESC or click the minimize button to exit fullscreen
+                  {t.fullscreenHint}
                 </div>
               )}
             </div>
@@ -1744,7 +2027,7 @@ export default function QRCodePage() {
 
         {/* Print-only content (hidden on screen) */}
         {selectedTemplate && qrDataUrl && catalog && (
-          <div className="print-only">
+          <div className="print-only" dir="ltr">
             <PrintTemplatePreview
               template={selectedTemplate}
               qrDataUrl={qrDataUrl}
@@ -1800,6 +2083,7 @@ function PrintTemplatePreview({
   catalog: CatalogInfo;
   customization: TemplateCustomization;
 }) {
+  const t = useCopy({ en, ar });
   const shortUrl = catalogUrl.replace(/^https?:\/\//, "");
 
   // Use customization colors - ALL templates use ONLY these colors
@@ -2254,7 +2538,7 @@ function PrintTemplatePreview({
               className="absolute inset-0"
               style={{ background: hexToRgba(accentColor, 0.03) }}
             />
-            <span className="relative">✂ Fold Line ✂</span>
+            <span className="relative">{t.foldLine}</span>
           </div>
 
           {/* Back side */}
@@ -5199,7 +5483,7 @@ function PrintTemplatePreview({
     default:
       return (
         <div className="text-center p-8" style={{ color: textSecondary }}>
-          Template not found
+          {t.templateNotFound}
         </div>
       );
   }

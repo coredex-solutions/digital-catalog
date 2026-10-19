@@ -52,6 +52,15 @@ async function handler(
 
     const admin = result.rows[0];
 
+    // Password first, so the replies don't reveal which accounts exist or are paused
+    const passwordValid = await verifyPassword(password, admin.password_hash as string);
+    if (!passwordValid) {
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      );
+    }
+
     if (!admin.is_active) {
       return NextResponse.json(
         { error: 'Account is deactivated' },
@@ -63,15 +72,6 @@ async function handler(
       return NextResponse.json(
         { error: 'Catalog is suspended' },
         { status: 403 }
-      );
-    }
-
-    // Verify the password using bcrypt
-    const passwordValid = await verifyPassword(password, admin.password_hash as string);
-    if (!passwordValid) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
       );
     }
 

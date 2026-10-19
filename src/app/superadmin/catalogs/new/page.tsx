@@ -90,7 +90,7 @@ export default function NewCatalogPage() {
       const token = localStorage.getItem("superadmin_token");
       if (!token) throw new Error("Not authenticated");
 
-      const res = await fetch("/api/superadmin/catalogs", {
+      const res = await fetch("/api/superadmin/catalogs/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

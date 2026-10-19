@@ -7,6 +7,53 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CatalogAdminSidebar } from "./CatalogAdminSidebar";
 import { CatalogAdminTopBar, CatalogAdminBottomNav } from "./CatalogAdminMobileNav";
 import { Loader2, Zap, MessageCircle, CreditCard, AlertTriangle, Rocket } from "lucide-react";
+import { SALES_WHATSAPP } from "@/lib/contact";
+import { useAdminLang, useCopy, useFormat, plural, type AdminLang } from "../_lib/i18n";
+import { translateApiMessage } from "../_lib/api-errors";
+
+const en = {
+  loading: "Loading your dashboard…",
+  pausedShort: "Your menu is paused.",
+  pausedShortBody: "It is offline and changes can't be saved until you renew.",
+  renew: "Renew plan",
+  endedShort: "Your plan has ended.",
+  endedBody: (date: string) => `Your menu stays online until ${date}. Renew before then to keep it running.`,
+  changes: (n: number, lang: AdminLang) => plural(lang, n, { one: "# unpublished change.", other: "# unpublished changes." }),
+  changesBody: "Guests don't see them yet.",
+  reviewPublish: "Review & publish",
+  pausedTitle: "Your menu is paused",
+  pausedBody: "Your plan has ended, so your menu is offline and changes can't be saved. Renew your plan to bring it back.",
+  goBilling: "Go to Plan & billing",
+  whatsapp: "Contact us on WhatsApp",
+  whatsappText: (slug: string) => `Hello, I want to renew the Coredex plan for my menu "${slug}".`,
+  readOnly: "View dashboard (read-only)",
+  reference: "Reference:",
+};
+const ar: typeof en = {
+  loading: "جارٍ تحميل لوحة التحكم…",
+  pausedShort: "قائمتك متوقفة.",
+  pausedShortBody: "هي غير متاحة للزبائن ولا يمكن حفظ التعديلات حتى تجدّد باقتك.",
+  renew: "تجديد الباقة",
+  endedShort: "انتهت باقتك.",
+  endedBody: (date) => `تبقى قائمتك متاحة حتى ${date}. جدّد قبل ذلك لتبقى تعمل.`,
+  changes: (n, lang) =>
+    plural(lang, n, {
+      one: "تعديل واحد غير منشور.",
+      two: "تعديلان غير منشورين.",
+      few: "# تعديلات غير منشورة.",
+      many: "# تعديلاً غير منشور.",
+      other: "# تعديل غير منشور.",
+    }),
+  changesBody: "لا يراها الزبائن بعد.",
+  reviewPublish: "مراجعة ونشر",
+  pausedTitle: "قائمتك متوقفة",
+  pausedBody: "انتهت باقتك، لذلك القائمة غير متاحة للزبائن ولا يمكن حفظ التعديلات. جدّد باقتك لإعادتها.",
+  goBilling: "الانتقال إلى الباقة والدفع",
+  whatsapp: "تواصل معنا على واتساب",
+  whatsappText: (slug) => `مرحباً، أريد تجديد باقة Coredex لقائمتي "${slug}".`,
+  readOnly: "عرض لوحة التحكم (للقراءة فقط)",
+  reference: "الرقم المرجعي:",
+};
 
 interface CatalogInfo {
   id: string;
@@ -28,6 +75,8 @@ interface Features {
   is_expired: boolean;
   /** The plan has ended but the menu stays online until offline_at */
   in_grace?: boolean;
+  /** When the current plan ends; null when it has no end date */
+  expires_at?: string | null;
   plan_ended_at?: string | null;
   offline_at?: string | null;
   subscription_type: string;
@@ -59,6 +108,9 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
   const router = useRouter();
   const params = useParams();
   const slug = params.slug as string;
+  const lang = useAdminLang();
+  const t = useCopy({ en, ar });
+  const format = useFormat();
 
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
@@ -72,17 +124,30 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
   const onBillingPage = pathname?.startsWith(`/c/${slug}/admin/billing`) ?? false;
   const showPausedModal = !!features?.is_expired && !pausedDismissed && !onBillingPage;
 
-  // One stable function, so pages that load data with it don't refetch on every shell render
+  // One stable function, so pages that load data with it don't refetch on every shell render.
+  // The APIs answer in English; in Arabic, their error and message texts are translated here.
   const fetchWithAuth = useCallback(async (url: string, options: RequestInit = {}) => {
     const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-    return fetch(url, {
+    const res = await fetch(url, {
       ...options,
       headers: {
         ...options.headers,
         Authorization: `Bearer ${token}`,
       },
     });
-  }, [slug]);
+    if (lang === "ar") {
+      const readJson = res.json.bind(res);
+      res.json = async () => {
+        const data = await readJson();
+        if (data && typeof data === "object") {
+          if (typeof data.error === "string") data.error = translateApiMessage(data.error, "ar");
+          if (typeof data.message === "string") data.message = translateApiMessage(data.message, "ar", { fallback: false });
+        }
+        return data;
+      };
+    }
+    return res;
+  }, [slug, lang]);
 
   // Unpublished menu changes: shown as a bar on every page except the publish page itself.
   // Refreshed on navigation, when the tab regains focus and when a page announces a change.
@@ -92,7 +157,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
     if (!authenticated) return;
     let cancelled = false;
     const refresh = () => {
-      fetchWithAuth(`/api/c/${slug}/admin/publish`)
+      fetchWithAuth(`/api/c/${slug}/admin/publish/`)
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
           if (!cancelled) setDraftChanges(data?.hasUnpublishedChanges ? data.changes.length : 0);
@@ -123,12 +188,12 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
       const token = localStorage.getItem(`catalog_admin_token_${slug}`);
 
       if (!token) {
-        router.push(`/c/${slug}/admin/login`);
+        router.push(`/login/?r=${slug}`);
         return;
       }
 
       try {
-        const res = await fetch(`/api/c/${slug}/auth/verify`, {
+        const res = await fetch(`/api/c/${slug}/auth/verify/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -145,7 +210,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
         setAuthenticated(true);
       } catch {
         localStorage.removeItem(`catalog_admin_token_${slug}`);
-        router.push(`/c/${slug}/admin/login`);
+        router.push(`/login/?r=${slug}`);
       } finally {
         setLoading(false);
       }
@@ -161,8 +226,8 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
           <div className="w-16 h-16 rounded-full border border-ui-line animate-ping absolute inset-0" />
           <Loader2 className="w-16 h-16 text-ui-primary animate-spin relative z-10" />
         </div>
-        <p className="text-xs font-semibold text-ui-muted">
-          Establishing Secure Uplink...
+        <p className="text-sm font-medium text-ui-muted" role="status">
+          {t.loading}
         </p>
       </div>
     );
@@ -186,7 +251,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
         }}
       >
         <CatalogAdminSidebar catalog={catalog} features={features} />
-        <div className="flex-1 min-w-0 lg:ml-64 relative min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <div className="flex-1 min-w-0 lg:ms-64 relative min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0">
           <CatalogAdminTopBar slug={slug} catalogName={catalog.name} />
 
           {features?.is_expired && !showPausedModal && (
@@ -196,8 +261,8 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
             >
               <AlertTriangle className="h-5 w-5 shrink-0 text-ui-warning" aria-hidden />
               <p className="min-w-0 flex-1 text-sm text-ui-ink">
-                <span className="font-semibold">Catalog paused.</span>{" "}
-                <span className="text-ui-muted">Your menu is offline and changes can&apos;t be saved until you renew.</span>
+                <span className="font-semibold">{t.pausedShort}</span>{" "}
+                <span className="text-ui-muted">{t.pausedShortBody}</span>
               </p>
               {!onBillingPage && (
                 <Link
@@ -205,7 +270,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
                   className="inline-flex min-h-11 items-center gap-2 rounded-control bg-ui-primary px-4 text-sm font-semibold text-ui-primary-fg hover:bg-ui-primary-hover"
                 >
                   <CreditCard className="h-4 w-4" aria-hidden />
-                  Renew plan
+                  {t.renew}
                 </Link>
               )}
             </div>
@@ -215,12 +280,8 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
             <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-ui-line bg-ui-surface px-4 py-3 sm:px-6 lg:px-10">
               <AlertTriangle className="h-5 w-5 shrink-0 text-ui-warning" aria-hidden />
               <p className="min-w-0 flex-1 text-sm">
-                <span className="font-semibold">Your plan has ended.</span>{" "}
-                <span className="text-ui-muted">
-                  Your menu stays online until{" "}
-                  {new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Beirut", dateStyle: "long" }).format(new Date(features.offline_at))}. Renew
-                  before then to keep it running.
-                </span>
+                <span className="font-semibold">{t.endedShort}</span>{" "}
+                <span className="text-ui-muted">{t.endedBody(format.date(features.offline_at))}</span>
               </p>
               {!onBillingPage && (
                 <Link
@@ -228,7 +289,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
                   className="inline-flex min-h-11 items-center gap-2 rounded-control bg-ui-primary px-4 text-sm font-semibold text-ui-primary-fg hover:bg-ui-primary-hover"
                 >
                   <CreditCard className="h-4 w-4" aria-hidden />
-                  Renew plan
+                  {t.renew}
                 </Link>
               )}
             </div>
@@ -238,16 +299,14 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
             <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-ui-line bg-ui-subtle px-4 py-2.5 sm:px-6 lg:px-10">
               <Rocket className="h-4 w-4 shrink-0 text-ui-primary" aria-hidden />
               <p className="min-w-0 flex-1 text-sm">
-                <span className="font-semibold">
-                  {draftChanges} unpublished {draftChanges === 1 ? "change" : "changes"}.
-                </span>{" "}
-                <span className="text-ui-muted">Guests don&apos;t see them yet.</span>
+                <span className="font-semibold">{t.changes(draftChanges, lang)}</span>{" "}
+                <span className="text-ui-muted">{t.changesBody}</span>
               </p>
               <Link
                 href={`/c/${slug}/admin/publish`}
                 className="inline-flex min-h-11 items-center rounded-control bg-ui-primary px-4 text-sm font-semibold text-ui-primary-fg hover:bg-ui-primary-hover"
               >
-                Review &amp; publish
+                {t.reviewPublish}
               </Link>
             </div>
           )}
@@ -279,11 +338,11 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
                     </div>
 
                     <h2 id="catalog-paused-title" className="text-2xl sm:text-3xl font-semibold mb-3">
-                      Catalog <span className="text-ui-primary">Paused</span>
+                      {t.pausedTitle}
                     </h2>
 
                     <p id="catalog-paused-desc" className="text-ui-muted text-sm mb-8 leading-relaxed">
-                      Your free trial has ended, so your menu is offline and changes can&apos;t be saved. Renew your plan to bring it back.
+                      {t.pausedBody}
                     </p>
 
                     <div className="space-y-3">
@@ -293,27 +352,27 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
                         className="w-full min-h-12 py-3 bg-ui-primary text-ui-primary-fg hover:bg-ui-primary-hover rounded-control font-semibold text-sm transition-colors flex items-center justify-center gap-2"
                       >
                         <CreditCard className="w-5 h-5" aria-hidden />
-                        Go to Billing
+                        {t.goBilling}
                       </Link>
                       <a
-                        href={`https://wa.me/966540679669?text=I%20want%20to%20upgrade%20my%20catalog%20${slug}`}
+                        href={`https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(t.whatsappText(slug))}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full min-h-12 py-3 border border-ui-input text-ui-ink hover:bg-ui-subtle rounded-control font-semibold text-sm transition-colors flex items-center justify-center gap-2"
                       >
                         <MessageCircle className="w-5 h-5" aria-hidden />
-                        Contact support on WhatsApp
+                        {t.whatsapp}
                       </a>
                       <button
                         type="button"
                         onClick={() => setPausedDismissed(true)}
                         className="w-full min-h-11 text-sm font-medium text-ui-muted hover:text-ui-ink rounded-control"
                       >
-                        View dashboard (read-only)
+                        {t.readOnly}
                       </button>
 
                       <p className="text-xs text-ui-muted pt-1">
-                        Reference ID: {catalog.id.split('-')[0]}
+                        {t.reference} <span dir="ltr">{catalog.id.split('-')[0]}</span>
                       </p>
                     </div>
                   </div>

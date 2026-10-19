@@ -4,6 +4,7 @@ import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
 import { v4 as uuidv4 } from "uuid";
 import { PLAN_CONFIG } from "@/lib/plans";
+import { planReorder } from "@/lib/catalog/reorder";
 
 // GET: List all categories for this catalog
 export async function GET(
@@ -28,7 +29,7 @@ export async function GET(
         (SELECT COUNT(*) FROM menu_items WHERE category_id = c.id) as item_count
       FROM categories c
       WHERE c.catalog_id = ?
-      ORDER BY c.display_order ASC
+      ORDER BY c.display_order ASC, c.id ASC
     `,
     args: [catalog.id],
   });
@@ -60,9 +61,13 @@ export async function POST(
       icon_name = "Folder",
     } = body;
 
-    if (!name_en) {
+    // A name in at least one language. The other stays empty (not copied), so the guest menu
+    // falls back to the one given and the setup list can point out missing Arabic names.
+    const nameEn = typeof name_en === "string" ? name_en.trim() : "";
+    const nameAr = typeof name_ar === "string" ? name_ar.trim() : "";
+    if (!nameEn && !nameAr) {
       return NextResponse.json(
-        { error: "English name is required" },
+        { error: "Enter a name in Arabic or English" },
         { status: 400 }
       );
     }
@@ -104,8 +109,8 @@ export async function POST(
       args: [
         id,
         catalog.id,
-        name_ar || name_en,
-        name_en,
+        nameAr,
+        nameEn,
         image_url || null,
         icon_name,
         nextOrder,
@@ -118,8 +123,8 @@ export async function POST(
         category: {
           id,
           catalog_id: catalog.id,
-          name_ar: name_ar || name_en,
-          name_en,
+          name_ar: nameAr,
+          name_en: nameEn,
           image_url,
           icon_name,
           display_order: nextOrder,
@@ -152,25 +157,33 @@ export async function PUT(
   if (!auth.success) return auth.response;
 
   try {
-    const { order } = await request.json();
+    const body = await request.json().catch(() => null);
 
-    if (!Array.isArray(order)) {
+    const db = getDb();
+    const current = await db.execute({
+      sql: "SELECT id, display_order FROM categories WHERE catalog_id = ?",
+      args: [catalog.id],
+    });
+    // Every category exactly once; only the ones that moved are written
+    const plan = planReorder(body?.order, new Map(current.rows.map((r) => [String(r.id), Number(r.display_order) || 0])));
+    if (!plan) {
       return NextResponse.json(
-        { error: "Order must be an array of category IDs" },
-        { status: 400 }
+        { error: "The category list changed. Reload the page and try again." },
+        { status: 409 }
       );
     }
 
-    const db = getDb();
-
-    for (let i = 0; i < order.length; i++) {
-      await db.execute({
-        sql: "UPDATE categories SET display_order = ? WHERE id = ? AND catalog_id = ?",
-        args: [i, order[i], catalog.id],
-      });
+    if (plan.length > 0) {
+      await db.batch(
+        plan.map(([id, position]) => ({
+          sql: "UPDATE categories SET display_order = ?, updated_at = datetime('now') WHERE id = ? AND catalog_id = ?",
+          args: [position, id, catalog.id],
+        })),
+        "write"
+      );
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, changed: plan.length });
   } catch (error: any) {
     console.error("Reorder categories error:", error);
     return NextResponse.json(

@@ -74,7 +74,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
       const token = localStorage.getItem("superadmin_token");
       if (!token) return;
 
-      const res = await fetch(`/api/superadmin/catalogs/${id}`, {
+      const res = await fetch(`/api/superadmin/catalogs/${id}/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -131,7 +131,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
 
     try {
       const token = localStorage.getItem("superadmin_token");
-      const res = await fetch(`/api/superadmin/catalogs/${id}`, {
+      const res = await fetch(`/api/superadmin/catalogs/${id}/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -205,8 +205,8 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
     try {
       const token = localStorage.getItem("superadmin_token");
       const url = adminModalMode === "add"
-        ? `/api/superadmin/catalogs/${id}/admins`
-        : `/api/superadmin/catalogs/${id}/admins/${adminForm.id}`;
+        ? `/api/superadmin/catalogs/${id}/admins/`
+        : `/api/superadmin/catalogs/${id}/admins/${adminForm.id}/`;
 
       const body: any = {
         name: adminForm.name,
@@ -245,7 +245,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
 
     try {
       const token = localStorage.getItem("superadmin_token");
-      const res = await fetch(`/api/superadmin/catalogs/${id}/admins/${adminId}`, {
+      const res = await fetch(`/api/superadmin/catalogs/${id}/admins/${adminId}/`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -268,7 +268,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
 
     try {
       const token = localStorage.getItem("superadmin_token");
-      const res = await fetch(`/api/superadmin/catalogs/${id}?hard=true`, {
+      const res = await fetch(`/api/superadmin/catalogs/${id}/?hard=true`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -290,7 +290,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
     setResetting(true);
     try {
       const token = localStorage.getItem("superadmin_token");
-      const res = await fetch(`/api/superadmin/catalogs/${id}/admins/${resetAdmin.id}`, {
+      const res = await fetch(`/api/superadmin/catalogs/${id}/admins/${resetAdmin.id}/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

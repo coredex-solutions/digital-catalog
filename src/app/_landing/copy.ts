@@ -4,16 +4,15 @@
 
 export type SiteLang = "en" | "ar";
 
-export const SALES_WHATSAPP = "966540679669";
-export const SALES_EMAIL = "ops@coredex.solutions";
-export const DEMO_PATH = "/c/demo";
+export { SALES_WHATSAPP, SALES_EMAIL } from "@/lib/contact";
+export const DEMO_PATH = "/c/demo/";
 export const SITE_LANG_COOKIE = "site_lang";
 
 const en = {
   metaTitle: "Coredex: QR menus for restaurants and cafés",
   metaDescription:
     "A fast QR menu guests open in the browser, in Arabic and English, with prices in dollars and Lebanese pounds and orders sent to your WhatsApp.",
-  nav: { features: "Features", pricing: "Pricing", demo: "Live demo", faq: "Questions", start: "Start free trial", language: "العربية" },
+  nav: { features: "Features", pricing: "Pricing", demo: "Live demo", faq: "Questions", start: "Start free trial", login: "Log in", language: "العربية" },
   hero: {
     eyebrow: "QR menus for restaurants and cafés",
     title: "Your menu on every table, in Arabic and English",
@@ -91,7 +90,7 @@ const en = {
   owners: {
     title: "What you manage",
     items: [
-      { title: "Dishes, prices and photos", body: "Add categories and dishes with descriptions in each language. Changes show on the menu right away." },
+      { title: "Dishes, prices and photos", body: "Add categories and dishes with descriptions in each language. Preview your changes, then publish them to guests in one tap." },
       { title: "One-tap sold out", body: "Mark a dish sold out from the dishes list without opening a form." },
       { title: "Your colours and logo", body: "Your brand colour, logo and cover photo, adjusted automatically so text stays readable." },
       { title: "QR codes to print", body: "Download your menu's QR code. The link never changes, so printed codes keep working." },
@@ -153,7 +152,7 @@ const en = {
     whatsapp: "Message on WhatsApp",
     email: "Send an email",
   },
-  footer: { rights: "© 2026 Coredex Solutions", demo: "Live demo", signup: "Start free trial", privacy: "Privacy", terms: "Terms" },
+  footer: { rights: "© 2026 Coredex Solutions", demo: "Live demo", signup: "Start free trial", login: "Log in", privacy: "Privacy", terms: "Terms" },
 };
 
 type SiteCopy = typeof en;
@@ -162,7 +161,7 @@ const ar: SiteCopy = {
   metaTitle: "Coredex: قوائم طعام QR للمطاعم والمقاهي",
   metaDescription:
     "قائمة طعام سريعة يفتحها الزبائن في المتصفح، بالعربية والإنجليزية، مع الأسعار بالدولار والليرة اللبنانية والطلبات مباشرة إلى واتساب.",
-  nav: { features: "المزايا", pricing: "الأسعار", demo: "تجربة حيّة", faq: "أسئلة", start: "ابدأ التجربة المجانية", language: "English" },
+  nav: { features: "المزايا", pricing: "الأسعار", demo: "تجربة حيّة", faq: "أسئلة", start: "ابدأ التجربة المجانية", login: "تسجيل الدخول", language: "English" },
   hero: {
     eyebrow: "قوائم QR للمطاعم والمقاهي",
     title: "قائمتك على كل طاولة، بالعربية والإنجليزية",
@@ -240,7 +239,7 @@ const ar: SiteCopy = {
   owners: {
     title: "ما تديره أنت",
     items: [
-      { title: "الأطباق والأسعار والصور", body: "أضف الأقسام والأطباق مع الوصف بكل لغة. التعديلات تظهر على القائمة فوراً." },
+      { title: "الأطباق والأسعار والصور", body: "أضف الأقسام والأطباق مع الوصف بكل لغة. عاين تعديلاتك ثم انشرها للزبائن بلمسة واحدة." },
       { title: "«نفدت الكمية» بلمسة", body: "علّم الطبق كنافد من قائمة الأطباق من دون فتح أي نموذج." },
       { title: "ألوانك وشعارك", body: "لون علامتك وشعارك وصورة الغلاف، مع ضبط تلقائي لتبقى النصوص واضحة." },
       { title: "رموز QR للطباعة", body: "حمّل رمز QR لقائمتك. الرابط لا يتغير، فتبقى الرموز المطبوعة صالحة." },
@@ -302,7 +301,7 @@ const ar: SiteCopy = {
     whatsapp: "راسلنا على واتساب",
     email: "أرسل بريداً إلكترونياً",
   },
-  footer: { rights: "© 2026 Coredex Solutions", demo: "تجربة حيّة", signup: "ابدأ التجربة المجانية", privacy: "الخصوصية", terms: "الشروط" },
+  footer: { rights: "© 2026 Coredex Solutions", demo: "تجربة حيّة", signup: "ابدأ التجربة المجانية", login: "تسجيل الدخول", privacy: "الخصوصية", terms: "الشروط" },
 };
 
 export type { SiteCopy };

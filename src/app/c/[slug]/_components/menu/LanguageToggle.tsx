@@ -32,6 +32,8 @@ export function LanguageToggle({ className, variant = "chip" }: { className?: st
             aria-label={LABELS[code]}
             className={cn(
               "min-h-11 min-w-11 rounded-[8px] px-3 text-sm font-semibold transition-colors",
+              // An Arabic label on an English page uses the phone font, so it doesn't pull in the Arabic web font
+              code === "ar" && lang !== "ar" && "font-system",
               code === lang ? "bg-brand text-brand-fg" : "text-menu-muted hover:text-menu-ink"
             )}
           >
@@ -55,7 +57,7 @@ export function LanguageToggle({ className, variant = "chip" }: { className?: st
       aria-label={`${t.language}: ${LABELS[other]}`}
     >
       <Languages className="h-4 w-4" aria-hidden />
-      <span>{SHORT_LABELS[other]}</span>
+      <span className={other === "ar" ? "font-system" : undefined}>{SHORT_LABELS[other]}</span>
     </button>
   );
 }

@@ -79,6 +79,14 @@ SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=info@example.com
 SMTP_PASS=...
+# Plan requests from owners are emailed here (defaults to SMTP_USER)
+OPS_EMAIL=ops@example.com
+
+# Daily reminder emails (step 8). Generate with: openssl rand -hex 24
+CRON_SECRET=...
+
+# Sales WhatsApp on the home page: country code + number, digits only
+NEXT_PUBLIC_SALES_WHATSAPP=961XXXXXXXX
 
 # AI features (menu wizard, AI waiter, voice): add the keys you use
 GOOGLE_API_KEY=...
@@ -122,6 +130,22 @@ Open `https://YOUR-DOMAIN.com`.
 npm run create-superadmin          # your platform admin login
 npx tsx scripts/seed-demo.ts       # optional: the live demo menu at /c/demo (prints its admin password once)
 ```
+
+## 8. Daily reminder emails
+
+Owners get an email the day before a trial ends (a week before for paid plans), and again when it has ended. A daily job on the server triggers them:
+
+```bash
+crontab -e
+```
+
+Add this line (replace the domain, and paste the same `CRON_SECRET` as in `.env.local`):
+
+```
+0 9 * * * curl -fsS -H "Authorization: Bearer YOUR_CRON_SECRET" https://YOUR-DOMAIN.com/api/cron/reminders/ > /dev/null
+```
+
+It runs at 09:00 server time. Each email is sent once, so running it more often is harmless. To test it now, run the `curl` part by hand: it prints which restaurants were emailed.
 
 ---
 

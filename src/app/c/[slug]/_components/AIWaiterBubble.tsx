@@ -248,7 +248,7 @@ export default function AIWaiterBubble() {
       formData.append("history", JSON.stringify(currentMessages));
       formData.append("cart", JSON.stringify(cart));
 
-      const res = await fetch(`/api/c/${slug}/ai/waiter/chat`, {
+      const res = await fetch(`/api/c/${slug}/ai/waiter/chat/`, {
         method: "POST",
         body: formData,
       });
@@ -321,7 +321,7 @@ export default function AIWaiterBubble() {
     if (["ar", "en"].includes(audioLang)) {
       setIsSpeaking(true);
 
-      const url = `/api/ai/tts?slug=${encodeURIComponent(slug)}&lang=${audioLang}&text=${encodeURIComponent(text)}`;
+      const url = `/api/ai/tts/?slug=${encodeURIComponent(slug)}&lang=${audioLang}&text=${encodeURIComponent(text)}`;
 
       const audio = new Audio(url);
       audioRef.current = audio;
@@ -331,9 +331,10 @@ export default function AIWaiterBubble() {
         audioRef.current = null;
       };
 
-      audio.onerror = (err) => {
-        console.warn("Internal TTS proxy failed, falling back to browser TTS:", err);
-        playBrowserTTS(text);
+      // No server voice (not configured, or the provider failed): use the phone's own voice
+      audio.onerror = () => {
+        audioRef.current = null;
+        playBrowserTTS(text, audioLang);
       };
 
       audio.play().catch(e => {
@@ -344,20 +345,23 @@ export default function AIWaiterBubble() {
     }
 
     // For other languages, use browser TTS (lower latency)
-    playBrowserTTS(text);
+    playBrowserTTS(text, audioLang);
   };
 
-  const playBrowserTTS = (text: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
+  const playBrowserTTS = (text: string, lang: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      setIsSpeaking(false);
+      return;
+    }
 
     const utterance = new SpeechSynthesisUtterance(text);
     const voices = window.speechSynthesis.getVoices();
 
-    // Find appropriate voice based on current language
+    // A voice in the reply's own language
     let selectedVoice = null;
     let targetLang = "en-US";
 
-    if (activeVoiceLang === "ar-SA") {
+    if (lang === "ar") {
       selectedVoice = voices.find(v => v.lang.startsWith("ar"));
       targetLang = "ar-SA";
     } else {

@@ -43,7 +43,7 @@ export default function SubscriptionsPage() {
   const fetchSubscriptions = async () => {
     try {
       const token = localStorage.getItem("superadmin_token");
-      const res = await fetch("/api/superadmin/subscriptions", {
+      const res = await fetch("/api/superadmin/subscriptions/", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

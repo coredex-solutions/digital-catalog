@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
-import { isPaidPlanId } from "@/lib/plans";
+import { getPlanConfig, isPaidPlanId } from "@/lib/plans";
+import { opsEmail, sendBrandedEmail } from "@/lib/email";
+import { getBaseUrl } from "@/lib/utils/base-url";
 import { v4 as uuidv4 } from "uuid";
 
 export async function POST(
@@ -40,6 +42,22 @@ export async function POST(
             sql: "INSERT INTO plan_requests (id, catalog_id, plan_name, status, created_at) VALUES (?, ?, ?, 'pending', datetime('now'))",
             args: [uuidv4(), catalog.id, planName]
         });
+
+        // Tell Coredex staff straight away; the request is saved either way
+        const plan = getPlanConfig(planName);
+        const to = opsEmail();
+        if (to) {
+            await sendBrandedEmail({
+                to,
+                subject: `Plan request: ${catalog.name} wants ${plan?.name ?? planName}`,
+                paragraphs: [
+                    `${catalog.name} (${catalog.slug}) asked for the ${plan?.name ?? planName} plan${plan ? ` ($${plan.price} a year)` : ""}.`,
+                    `Requested by ${auth.admin.email}.`,
+                    "Contact them to arrange payment, then approve the request in the superadmin panel.",
+                ],
+                button: { label: "Open plan requests", url: `${getBaseUrl(request)}/superadmin/requests/` },
+            }).catch((error) => console.error("Plan request email failed:", error));
+        }
 
         return NextResponse.json({ success: true, message: "Upgrade request submitted successfully." });
     } catch (error) {

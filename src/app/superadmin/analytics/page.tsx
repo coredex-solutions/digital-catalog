@@ -51,7 +51,7 @@ export default function AnalyticsPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("superadmin_token");
-      const res = await fetch(`/api/superadmin/analytics?range=${dateRange}`, {
+      const res = await fetch(`/api/superadmin/analytics/?range=${dateRange}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {

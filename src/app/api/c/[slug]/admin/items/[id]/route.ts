@@ -91,6 +91,12 @@ export async function PUT(
       }
     }
 
+    // Renaming may not leave the dish without a name in both languages
+    const blank = (value: unknown) => typeof value !== "string" || !value.trim();
+    if (body.name_en !== undefined && body.name_ar !== undefined && blank(body.name_en) && blank(body.name_ar)) {
+      return NextResponse.json({ error: "Enter a name in Arabic or English" }, { status: 400 });
+    }
+
     // Build update query dynamically
     const updates: string[] = [];
     const args: any[] = [];
@@ -135,6 +141,13 @@ export async function PUT(
 
     if (updates.length === 0) {
       return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+    }
+
+    // A photo the owner uploads is a real photo: drop the "Illustrative" label when the image
+    // changes (SQLite evaluates image_url here with its value before this update)
+    if (body.image_url !== undefined) {
+      updates.push("image_is_illustrative = CASE WHEN image_url IS ? THEN image_is_illustrative ELSE 0 END");
+      args.push(body.image_url || null);
     }
 
     updates.push("updated_at = datetime('now')");

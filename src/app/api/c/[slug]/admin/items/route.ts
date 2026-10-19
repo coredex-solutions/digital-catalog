@@ -14,6 +14,7 @@ import {
   variantsToDb,
 } from "@/lib/catalog/dish-info";
 import { PLAN_CONFIG } from "@/lib/plans";
+import { planReorder } from "@/lib/catalog/reorder";
 import { v4 as uuidv4 } from "uuid";
 
 // GET: List all items for this catalog
@@ -36,7 +37,7 @@ export async function GET(
   const db = getDb();
 
   let sql = `
-    SELECT m.*, c.name_en as category_name
+    SELECT m.*, COALESCE(NULLIF(c.name_en, ''), c.name_ar) as category_name
     FROM menu_items m
     LEFT JOIN categories c ON c.id = m.category_id
     WHERE m.catalog_id = ?
@@ -48,7 +49,8 @@ export async function GET(
     args.push(categoryId);
   }
 
-  sql += " ORDER BY m.display_order ASC";
+  // Same order as the guest menu (lib/catalog/publishing.ts)
+  sql += " ORDER BY m.display_order ASC, m.id ASC";
 
   const result = await db.execute({ sql, args });
 
@@ -98,7 +100,10 @@ export async function POST(
     // With options, the item's price is the cheapest option (for sorting and "from" prices)
     const lowest = lowestVariantPrice(variants.value);
 
-    if (!category_id || !name_en || (price === undefined && lowest === null)) {
+    // A name in at least one language; the other stays empty (the guest menu falls back to it)
+    const nameEn = typeof name_en === "string" ? name_en.trim() : "";
+    const nameAr = typeof name_ar === "string" ? name_ar.trim() : "";
+    if (!category_id || (!nameEn && !nameAr) || (price === undefined && lowest === null)) {
       return NextResponse.json(
         { error: "Category, name, and price are required" },
         { status: 400 }
@@ -195,8 +200,8 @@ export async function POST(
         id,
         catalog.id,
         category_id,
-        name_ar || name_en,
-        name_en,
+        nameAr,
+        nameEn,
         description_ar || null,
         description_en || null,
         parsedPrice,
@@ -215,7 +220,8 @@ export async function POST(
           id,
           catalog_id: catalog.id,
           category_id,
-          name_en,
+          name_en: nameEn,
+          name_ar: nameAr,
           price: parsedPrice,
           variants: variants.value,
           dietary: dietary.value,
@@ -233,3 +239,46 @@ export async function POST(
   }
 }
 
+
+// PUT { categoryId, order: [itemId, …] }: the dishes of one category in their new order.
+// Like any menu edit, guests see the new order after the next publish.
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
+  const catalog = await getCatalogBySlug(slug);
+  if (!catalog) {
+    return NextResponse.json({ error: "Catalog not found" }, { status: 404 });
+  }
+
+  const auth = await requireCatalogAdmin(request, catalog.id);
+  if (!auth.success) return auth.response;
+
+  const body = await request.json().catch(() => null);
+  const categoryId = typeof body?.categoryId === "string" ? body.categoryId : "";
+  if (!categoryId) {
+    return NextResponse.json({ error: "categoryId is required" }, { status: 400 });
+  }
+
+  const db = getDb();
+  const current = await db.execute({
+    sql: "SELECT id, display_order FROM menu_items WHERE catalog_id = ? AND category_id = ?",
+    args: [catalog.id, categoryId],
+  });
+  const plan = planReorder(body?.order, new Map(current.rows.map((r) => [String(r.id), Number(r.display_order) || 0])));
+  if (!plan) {
+    return NextResponse.json({ error: "The dish list changed. Reload the page and try again." }, { status: 409 });
+  }
+
+  if (plan.length > 0) {
+    await db.batch(
+      plan.map(([id, position]) => ({
+        sql: "UPDATE menu_items SET display_order = ?, updated_at = datetime('now') WHERE id = ? AND catalog_id = ? AND category_id = ?",
+        args: [position, id, catalog.id, categoryId],
+      })),
+      "write"
+    );
+  }
+  return NextResponse.json({ success: true, changed: plan.length });
+}

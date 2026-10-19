@@ -34,6 +34,12 @@ export async function PUT(
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
+    // Renaming may not leave the category without a name in both languages
+    const blank = (value: unknown) => typeof value !== "string" || !value.trim();
+    if (body.name_en !== undefined && body.name_ar !== undefined && blank(body.name_en) && blank(body.name_ar)) {
+      return NextResponse.json({ error: "Enter a name in Arabic or English" }, { status: 400 });
+    }
+
     // Build update query dynamically
     const updates: string[] = [];
     const args: any[] = [];

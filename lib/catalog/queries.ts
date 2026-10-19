@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { getDb } from '../db/client';
-import { getPublicMenu } from './publishing';
+import { availabilitySql, buildPublicMenu, latestVersionSql } from './publishing';
 import { getSubscriptionState } from '../plans';
 import type {
   Branch,
@@ -227,19 +227,36 @@ export async function getCatalogBranches(catalogId: string): Promise<Branch[]> {
  * shows the owner's unpublished draft instead.
  */
 export const getFullCatalogData = cache(async (slug: string, preview: boolean = false) => {
-  const catalog = await getCatalogBySlug(slug);
-  if (!catalog) return null;
+  // Everything in one round trip to the database, keyed by slug. The published dishes come
+  // from memory after the first visit (see buildPublicMenu); only the version number is read.
+  const byId = '(SELECT id FROM catalogs WHERE slug = ?)';
+  const results = await getDb().batch(
+    [
+      'SELECT * FROM catalogs WHERE slug = ? AND is_active = 1 AND is_suspended = 0',
+      `SELECT * FROM catalog_settings WHERE catalog_id = ${byId}`,
+      `SELECT * FROM catalog_contact WHERE catalog_id = ${byId}`,
+      `SELECT * FROM catalog_subscriptions WHERE catalog_id = ${byId} AND is_active = 1`,
+      `SELECT * FROM operating_hours WHERE catalog_id = ${byId} ORDER BY id ASC`,
+      `SELECT * FROM social_media WHERE catalog_id = ${byId} AND is_active = 1`,
+      `SELECT * FROM faqs WHERE catalog_id = ${byId} AND is_active = 1 ORDER BY display_order ASC`,
+      `SELECT * FROM branches WHERE catalog_id = ${byId} AND is_active = 1 ORDER BY display_order ASC`,
+      ...(preview ? [] : [latestVersionSql(byId), availabilitySql(byId)]),
+    ].map((sql) => ({ sql, args: [slug] })),
+    'read'
+  );
+  const [catalogRes, settingsRes, contactRes, subscriptionRes, hoursRes, socialRes, faqsRes, branchesRes, latestRes, availabilityRes] = results;
 
-  const [settings, contact, subscription, menu, operatingHours, socialMedia, faqs, branches] = await Promise.all([
-    getCatalogSettings(catalog.id),
-    getCatalogContact(catalog.id),
-    getCatalogSubscription(catalog.id),
-    getPublicMenu(catalog.id, { preview }),
-    getCatalogOperatingHours(catalog.id),
-    getCatalogSocialMedia(catalog.id),
-    getCatalogFAQs(catalog.id),
-    getCatalogBranches(catalog.id),
-  ]);
+  const catalog = (catalogRes.rows[0] ?? null) as unknown as Catalog | null;
+  if (!catalog) return null;
+  const settings = (settingsRes.rows[0] ?? null) as unknown as CatalogSettings | null;
+  const contact = (contactRes.rows[0] ?? null) as unknown as CatalogContact | null;
+  const subscription = (subscriptionRes.rows[0] ?? null) as unknown as CatalogSubscription | null;
+  const operatingHours = hoursRes.rows as unknown as OperatingHours[];
+  const socialMedia = socialRes.rows as unknown as SocialMedia[];
+  const faqs = faqsRes.rows as unknown as FAQ[];
+  const branches = branchesRes.rows as unknown as Branch[];
+  const menu = await buildPublicMenu(catalog.id, latestRes ?? null, availabilityRes ?? null);
+
   const categories = menu.categories as unknown as Category[];
   const menuItems = menu.items as unknown as MenuItem[];
 

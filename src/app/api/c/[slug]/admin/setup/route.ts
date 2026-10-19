@@ -48,6 +48,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     },
     {
       key: "currency",
+      // The dashboard shows each step in its own language from key, variant and count
+      variant: needsRate ? "rate" : "display",
       title: needsRate ? "Set your exchange rate" : "Choose how prices are shown",
       hint: needsRate ? "Pound prices are worked out from the rate you enter." : "Dollars, pounds, or both.",
       done: needsRate ? Number(settings.lbp_exchange_rate) > 0 : true,
@@ -56,6 +58,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     {
       key: "dishes",
       title: "Add your dishes",
+      count: activeItems.length,
       hint: activeItems.length > 0 ? `${activeItems.length} so far.` : "Start with a few; you can add more any time.",
       done: activeItems.length > 0,
       href: `/c/${slug}/admin/items`,
@@ -63,6 +66,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     {
       key: "arabic",
       title: "Check the Arabic names",
+      count: withoutArabic,
       hint: withoutArabic > 0 ? `${withoutArabic} ${withoutArabic === 1 ? "dish has" : "dishes have"} no Arabic name yet.` : "Every dish has an Arabic name.",
       done: activeItems.length > 0 && withoutArabic === 0,
       href: `/c/${slug}/admin/items`,
@@ -77,6 +81,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     {
       key: "publish",
       title: "Preview and publish",
+      count: pending,
       hint: pending > 0 ? `${pending} unpublished ${pending === 1 ? "change" : "changes"}.` : "Guests only see what you publish.",
       done: publishedItems > 0 && pending === 0,
       href: `/c/${slug}/admin/publish`,

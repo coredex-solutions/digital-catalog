@@ -7,9 +7,64 @@ import { ArrowLeft, Loader2, Printer } from "lucide-react";
 import { CatalogAdminShell, useCatalogAdmin } from "../../_components/CatalogAdminShell";
 import { CatalogAdminContent, CatalogAdminHeader } from "../../_components/CatalogAdminSidebar";
 import { qrPrintedKey } from "../../_components/SetupChecklist";
+import { ADMIN_NAV_LABELS } from "../../_components/adminNav";
+import { useAdminLang, useCopy, plural, type AdminLang } from "../../_lib/i18n";
 
 type Layout = "cards" | "poster";
 const MAX_TABLES = 200;
+
+const en = {
+  title: "Print QR codes",
+  back: "QR designer",
+  options: "Options",
+  layout: "Layout",
+  layouts: {
+    cards: { label: "Table cards", hint: "4 per A4 sheet" },
+    poster: { label: "Poster", hint: "1 per A4 sheet" },
+  } as Record<Layout, { label: string; hint: string }>,
+  numberTables: "Number the tables",
+  numberTablesHint: "Each card gets its own code, so dine-in orders arrive with the table number.",
+  fromTable: "From table",
+  toTable: "To table",
+  rangeError: "Enter a valid range, for example 1 to 12.",
+  maxTables: (max: number) => `Up to ${max} tables at a time.`,
+  print: "Print or save as PDF",
+  printHelp:
+    "In the print window choose “Save as PDF” for a file, A4 paper, and scale 100% (“Actual size”). Before printing a batch, test one printed card with an iPhone and an Android phone.",
+  baseUrlBefore: "The codes point to ",
+  baseUrlAfter: ". Set NEXT_PUBLIC_BASE_URL on the server so they always use your public domain.",
+  preview: "Preview",
+  codes: (n: number, lang: AdminLang) => plural(lang, n, { one: "# code", other: "# codes" }),
+  sheets: (n: number, lang: AdminLang) => plural(lang, n, { one: "# sheet", other: "# sheets" }),
+  preparing: "Preparing",
+};
+const ar: typeof en = {
+  title: "طباعة رموز QR",
+  back: "مصمّم رموز QR",
+  options: "الخيارات",
+  layout: "التنسيق",
+  layouts: {
+    cards: { label: "بطاقات الطاولات", hint: "4 في كل ورقة A4" },
+    poster: { label: "ملصق", hint: "1 في كل ورقة A4" },
+  },
+  numberTables: "ترقيم الطاولات",
+  numberTablesHint: "لكل بطاقة رمز خاص بها، فتصل طلبات الزبائن في المطعم مع رقم الطاولة.",
+  fromTable: "من الطاولة",
+  toTable: "إلى الطاولة",
+  rangeError: "أدخل نطاقاً صحيحاً، مثلاً من 1 إلى 12.",
+  maxTables: (max) => `${max} طاولة كحدّ أقصى في كل مرة.`,
+  print: "طباعة أو حفظ كملف PDF",
+  printHelp:
+    "في نافذة الطباعة اختر “حفظ كملف PDF” للحصول على ملف، وورق A4، والحجم 100% (“الحجم الفعلي”). قبل طباعة كمية كبيرة، جرّب بطاقة واحدة مطبوعة بهاتف iPhone وهاتف Android.",
+  baseUrlBefore: "تشير الرموز إلى ",
+  baseUrlAfter: ". اضبط NEXT_PUBLIC_BASE_URL على الخادم لتستخدم دائماً نطاقك العام.",
+  preview: "معاينة",
+  codes: (n, lang) =>
+    plural(lang, n, { zero: "لا رموز", one: "رمز واحد", two: "رمزان", few: "# رموز", many: "# رمزاً", other: "# رمز" }),
+  sheets: (n, lang) =>
+    plural(lang, n, { zero: "لا أوراق", one: "ورقة واحدة", two: "ورقتان", few: "# أوراق", many: "# ورقة", other: "# ورقة" }),
+  preparing: "جارٍ التحضير",
+};
 
 interface Card {
   url: string;
@@ -24,6 +79,8 @@ interface Card {
  */
 function QrPrintContent() {
   const { slug, catalog, fetchWithAuth } = useCatalogAdmin();
+  const t = useCopy({ en, ar });
+  const lang = useAdminLang();
   const [layout, setLayout] = useState<Layout>("cards");
   const [withTables, setWithTables] = useState(false);
   const [from, setFrom] = useState("1");
@@ -50,7 +107,7 @@ function QrPrintContent() {
 
   // Both names, so Arabic and English guests recognise the card
   useEffect(() => {
-    fetchWithAuth(`/api/c/${slug}/admin/settings`)
+    fetchWithAuth(`/api/c/${slug}/admin/settings/`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         const c = data?.catalog;
@@ -64,11 +121,11 @@ function QrPrintContent() {
     const end = Math.floor(Number(to));
     if (!withTables) return { tables: [null] as (number | null)[], error: "" };
     if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
-      return { tables: [], error: "Enter a valid range, for example 1 to 12." };
+      return { tables: [], error: t.rangeError };
     }
-    if (end - start + 1 > MAX_TABLES) return { tables: [], error: `Up to ${MAX_TABLES} tables at a time.` };
+    if (end - start + 1 > MAX_TABLES) return { tables: [], error: t.maxTables(MAX_TABLES) };
     return { tables: Array.from({ length: end - start + 1 }, (_, i) => start + i), error: "" };
-  }, [withTables, from, to]);
+  }, [withTables, from, to, t]);
 
   useEffect(() => {
     if (!baseUrl) return;
@@ -124,13 +181,13 @@ function QrPrintContent() {
 
   return (
     <>
-      <CatalogAdminHeader title="Print QR codes">
+      <CatalogAdminHeader title={t.title}>
         <Link
           href={`/c/${slug}/admin/qr`}
           className="inline-flex min-h-11 items-center gap-2 rounded-control border border-ui-input px-4 text-sm font-semibold hover:bg-ui-subtle"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          QR designer
+          <ArrowLeft className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+          {t.back}
         </Link>
       </CatalogAdminHeader>
 
@@ -138,22 +195,19 @@ function QrPrintContent() {
         <div className="grid gap-6 lg:grid-cols-[minmax(0,22rem)_1fr]">
           {/* Options */}
           <section aria-labelledby="print-options" className="space-y-5 rounded-panel border border-ui-line bg-ui-surface p-5">
-            <h2 id="print-options" className="font-semibold">Options</h2>
+            <h2 id="print-options" className="font-semibold">{t.options}</h2>
 
             <fieldset>
-              <legend className="mb-2 text-sm font-semibold text-ui-muted">Layout</legend>
+              <legend className="mb-2 text-sm font-semibold text-ui-muted">{t.layout}</legend>
               <div className="grid grid-cols-2 gap-2">
-                {([
-                  ["cards", "Table cards", "4 per A4 sheet"],
-                  ["poster", "Poster", "1 per A4 sheet"],
-                ] as const).map(([value, label, hint]) => (
+                {(["cards", "poster"] as const).map((value) => (
                   <label
                     key={value}
                     className={`flex min-h-11 cursor-pointer flex-col rounded-control border px-3 py-2 ${layout === value ? "border-ui-primary bg-ui-subtle" : "border-ui-input"}`}
                   >
                     <input type="radio" name="layout" value={value} checked={layout === value} onChange={() => setLayout(value)} className="sr-only" />
-                    <span className="text-sm font-semibold">{label}</span>
-                    <span className="text-xs text-ui-muted">{hint}</span>
+                    <span className="text-sm font-semibold">{t.layouts[value].label}</span>
+                    <span className="text-xs text-ui-muted">{t.layouts[value].hint}</span>
                   </label>
                 ))}
               </div>
@@ -162,18 +216,18 @@ function QrPrintContent() {
             <div>
               <label className="flex min-h-11 cursor-pointer items-center gap-3">
                 <input type="checkbox" checked={withTables} onChange={(e) => setWithTables(e.target.checked)} className="h-5 w-5" />
-                <span className="text-sm font-semibold">Number the tables</span>
+                <span className="text-sm font-semibold">{t.numberTables}</span>
               </label>
-              <p className="mt-1 text-xs text-ui-muted">Each card gets its own code, so dine-in orders arrive with the table number.</p>
+              <p className="mt-1 text-xs text-ui-muted">{t.numberTablesHint}</p>
               {withTables && (
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="table-from" className="mb-1 block text-xs font-semibold text-ui-muted">From table</label>
-                    <input id="table-from" type="number" min={1} inputMode="numeric" value={from} onChange={(e) => setFrom(e.target.value)} className="min-h-11 w-full rounded-control border border-ui-input bg-ui-bg px-3" />
+                    <label htmlFor="table-from" className="mb-1 block text-xs font-semibold text-ui-muted">{t.fromTable}</label>
+                    <input id="table-from" type="number" min={1} inputMode="numeric" value={from} onChange={(e) => setFrom(e.target.value)} dir="ltr" className="min-h-11 w-full rounded-control border border-ui-input bg-ui-bg px-3" />
                   </div>
                   <div>
-                    <label htmlFor="table-to" className="mb-1 block text-xs font-semibold text-ui-muted">To table</label>
-                    <input id="table-to" type="number" min={1} inputMode="numeric" value={to} onChange={(e) => setTo(e.target.value)} className="min-h-11 w-full rounded-control border border-ui-input bg-ui-bg px-3" />
+                    <label htmlFor="table-to" className="mb-1 block text-xs font-semibold text-ui-muted">{t.toTable}</label>
+                    <input id="table-to" type="number" min={1} inputMode="numeric" value={to} onChange={(e) => setTo(e.target.value)} dir="ltr" className="min-h-11 w-full rounded-control border border-ui-input bg-ui-bg px-3" />
                   </div>
                   {tableRange.error && <p role="alert" className="col-span-2 text-sm text-ui-danger">{tableRange.error}</p>}
                 </div>
@@ -187,15 +241,12 @@ function QrPrintContent() {
               className="flex min-h-12 w-full items-center justify-center gap-2 rounded-control bg-ui-primary px-4 font-semibold text-ui-primary-fg hover:bg-ui-primary-hover disabled:opacity-50"
             >
               {building ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Printer className="h-4 w-4" aria-hidden />}
-              Print or save as PDF
+              {t.print}
             </button>
-            <p className="text-xs text-ui-muted">
-              In the print window choose &ldquo;Save as PDF&rdquo; for a file, A4 paper, and scale 100% (&ldquo;Actual size&rdquo;).
-              Before printing a batch, test one printed card with an iPhone and an Android phone.
-            </p>
+            <p className="text-xs text-ui-muted">{t.printHelp}</p>
             {!process.env.NEXT_PUBLIC_BASE_URL && (
               <p className="rounded-control bg-ui-subtle p-3 text-xs text-ui-muted">
-                The codes point to <bdi>{baseUrl}</bdi>. Set NEXT_PUBLIC_BASE_URL on the server so they always use your public domain.
+                {t.baseUrlBefore}<bdi dir="ltr">{baseUrl}</bdi>{t.baseUrlAfter}
               </p>
             )}
           </section>
@@ -203,10 +254,10 @@ function QrPrintContent() {
           {/* On-screen preview of the first card */}
           <section aria-labelledby="print-preview" className="rounded-panel border border-ui-line bg-ui-surface p-5">
             <h2 id="print-preview" className="font-semibold">
-              Preview <span className="text-sm font-normal text-ui-muted">· {cards.length} {cards.length === 1 ? "code" : "codes"}, {sheets.length} {sheets.length === 1 ? "sheet" : "sheets"}</span>
+              {t.preview} <span className="text-sm font-normal text-ui-muted">· {t.codes(cards.length, lang)}{lang === "ar" ? "، " : ", "}{t.sheets(sheets.length, lang)}</span>
             </h2>
             <div className="mt-4 flex justify-center rounded-control bg-ui-subtle p-4">
-              {cards[0] ? <div className="qr-screen">{renderCard(cards[0], layout)}</div> : <Loader2 className="h-6 w-6 animate-spin text-ui-muted" aria-label="Preparing" />}
+              {cards[0] ? <div className="qr-screen">{renderCard(cards[0], layout)}</div> : <Loader2 className="h-6 w-6 animate-spin text-ui-muted" aria-label={t.preparing} />}
             </div>
           </section>
         </div>

@@ -4,6 +4,7 @@ import { ImageIcon, Info, MessageCircle, Phone, Plus, Search } from "lucide-reac
 import { buildMenuTheme } from "../../_lib/theme";
 import { getDictionary } from "../../_lib/i18n";
 import { cn } from "@/utils/helpers";
+import { formatMoney } from "@/lib/catalog/price";
 
 export type PreviewLang = "en" | "ar";
 
@@ -20,6 +21,8 @@ interface MenuBrandPreviewProps {
 }
 
 // Placeholder content, clearly marked as sample: the settings page has no dishes loaded.
+// The settings page shows it in the dashboard language by default; `lang`/`dir` on the root
+// always follow the `lang` prop, so they match the text shown.
 const SAMPLE = {
   en: {
     categories: ["Sample category", "Category 2", "Category 3"],
@@ -31,17 +34,18 @@ const SAMPLE = {
     restaurant: "Your restaurant",
   },
   ar: {
-    categories: ["قسم تجريبي", "قسم ٢", "قسم ٣"],
+    categories: ["قسم تجريبي", "قسم 2", "قسم 3"],
     dishes: [
       { name: "طبق تجريبي", description: "يظهر هنا وصف قصير للطبق، حتى سطرين في القائمة." },
-      { name: "طبق تجريبي ٢", description: "يمكن ذكر المكونات أو الحجم أو مسببات الحساسية في الوصف." },
-      { name: "طبق تجريبي ٣", description: "للمعاينة فقط." },
+      { name: "طبق تجريبي 2", description: "يمكن ذكر المكونات أو الحجم أو مسببات الحساسية في الوصف." },
+      { name: "طبق تجريبي 3", description: "للمعاينة فقط." },
     ],
     restaurant: "مطعمك",
   },
 };
 
-const SAMPLE_PRICES = { USD: ["$8.00", "$12.50", "$5.00"], LBP: ["720,000 LBP", "1,120,000 LBP", "450,000 LBP"] };
+// Sample amounts only, formatted like the live menu ("$12.50", "720,000 L.L." / "720,000 ل.ل.")
+const SAMPLE_AMOUNTS = { USD: [8, 12.5, 5], LBP: [720000, 1120000, 450000] };
 
 /**
  * Static miniature of the diner menu (src/app/c/[slug]/_components/menu) for the Branding tab.
@@ -64,7 +68,8 @@ export function MenuBrandPreview({
   const name =
     (lang === "ar" ? names.name_ar || names.name_en || names.name : names.name_en || names.name || names.name_ar) ||
     sample.restaurant;
-  const prices = SAMPLE_PRICES[currency] ?? SAMPLE_PRICES.USD;
+  const priceCurrency = currency === "LBP" ? "LBP" : "USD";
+  const prices = SAMPLE_AMOUNTS[priceCurrency].map((amount) => formatMoney(amount, priceCurrency, lang));
 
   const chip =
     "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-control border border-menu-line bg-menu-surface px-2.5 text-[11px] font-medium text-menu-ink";
@@ -100,7 +105,9 @@ export function MenuBrandPreview({
           </div>
         </div>
 
-        <p className="mt-1.5 text-[17px] font-semibold leading-tight text-menu-ink">{name}</p>
+        <p className="mt-1.5 text-[17px] font-semibold leading-tight text-menu-ink">
+          <bdi>{name}</bdi>
+        </p>
         <p className="mt-0.5 inline-flex items-center gap-1.5 text-[11px]">
           <span className="h-1.5 w-1.5 rounded-full bg-menu-success" />
           <span className="font-semibold text-menu-success">{t.openNow}</span>

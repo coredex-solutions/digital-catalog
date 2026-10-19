@@ -50,7 +50,7 @@ export default function PrivacyPage() {
         <li><strong>Turso</strong> hosts the database.</li>
         <li><strong>Cloudflare R2</strong> stores uploaded images.</li>
         <li>Our <strong>email provider</strong> sends verification emails.</li>
-        <li><strong>Google (Gemini)</strong>, <strong>Groq</strong> and <strong>OpenAI</strong> provide AI features such as the AI waiter, text-to-speech, writing help and photo enhancement, only when those features are used.</li>
+        <li><strong>Google (Gemini and Cloud Text-to-Speech)</strong>, <strong>Groq</strong> and <strong>OpenAI</strong> provide AI features such as the AI waiter, its spoken replies, writing help and photo enhancement, only when those features are used. If spoken replies aren&apos;t set up, the guest&apos;s own phone reads them aloud.</li>
         <li>Our <strong>hosting provider</strong> runs the servers that serve the site.</li>
       </ul>
       <p>These providers may process data outside Lebanon.</p>

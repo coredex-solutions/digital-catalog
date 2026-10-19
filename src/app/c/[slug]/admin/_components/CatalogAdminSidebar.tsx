@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useParams } from "next/navigation";
-import { LogOut, Store, ExternalLink } from "lucide-react";
+import { LogOut, Store, ExternalLink, Languages } from "lucide-react";
 import { clsx } from "clsx";
 import { getAdminNavItems, isNavItemActive } from "./adminNav";
+import { useAdminLang, useCopy, useSetAdminLang } from "../_lib/i18n";
 
 interface CatalogInfo {
   id: string;
@@ -32,6 +33,23 @@ interface CatalogAdminSidebarProps {
   features: Features | null;
 }
 
+const en = {
+  nav: "Dashboard sections",
+  viewMenu: "View menu",
+  newTab: "(opens in a new tab)",
+  signOut: "Sign out",
+  switchLanguage: "العربية",
+  businessTypes: { restaurant: "Restaurant", cafe: "Café", bakery: "Bakery" } as Record<string, string>,
+};
+const ar: typeof en = {
+  nav: "أقسام لوحة التحكم",
+  viewMenu: "عرض القائمة",
+  newTab: "(تُفتح في نافذة جديدة)",
+  signOut: "تسجيل الخروج",
+  switchLanguage: "English",
+  businessTypes: { restaurant: "مطعم", cafe: "مقهى", bakery: "مخبز" },
+};
+
 export function CatalogAdminSidebar({
   catalog,
   features,
@@ -40,39 +58,34 @@ export function CatalogAdminSidebar({
   const router = useRouter();
   const params = useParams();
   const slug = params.slug as string;
+  const lang = useAdminLang();
+  const setLang = useSetAdminLang();
+  const t = useCopy({ en, ar });
 
-  const navItems = getAdminNavItems(slug, features);
+  const navItems = getAdminNavItems(slug, features, lang);
 
   const handleLogout = () => {
     localStorage.removeItem(`catalog_admin_token_${slug}`);
-    router.push(`/c/${slug}/admin/login`);
+    router.push(`/login/?r=${slug}`);
   };
 
   return (
-    <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-64 bg-ui-surface border-r border-ui-line flex-col z-40" aria-label="Admin navigation">
-      {/* Brand Header */}
-      <div className="p-6 pb-6">
-        <div className="flex flex-col gap-4">
-          <div
-            className="w-14 h-14 rounded-control flex items-center justify-center relative group"
-          >
-            <div className="absolute inset-0 rounded-control border border-ui-line group-hover:border-ui-input transition-all" />
-            <div className="relative z-10 w-full h-full rounded-control flex items-center justify-center overflow-hidden">
-              <div className="absolute inset-0 opacity-20" style={{ background: `linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)` }} />
-              <Store className="w-6 h-6 text-ui-ink" />
-            </div>
+    <aside className="hidden lg:flex fixed start-0 top-0 h-screen w-64 bg-ui-surface border-e border-ui-line flex-col z-40" aria-label={t.nav}>
+      <div className="p-6 pb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-ui-subtle text-ui-primary">
+            <Store className="h-5 w-5" aria-hidden />
           </div>
-          <div>
-            <p className="text-lg font-semibold text-ui-ink leading-none">{catalog.name}</p>
-            <p className="text-xs text-ui-muted mt-2">
-              Business Type: {catalog.business_type}
-            </p>
+          <div className="min-w-0">
+            <p className="truncate text-base font-semibold text-ui-ink">{catalog.name}</p>
+            {t.businessTypes[catalog.business_type] && (
+              <p className="text-xs text-ui-muted">{t.businessTypes[catalog.business_type]}</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Navigation Matrix */}
-      <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
         {navItems.map((item) => {
           const isActive = isNavItemActive(item, pathname);
 
@@ -82,23 +95,13 @@ export function CatalogAdminSidebar({
               href={item.href}
               aria-current={isActive ? "page" : undefined}
               className={clsx(
-                "flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control transition-all duration-300 relative group",
-                isActive
-                  ? "text-ui-ink"
-                  : "text-ui-muted hover:text-ui-ink hover:bg-ui-subtle"
+                "relative flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control transition-colors",
+                isActive ? "bg-ui-subtle text-ui-ink" : "text-ui-muted hover:text-ui-ink hover:bg-ui-subtle"
               )}
             >
-              {isActive && (
-                <div className="absolute inset-0 rounded-control bg-ui-subtle" />
-              )}
-              {isActive && (
-                <div
-                  className="absolute left-0 w-1 h-5 rounded-full"
-                  style={{ backgroundColor: `var(--color-primary)` }}
-                />
-              )}
-              <item.icon className="w-5 h-5 relative z-10" strokeWidth={isActive ? 2.5 : 2} aria-hidden />
-              <span className={clsx("text-sm relative z-10", isActive ? "font-semibold" : "font-medium")}>{item.label}</span>
+              {isActive && <span className="absolute start-0 h-5 w-1 rounded-full bg-ui-primary" aria-hidden />}
+              <item.icon className="w-5 h-5 shrink-0" strokeWidth={isActive ? 2.5 : 2} aria-hidden />
+              <span className={clsx("text-sm", isActive ? "font-semibold" : "font-medium")}>{item.label}</span>
             </Link>
           );
         })}
@@ -106,24 +109,34 @@ export function CatalogAdminSidebar({
         <div className="h-px bg-ui-line mx-4 my-4" />
 
         <a
-          href={`/c/${slug}`}
+          href={`/c/${slug}/`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control text-ui-muted hover:text-ui-ink hover:bg-ui-subtle transition-all group"
+          className="flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control text-ui-muted hover:text-ui-ink hover:bg-ui-subtle transition-colors"
         >
-          <ExternalLink className="w-5 h-5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          <span className="text-sm font-medium">View Catalog</span>
+          <ExternalLink className="w-5 h-5 shrink-0 rtl:-scale-x-100" aria-hidden />
+          <span className="text-sm font-medium">{t.viewMenu}</span>
+          <span className="sr-only">{t.newTab}</span>
         </a>
       </nav>
 
-      {/* Control Footer */}
-      <div className="p-4">
+      <div className="p-4 space-y-1">
         <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control text-ui-muted hover:text-ui-primary hover:bg-ui-subtle border border-transparent hover:border-ui-line transition-all w-full group"
+          type="button"
+          onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+          lang={lang === "ar" ? "en" : "ar"}
+          className="flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control text-ui-muted hover:text-ui-ink hover:bg-ui-subtle transition-colors w-full"
         >
-          <LogOut className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-          <span className="text-sm font-medium">Sign Out</span>
+          <Languages className="w-5 h-5 shrink-0" aria-hidden />
+          <span className={clsx("text-sm font-medium", lang !== "ar" && "font-system")}>{t.switchLanguage}</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-4 min-h-11 py-2.5 rounded-control text-ui-muted hover:text-ui-ink hover:bg-ui-subtle transition-colors w-full"
+        >
+          <LogOut className="w-5 h-5 shrink-0 rtl:-scale-x-100" aria-hidden />
+          <span className="text-sm font-medium">{t.signOut}</span>
         </button>
       </div>
     </aside>

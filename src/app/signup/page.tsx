@@ -56,7 +56,7 @@ function SignupForm() {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch("/api/auth/send-verification", {
+            const res = await fetch("/api/auth/send-verification/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: formData.email }),
@@ -78,7 +78,7 @@ function SignupForm() {
         setVerifying(true);
         setError(null);
         try {
-            const res = await fetch("/api/auth/verify-code", {
+            const res = await fetch("/api/auth/verify-code/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: formData.email, code }),
@@ -104,7 +104,7 @@ function SignupForm() {
         setError(null);
 
         try {
-            const res = await fetch("/api/auth/signup", {
+            const res = await fetch("/api/auth/signup/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...formData, verificationToken }),
@@ -115,7 +115,7 @@ function SignupForm() {
             if (res.ok) {
                 setSuccess(true);
                 setTimeout(() => {
-                    router.push(`/c/${formData.catalogSlug}/admin/login`);
+                    router.push(`/login/?r=${formData.catalogSlug}`);
                 }, 3000);
             } else {
                 setError(data.error || "Signup failed");
@@ -158,7 +158,7 @@ function SignupForm() {
                                         </span>
                                     </div>
                                     <p className="text-ui-muted text-sm font-medium">
-                                        Step {step === 1.5 ? "1.5" : step} of 3 — {step === 1 ? "Owner verification" : step === 1.5 ? "Email Confirmation" : step === 2 ? "Environment config" : "Visual identity"}
+                                        Step {Math.floor(step)} of 3 · {step === 1 ? "Your details" : step === 1.5 ? "Confirm your email" : step === 2 ? "Your restaurant" : "Colours"}
                                     </p>
                                 </div>
 
@@ -398,6 +398,15 @@ function SignupForm() {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {!success && (
+                    <p className="mt-8 text-center text-sm text-ui-muted">
+                        Already have an account?{" "}
+                        <Link href="/login/" className="font-semibold text-ui-primary underline-offset-4 hover:underline">
+                            Log in
+                        </Link>
+                    </p>
+                )}
 
                 <p className="mt-12 text-center text-xs font-semibold text-ui-input">
                     Coredex Solutions © 2026

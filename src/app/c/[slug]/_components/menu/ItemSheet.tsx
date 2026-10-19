@@ -67,6 +67,11 @@ export function ItemSheet() {
       {item.image_url && (
         <div className="relative -mx-4 aspect-[4/3] overflow-hidden bg-menu-raised">
           <MenuImage src={item.image_url} alt={name} fill sizes="(max-width: 640px) 100vw, 576px" className="object-cover" />
+          {item.image_is_illustrative && (
+            <p className="absolute bottom-3 start-3 end-3 w-fit rounded-control bg-black/75 px-3 py-1.5 text-sm font-medium text-white">
+              {t.illustrativeImage}
+            </p>
+          )}
         </div>
       )}
 

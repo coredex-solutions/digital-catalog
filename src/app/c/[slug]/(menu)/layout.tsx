@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import { Inter, Noto_Sans_Arabic } from 'next/font/google';
 import { getFullCatalogData } from '@/lib/catalog/queries';
 import { getMenuData, isMenuPreview } from '../_lib/menu-data';
 import type { Metadata } from 'next';
@@ -10,24 +9,6 @@ import { getMenuLanguages, resolveMenuLanguage, resolveMenuTheme } from '../_lib
 import { getSiteUrl } from '@/lib/utils/base-url';
 import { getDictionary, localized } from '../_lib/i18n';
 import { readDishInfo } from '@/lib/catalog/dish-info';
-
-// Diner menu typefaces (MENUDESIGN.md §4): Inter for English, Noto Sans Arabic for Arabic,
-// 400/500/600 only. Both are preloaded: most Lebanese menus are read in Arabic and English.
-const latinFont = Inter({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['400', '500', '600'],
-  variable: '--font-menu-sans',
-  display: 'swap',
-});
-
-const arabicFont = Noto_Sans_Arabic({
-  subsets: ['arabic'],
-  weight: ['400', '500', '600'],
-  variable: '--font-menu-arabic',
-  display: 'swap',
-});
-
-const fontVariables = [latinFont.variable, arabicFont.variable].join(' ');
 
 // Generate metadata for SEO
 export async function generateMetadata({
@@ -172,7 +153,7 @@ export default async function CatalogLayout({
     const t = getDictionary(lang);
     return (
       <div
-        className={`menu ${fontVariables} min-h-screen flex items-center justify-center p-6 font-menu-sans`}
+        className={`menu min-h-screen flex items-center justify-center p-6 font-menu-sans`}
         style={themeStyle}
         lang={lang}
         dir={isAr ? 'rtl' : 'ltr'}
@@ -251,6 +232,7 @@ export default async function CatalogLayout({
       price: Number(i.price),
       currency: i.currency || 'USD',
       image_url: i.image_url,
+      image_is_illustrative: Boolean(Number((i as unknown as Record<string, unknown>).image_is_illustrative)),
       is_featured: Boolean(Number(i.is_featured)),
       // Missing column (migration not run yet) means available
       is_available: i.is_available === undefined || i.is_available === null ? true : Boolean(Number(i.is_available)),
@@ -281,7 +263,7 @@ export default async function CatalogLayout({
       lang={lang}
       enabledLanguages={enabledLanguages}
       initialTheme={theme}
-      className={`menu ${fontVariables} min-h-screen font-menu-sans antialiased`}
+      className={`menu min-h-screen font-menu-sans antialiased`}
       style={themeStyle}
     >
       <script

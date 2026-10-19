@@ -75,6 +75,8 @@ export async function GET(
         : enabledLanguages.split(',')[0],
       is_expired: isExpired,
       in_grace: subscriptionState === 'grace',
+      // When the current plan ends (null: no end date)
+      expires_at: expiresAt?.toISOString() ?? null,
       plan_ended_at: subscriptionState === 'active' ? null : expiresAt?.toISOString() ?? null,
       offline_at: offlineAt?.toISOString() ?? null,
       subscription_type: subscription?.subscription_type || 'essential',

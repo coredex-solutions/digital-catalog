@@ -41,8 +41,10 @@ export default function TermsPage() {
 
       <h2>AI features</h2>
       <p>
-        AI features (such as the AI waiter, writing help and photo enhancement) can make mistakes. Check AI-written
-        text and AI-edited photos before you publish them. Photos changed by AI should still show the dish as it is served.
+        AI features (such as the AI waiter, writing help and AI photos) can make mistakes. Check AI-written
+        text and AI photos before you publish them. An improved photo must still show the dish as it is served.
+        Images created by AI from a dish&apos;s name are shown to guests labelled &quot;Illustrative image&quot;. Each AI photo
+        uses one of your plan&apos;s monthly credits; a request that fails gives its credit back.
       </p>
 
       <h2>Plans and trial</h2>

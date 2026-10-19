@@ -111,7 +111,7 @@ export default function SuperAdminDashboard() {
       if (!token) return;
 
       try {
-        const res = await fetch("/api/superadmin/stats", {
+        const res = await fetch("/api/superadmin/stats/", {
           headers: { Authorization: `Bearer ${token}` },
         });
         

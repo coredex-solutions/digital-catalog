@@ -102,7 +102,7 @@ export async function POST(
       const shuffledItems = [...items].sort(() => Math.random() - 0.5);
 
       const menuSummary = shuffledItems.map(item => ({
-        name: item.name_en,
+        name: item.name_en || item.name_ar,
         category: categories.find(c => c.id === item.category_id)?.name_en || "Unknown",
         description: item.description_en || "No description",
         price: item.price

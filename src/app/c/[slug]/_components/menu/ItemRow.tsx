@@ -98,6 +98,11 @@ export function ItemRow({ item, priority }: ItemRowProps) {
               priority={priority}
               className="object-cover"
             />
+            {item.image_is_illustrative && (
+              <span className="absolute inset-x-0 top-0 bg-black/70 px-1 py-0.5 text-center text-[0.6875rem] font-medium leading-tight text-white">
+                {t.illustrativeShort}
+              </span>
+            )}
           </div>
           {addButton && <div className="absolute -bottom-2 end-2">{addButton}</div>}
         </div>

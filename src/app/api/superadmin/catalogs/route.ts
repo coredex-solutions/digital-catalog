@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
 
       // Send welcome email with credentials
       const baseUrl = getBaseUrl(request);
-      const loginUrl = `${baseUrl}/c/${slug}/admin/login`;
+      const loginUrl = `${baseUrl}/login/?r=${slug}`;
       const catalogUrl = `${baseUrl}/c/${slug}`;
 
       const emailContent = emailTemplates.accountCreated(

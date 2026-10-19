@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { fontStack, inter } from "./fonts";
+import { documentLang } from "./document-lang";
 import "./globals.css";
-
-// Inter backs the .platform UI (globals.css: var(--font-inter)). The guest menu loads its own
-// fonts in the catalog layout and the landing page loads its Arabic face itself.
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
 
@@ -30,22 +23,25 @@ export const metadata: Metadata = {
     title: "Coredex: QR menus for restaurants and cafés",
     description: "QR menus in Arabic and English, with dollar and pound prices and WhatsApp orders.",
     siteName: "Coredex",
+    images: [{ url: "/og/coredex-en.jpg", width: 1200, height: 630, alt: "Coredex: QR menus for restaurants and cafés" }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
+    images: ["/og/coredex-en.jpg"],
     title: "Coredex",
     description: "QR menus for restaurants and cafés.",
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const lang = await documentLang();
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
-      <body className={`${inter.className} bg-[#F7F8FC] text-[#17152E] antialiased`}>
+    <html lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} suppressHydrationWarning className={inter.variable} style={{ ["--font-sans" as string]: fontStack }}>
+      <body className={`font-sans bg-[#F7F8FC] text-[#17152E] antialiased`}>
         {children}
       </body>
     </html>

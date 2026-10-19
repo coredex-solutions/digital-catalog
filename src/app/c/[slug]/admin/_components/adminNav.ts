@@ -15,6 +15,7 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+import type { AdminLang } from "../_lib/i18n";
 
 export type AdminNavKey =
   | "dashboard"
@@ -46,29 +47,74 @@ interface NavFeatures {
   analytics_enabled?: boolean;
 }
 
+type NavLabels = Record<AdminNavKey, string> & { home: string; menu: string; insights: string };
+
+/** Section names, also used as page titles so the menu and the page always match */
+export const ADMIN_NAV_LABELS: Record<AdminLang, NavLabels> = {
+  en: {
+    dashboard: "Dashboard",
+    publish: "Preview & publish",
+    categories: "Categories",
+    items: "Dishes",
+    about: "About & search",
+    hours: "Opening hours",
+    faqs: "FAQs",
+    branches: "Branches",
+    "ai-waiter": "AI waiter",
+    analytics: "Analytics",
+    qr: "QR codes",
+    settings: "Settings",
+    team: "Team",
+    billing: "Plan & billing",
+    home: "Home",
+    menu: "Menu",
+    insights: "Insights",
+  },
+  ar: {
+    dashboard: "لوحة التحكم",
+    publish: "المعاينة والنشر",
+    categories: "الأقسام",
+    items: "الأطباق",
+    about: "من نحن ومحركات البحث",
+    hours: "ساعات العمل",
+    faqs: "الأسئلة الشائعة",
+    branches: "الفروع",
+    "ai-waiter": "النادل الذكي",
+    analytics: "الإحصاءات",
+    qr: "رموز QR",
+    settings: "الإعدادات",
+    team: "الفريق",
+    billing: "الباقة والدفع",
+    home: "الرئيسية",
+    menu: "القائمة",
+    insights: "الإحصاءات",
+  },
+};
+
 /**
  * Single source of truth for the merchant admin navigation, shared by the desktop sidebar and
  * the phone tab bar / "More" sheet so feature gating stays identical in both.
  */
-export function getAdminNavItems(slug: string, features: NavFeatures | null | undefined): AdminNavItem[] {
+export function getAdminNavItems(slug: string, features: NavFeatures | null | undefined, lang: AdminLang = "en"): AdminNavItem[] {
   const basePath = `/c/${slug}/admin`;
+  const l = ADMIN_NAV_LABELS[lang];
   return [
-    { key: "dashboard", href: basePath, label: "Dashboard", shortLabel: "Home", icon: LayoutDashboard, exact: true },
-    { key: "publish", href: `${basePath}/publish`, label: "Preview & Publish", icon: Rocket },
-    { key: "categories", href: `${basePath}/categories`, label: "Categories", icon: FolderKanban },
-    { key: "items", href: `${basePath}/items`, label: "Products", shortLabel: "Menu", icon: Package },
-    { key: "about", href: `${basePath}/about`, label: "About & SEO", icon: FileText },
-    { key: "hours", href: `${basePath}/hours`, label: "Business Hours", icon: Clock },
-    { key: "faqs", href: `${basePath}/faqs`, label: "FAQs", icon: MessageCircle },
-    { key: "branches", href: `${basePath}/branches`, label: "Branches", icon: MapPin },
-    { key: "ai-waiter", href: `${basePath}/ai-waiter`, label: "AI Waiter", icon: Brain },
+    { key: "dashboard", href: basePath, label: l.dashboard, shortLabel: l.home, icon: LayoutDashboard, exact: true },
+    { key: "publish", href: `${basePath}/publish`, label: l.publish, icon: Rocket },
+    { key: "categories", href: `${basePath}/categories`, label: l.categories, icon: FolderKanban },
+    { key: "items", href: `${basePath}/items`, label: l.items, shortLabel: l.menu, icon: Package },
+    { key: "about", href: `${basePath}/about`, label: l.about, icon: FileText },
+    { key: "hours", href: `${basePath}/hours`, label: l.hours, icon: Clock },
+    { key: "faqs", href: `${basePath}/faqs`, label: l.faqs, icon: MessageCircle },
+    { key: "branches", href: `${basePath}/branches`, label: l.branches, icon: MapPin },
+    { key: "ai-waiter", href: `${basePath}/ai-waiter`, label: l["ai-waiter"], icon: Brain },
     ...(features?.analytics_enabled
-      ? [{ key: "analytics" as const, href: `${basePath}/analytics`, label: "Analytics", shortLabel: "Insights", icon: BarChart3 }]
+      ? [{ key: "analytics" as const, href: `${basePath}/analytics`, label: l.analytics, shortLabel: l.insights, icon: BarChart3 }]
       : []),
-    { key: "qr", href: `${basePath}/qr`, label: "QR Codes", icon: QrCode },
-    { key: "settings", href: `${basePath}/settings`, label: "Settings", icon: Settings },
-    { key: "team", href: `${basePath}/team`, label: "Team", icon: Users },
-    { key: "billing", href: `${basePath}/billing`, label: "Billing & Plan", icon: CreditCard },
+    { key: "qr", href: `${basePath}/qr`, label: l.qr, icon: QrCode },
+    { key: "settings", href: `${basePath}/settings`, label: l.settings, icon: Settings },
+    { key: "team", href: `${basePath}/team`, label: l.team, icon: Users },
+    { key: "billing", href: `${basePath}/billing`, label: l.billing, icon: CreditCard },
   ];
 }
 

@@ -37,7 +37,7 @@ export default function RequestsPage() {
     const fetchRequests = async () => {
         try {
             const token = localStorage.getItem("superadmin_token");
-            const res = await fetch("/api/superadmin/requests", {
+            const res = await fetch("/api/superadmin/requests/", {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (res.ok) {
@@ -55,7 +55,7 @@ export default function RequestsPage() {
         setActioning(requestId);
         try {
             const token = localStorage.getItem("superadmin_token");
-            const res = await fetch("/api/superadmin/requests", {
+            const res = await fetch("/api/superadmin/requests/", {
                 method: "PATCH",
                 headers: {
                     "Authorization": `Bearer ${token}`,

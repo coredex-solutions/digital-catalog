@@ -107,7 +107,8 @@
 
   background-color: var(--ui-bg);
   color: var(--ui-ink);
-  font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Inter, then Noto Sans Arabic for Arabic letters (root layout: --font-sans, app/fonts.ts) */
+  font-family: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   line-height: 1.5;
 }
 
@@ -117,7 +118,6 @@
 }
 
 .platform[lang="ar"] {
-  font-family: var(--font-platform-arabic), var(--font-inter), system-ui, sans-serif;
   line-height: 1.7;
 }
 
@@ -298,7 +298,8 @@ body:has(.platform) {
   --menu-shadow-sm: 0 1px 2px rgba(23, 21, 46, 0.06);
   --menu-shadow-md: 0 4px 16px -6px rgba(23, 21, 46, 0.16);
   --menu-shadow-lg: 0 -6px 24px -10px rgba(23, 21, 46, 0.22);
-  --menu-font-sans: var(--font-menu-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Same stack as .platform: Arabic letters use Noto Sans Arabic, everything else Inter */
+  --menu-font-sans: var(--font-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
   --menu-font-display: var(--menu-font-sans);
 
   background-color: var(--menu-bg);
@@ -311,7 +312,6 @@ body:has(.platform) {
 /* Arabic: its own face, taller lines, and never any letter spacing. Tailwind's text-* sizes
    set their own line-height, so running text is lifted explicitly (headings stay tighter). */
 .menu[lang="ar"] {
-  --menu-font-sans: var(--font-menu-arabic), var(--font-menu-sans), system-ui, sans-serif;
   line-height: 1.7;
 }
 

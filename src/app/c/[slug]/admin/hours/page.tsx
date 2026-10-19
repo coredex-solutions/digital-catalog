@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import { CatalogAdminHeader, CatalogAdminContent } from "../_components/CatalogAdminSidebar";
+import { ADMIN_NAV_LABELS } from "../_components/adminNav";
+import { useAdminLang, useCopy, useFormat } from "../_lib/i18n";
 import {
   Save,
   Loader2,
@@ -20,19 +21,64 @@ interface DayHours {
   is_closed: boolean;
 }
 
+/** Monday first, like the API and Lebanese calendars. `name` is the id stored by the API. */
 const DAYS = [
-  { name: "Sunday", label_en: "Sunday", label_ar: "الأحد" },
-  { name: "Monday", label_en: "Monday", label_ar: "الإثنين" },
+  { name: "Monday", label_en: "Monday", label_ar: "الاثنين" },
   { name: "Tuesday", label_en: "Tuesday", label_ar: "الثلاثاء" },
   { name: "Wednesday", label_en: "Wednesday", label_ar: "الأربعاء" },
   { name: "Thursday", label_en: "Thursday", label_ar: "الخميس" },
   { name: "Friday", label_en: "Friday", label_ar: "الجمعة" },
   { name: "Saturday", label_en: "Saturday", label_ar: "السبت" },
+  { name: "Sunday", label_en: "Sunday", label_ar: "الأحد" },
 ];
+
+const en = {
+  saving: "Saving…",
+  save: "Save changes",
+  weekly: "Weekly hours",
+  closed: "Closed",
+  open: "Opens",
+  close: "Closes",
+  closedSwitch: (day: string) => `${day}: closed`,
+  openingTime: (day: string) => `${day} opening time`,
+  closingTime: (day: string) => `${day} closing time`,
+  bothTimes: (day: string) => `Enter both times, or mark ${day} as closed.`,
+  missingTimes: (days: string[]) =>
+    days.length === 1
+      ? `Enter the opening and closing times for ${days[0]}, or mark it as closed.`
+      : `Enter the opening and closing times for ${days.join(", ")}, or mark them as closed.`,
+  saved: "Opening hours saved.",
+  saveFailed: "Couldn't save the opening hours. Please try again.",
+  midnight: "midnight",
+  nextDay: "(next day)",
+  closedAllDay: "Closed all day",
+};
+const ar: typeof en = {
+  saving: "جارٍ الحفظ…",
+  save: "حفظ التعديلات",
+  weekly: "ساعات العمل خلال الأسبوع",
+  closed: "مغلق",
+  open: "يفتح",
+  close: "يغلق",
+  closedSwitch: (day) => `${day}: مغلق`,
+  openingTime: (day) => `وقت الفتح يوم ${day}`,
+  closingTime: (day) => `وقت الإغلاق يوم ${day}`,
+  bothTimes: (day) => `أدخل الوقتين، أو اجعل يوم ${day} مغلقاً.`,
+  missingTimes: (days) =>
+    days.length === 1
+      ? `أدخل وقت الفتح ووقت الإغلاق ليوم ${days[0]}، أو اجعله مغلقاً.`
+      : `أدخل وقت الفتح ووقت الإغلاق لأيام ${days.join("، ")}، أو اجعلها مغلقة.`,
+  saved: "تم حفظ ساعات العمل.",
+  saveFailed: "تعذّر حفظ ساعات العمل. يُرجى المحاولة مرة أخرى.",
+  midnight: "منتصف الليل",
+  nextDay: "(اليوم التالي)",
+  closedAllDay: "مغلق طوال اليوم",
+};
 
 function formatHourToTime(hour: number | null): string {
   if (hour === null || !Number.isFinite(hour)) return "";
-  const h = Math.floor(hour);
+  // The API allows 24 for "until midnight"; a time field only knows 00:00
+  const h = Math.floor(hour) % 24;
   const m = Math.round((hour % 1) * 60);
   return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
 }
@@ -45,9 +91,59 @@ function parseTimeToHour(time: string): number | null {
   return Number.isFinite(hour) && hour >= 0 && hour < 24 ? hour : null;
 }
 
+// Outside the page component, so it isn't remounted on every render
+const ToggleSwitch = ({
+  label,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    aria-label={label}
+    disabled={disabled}
+    onClick={() => !disabled && onChange(!checked)}
+    className={`flex items-center justify-center min-w-11 min-h-11 ${disabled ? 'cursor-not-allowed opacity-50' : ''}`}
+  >
+    {checked ? (
+      <ToggleRight
+        className="w-8 h-8 rtl:-scale-x-100"
+        style={{ color: "var(--color-primary)" }}
+        aria-hidden
+      />
+    ) : (
+      <ToggleLeft className="w-8 h-8 text-ui-muted rtl:-scale-x-100" aria-hidden />
+    )}
+  </button>
+);
+
 function OperatingHoursPageContent() {
   const { slug, user, fetchWithAuth } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
+  const lang = useAdminLang();
+  const t = useCopy({ en, ar });
+  const f = useFormat();
+  const dayLabel = (day: (typeof DAYS)[number]) => (lang === "ar" ? day.label_ar : day.label_en);
+
+  /** A readable time, e.g. "9:00 am" / "9:00 ص"; 0 and 24 read as midnight */
+  const readableTime = (hour: number) => {
+    if (hour === 0 || hour === 24) return t.midnight;
+    const h = Math.floor(hour);
+    const m = Math.round((hour % 1) * 60);
+    return f.date(new Date(Date.UTC(2000, 0, 1, h, m)), {
+      timeZone: "UTC",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
   const [hours, setHours] = useState<DayHours[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +156,7 @@ function OperatingHoursPageContent() {
   useEffect(() => {
     const fetchHours = async () => {
       try {
-        const res = await fetchWithAuth(`/api/c/${slug}/admin/hours`);
+        const res = await fetchWithAuth(`/api/c/${slug}/admin/hours/`);
         if (res.ok) {
           const data = await res.json();
           if (data.hours && data.hours.length > 0) {
@@ -90,7 +186,7 @@ function OperatingHoursPageContent() {
     if (missing.length > 0) {
       setMessage({
         type: "error",
-        text: `Enter opening and closing times for ${missing.map((d) => d.label_en).join(", ")}, or mark ${missing.length > 1 ? "them" : "it"} closed.`,
+        text: t.missingTimes(missing.map(dayLabel)),
       });
       return;
     }
@@ -99,7 +195,7 @@ function OperatingHoursPageContent() {
     setMessage(null);
 
     try {
-      const res = await fetchWithAuth(`/api/c/${slug}/admin/hours`, {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/hours/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -108,13 +204,13 @@ function OperatingHoursPageContent() {
       });
 
       if (res.ok) {
-        setMessage({ type: "success", text: "Hours saved successfully!" });
+        setMessage({ type: "success", text: t.saved });
       } else {
         const err = await res.json().catch(() => null);
-        throw new Error(err?.error || "Failed to save");
+        throw new Error(err?.error || t.saveFailed);
       }
     } catch (error: any) {
-      setMessage({ type: "error", text: error.message });
+      setMessage({ type: "error", text: error?.message || t.saveFailed });
     } finally {
       setSaving(false);
     }
@@ -128,38 +224,10 @@ function OperatingHoursPageContent() {
     );
   };
 
-  const ToggleSwitch = ({
-    label,
-    checked,
-    onChange,
-  }: {
-    label: string;
-    checked: boolean;
-    onChange: (v: boolean) => void;
-  }) => (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={isViewer}
-      onClick={() => !isViewer && onChange(!checked)}
-      className={`flex items-center justify-center min-w-11 min-h-11 ${isViewer ? 'cursor-not-allowed opacity-50' : ''}`}
-    >
-      {checked ? (
-        <ToggleRight
-          className="w-8 h-8"
-          style={{ color: "var(--color-primary)" }}
-        />
-      ) : (
-        <ToggleLeft className="w-8 h-8 text-ui-muted" />
-      )}
-    </button>
-  );
 
   return (
     <>
-      <CatalogAdminHeader title="Operating Hours">
+      <CatalogAdminHeader title={ADMIN_NAV_LABELS[lang].hours}>
         <button
           type="button"
           onClick={handleSave}
@@ -168,13 +236,13 @@ function OperatingHoursPageContent() {
         >
           {saving ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Saving...
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+              {t.saving}
             </>
           ) : (
             <>
-              <Save className="w-4 h-4" />
-              Save Changes
+              <Save className="w-4 h-4" aria-hidden />
+              {t.save}
             </>
           )}
         </button>
@@ -195,36 +263,49 @@ function OperatingHoursPageContent() {
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-ui-primary" />
+            <Loader2 className="w-8 h-8 animate-spin text-ui-primary" aria-hidden />
           </div>
         ) : (
           <div className="glass rounded-panel p-5 sm:p-8 lg:p-10 border border-ui-line">
             <h3 className="font-semibold text-ui-heading mb-6 flex items-center gap-2">
-              <Clock className="w-5 h-5" style={{ color: "var(--color-primary)" }} />
-              Weekly Schedule
+              <Clock className="w-5 h-5" style={{ color: "var(--color-primary)" }} aria-hidden />
+              {t.weekly}
             </h3>
 
             <div className="space-y-4">
               {DAYS.map((day) => {
                 const dayHours = hours.find((h) => h.day_name === day.name);
                 if (!dayHours) return null;
+                const label = dayLabel(day);
+                const hasTimes = dayHours.open_hour !== null && dayHours.close_hour !== null;
+                // Closing at or before opening is an overnight shift (e.g. 6 pm to 2 am); midnight is not
+                const overnight =
+                  hasTimes &&
+                  dayHours.close_hour !== 0 &&
+                  dayHours.close_hour !== 24 &&
+                  dayHours.close_hour! <= dayHours.open_hour!;
 
                 return (
                   <div
                     key={day.name}
                     className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 p-4 sm:p-6 bg-ui-bg border border-ui-line rounded-panel hover:bg-ui-subtle transition-all group"
                   >
-                    <div className="flex items-center justify-between sm:w-32">
-                      <span className="font-medium text-ui-ink">{day.label_en}</span>
-                      <span className="text-ui-muted text-sm hidden sm:inline">
-                        {day.label_ar}
+                    <div className="sm:w-40 shrink-0">
+                      <span className="block font-medium text-ui-ink">{label}</span>
+                      <span className="block text-xs text-ui-muted mt-0.5">
+                        {dayHours.is_closed
+                          ? t.closedAllDay
+                          : hasTimes
+                            ? `${readableTime(dayHours.open_hour!)} – ${readableTime(dayHours.close_hour!)}${overnight ? ` ${t.nextDay}` : ""}`
+                            : "—"}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-ui-muted" aria-hidden>Closed:</span>
+                      <span className="text-sm text-ui-muted" aria-hidden>{t.closed}</span>
                       <ToggleSwitch
-                        label={`${day.label_en} closed`}
+                        disabled={isViewer}
+                        label={t.closedSwitch(label)}
                         checked={dayHours.is_closed}
                         onChange={(v) => updateDayHours(day.name, "is_closed", v)}
                       />
@@ -234,17 +315,18 @@ function OperatingHoursPageContent() {
                       className={`flex-1 flex flex-wrap items-center gap-x-4 gap-y-3 ${dayHours.is_closed ? "opacity-50 pointer-events-none" : ""
                         }`}
                     >
-                      {!dayHours.is_closed && (dayHours.open_hour === null || dayHours.close_hour === null) && (
+                      {!dayHours.is_closed && !hasTimes && (
                         <p className="w-full text-xs font-semibold text-ui-danger">
-                          Enter both times, or mark {day.label_en} closed.
+                          {t.bothTimes(label)}
                         </p>
                       )}
                       <div className="flex items-center gap-2">
-                        <label htmlFor={`hours-${day.name}-open`} className="text-sm text-ui-muted">Open:</label>
+                        <label htmlFor={`hours-${day.name}-open`} className="text-sm text-ui-muted">{t.open}</label>
                         <input
                           id={`hours-${day.name}-open`}
-                          aria-label={`${day.label_en} opening time`}
+                          aria-label={t.openingTime(label)}
                           type="time"
+                          dir="ltr"
                           value={formatHourToTime(dayHours.open_hour)}
                           onChange={(e) =>
                             updateDayHours(
@@ -258,12 +340,13 @@ function OperatingHoursPageContent() {
                         />
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        <label htmlFor={`hours-${day.name}-close`} className="text-xs font-semibold text-ui-muted">Close:</label>
+                      <div className="flex items-center gap-2">
+                        <label htmlFor={`hours-${day.name}-close`} className="text-sm text-ui-muted">{t.close}</label>
                         <input
                           id={`hours-${day.name}-close`}
-                          aria-label={`${day.label_en} closing time`}
+                          aria-label={t.closingTime(label)}
                           type="time"
+                          dir="ltr"
                           value={formatHourToTime(dayHours.close_hour)}
                           onChange={(e) =>
                             updateDayHours(

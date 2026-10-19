@@ -35,7 +35,7 @@ export type AnalyticsEvent = "page_view" | "whatsapp_click" | "booking_confirm";
  */
 export function trackEvent(catalogId: string, event: AnalyticsEvent) {
   try {
-    fetch("/api/analytics/track", {
+    fetch("/api/analytics/track/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ catalog_id: catalogId, event, fingerprint: getFingerprint() }),

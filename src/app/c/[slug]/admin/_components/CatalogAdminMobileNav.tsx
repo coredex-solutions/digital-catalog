@@ -5,8 +5,32 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Drawer } from "vaul";
 import { clsx } from "clsx";
-import { ExternalLink, LogOut, MoreHorizontal, X } from "lucide-react";
+import { ExternalLink, Languages, LogOut, MoreHorizontal, X } from "lucide-react";
 import { getAdminNavItems, isNavItemActive, PHONE_TAB_KEYS } from "./adminNav";
+import { useAdminLang, useCopy, useSetAdminLang } from "../_lib/i18n";
+
+const en = {
+  viewMenu: "View menu",
+  viewLiveMenu: "View live menu",
+  newTab: "(opens in a new tab)",
+  sections: "Dashboard sections",
+  more: "More",
+  close: "Close",
+  current: "Current",
+  signOut: "Sign out",
+  switchLanguage: "العربية",
+};
+const ar: typeof en = {
+  viewMenu: "عرض القائمة",
+  viewLiveMenu: "عرض القائمة كما يراها الزبائن",
+  newTab: "(تُفتح في نافذة جديدة)",
+  sections: "أقسام لوحة التحكم",
+  more: "المزيد",
+  close: "إغلاق",
+  current: "الصفحة الحالية",
+  signOut: "تسجيل الخروج",
+  switchLanguage: "English",
+};
 
 interface MobileNavProps {
   slug: string;
@@ -16,18 +40,19 @@ interface MobileNavProps {
 
 /** Compact sticky top bar shown below lg, in place of the sidebar's brand header. */
 export function CatalogAdminTopBar({ slug, catalogName }: Omit<MobileNavProps, "features">) {
+  const t = useCopy({ en, ar });
   return (
     <div className="lg:hidden sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-ui-line bg-ui-surface px-4">
       <p className="min-w-0 truncate text-base font-semibold text-ui-ink">{catalogName}</p>
       <a
-        href={`/c/${slug}`}
+        href={`/c/${slug}/`}
         target="_blank"
         rel="noopener noreferrer"
         className="-me-2 inline-flex h-11 shrink-0 items-center gap-1.5 rounded-control px-3 text-sm font-medium text-ui-primary hover:bg-ui-subtle"
       >
-        <ExternalLink className="h-4 w-4" aria-hidden />
-        View menu
-        <span className="sr-only">(opens in a new tab)</span>
+        <ExternalLink className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+        {t.viewMenu}
+        <span className="sr-only">{t.newTab}</span>
       </a>
     </div>
   );
@@ -38,8 +63,11 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
   const pathname = usePathname();
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
+  const lang = useAdminLang();
+  const setLang = useSetAdminLang();
+  const t = useCopy({ en, ar });
 
-  const items = getAdminNavItems(slug, features);
+  const items = getAdminNavItems(slug, features, lang);
   const tabs = items.filter((i) => PHONE_TAB_KEYS.includes(i.key));
   const moreItems = items.filter((i) => !PHONE_TAB_KEYS.includes(i.key));
   const moreActive = moreItems.some((i) => isNavItemActive(i, pathname));
@@ -51,7 +79,7 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
 
   const handleLogout = () => {
     localStorage.removeItem(`catalog_admin_token_${slug}`);
-    router.push(`/c/${slug}/admin/login`);
+    router.push(`/login/?r=${slug}`);
   };
 
   const tabClass = (active: boolean) =>
@@ -66,7 +94,7 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
   return (
     <>
       <nav
-        aria-label="Admin sections"
+        aria-label={t.sections}
         className="lg:hidden fixed inset-x-0 bottom-0 z-40 border-t border-ui-line bg-ui-surface"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
@@ -108,7 +136,7 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
               >
                 <MoreHorizontal className="h-5 w-5" strokeWidth={moreActive ? 2.5 : 2} aria-hidden />
               </span>
-              More
+              {t.more}
             </button>
           </li>
         </ul>
@@ -119,22 +147,22 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
           <Drawer.Overlay className="fixed inset-0 z-[60] bg-black/40 lg:hidden" />
           {/* Portalled to <body>, so re-apply the platform scope for the ui-* tokens */}
           <Drawer.Content
-            lang="en"
-            dir="ltr"
+            lang={lang}
+            dir={lang === "ar" ? "rtl" : "ltr"}
             style={{ backgroundColor: "var(--ui-surface)" }}
             className="platform fixed inset-x-0 bottom-0 z-[61] mx-auto flex max-h-[90dvh] w-full max-w-xl flex-col rounded-t-panel bg-ui-surface text-ui-ink shadow-xl outline-none lg:hidden"
           >
             <div className="mx-auto mt-2.5 h-1.5 w-10 shrink-0 rounded-full bg-ui-line" aria-hidden />
             <div className="flex shrink-0 items-start gap-3 px-4 pt-3 pb-2">
               <div className="min-w-0 flex-1">
-                <Drawer.Title className="text-lg font-semibold leading-tight">More</Drawer.Title>
+                <Drawer.Title className="text-lg font-semibold leading-tight">{t.more}</Drawer.Title>
                 <Drawer.Description className="mt-0.5 truncate text-sm text-ui-muted">{catalogName}</Drawer.Description>
               </div>
               <button
                 type="button"
                 onClick={() => setMoreOpen(false)}
                 className="-me-2 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-ui-muted hover:bg-ui-subtle hover:text-ui-ink"
-                aria-label="Close"
+                aria-label={t.close}
               >
                 <X className="h-5 w-5" aria-hidden />
               </button>
@@ -164,7 +192,7 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
                           aria-hidden
                         />
                         <span className="flex-1">{item.label}</span>
-                        {active && <span className="text-xs font-semibold text-ui-primary">Current</span>}
+                        {active && <span className="text-xs font-semibold text-ui-primary">{t.current}</span>}
                       </Link>
                     </li>
                   );
@@ -174,22 +202,31 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
               <div className="mx-3 my-2 h-px bg-ui-line" />
 
               <a
-                href={`/c/${slug}`}
+                href={`/c/${slug}/`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex min-h-12 items-center gap-3 rounded-control px-3 text-base font-medium text-ui-ink hover:bg-ui-subtle"
               >
-                <ExternalLink className="h-5 w-5 text-ui-muted" aria-hidden />
-                View live menu
-                <span className="sr-only">(opens in a new tab)</span>
+                <ExternalLink className="h-5 w-5 text-ui-muted rtl:-scale-x-100" aria-hidden />
+                {t.viewLiveMenu}
+                <span className="sr-only">{t.newTab}</span>
               </a>
+              <button
+                type="button"
+                onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+                lang={lang === "ar" ? "en" : "ar"}
+                className="flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-start text-base font-medium text-ui-ink hover:bg-ui-subtle"
+              >
+                <Languages className="h-5 w-5 text-ui-muted" aria-hidden />
+                <span className={clsx(lang !== "ar" && "font-system")}>{t.switchLanguage}</span>
+              </button>
               <button
                 type="button"
                 onClick={handleLogout}
                 className="flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-start text-base font-medium text-ui-danger hover:bg-ui-subtle"
               >
-                <LogOut className="h-5 w-5" aria-hidden />
-                Sign out
+                <LogOut className="h-5 w-5 rtl:-scale-x-100" aria-hidden />
+                {t.signOut}
               </button>
             </div>
           </Drawer.Content>

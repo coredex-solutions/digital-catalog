@@ -91,10 +91,10 @@ export async function POST(
         const options = readVariants(r.variants);
         const currency = String(r.currency || "USD");
         const optionText = options.length ? `; options: ${options.map((o) => `${o.name_en || o.name_ar} ${o.price} ${currency}`).join(", ")}` : "";
-        return `- [ID: ${r.id}] ${r.name_en} (${r.price} ${currency}${optionText})`;
+        return `- [ID: ${r.id}] ${r.name_en || r.name_ar} (${r.price} ${currency}${optionText})`;
       })
       .join("\n");
-    const cartDisplay = currentCart.map((c: any) => `- ${c.name_en} (ID: ${c.id}, Qty: ${c.quantity})`).join("\n") || "Cart is currently empty.";
+    const cartDisplay = currentCart.map((c: any) => `- ${c.name_en || c.name_ar} (ID: ${c.id}, Qty: ${c.quantity})`).join("\n") || "Cart is currently empty.";
 
     const settingsRes = await db.execute({
       sql: "SELECT ai_waiter_name, ai_waiter_persona FROM catalog_settings WHERE catalog_id = ?",

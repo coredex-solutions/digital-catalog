@@ -67,6 +67,7 @@ export function SearchSheet() {
                   {item.category_id && categoryNames.get(item.category_id) && (
                     <span className="block text-sm text-menu-muted">{categoryNames.get(item.category_id)}</span>
                   )}
+                  {item.image_url && item.image_is_illustrative && <span className="block text-xs text-menu-muted">{t.illustrativeShort}</span>}
                   {item.is_available === false && <span className="block text-sm font-medium text-menu-warning">{t.soldOut}</span>}
                 </span>
                 <span className="flex shrink-0 flex-col items-end text-sm">

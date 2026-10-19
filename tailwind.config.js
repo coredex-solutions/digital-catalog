@@ -16,6 +16,9 @@ export default {
       },
       fontFamily: {
         inter: ["var(--font-inter)", "sans-serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        // The phone's own font, for a lone Arabic label on an English page so the Arabic web font isn't fetched for it
+        system: ["system-ui", "-apple-system", "Segoe UI", "Roboto", "sans-serif"],
         // Diner menu: switch between Latin and Arabic faces via CSS variables (see .menu in globals.css)
         "menu-sans": ["var(--menu-font-sans)"],
         "menu-display": ["var(--menu-font-display)"],

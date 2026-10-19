@@ -86,29 +86,72 @@ function visibleMenu(menu: MenuSnapshot) {
   return { categories, items };
 }
 
+// A published version is never edited (publishing and restoring both insert a new one), so what
+// guests see of it can stay in memory by version id with nothing to invalidate. Each guest visit
+// then reads only the latest version number, not the whole snapshot. Rows are frozen because
+// every request shares them.
+const visibleByVersion = new Map<string, ReturnType<typeof visibleMenu>>();
+const MAX_CACHED_VERSIONS = 200;
+
+async function getVisibleVersion(versionId: string) {
+  const cached = visibleByVersion.get(versionId);
+  if (cached) {
+    // Re-insert so the least recently used version is the one evicted
+    visibleByVersion.delete(versionId);
+    visibleByVersion.set(versionId, cached);
+    return cached;
+  }
+  const result = await getDb().execute({ sql: "SELECT data FROM catalog_menu_versions WHERE id = ?", args: [versionId] });
+  const visible = visibleMenu(parseSnapshot(result.rows[0]?.data));
+  visible.categories.forEach((row) => Object.freeze(row));
+  visible.items.forEach((row) => Object.freeze(row));
+  if (result.rows[0]) {
+    visibleByVersion.set(versionId, visible);
+    if (visibleByVersion.size > MAX_CACHED_VERSIONS) visibleByVersion.delete(visibleByVersion.keys().next().value!);
+  }
+  return visible;
+}
+
+/** SQL for buildPublicMenu; `catalog` is the SQL for the catalog id (a parameter by default) */
+export const latestVersionSql = (catalog = "?") =>
+  `SELECT id, version FROM catalog_menu_versions WHERE catalog_id = ${catalog} ORDER BY version DESC LIMIT 1`;
+export const availabilitySql = (catalog = "?") => `SELECT id, is_available FROM menu_items WHERE catalog_id = ${catalog}`;
+
+/**
+ * Guests' menu from the latest version row (latestVersionSql) and the live sold-out switches
+ * (availabilitySql), or the owner's live rows when there is no version row (never published).
+ */
+export async function buildPublicMenu(catalogId: string, latest: ResultSet | null, availability: ResultSet | null) {
+  const head = latest?.rows[0];
+  if (!head) {
+    const live = visibleMenu(await getLiveMenu(catalogId));
+    return { ...live, version: null as number | null };
+  }
+
+  const { categories, items } = await getVisibleVersion(String(head.id));
+  // Sold out is operational, not content: always use the live switch where the item still exists
+  const live = new Map((availability?.rows ?? []).map((row) => [String(row.id), row.is_available]));
+  return {
+    categories,
+    items: items.map((item) => (live.has(String(item.id)) ? { ...item, is_available: live.get(String(item.id)) } : item)),
+    version: Number(head.version),
+  };
+}
+
 /**
  * The menu guests see: the latest published version with today's sold-out switches applied,
  * or (preview, or never published) the owner's live rows.
  */
 export async function getPublicMenu(catalogId: string, options: { preview?: boolean } = {}) {
-  const published = options.preview ? null : await getPublishedVersion(catalogId);
-  if (!published) {
-    const live = visibleMenu(await getLiveMenu(catalogId));
-    return { ...live, version: null as number | null };
-  }
-
-  const { categories, items } = visibleMenu(published.data);
-  // Sold out is operational, not content: always use the live switch where the item still exists
-  const availability = await getDb().execute({
-    sql: "SELECT id, is_available FROM menu_items WHERE catalog_id = ?",
-    args: [catalogId],
-  });
-  const live = new Map(availability.rows.map((row) => [String(row.id), row.is_available]));
-  return {
-    categories,
-    items: items.map((item) => (live.has(String(item.id)) ? { ...item, is_available: live.get(String(item.id)) } : item)),
-    version: published.version,
-  };
+  if (options.preview) return buildPublicMenu(catalogId, null, null);
+  const [latest, availability] = await getDb().batch(
+    [
+      { sql: latestVersionSql(), args: [catalogId] },
+      { sql: availabilitySql(), args: [catalogId] },
+    ],
+    "read"
+  );
+  return buildPublicMenu(catalogId, latest, availability);
 }
 
 // ---- Changes since the last publish ----
@@ -126,6 +169,9 @@ export interface MenuChange {
   type: "item" | "category";
   id: string;
   name: string;
+  /** Both names, so the dashboard can show the one in its own language */
+  name_en: string;
+  name_ar: string;
   /** Changed fields, e.g. [{ field: "price", from: 4, to: 5 }] */
   fields?: { field: string; from: unknown; to: unknown }[];
 }
@@ -141,22 +187,26 @@ function same(a: unknown, b: unknown): boolean {
 function diffRows(type: "item" | "category", live: Row[], published: Row[], fields: readonly string[]): MenuChange[] {
   const before = new Map(published.map((row) => [String(row.id), row]));
   const after = new Map(live.map((row) => [String(row.id), row]));
-  const name = (row: Row) => String(row.name_en || row.name_ar || "");
+  const names = (row: Row) => ({
+    name: String(row.name_en || row.name_ar || ""),
+    name_en: String(row.name_en || ""),
+    name_ar: String(row.name_ar || ""),
+  });
   const changes: MenuChange[] = [];
 
   for (const [id, row] of after) {
     const old = before.get(id);
     if (!old) {
-      changes.push({ kind: "added", type, id, name: name(row) });
+      changes.push({ kind: "added", type, id, ...names(row) });
       continue;
     }
     const changed = fields
       .filter((field) => !same(row[field], old[field]))
       .map((field) => ({ field, from: old[field] ?? null, to: row[field] ?? null }));
-    if (changed.length > 0) changes.push({ kind: "changed", type, id, name: name(row), fields: changed });
+    if (changed.length > 0) changes.push({ kind: "changed", type, id, ...names(row), fields: changed });
   }
   for (const [id, row] of before) {
-    if (!after.has(id)) changes.push({ kind: "removed", type, id, name: name(row) });
+    if (!after.has(id)) changes.push({ kind: "removed", type, id, ...names(row) });
   }
   return changes;
 }

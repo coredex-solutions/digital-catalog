@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { createHash } from 'crypto';
 import type { SuperAdminJWTPayload, CatalogAdminJWTPayload, JWTPayload } from '../db/types';
 
 // Read lazily so builds without the env var still succeed; fail loudly at sign/verify time
@@ -80,6 +81,32 @@ export function verifyEmailVerificationToken(token: string): string | null {
     const decoded = jwt.verify(token, getJwtSecret()) as { type?: string; email?: string };
     if (decoded.type === 'email_verification' && typeof decoded.email === 'string') {
       return decoded.email;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Password reset links. The token carries a fingerprint of the current password hash, so it
+// stops working as soon as the password changes: each link can be used once.
+export function passwordFingerprint(passwordHash: string): string {
+  return createHash('sha256').update(passwordHash).digest('hex').slice(0, 16);
+}
+
+export function signPasswordResetToken(adminId: string, passwordHash: string): string {
+  return jwt.sign(
+    { type: 'password_reset', adminId, fp: passwordFingerprint(passwordHash) },
+    getJwtSecret(),
+    { expiresIn: '30m' }
+  );
+}
+
+export function verifyPasswordResetToken(token: string): { adminId: string; fp: string } | null {
+  try {
+    const decoded = jwt.verify(token, getJwtSecret()) as { type?: string; adminId?: string; fp?: string };
+    if (decoded.type === 'password_reset' && typeof decoded.adminId === 'string' && typeof decoded.fp === 'string') {
+      return { adminId: decoded.adminId, fp: decoded.fp };
     }
     return null;
   } catch {

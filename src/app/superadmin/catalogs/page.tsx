@@ -56,7 +56,7 @@ export default function CatalogsPage() {
       if (!token) return;
 
       try {
-        const res = await fetch("/api/superadmin/catalogs", {
+        const res = await fetch("/api/superadmin/catalogs/", {
           headers: { Authorization: `Bearer ${token}` },
         });
         

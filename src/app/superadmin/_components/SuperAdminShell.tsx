@@ -24,7 +24,7 @@ export function SuperAdminShell({ children }: SuperAdminShellProps) {
       }
 
       try {
-        const res = await fetch("/api/superadmin/auth/verify", {
+        const res = await fetch("/api/superadmin/auth/verify/", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
