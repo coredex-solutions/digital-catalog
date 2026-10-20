@@ -18,9 +18,14 @@ export function opsEmail(): string | undefined {
 const escapeHtml = (value: string) =>
     value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+/** SMTP_USER and SMTP_PASS are set, so emails are really sent (not just printed in the terminal) */
+export function isEmailConfigured(): boolean {
+    return Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+}
+
 /** Send through SMTP. Without SMTP settings this throws in production and logs in development. */
 async function deliver(to: string, subject: string, text: string, html: string) {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    if (!isEmailConfigured()) {
         // In production a missing mail setup must surface as an error, not a silent "sent"
         if (process.env.NODE_ENV === "production") throw new Error("SMTP_USER / SMTP_PASS are not set");
         console.warn(`[dev] SMTP is not configured, so no email was sent.\nTo: ${to}\nSubject: ${subject}\n${text}`);

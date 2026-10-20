@@ -40,6 +40,8 @@ function SignupForm() {
     });
 
     const [verifying, setVerifying] = useState(false);
+    // Local development without SMTP: the code is in the server's terminal, not the inbox
+    const [codeInTerminal, setCodeInTerminal] = useState(false);
     const [verificationToken, setVerificationToken] = useState<string | null>(null);
 
     const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -61,10 +63,11 @@ function SignupForm() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: formData.email }),
             });
+            const data = await res.json().catch(() => ({}));
             if (res.ok) {
+                setCodeInTerminal(data.printedInTerminal === true);
                 setStep(1.5);
             } else {
-                const data = await res.json();
                 setError(data.error || "Failed to send code");
             }
         } catch {
@@ -227,10 +230,19 @@ function SignupForm() {
                                         </motion.div>
                                     ) : step === 1.5 ? (
                                         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-10 py-4">
-                                            <div className="text-center">
-                                                <p className="text-sm text-ui-muted mb-2">We sent a 6-digit code to</p>
-                                                <p className="text-sm font-semibold text-ui-primary">{formData.email}</p>
-                                            </div>
+                                            {codeInTerminal ? (
+                                                <div role="status" className="rounded-control border border-ui-line bg-ui-subtle p-4 text-sm text-ui-ink">
+                                                    <p className="font-semibold">Email isn&apos;t set up on this server, so no email was sent.</p>
+                                                    <p className="mt-2 text-ui-muted">
+                                                        The 6-digit code for <span className="font-semibold text-ui-ink">{formData.email}</span> is printed in the terminal where the server is running. To send real emails, fill in the <code>SMTP_</code> settings in <code>.env.local</code> and restart the server.
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <div className="text-center">
+                                                    <p className="text-sm text-ui-muted mb-2">We sent a 6-digit code to</p>
+                                                    <p className="text-sm font-semibold text-ui-primary">{formData.email}</p>
+                                                </div>
+                                            )}
 
                                             <PinInput
                                                 length={6}

@@ -291,8 +291,11 @@ function ImportContent() {
   // ---- Photo / PDF ----
   const addPhotos = (list: FileList | null) => {
     if (!list) return;
+    // Copy now: the input is cleared right after this call, which empties the live FileList
+    // before React runs the updater below
+    const added = Array.from(list);
     setError(null);
-    setPhotos((prev) => [...prev, ...Array.from(list)].slice(0, IMPORT_LIMITS.files));
+    setPhotos((prev) => [...prev, ...added].slice(0, IMPORT_LIMITS.files));
   };
 
   const readMenu = async () => {

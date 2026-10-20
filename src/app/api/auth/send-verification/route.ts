@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
 import { v4 as uuidv4 } from "uuid";
 import { randomInt } from "crypto";
-import { sendVerificationEmail } from "@/lib/email";
+import { isEmailConfigured, sendVerificationEmail } from "@/lib/email";
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -52,18 +52,21 @@ export async function POST(request: NextRequest) {
             },
         ]);
 
-        // Send Email
+        // Send Email. A failed send is an error everywhere: the owner must not be told a code
+        // is on its way when it isn't.
         try {
             await sendVerificationEmail(email, code);
         } catch (emailErr) {
             console.error("Email send failed:", emailErr);
-            // We still proceed if SMTP is not configured but log it
-            if (process.env.NODE_ENV === 'production') {
-                return NextResponse.json({ error: "Failed to send verification email" }, { status: 500 });
-            }
+            return NextResponse.json({ error: "Failed to send verification email" }, { status: 500 });
         }
 
-        return NextResponse.json({ success: true, message: "Code sent" });
+        // Development without SMTP settings: the code was printed in the server's terminal instead
+        return NextResponse.json({
+            success: true,
+            message: "Code sent",
+            ...(isEmailConfigured() ? {} : { printedInTerminal: true }),
+        });
 
     } catch (error) {
         console.error("Send verification error:", error);
