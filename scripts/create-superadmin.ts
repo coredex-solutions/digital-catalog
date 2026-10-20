@@ -107,8 +107,8 @@ async function createSuperAdmin() {
     console.log(`   Email: ${email}`);
     console.log(`   Name: ${name}`);
     console.log("\n🔗 Login at: /superadmin/login");
-  } catch (error: any) {
-    console.error("\n❌ Failed to create super admin:", error.message);
+  } catch (error) {
+    console.error("\n❌ Failed to create super admin:", error instanceof Error ? error.message : String(error));
     rl.close();
     process.exit(1);
   }

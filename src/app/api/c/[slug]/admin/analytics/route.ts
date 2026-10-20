@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
+import type { Row } from "@libsql/client";
 
 /** Today's calendar day in Beirut (YYYY-MM-DD): the day catalog_analytics.date is recorded under */
 const beirutToday = () =>
@@ -103,8 +104,8 @@ export async function GET(
     ],
   });
 
-  const current = currentTotals.rows[0] as any;
-  const prev = prevTotals.rows[0] as any;
+  const current = currentTotals.rows[0] as Row | undefined;
+  const prev = prevTotals.rows[0] as Row | undefined;
 
   // Calculate percentage changes
   const calcChange = (curr: number, prev: number) => {

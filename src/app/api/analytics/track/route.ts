@@ -75,7 +75,7 @@ async function handler(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Analytics tracking error:', error);
     // Return success anyway to not break user experience
     return NextResponse.json({ success: true });

@@ -13,19 +13,20 @@ type Status =
   | { kind: "ready"; email: string; restaurant: string }
   | { kind: "done"; slug: string };
 
+const INCOMPLETE_LINK: Status = { kind: "invalid", message: "This reset link is incomplete. Ask for a new one." };
+
 export function ResetForm({ lang, token }: { lang: SiteLang; token: string }) {
   const t = getAccountCopy(lang);
-  const [status, setStatus] = useState<Status>({ kind: "checking" });
+  const [checked, setStatus] = useState<Status>({ kind: "checking" });
+  // A link without a token can't be checked at all
+  const status = token ? checked : INCOMPLETE_LINK;
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!token) {
-      setStatus({ kind: "invalid", message: "This reset link is incomplete. Ask for a new one." });
-      return;
-    }
+    if (!token) return;
     fetch(`/api/auth/reset-password/?token=${encodeURIComponent(token)}`)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));

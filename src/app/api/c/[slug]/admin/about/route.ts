@@ -94,7 +94,7 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Update about/SEO error:", error);
     return NextResponse.json(
       { error: "Failed to update settings" },

@@ -114,6 +114,7 @@ export interface MenuBranch {
 export type MenuSheet = "item" | "cart" | "checkout" | "search" | "info" | "reservation";
 
 export interface MenuData extends CatalogUIData {
+  menuItems: MenuItem[];
   categories: MenuCategory[];
   faqs: MenuFaq[];
   branches: MenuBranch[];
@@ -214,7 +215,7 @@ export function CatalogProvider({
 }: CatalogProviderProps) {
   const router = useRouter();
   const { catalog, settings, contact, operatingHours, socialMedia, categories, faqs, branches } = data;
-  const menuItems = data.menuItems as MenuItem[];
+  const menuItems = data.menuItems;
 
   const [theme, setTheme] = useState(initialTheme);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
@@ -427,6 +428,7 @@ export function CatalogProvider({
             variant,
           });
         }
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- the saved cart is only readable on the client; restoring it in render would break hydration
         setCart([...restored.values()]);
       }
     } catch {

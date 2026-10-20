@@ -5,9 +5,8 @@ import Link from "next/link";
 import { SuperAdminShell } from "./_components/SuperAdminShell";
 import { SuperAdminHeader, SuperAdminContent } from "./_components/SuperAdminSidebar";
 import { 
-  FolderKanban, 
-  Users, 
-  Eye, 
+  FolderKanban,
+  Eye,
   MessageCircle,
   Calendar,
   AlertTriangle,
@@ -15,7 +14,8 @@ import {
   ArrowRight,
   TrendingUp,
   Shield,
-  CreditCard
+  CreditCard,
+  type LucideIcon
 } from "lucide-react";
 
 interface DashboardStats {
@@ -58,9 +58,8 @@ function StatCard({
   value, 
   subtext,
   trend,
-  color = "primary" 
-}: { 
-  icon: any; 
+}: {
+  icon: LucideIcon;
   label: string; 
   value: number | string;
   subtext?: string;
@@ -104,6 +103,8 @@ function StatCard({
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  // Reference time for the "days left" countdowns, read once so rendering stays pure
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -246,7 +247,7 @@ export default function SuperAdminDashboard() {
                   <div className="divide-y divide-ui-line">
                     {stats.expiring_soon.map((catalog) => {
                       const daysLeft = Math.ceil(
-                        (new Date(catalog.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                        (new Date(catalog.expires_at).getTime() - now) / (1000 * 60 * 60 * 24)
                       );
                       return (
                         <Link

@@ -7,16 +7,14 @@ import { SuperAdminHeader, SuperAdminContent } from "../_components/SuperAdminSi
 import { 
   Plus, 
   Search, 
-  MoreVertical,
   ExternalLink,
   Edit,
-  Trash2,
-  Eye,
   ShoppingBag,
   Coffee,
   Scissors,
   Package,
-  Store
+  Store,
+  type LucideIcon
 } from "lucide-react";
 
 interface CatalogItem {
@@ -35,7 +33,7 @@ interface CatalogItem {
   total_views: number;
 }
 
-const businessTypeIcons: Record<string, any> = {
+const businessTypeIcons: Record<string, LucideIcon> = {
   restaurant: Coffee,
   retail: ShoppingBag,
   cafe: Coffee,

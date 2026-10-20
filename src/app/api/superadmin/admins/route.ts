@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      admins: result.rows.map((row: any) => ({
+      admins: result.rows.map((row) => ({
         id: row.id,
         catalog_id: row.catalog_id,
         catalog_name: row.catalog_name || "Unknown",

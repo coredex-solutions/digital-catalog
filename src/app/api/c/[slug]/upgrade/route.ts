@@ -60,7 +60,7 @@ export async function POST(
         }
 
         return NextResponse.json({ success: true, message: "Upgrade request submitted successfully." });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "Failed to submit request" }, { status: 500 });
     }
 }
@@ -83,7 +83,7 @@ export async function GET(
             args: [catalog.id]
         });
         return NextResponse.json({ requests: result.rows });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "DB Error" }, { status: 500 });
     }
 }

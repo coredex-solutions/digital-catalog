@@ -29,6 +29,8 @@ export const RATE_LIMITS = {
 
   // Owner-side AI writing tools, counted per catalog rather than per IP
   aiGenerate: { windowMs: 60 * 60 * 1000, maxRequests: 30, keyPrefix: 'ai-generate' }, // 30 calls/hour
+  // Reading a printed menu with AI, per catalog
+  menuRead: { windowMs: 60 * 60 * 1000, maxRequests: 10, keyPrefix: 'menu-read' }, // 10 reads/hour
 };
 
 /**
@@ -161,11 +163,11 @@ export async function withRateLimit<T extends Response>(
 /**
  * Higher-order function to create rate-limited API handlers
  */
-export function rateLimited<T extends (...args: any[]) => Promise<NextResponse>>(
-  handler: T,
+export function rateLimited<A extends unknown[]>(
+  handler: (request: NextRequest, ...args: A) => Promise<NextResponse>,
   config: RateLimitConfig = RATE_LIMITS.api
 ) {
-  return async (request: NextRequest, ...args: any[]): Promise<NextResponse> => {
+  return async (request: NextRequest, ...args: A): Promise<NextResponse> => {
     return withRateLimit(request, () => handler(request, ...args), config);
   };
 }

@@ -132,7 +132,7 @@ export async function POST(
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Create category error:", error);
     return NextResponse.json(
       { error: "Failed to create category" },
@@ -184,7 +184,7 @@ export async function PUT(
     }
 
     return NextResponse.json({ success: true, changed: plan.length });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Reorder categories error:", error);
     return NextResponse.json(
       { error: "Failed to reorder categories" },

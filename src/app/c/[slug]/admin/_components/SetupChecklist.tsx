@@ -41,7 +41,7 @@ const en = {
         : { title: "Choose how prices are shown", hint: "Dollars, pounds, or both." },
     dishes: (_step, n, lang) => ({
       title: "Add your dishes",
-      hint: n > 0 ? `${formatNumber(n, lang)} so far.` : "Start with a few; you can add more any time.",
+      hint: n > 0 ? `${formatNumber(n, lang)} so far.` : "Add them one by one, or import your menu from a spreadsheet or a photo.",
     }),
     arabic: (_step, n, lang) => ({
       title: "Check the Arabic names",
@@ -80,7 +80,7 @@ const ar: typeof en = {
               many: "أضفت # طبقاً حتى الآن.",
               other: "أضفت # طبق حتى الآن.",
             })
-          : "ابدأ ببضعة أطباق، ويمكنك إضافة المزيد في أي وقت.",
+          : "أضفها واحداً تلو الآخر، أو استورد قائمتك من جدول أو من صورة.",
     }),
     arabic: (_step, n, lang) => ({
       title: "راجع الأسماء بالعربية",

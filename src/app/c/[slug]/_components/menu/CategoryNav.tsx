@@ -41,6 +41,7 @@ export function CategoryNav({ categories }: CategoryNavProps) {
   useEffect(() => {
     const field = document.getElementById(SEARCH_FIELD_ID);
     if (!field) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- whether the header field exists is only known from the DOM after mount
       setShowSearch(true);
       return;
     }

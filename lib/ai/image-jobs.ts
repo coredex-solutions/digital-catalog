@@ -20,6 +20,7 @@ import { v4 as uuidv4 } from "uuid";
 import { getDb } from "@/lib/db/client";
 import { getR2PublicUrl } from "@/lib/r2/client";
 import { uploadBufferToR2 } from "@/lib/r2/upload";
+import { AI_MODELS } from "@/lib/ai/models";
 
 export type ImageJobKind = "enhance" | "illustrate";
 export type ImageJobStatus = "queued" | "processing" | "failed" | "ready" | "approved" | "discarded" | "reverted";
@@ -31,7 +32,6 @@ export const IMAGE_STYLES = {
 } as const;
 export type ImageStyle = keyof typeof IMAGE_STYLES;
 
-const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
 const STALE_MINUTES = 10;
 const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
 
@@ -366,7 +366,7 @@ async function generate(kind: ImageJobKind, style: ImageStyle, sourceUrl: string
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) throw new Error("GOOGLE_API_KEY is not set");
   const model = new GoogleGenerativeAI(apiKey).getGenerativeModel({
-    model: GEMINI_IMAGE_MODEL,
+    model: AI_MODELS.image,
     generationConfig: {
       temperature: kind === "enhance" ? 0.2 : 0.7,
       // @ts-expect-error responseModalities is supported by the image model but missing from the SDK types

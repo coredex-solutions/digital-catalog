@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useEffectEvent, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { CatalogAdminShell } from "../_components/CatalogAdminShell";
 import {
@@ -10,8 +10,9 @@ import {
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
 import { useAdminLang, useCopy } from "../_lib/i18n";
 import { translateApiMessage } from "../_lib/api-errors";
+import QRCode from "qrcode";
+import { checkQrColors } from "@/lib/qr/contrast";
 import {
-  Download,
   Loader2,
   QrCode,
   Printer,
@@ -24,14 +25,11 @@ import {
   Image as ImageIcon,
   RotateCcw,
   Sparkles,
-  Link2,
   Maximize2,
   Minimize2,
   ZoomIn,
   ZoomOut,
   RotateCw,
-  Check,
-  X,
 } from "lucide-react";
 
 interface CatalogInfo {
@@ -343,13 +341,13 @@ interface TemplateCustomization {
   customShopName: string; // Empty = use catalog name, otherwise use custom
   showArabicText: boolean;
   arabicText: string;
+  arabicInstruction: string;
   englishText: string;
   ctaText: string;
   pattern: PatternType;
   fontPreset: FontPreset;
   headingWeight: "light" | "normal" | "medium" | "semibold" | "bold";
   letterSpacing: "tight" | "normal" | "wide" | "wider";
-  customUrl: string; // Optional custom URL override
 }
 
 // Best gradient direction defaults for each template
@@ -380,13 +378,13 @@ const DEFAULT_CUSTOMIZATION: TemplateCustomization = {
   customShopName: "",
   showArabicText: true,
   arabicText: "قائمة الطعام",
-  englishText: "Scan To View Menu",
-  ctaText: "Scan Me!",
+  arabicInstruction: "امسح الرمز لعرض القائمة",
+  englishText: "Scan to see the menu",
+  ctaText: "امسحني · Scan me",
   pattern: "circles",
   fontPreset: "elegant",
   headingWeight: "normal",
   letterSpacing: "wide",
-  customUrl: "",
 };
 
 const PRINT_TEMPLATES = [
@@ -503,6 +501,13 @@ const en = {
   transparentValue: "transparent",
   transparent: "Transparent",
   quickPresets: "Quick presets",
+  contrastGood: "Good contrast: phones read this easily.",
+  contrastTest: (ratio: string) =>
+    `Readable, but with less contrast than black on white (${ratio}:1). Print one and test it with an iPhone and an Android phone before printing more.`,
+  contrastTransparent: "Without a background, print the code only on a plain, light surface.",
+  contrastInvalid: "Enter colours like #000000.",
+  useBlackOnWhite: "Use black on white",
+  templatesBlocked: "Fix the QR colours above to preview and print a template.",
   qrPresets: { classic: "Classic", slate: "Slate", brand: "Brand", transparent: "Transparent" } as Record<string, string>,
   printableTemplates: "Printable templates",
   hideCustomizer: "Hide design options",
@@ -521,10 +526,11 @@ const en = {
   },
   colourAria: (label: string) => `${label} colour`,
   textContent: "Text",
-  arabicText: "Arabic text",
-  englishText: "English text",
-  cta: "Call to action",
-  ctaPlaceholder: "Scan Me!",
+  arabicText: "Arabic title",
+  arabicInstruction: "Instruction in Arabic",
+  englishText: "Instruction in English",
+  cta: "Button text",
+  ctaPlaceholder: "امسحني · Scan me",
   displayOptions: "Show on the design",
   showLogo: "Show logo",
   showShopName: "Show business name",
@@ -532,14 +538,10 @@ const en = {
   customShopNamePlaceholder: "Business name (optional)",
   customShopNameHint: "Leave empty to use your menu's name, or type another name (for example in Arabic).",
   showArabicText: "Show Arabic text",
+  showArabicTextHint: "Guests in Lebanon read both. Keep it on unless your guests don't read Arabic.",
   backgroundPattern: "Background pattern",
   patternFor: (template: string) => `(for ${template})`,
   patternNames: {} as Record<string, string>,
-  customUrl: "Custom link (optional)",
-  customUrlAria: "Custom menu link",
-  customUrlPlaceholder: "Leave empty to use your menu link",
-  clearCustomUrl: "Clear custom link",
-  customUrlWarning: "The design uses your custom link instead of your menu link.",
   colourThemes: "Colour themes",
   colourPresets: {
     brand: "Brand",
@@ -642,6 +644,13 @@ const ar: typeof en = {
   transparentValue: "شفاف",
   transparent: "شفاف",
   quickPresets: "ألوان جاهزة",
+  contrastGood: "تباين جيد: تقرأ الهواتف هذا الرمز بسهولة.",
+  contrastTest: (ratio) =>
+    `يمكن قراءته، لكن تباينه أقل من الأسود على الأبيض (${ratio}:1). اطبع نسخة واحدة وجرّبها بهاتف iPhone وهاتف Android قبل طباعة المزيد.`,
+  contrastTransparent: "من دون خلفية، اطبع الرمز فقط على سطح فاتح وسادة.",
+  contrastInvalid: "أدخل الألوان بصيغة مثل ‎#000000.",
+  useBlackOnWhite: "استخدم الأسود على الأبيض",
+  templatesBlocked: "صحّح ألوان رمز QR أعلاه لمعاينة القالب وطباعته.",
   qrPresets: { classic: "كلاسيكي", slate: "رمادي داكن", brand: "ألوان الهوية", transparent: "شفاف" },
   printableTemplates: "قوالب للطباعة",
   hideCustomizer: "إخفاء خيارات التصميم",
@@ -660,10 +669,11 @@ const ar: typeof en = {
   },
   colourAria: (label) => label,
   textContent: "النصوص",
-  arabicText: "النص العربي",
-  englishText: "النص الإنجليزي",
-  cta: "عبارة الدعوة",
-  ctaPlaceholder: "امسح الرمز!",
+  arabicText: "العنوان بالعربية",
+  arabicInstruction: "التعليمات بالعربية",
+  englishText: "التعليمات بالإنجليزية",
+  cta: "نص الزر",
+  ctaPlaceholder: "امسحني · Scan me",
   displayOptions: "ما يظهر على التصميم",
   showLogo: "إظهار الشعار",
   showShopName: "إظهار اسم المحل",
@@ -671,6 +681,7 @@ const ar: typeof en = {
   customShopNamePlaceholder: "اسم المحل (اختياري)",
   customShopNameHint: "اتركه فارغاً لاستخدام اسم قائمتك، أو اكتب اسماً آخر (مثلاً بالعربية).",
   showArabicText: "إظهار النص العربي",
+  showArabicTextHint: "يقرأ الزبائن في لبنان اللغتين. أبقِه ظاهراً إلا إذا كان زبائنك لا يقرؤون العربية.",
   backgroundPattern: "نقشة الخلفية",
   patternFor: (template) => `(لقالب ${template})`,
   patternNames: {
@@ -704,11 +715,6 @@ const ar: typeof en = {
     Shapes: "أشكال",
     Flow: "انسياب",
   },
-  customUrl: "رابط مخصّص (اختياري)",
-  customUrlAria: "رابط مخصّص للقائمة",
-  customUrlPlaceholder: "اتركه فارغاً لاستخدام رابط قائمتك",
-  clearCustomUrl: "مسح الرابط المخصّص",
-  customUrlWarning: "يستخدم التصميم رابطك المخصّص بدلاً من رابط قائمتك.",
   colourThemes: "مجموعات ألوان",
   colourPresets: {
     brand: "ألوان الهوية",
@@ -809,12 +815,13 @@ export default function QRCodePage() {
 
   // Batch export state
 
-  const printRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Get the effective URL (custom or catalog URL)
-  const effectiveUrl = customization.customUrl.trim() || catalogUrl;
-  const effectiveShortUrl = effectiveUrl.replace(/^https?:\/\//, "");
+  // Codes phones can't read are never shown, downloaded or printed (the API refuses them too)
+  const qrCheck = checkQrColors(darkColor, transparent ? "transparent" : lightColor);
+  const qrBlocked = !qrCheck || qrCheck.level === "unreadable";
+  // Templates embed the code as SVG, so prints stay sharp at any size
+  const [templateQr, setTemplateQr] = useState("");
 
   // Get available patterns for current template
   const getAvailablePatterns = useCallback(() => {
@@ -823,6 +830,56 @@ export default function QRCodePage() {
       TEMPLATE_PATTERNS[selectedTemplate] || TEMPLATE_PATTERNS["table-tent"]
     );
   }, [selectedTemplate]);
+
+  const [qrError, setQrError] = useState<string | null>(null);
+
+  /** Fetches the preview code for the current size and colours (state is set once it answers) */
+  const fetchQR = (authToken: string) => {
+    const light = transparent ? "transparent" : lightColor;
+    return fetch(
+      `/api/c/${slug}/admin/qr?format=base64&size=${qrSize}&dark=${encodeURIComponent(
+        darkColor
+      )}&light=${encodeURIComponent(light)}`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    )
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          setQrError(null);
+          setQrDataUrl(data.dataUrl);
+          setCatalogUrl(data.catalogUrl);
+        } else {
+          const errorData = await res.json().catch(() => ({}));
+          setQrError(
+            errorData.error ? translateApiMessage(errorData.error, lang) : t.failedStatus(res.status)
+          );
+          console.error("QR fetch failed:", res.status, errorData);
+        }
+      })
+      .catch((error) => {
+        setQrError(t.networkError);
+        console.error("QR fetch error:", error);
+      });
+  };
+
+  const regenerateQR = async (token?: string) => {
+    const authToken =
+      token || localStorage.getItem(`catalog_admin_token_${slug}`);
+    if (!authToken) {
+      setQrError(t.noToken);
+      return;
+    }
+
+    setQrError(null);
+    const light = transparent ? "transparent" : lightColor;
+    const check = checkQrColors(darkColor, light);
+    if (!check || check.level === "unreadable") return;
+
+    await fetchQR(authToken);
+  };
+
+  // Called once the catalog settings have loaded
+  const loadInitialQR = useEffectEvent((token: string) => regenerateQR(token));
 
   useEffect(() => {
     const fetchData = async () => {
@@ -858,7 +915,7 @@ export default function QRCodePage() {
         }
 
         // Fetch QR code
-        await regenerateQR(token);
+        await loadInitialQR(token);
       } catch (error) {
         console.error("Failed to fetch data:", error);
       } finally {
@@ -869,9 +926,9 @@ export default function QRCodePage() {
     fetchData();
   }, [slug]);
 
-  const updateCustomization = (
-    key: keyof TemplateCustomization,
-    value: any
+  const updateCustomization = <K extends keyof TemplateCustomization>(
+    key: K,
+    value: TemplateCustomization[K]
   ) => {
     setCustomization((prev) => ({ ...prev, [key]: value }));
   };
@@ -888,47 +945,9 @@ export default function QRCodePage() {
     }
   };
 
-  const [qrError, setQrError] = useState<string | null>(null);
-
-  const regenerateQR = async (token?: string) => {
-    const authToken =
-      token || localStorage.getItem(`catalog_admin_token_${slug}`);
-    if (!authToken) {
-      setQrError(t.noToken);
-      return;
-    }
-
-    setQrError(null);
-    const light = transparent ? "transparent" : lightColor;
-
-    try {
-      const res = await fetch(
-        `/api/c/${slug}/admin/qr?format=base64&size=${qrSize}&dark=${encodeURIComponent(
-          darkColor
-        )}&light=${encodeURIComponent(light)}`,
-        { headers: { Authorization: `Bearer ${authToken}` } }
-      );
-
-      if (res.ok) {
-        const data = await res.json();
-        setQrDataUrl(data.dataUrl);
-        setCatalogUrl(data.catalogUrl);
-      } else {
-        const errorData = await res.json().catch(() => ({}));
-        setQrError(
-          errorData.error ? translateApiMessage(errorData.error, lang) : t.failedStatus(res.status)
-        );
-        console.error("QR fetch failed:", res.status, errorData);
-      }
-    } catch (error) {
-      setQrError(t.networkError);
-      console.error("QR fetch error:", error);
-    }
-  };
-
   const downloadQR = async (format: "png" | "svg") => {
     const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-    if (!token) return;
+    if (!token || qrBlocked) return;
 
     const light = transparent ? "transparent" : lightColor;
     const res = await fetch(
@@ -951,8 +970,14 @@ export default function QRCodePage() {
     }
   };
 
+  const resetToBlackOnWhite = () => {
+    setDarkColor("#000000");
+    setLightColor("#ffffff");
+    setTransparent(false);
+  };
+
   const handlePrint = () => {
-    if (!selectedTemplate) return;
+    if (!selectedTemplate || qrBlocked) return;
     window.print();
   };
 
@@ -1013,11 +1038,33 @@ export default function QRCodePage() {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
+  // New size or colours: fetch the code again, once the page has loaded
+  const refetchQR = useEffectEvent(() => {
+    if (loading) return;
+    const authToken = localStorage.getItem(`catalog_admin_token_${slug}`);
+    // Signed out: the first load already said so, and the shell sends the owner to sign in
+    if (authToken && !qrBlocked) fetchQR(authToken);
+  });
+
   useEffect(() => {
-    if (!loading) {
-      regenerateQR();
-    }
+    refetchQR();
   }, [qrSize, darkColor, lightColor, transparent]);
+
+  useEffect(() => {
+    if (!catalogUrl || qrBlocked) return;
+    let cancelled = false;
+    QRCode.toString(catalogUrl, {
+      type: "svg",
+      margin: 4,
+      errorCorrectionLevel: "M",
+      color: { dark: darkColor, light: transparent ? "#ffffff00" : lightColor },
+    }).then((svg) => {
+      if (!cancelled) setTemplateQr(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [catalogUrl, darkColor, lightColor, transparent, qrBlocked]);
 
   if (loading) {
     return (
@@ -1058,7 +1105,7 @@ export default function QRCodePage() {
           {/* QR Code Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* QR Preview */}
-            <div className="bg-ui-surface rounded-xl p-6">
+            <div className="bg-ui-surface rounded-xl p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-ui-heading mb-4 flex items-center gap-2">
                 <QrCode className="w-5 h-5 text-ui-primary" aria-hidden />
                 {t.yourQr}
@@ -1066,11 +1113,17 @@ export default function QRCodePage() {
 
               <div
                 className="flex items-center justify-center p-4 sm:p-8 rounded-xl mb-4"
-                style={{
-                  backgroundColor: transparent ? "#1e293b" : lightColor,
-                }}
+                style={
+                  transparent
+                    ? { background: "repeating-conic-gradient(#e5e7eb 0% 25%, #ffffff 0% 50%) 50% / 16px 16px" }
+                    : { backgroundColor: qrCheck ? lightColor : "#ffffff" }
+                }
               >
-                {qrError ? (
+                {qrBlocked ? (
+                  <div className="flex h-48 w-48 items-center justify-center rounded border-2 border-dashed border-ui-input bg-ui-surface">
+                    <QrCode className="h-10 w-10 text-ui-muted" aria-hidden />
+                  </div>
+                ) : qrError ? (
                   <div className="text-center text-ui-primary p-4">
                     <p className="font-medium">{t.qrFailed}</p>
                     <p className="text-sm mt-1">{qrError}</p>
@@ -1104,14 +1157,16 @@ export default function QRCodePage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => downloadQR("png")}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors"
+                  disabled={qrBlocked}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FileImage className="w-4 h-4" aria-hidden />
                   {t.downloadPng}
                 </button>
                 <button
                   onClick={() => downloadQR("svg")}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-ui-surface hover:bg-ui-subtle text-ui-ink rounded-lg font-medium transition-colors"
+                  disabled={qrBlocked}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 px-4 bg-ui-surface hover:bg-ui-subtle text-ui-ink rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FileCode className="w-4 h-4" aria-hidden />
                   {t.downloadSvg}
@@ -1120,7 +1175,7 @@ export default function QRCodePage() {
             </div>
 
             {/* QR Customization */}
-            <div className="bg-ui-surface rounded-xl p-6">
+            <div className="bg-ui-surface rounded-xl p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-ui-heading mb-4 flex items-center gap-2">
                 <Palette className="w-5 h-5 text-ui-primary" aria-hidden />
                 {t.customizeQr}
@@ -1253,12 +1308,35 @@ export default function QRCodePage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Contrast check */}
+                <div className="space-y-2">
+                  {!qrCheck ? (
+                    <p role="alert" className="text-sm text-ui-danger">{t.contrastInvalid}</p>
+                  ) : qrCheck.message ? (
+                    <div role="alert" className="rounded-control border border-ui-danger bg-ui-surface p-3 text-sm">
+                      <p className="text-ui-danger">{translateApiMessage(qrCheck.message, lang)}</p>
+                      <button
+                        type="button"
+                        onClick={resetToBlackOnWhite}
+                        className="mt-2 min-h-11 rounded-control border border-ui-input px-4 font-semibold text-ui-ink hover:bg-ui-subtle"
+                      >
+                        {t.useBlackOnWhite}
+                      </button>
+                    </div>
+                  ) : (
+                    <p role="status" className={`text-sm ${qrCheck.level === "good" ? "text-ui-success" : "text-ui-warning"}`}>
+                      {qrCheck.level === "good" ? t.contrastGood : t.contrastTest(qrCheck.ratio.toFixed(1))}
+                    </p>
+                  )}
+                  {transparent && !qrBlocked && <p className="text-sm text-ui-muted">{t.contrastTransparent}</p>}
+                </div>
               </div>
             </div>
           </div>
 
           {/* Print Templates Section */}
-          <div className="bg-ui-surface rounded-xl p-6">
+          <div className="bg-ui-surface rounded-xl p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-ui-heading flex items-center gap-2">
                 <Printer className="w-5 h-5 text-ui-primary" aria-hidden />
@@ -1281,7 +1359,7 @@ export default function QRCodePage() {
 
             {/* Customization Panel */}
             {showCustomizer && (
-              <div className="bg-ui-surface rounded-xl p-6 mb-6 border border-ui-line">
+              <div className="bg-ui-surface rounded-xl p-4 sm:p-6 mb-6 border border-ui-line">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-ui-heading font-medium flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-ui-ai" aria-hidden />
@@ -1320,7 +1398,7 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
+                            className="w-10 h-10 shrink-0 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
                             aria-label={t.hexAria(t.colourAria(t.colourLabels.primaryColor))}
@@ -1333,7 +1411,7 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
+                            className="min-w-0 flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
@@ -1352,7 +1430,7 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
+                            className="w-10 h-10 shrink-0 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
                             aria-label={t.hexAria(t.colourAria(t.colourLabels.secondaryColor))}
@@ -1365,7 +1443,7 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
+                            className="min-w-0 flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
@@ -1381,7 +1459,7 @@ export default function QRCodePage() {
                             onChange={(e) =>
                               updateCustomization("accentColor", e.target.value)
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
+                            className="w-10 h-10 shrink-0 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
                             aria-label={t.hexAria(t.colourAria(t.colourLabels.accentColor))}
@@ -1391,7 +1469,7 @@ export default function QRCodePage() {
                             onChange={(e) =>
                               updateCustomization("accentColor", e.target.value)
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
+                            className="min-w-0 flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
@@ -1410,7 +1488,7 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
+                            className="w-10 h-10 shrink-0 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
                             aria-label={t.hexAria(t.colourAria(t.colourLabels.backgroundColor))}
@@ -1423,7 +1501,7 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
+                            className="min-w-0 flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
@@ -1439,7 +1517,7 @@ export default function QRCodePage() {
                             onChange={(e) =>
                               updateCustomization("textPrimary", e.target.value)
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
+                            className="w-10 h-10 shrink-0 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
                             aria-label={t.hexAria(t.colourAria(t.colourLabels.textPrimary))}
@@ -1449,7 +1527,7 @@ export default function QRCodePage() {
                             onChange={(e) =>
                               updateCustomization("textPrimary", e.target.value)
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
+                            className="min-w-0 flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
@@ -1468,7 +1546,7 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="w-10 h-10 rounded-lg border-2 border-ui-input cursor-pointer"
+                            className="w-10 h-10 shrink-0 rounded-lg border-2 border-ui-input cursor-pointer"
                           />
                           <input
                             aria-label={t.hexAria(t.colourAria(t.colourLabels.textSecondary))}
@@ -1481,7 +1559,7 @@ export default function QRCodePage() {
                                 e.target.value
                               )
                             }
-                            className="flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
+                            className="min-w-0 flex-1 px-2 py-1.5 text-xs bg-ui-surface rounded border border-ui-input text-ui-ink"
                           />
                         </div>
                       </div>
@@ -1514,6 +1592,22 @@ export default function QRCodePage() {
                       </div>
                       <div>
                         <label className="block text-xs text-ui-muted mb-1">
+                          {t.arabicInstruction}
+                        </label>
+                        <input
+                          aria-label={t.arabicInstruction}
+                          type="text"
+                          value={customization.arabicInstruction}
+                          onChange={(e) =>
+                            updateCustomization("arabicInstruction", e.target.value)
+                          }
+                          className="w-full px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink text-start"
+                          dir="rtl"
+                          placeholder="امسح الرمز لعرض القائمة"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-ui-muted mb-1">
                           {t.englishText}
                         </label>
                         <input
@@ -1525,7 +1619,7 @@ export default function QRCodePage() {
                           }
                           className="w-full px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink"
                           dir="ltr"
-                          placeholder="Scan To View Menu"
+                          placeholder="Scan to see the menu"
                         />
                       </div>
                       <div>
@@ -1623,6 +1717,7 @@ export default function QRCodePage() {
                           {t.showArabicText}
                         </span>
                       </label>
+                      <p className="-mt-1 ms-7 text-xs text-ui-muted">{t.showArabicTextHint}</p>
 
                       {/* Dynamic Pattern Selector */}
                       <div>
@@ -1659,45 +1754,6 @@ export default function QRCodePage() {
                 {/* Advanced Settings Row */}
                 <div className="border-t border-ui-line pt-6 mt-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Custom URL */}
-                    <div className="lg:col-span-2">
-                      <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2 mb-3">
-                        <Link2 className="w-4 h-4" aria-hidden />
-                        {t.customUrl}
-                      </h4>
-                      <div className="flex gap-2">
-                        <input
-                          aria-label={t.customUrlAria}
-                          type="url"
-                          dir="ltr"
-                          value={customization.customUrl}
-                          onChange={(e) =>
-                            updateCustomization("customUrl", e.target.value)
-                          }
-                          className="min-w-0 flex-1 px-3 py-2 bg-ui-surface rounded-lg border border-ui-input text-ui-ink text-sm"
-                          placeholder={
-                            catalogUrl ||
-                            t.customUrlPlaceholder
-                          }
-                        />
-                        {customization.customUrl && (
-                          <button
-                            onClick={() => updateCustomization("customUrl", "")}
-                            className="px-3 py-2 bg-ui-surface hover:bg-ui-subtle rounded-lg text-ui-ink"
-                            title={t.clearCustomUrl}
-                            aria-label={t.clearCustomUrl}
-                          >
-                            <X className="w-4 h-4" aria-hidden />
-                          </button>
-                        )}
-                      </div>
-                      {customization.customUrl && (
-                        <p className="text-xs text-ui-primary mt-1 flex items-center gap-1">
-                          <span aria-hidden>⚠️</span> {t.customUrlWarning}
-                        </p>
-                      )}
-                    </div>
-
                     {/* Color Presets */}
                     <div className="lg:col-span-2">
                       <h4 className="text-sm font-medium text-ui-ink flex items-center gap-2 mb-3">
@@ -1876,11 +1932,15 @@ export default function QRCodePage() {
               ))}
             </div>
 
+            {selectedTemplate && qrBlocked && (
+              <p role="alert" className="mb-4 text-sm text-ui-danger">{t.templatesBlocked}</p>
+            )}
             {selectedTemplate && (
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={handlePrint}
-                  className="flex items-center gap-2 py-3 px-6 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors"
+                  disabled={qrBlocked}
+                  className="flex items-center gap-2 py-3 px-6 bg-ui-primary hover:bg-ui-primary-hover text-ui-primary-fg rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Printer className="w-4 h-4" aria-hidden />
                   {t.printSave}
@@ -1903,7 +1963,7 @@ export default function QRCodePage() {
           </div>
 
           {/* Template Preview */}
-          {selectedTemplate && qrDataUrl && catalog && (
+          {selectedTemplate && templateQr && !qrBlocked && catalog && (
             <div className="bg-ui-surface rounded-xl p-6" ref={previewRef}>
               {/* Preview Header with Controls */}
               <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
@@ -2007,8 +2067,8 @@ export default function QRCodePage() {
                 >
                   <PrintTemplatePreview
                     template={selectedTemplate}
-                    qrDataUrl={qrDataUrl}
-                    catalogUrl={effectiveUrl}
+                    qrDataUrl={templateQr}
+                    catalogUrl={catalogUrl}
                     catalog={catalog}
                     customization={customization}
                   />
@@ -2026,12 +2086,12 @@ export default function QRCodePage() {
         </div>
 
         {/* Print-only content (hidden on screen) */}
-        {selectedTemplate && qrDataUrl && catalog && (
+        {selectedTemplate && templateQr && !qrBlocked && catalog && (
           <div className="print-only" dir="ltr">
             <PrintTemplatePreview
               template={selectedTemplate}
-              qrDataUrl={qrDataUrl}
-              catalogUrl={effectiveUrl}
+              qrDataUrl={templateQr}
+              catalogUrl={catalogUrl}
               catalog={catalog}
               customization={customization}
             />
@@ -2099,6 +2159,7 @@ function PrintTemplatePreview({
     customShopName,
     showArabicText,
     arabicText,
+    arabicInstruction,
     englishText,
     ctaText,
     pattern,
@@ -2106,6 +2167,21 @@ function PrintTemplatePreview({
     headingWeight,
     letterSpacing,
   } = customization;
+
+  // DESIGN.md §8: print a short link with the code, for phones that can't scan it.
+  // Width 0 + min-width 100% keeps a long link from widening the white box.
+  const qrWithLink = (sizeClass: string) => (
+    <>
+      <img src={qrDataUrl} alt="QR Code" className={sizeClass} />
+      <p
+        dir="ltr"
+        className="mt-1.5 w-0 min-w-full break-all text-center text-[10px] leading-tight text-neutral-800"
+        style={{ fontFamily: fonts.body, letterSpacing: 0 }}
+      >
+        {shortUrl}
+      </p>
+    </>
+  );
 
   // Get the display name for the shop
   const displayName = showShopName ? customShopName || catalog.name : "";
@@ -2115,6 +2191,41 @@ function PrintTemplatePreview({
 
   // Get fonts from preset
   const fonts = FONT_PRESETS[fontPreset];
+
+  // Printed text is bilingual for guests in Lebanon: Arabic above or before English. Arabic never
+  // gets letter spacing or capitals, which break its joined letters.
+  const arabicStyle = { fontFamily: fonts.arabic, letterSpacing: 0, textTransform: "none" as const };
+  const arabicLine = (text: string) =>
+    showArabicText && text ? (
+      <span lang="ar" dir="rtl" className="block" style={arabicStyle}>
+        {text}
+      </span>
+    ) : null;
+  const instruction = (
+    <>
+      {arabicLine(arabicInstruction)}
+      {englishText}
+    </>
+  );
+  const twoLines = (arText: string, enText: string) => (
+    <>
+      {arabicLine(arText)}
+      {enText}
+    </>
+  );
+  const sideBySide = (arText: string, enText: string) =>
+    showArabicText ? (
+      <>
+        <span lang="ar" dir="rtl" style={arabicStyle}>
+          {arText}
+        </span>
+        {" · "}
+        {enText}
+      </>
+    ) : (
+      enText
+    );
+
 
   // Get weight class
   const weightClass = {
@@ -2139,18 +2250,6 @@ function PrintTemplatePreview({
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  };
-
-  // Helper for gradient with direction
-  const getGradient = (
-    color1: string,
-    color2: string,
-    opacity1 = 1,
-    opacity2 = 1
-  ) => {
-    const c1 = opacity1 < 1 ? hexToRgba(color1, opacity1) : color1;
-    const c2 = opacity2 < 1 ? hexToRgba(color2, opacity2) : color2;
-    return `linear-gradient(${gradientDirection}deg, ${c1}, ${c2})`;
   };
 
   // Generate pattern SVG using the user's colors - Extended pattern library
@@ -2323,7 +2422,7 @@ function PrintTemplatePreview({
                         textShadow: `0 0 30px ${hexToRgba(accentColor, 0.3)}`,
                       }}
                     >
-                      {arabicText}
+                      <bdi lang="ar" dir="rtl">{arabicText}</bdi>
                     </p>
                   </div>
                 )}
@@ -2432,11 +2531,7 @@ function PrintTemplatePreview({
                     }}
                   >
                     <div className="bg-white p-4">
-                      <img
-                        src={qrDataUrl}
-                        alt="QR Code"
-                        className="w-36 h-36"
-                      />
+                      {qrWithLink("w-36 h-36")}
                     </div>
                   </div>
                 </div>
@@ -2448,7 +2543,7 @@ function PrintTemplatePreview({
                     fontFamily: fonts.body,
                   }}
                 >
-                  {englishText}
+                  {instruction}
                 </p>
               </div>
 
@@ -2727,7 +2822,7 @@ function PrintTemplatePreview({
                         fontFamily: fonts.arabic,
                       }}
                     >
-                      {arabicText}
+                      <bdi lang="ar" dir="rtl">{arabicText}</bdi>
                     </p>
                   )}
 
@@ -2886,7 +2981,7 @@ function PrintTemplatePreview({
                   className="text-xs"
                   style={{ color: accentColor, fontFamily: fonts.body }}
                 >
-                  Digital Menu
+                  {sideBySide("القائمة الرقمية", "Digital Menu")}
                 </span>
               </div>
             </div>
@@ -2918,7 +3013,7 @@ function PrintTemplatePreview({
                     textShadow: `0 0 40px ${hexToRgba(accentColor, 0.3)}`,
                   }}
                 >
-                  {arabicText}
+                  <bdi lang="ar" dir="rtl">{arabicText}</bdi>
                 </p>
               </div>
             )}
@@ -3017,7 +3112,7 @@ function PrintTemplatePreview({
                 }}
               >
                 <div className="bg-white p-5 rounded">
-                  <img src={qrDataUrl} alt="QR Code" className="w-44 h-44" />
+                  {qrWithLink("w-44 h-44")}
                 </div>
               </div>
             </div>
@@ -3041,7 +3136,7 @@ function PrintTemplatePreview({
                   textShadow: `0 0 20px ${hexToRgba(primaryColor, 0.2)}`,
                 }}
               >
-                {englishText}
+                {instruction}
               </p>
               <div
                 className="w-12 h-px"
@@ -3192,7 +3287,7 @@ function PrintTemplatePreview({
                   className="text-xs mb-2"
                   style={{ color: accentColor, fontFamily: fonts.body }}
                 >
-                  Digital Experience
+                  {sideBySide("القائمة الرقمية", "Digital Menu")}
                 </p>
                 <div className="flex justify-end items-center gap-2">
                   <div className="flex gap-0.5">
@@ -3226,7 +3321,7 @@ function PrintTemplatePreview({
                     textShadow: `0 0 60px ${hexToRgba(accentColor, 0.3)}`,
                   }}
                 >
-                  {arabicText}
+                  <bdi lang="ar" dir="rtl">{arabicText}</bdi>
                 </p>
               </div>
             )}
@@ -3345,7 +3440,7 @@ function PrintTemplatePreview({
                 }}
               >
                 <div className="bg-white p-5 rounded-lg">
-                  <img src={qrDataUrl} alt="QR Code" className="w-48 h-48" />
+                  {qrWithLink("w-48 h-48")}
                 </div>
               </div>
             </div>
@@ -3357,14 +3452,14 @@ function PrintTemplatePreview({
                 fontFamily: fonts.heading,
               }}
             >
-              {englishText}
+              {instruction}
             </p>
 
             <p
               className="text-sm mt-2"
               style={{ color: textSecondary, fontFamily: fonts.body }}
             >
-              Point your camera at the code above
+              {twoLines("وجّه كاميرا هاتفك نحو الرمز", "Point your camera at the code above")}
             </p>
           </div>
 
@@ -3380,27 +3475,7 @@ function PrintTemplatePreview({
           >
             <div className="p-8 pt-16">
               <div className="flex justify-between items-center">
-                <div className="flex gap-6">
-                  {["Instant", "Fresh", "Digital"].map((item, idx) => (
-                    <div key={item} className="flex items-center gap-2">
-                      <span
-                        className="text-2xl font-light"
-                        style={{
-                          color: hexToRgba(primaryColor, 0.2),
-                          fontFamily: fonts.heading,
-                        }}
-                      >
-                        0{idx + 1}
-                      </span>
-                      <span
-                        className="text-xs"
-                        style={{ color: textSecondary, fontFamily: fonts.body }}
-                      >
-                        {item}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                <div aria-hidden />
                 <div className="flex items-center gap-2">
                   <div
                     className="w-8 h-0.5"
@@ -3552,7 +3627,7 @@ function PrintTemplatePreview({
                     className="text-xs"
                     style={{ color: accentColor, fontFamily: fonts.body }}
                   >
-                    Digital Menu
+                    {sideBySide("القائمة الرقمية", "Digital Menu")}
                   </span>
                   <div
                     className="w-12 h-px"
@@ -3582,7 +3657,7 @@ function PrintTemplatePreview({
                     textShadow: `0 0 80px ${hexToRgba(accentColor, 0.4)}`,
                   }}
                 >
-                  {arabicText}
+                  <bdi lang="ar" dir="rtl">{arabicText}</bdi>
                 </p>
               )}
 
@@ -3683,10 +3758,10 @@ function PrintTemplatePreview({
                   className="text-2xl"
                   style={{ color: textPrimary, fontFamily: fonts.heading }}
                 >
-                  {englishText}
+                  {instruction}
                 </p>
                 <p className="text-sm mt-3" style={{ color: textSecondary }}>
-                  Point your camera at the QR code to explore
+                  {twoLines("وجّه كاميرا هاتفك نحو الرمز لتصفّح القائمة", "Point your camera at the code to see the menu")}
                 </p>
               </div>
             </div>
@@ -3706,19 +3781,6 @@ function PrintTemplatePreview({
                     background: `linear-gradient(90deg, ${primaryColor}, transparent)`,
                   }}
                 />
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-4">
-                  {["Discover", "Experience", "Enjoy"].map((word, i) => (
-                    <span
-                      key={word}
-                      className="text-xs"
-                      style={{ color: i === 1 ? accentColor : textSecondary }}
-                    >
-                      {word}
-                    </span>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
@@ -3969,7 +4031,7 @@ function PrintTemplatePreview({
                   textShadow: `0 0 30px ${hexToRgba(accentColor, 0.3)}`,
                 }}
               >
-                {arabicText}
+                <bdi lang="ar" dir="rtl">{arabicText}</bdi>
               </p>
             )}
 
@@ -4021,11 +4083,7 @@ function PrintTemplatePreview({
                     }}
                   >
                     <div className="bg-white p-4 rounded">
-                      <img
-                        src={qrDataUrl}
-                        alt="QR Code"
-                        className="w-36 h-36"
-                      />
+                      {qrWithLink("w-36 h-36")}
                     </div>
                   </div>
                 </div>
@@ -4043,7 +4101,7 @@ function PrintTemplatePreview({
                 className="text-xs"
                 style={{ color: textSecondary, fontFamily: fonts.body }}
               >
-                {englishText}
+                {instruction}
               </p>
               <div
                 className="w-10 h-px"
@@ -4158,7 +4216,7 @@ function PrintTemplatePreview({
                       className="text-sm mt-0.5"
                       style={{ color: primaryColor, fontFamily: fonts.arabic }}
                     >
-                      {arabicText}
+                      <bdi lang="ar" dir="rtl">{arabicText}</bdi>
                     </p>
                   )}
                 </div>
@@ -4193,7 +4251,7 @@ function PrintTemplatePreview({
                     boxShadow: `0 4px 20px ${hexToRgba(primaryColor, 0.08)}`,
                   }}
                 >
-                  <img src={qrDataUrl} alt="QR Code" className="w-36 h-36" />
+                  {qrWithLink("w-36 h-36")}
                 </div>
               </div>
             </div>
@@ -4219,7 +4277,7 @@ function PrintTemplatePreview({
                   className="text-xs"
                   style={{ color: "#666", fontFamily: fonts.body }}
                 >
-                  {englishText}
+                  {instruction}
                 </p>
               </div>
               <div className="text-right">
@@ -4375,7 +4433,7 @@ function PrintTemplatePreview({
                 className="text-xs px-4"
                 style={{ color: accentColor, background: backgroundColor }}
               >
-                ✧ Est. {new Date().getFullYear()} ✧
+                ✧ {sideBySide("القائمة", "Menu")} ✧
               </p>
             </div>
 
@@ -4397,7 +4455,7 @@ function PrintTemplatePreview({
                 className="text-lg mb-3"
                 style={{ color: secondaryColor, fontFamily: fonts.arabic }}
               >
-                {arabicText}
+                <bdi lang="ar" dir="rtl">{arabicText}</bdi>
               </p>
             )}
 
@@ -4450,7 +4508,7 @@ function PrintTemplatePreview({
               {/* Main QR frame */}
               <div className="p-1" style={{ background: primaryColor }}>
                 <div className="p-3 bg-white">
-                  <img src={qrDataUrl} alt="QR Code" className="w-32 h-32" />
+                  {qrWithLink("w-32 h-32")}
                 </div>
               </div>
             </div>
@@ -4485,7 +4543,7 @@ function PrintTemplatePreview({
               className="text-xs mt-4"
               style={{ color: hexToRgba(textSecondary, 0.7) }}
             >
-              {englishText}
+              {instruction}
             </p>
           </div>
 
@@ -4630,7 +4688,7 @@ function PrintTemplatePreview({
                   textShadow: `0 0 15px ${hexToRgba(accentColor, 0.5)}`,
                 }}
               >
-                {arabicText}
+                <bdi lang="ar" dir="rtl">{arabicText}</bdi>
               </p>
             )}
 
@@ -4647,7 +4705,7 @@ function PrintTemplatePreview({
             >
               <div className="p-4" style={{ background: "#0a0a12" }}>
                 <div className="bg-white p-3">
-                  <img src={qrDataUrl} alt="QR Code" className="w-32 h-32" />
+                  {qrWithLink("w-32 h-32")}
                 </div>
               </div>
             </div>
@@ -4668,7 +4726,7 @@ function PrintTemplatePreview({
                   textShadow: `0 0 10px ${hexToRgba(secondaryColor, 0.5)}`,
                 }}
               >
-                {englishText}
+                {instruction}
               </p>
               <div
                 className="w-8 h-px"
@@ -4885,7 +4943,7 @@ function PrintTemplatePreview({
                 className="text-lg mt-2 mb-4"
                 style={{ color: secondaryColor, fontFamily: fonts.arabic }}
               >
-                {arabicText}
+                <bdi lang="ar" dir="rtl">{arabicText}</bdi>
               </p>
             )}
 
@@ -4989,7 +5047,7 @@ function PrintTemplatePreview({
                   boxShadow: `0 4px 20px ${hexToRgba(primaryColor, 0.15)}`,
                 }}
               >
-                <img src={qrDataUrl} alt="QR Code" className="w-32 h-32" />
+                {qrWithLink("w-32 h-32")}
               </div>
             </div>
 
@@ -5008,7 +5066,7 @@ function PrintTemplatePreview({
                 className="text-sm font-medium"
                 style={{ color: primaryColor }}
               >
-                {englishText}
+                {instruction}
               </p>
               <svg className="w-6 h-4" viewBox="0 0 30 20">
                 <path
@@ -5022,12 +5080,6 @@ function PrintTemplatePreview({
               </svg>
             </div>
 
-            <p
-              className="text-xs mt-4"
-              style={{ color: hexToRgba(secondaryColor, 0.6) }}
-            >
-              ✦ Fresh • Natural • Sustainable ✦
-            </p>
           </div>
 
           {/* Bottom botanical border */}
@@ -5106,7 +5158,7 @@ function PrintTemplatePreview({
                   fontFamily: fonts.body,
                 }}
               >
-                Experience
+                {sideBySide("القائمة", "Menu")}
               </p>
 
               <p
@@ -5128,7 +5180,7 @@ function PrintTemplatePreview({
                     fontFamily: fonts.arabic,
                   }}
                 >
-                  {arabicText}
+                  <bdi lang="ar" dir="rtl">{arabicText}</bdi>
                 </p>
               )}
 
@@ -5171,7 +5223,7 @@ function PrintTemplatePreview({
                 </div>
 
                 <div className="bg-white p-4">
-                  <img src={qrDataUrl} alt="QR Code" className="w-32 h-32" />
+                  {qrWithLink("w-32 h-32")}
                 </div>
               </div>
 
@@ -5183,7 +5235,7 @@ function PrintTemplatePreview({
                   fontFamily: fonts.body,
                 }}
               >
-                {englishText}
+                {instruction}
               </p>
             </div>
 
@@ -5344,7 +5396,7 @@ function PrintTemplatePreview({
                     fontFamily: fonts.arabic,
                   }}
                 >
-                  {arabicText}
+                  <bdi lang="ar" dir="rtl">{arabicText}</bdi>
                 </p>
               )}
 

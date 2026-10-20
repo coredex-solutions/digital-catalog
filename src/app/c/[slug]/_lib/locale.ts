@@ -30,10 +30,8 @@ export function getEnabledLanguages(enabled?: string | null): Language[] {
  * Languages the menu offers. Arabic and English are included in every plan, so this is the
  * owner's choice; the subscription argument is kept for callers.
  */
-export function getMenuLanguages(
-  enabled: string | null | undefined,
-  _subscription?: unknown
-): Language[] {
+export function getMenuLanguages(enabled: string | null | undefined, subscription?: unknown): Language[];
+export function getMenuLanguages(enabled: string | null | undefined): Language[] {
   return getEnabledLanguages(enabled);
 }
 

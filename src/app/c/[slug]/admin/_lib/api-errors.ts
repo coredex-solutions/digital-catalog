@@ -111,6 +111,10 @@ const EXACT: Record<string, string> = {
   // Settings, hours, FAQs, branches, QR
   "Failed to update settings": "تعذّر حفظ الإعدادات. حاول مرة أخرى.",
   "Colors must be #RRGGBB": "اختر لوناً صالحاً.",
+  "Many phones can't read a light code on a dark background. Make the code darker than its background.":
+    "كثير من الهواتف لا تقرأ رمزاً فاتحاً على خلفية داكنة. اجعل لون الرمز أغمق من خلفيته.",
+  "These colours are too close for phones to scan reliably. Use a darker code colour or a lighter background.":
+    "اللونان متقاربان جداً فلا تقرأ الهواتف الرمز بثبات. استخدم لوناً أغمق للرمز أو خلفية أفتح.",
   "Failed to fetch operating hours": "تعذّر تحميل ساعات العمل. حاول مرة أخرى.",
   "Failed to update operating hours": "تعذّر حفظ ساعات العمل. حاول مرة أخرى.",
   "Hours must be a list of up to 7 days": "تعذّر قراءة ساعات العمل.",
@@ -148,6 +152,16 @@ const EXACT: Record<string, string> = {
   "Failed to submit request": "تعذّر إرسال الطلب. حاول مرة أخرى.",
   "Missing plan name": "اختر باقة.",
   "Unknown plan": "اختر باقة.",
+
+  // Menu import
+  "Nothing to import": "لا يوجد ما يُستورد.",
+  "Could not import. Nothing was added. Please try again.": "تعذّر الاستيراد، ولم تُضف أي أطباق. حاول مرة أخرى.",
+  "Reading menus with AI isn't set up on this server yet.": "قراءة القوائم بالذكاء الاصطناعي غير مفعّلة بعد.",
+  "Choose a photo or PDF of your menu": "اختر صورة أو ملف PDF لقائمتك.",
+  "These files are too large. Use up to 5 photos or one PDF, 9 MB in total.": "الملفات كبيرة جداً. استخدم حتى 5 صور أو ملف PDF واحداً، بحجم 9 ميغابايت كحد أقصى.",
+  "Use photos (JPEG, PNG, WebP or HEIC) or a PDF.": "استخدم صوراً (JPEG أو PNG أو WebP أو HEIC) أو ملف PDF.",
+  "We couldn't read this menu. Try again with a clearer photo, or use a spreadsheet.": "تعذّرت قراءة هذه القائمة. جرّب صورة أوضح، أو استخدم جدولاً.",
+  "We couldn't find any dishes in these files. Try a clearer photo, or use a spreadsheet.": "لم نجد أطباقاً في هذه الملفات. جرّب صورة أوضح، أو استخدم جدولاً.",
 };
 
 const DAYS_AR: Record<string, string> = {
@@ -175,6 +189,19 @@ const PATTERNS: [RegExp, (...groups: string[]) => string][] = [
   [/^(\w+) is listed twice$/, (d) => `يوم ${day(d)} مكرّر.`],
   [/^(\w+) needs opening and closing hours between 0 and 24$/, (d) => `يوم ${day(d)} يحتاج إلى ساعة فتح وساعة إغلاق صحيحتين.`],
   [/^Unknown day "/, () => "يوم غير معروف في ساعات العمل."],
+  [/^Category (\d+) needs a name in Arabic or English$/, (n) => `القسم ${n} يحتاج إلى اسم بالعربية أو بالإنجليزية.`],
+  [/^Dish (\d+) needs a name in Arabic or English$/, (n) => `الطبق ${n} يحتاج إلى اسم بالعربية أو بالإنجليزية.`],
+  [/^Dish (\d+) needs a price of 0 or more$/, (n) => `الطبق ${n} يحتاج إلى سعر يساوي 0 أو أكثر.`],
+  [/^Dish (\d+): (.+)$/, (n, rest) => `الطبق ${n}: ${translateApiMessage(rest, "ar")}`],
+  [/^At most (\d+) dishes can be imported at once$/, (n) => `يمكن استيراد ${n} طبق كحد أقصى في المرة الواحدة.`],
+  [
+    /^This import would go over your plan's limit of (\d+) dishes\. You have (\d+) and are adding (\d+)\.$/,
+    (max, have, adding) => `هذا الاستيراد يتجاوز حدّ باقتك وهو ${max} طبق. لديك ${have} وتضيف ${adding}.`,
+  ],
+  [
+    /^This import would go over your plan's limit of (\d+) categories\. You have (\d+) and are adding (\d+)\.$/,
+    (max, have, adding) => `هذا الاستيراد يتجاوز حدّ باقتك وهو ${max} قسماً. لديك ${have} وتضيف ${adding}.`,
+  ],
 ];
 
 /**

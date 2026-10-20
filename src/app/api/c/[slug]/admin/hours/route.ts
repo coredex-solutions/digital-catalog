@@ -117,7 +117,7 @@ export async function PUT(
   const auth = await requireCatalogAdmin(request, catalog.id);
   if (!auth.success) return auth.response;
 
-  let body: any;
+  let body: { hours?: unknown } | null;
   try {
     body = await request.json();
   } catch {
@@ -159,7 +159,7 @@ export async function PUT(
     await db.batch(statements, "write");
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Update hours error:", error);
     return NextResponse.json(
       { error: "Failed to update operating hours" },

@@ -160,9 +160,9 @@ async function handler(request: NextRequest) {
 
         try {
             await db.batch(statements, "write");
-        } catch (batchErr: any) {
+        } catch (batchErr) {
             // Another signup claimed the slug between the check above and this insert
-            if (String(batchErr?.message).includes("UNIQUE constraint failed: catalogs.slug")) {
+            if (batchErr instanceof Error && batchErr.message.includes("UNIQUE constraint failed: catalogs.slug")) {
                 return NextResponse.json(
                     { error: "This URL is already taken. Please choose another one." },
                     { status: 400 }
@@ -189,7 +189,7 @@ async function handler(request: NextRequest) {
             slug
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("Signup error:", error);
         return NextResponse.json(
             { error: "Internal server error during registration" },

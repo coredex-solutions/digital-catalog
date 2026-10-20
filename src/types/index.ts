@@ -117,7 +117,7 @@ export interface CatalogUIData {
   contact: CatalogContactData | null;
   operatingHours: OperatingHoursData[];
   socialMedia: SocialMediaLink[];
-  menuItems: any[];
+  menuItems: unknown[];
   subscriptionType?: string;
   isExpired?: boolean;
 }

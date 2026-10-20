@@ -5,14 +5,11 @@ import Link from "next/link";
 import { SuperAdminShell } from "../_components/SuperAdminShell";
 import { SuperAdminHeader, SuperAdminContent } from "../_components/SuperAdminSidebar";
 import {
-  CreditCard,
   Search,
-  Calendar,
   AlertTriangle,
   CheckCircle,
   Loader2,
   Clock,
-  Plus,
   Edit,
   RefreshCw,
 } from "lucide-react";
@@ -36,31 +33,34 @@ export default function SubscriptionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "expired" | "expiring">("all");
 
+  // Reference time for the expiry countdowns, read once so rendering stays pure
+  const [now] = useState(() => Date.now());
+
   useEffect(() => {
+    const fetchSubscriptions = async () => {
+      try {
+        const token = localStorage.getItem("superadmin_token");
+        const res = await fetch("/api/superadmin/subscriptions/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSubscriptions(data.subscriptions || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch subscriptions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchSubscriptions();
   }, []);
-
-  const fetchSubscriptions = async () => {
-    try {
-      const token = localStorage.getItem("superadmin_token");
-      const res = await fetch("/api/superadmin/subscriptions/", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSubscriptions(data.subscriptions || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch subscriptions:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const isExpiringSoon = (expiresAt: string | null) => {
     if (!expiresAt) return false;
     const days = Math.ceil(
-      (new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      (new Date(expiresAt).getTime() - now) / (1000 * 60 * 60 * 24)
     );
     return days > 0 && days <= 30;
   };
@@ -73,7 +73,7 @@ export default function SubscriptionsPage() {
   const getDaysRemaining = (expiresAt: string | null) => {
     if (!expiresAt) return "∞";
     const days = Math.ceil(
-      (new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      (new Date(expiresAt).getTime() - now) / (1000 * 60 * 60 * 24)
     );
     if (days < 0) return "Expired";
     return `${days} days`;

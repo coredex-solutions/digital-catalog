@@ -175,7 +175,7 @@ function OperatingHoursPageContent() {
       }
     };
     fetchHours();
-  }, [slug]);
+  }, [slug, fetchWithAuth]);
 
   const handleSave = async () => {
     // An open day needs both times; a cleared field must not reach the server as NaN/null
@@ -209,14 +209,14 @@ function OperatingHoursPageContent() {
         const err = await res.json().catch(() => null);
         throw new Error(err?.error || t.saveFailed);
       }
-    } catch (error: any) {
-      setMessage({ type: "error", text: error?.message || t.saveFailed });
+    } catch (error) {
+      setMessage({ type: "error", text: (error instanceof Error && error.message) || t.saveFailed });
     } finally {
       setSaving(false);
     }
   };
 
-  const updateDayHours = (dayName: string, field: keyof DayHours, value: any) => {
+  const updateDayHours = <K extends keyof DayHours>(dayName: string, field: K, value: DayHours[K]) => {
     setHours((prev) =>
       prev.map((h) =>
         h.day_name === dayName ? { ...h, [field]: value } : h

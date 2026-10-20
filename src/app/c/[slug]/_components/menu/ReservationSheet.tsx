@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { trackEvent } from "../AnalyticsTracker";
@@ -30,16 +30,20 @@ export function ReservationSheet() {
   const [guests, setGuests] = useState(2);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!open) return;
-    setErrors({});
-    try {
-      const saved = JSON.parse(localStorage.getItem(DETAILS_KEY) || "{}");
-      setForm((prev) => ({ ...prev, name: prev.name || saved.name || "", phone: prev.phone || saved.phone || "" }));
-    } catch {
-      // Nothing saved yet
+  // Each time the sheet opens: clear old errors and pre-fill the diner's saved details
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setErrors({});
+      try {
+        const saved = JSON.parse(localStorage.getItem(DETAILS_KEY) || "{}");
+        setForm((prev) => ({ ...prev, name: prev.name || saved.name || "", phone: prev.phone || saved.phone || "" }));
+      } catch {
+        // Nothing saved yet
+      }
     }
-  }, [open]);
+  }
 
   const update = (field: keyof typeof form, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
 

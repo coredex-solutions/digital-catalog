@@ -5,13 +5,21 @@ import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 import { getAiWaiterCatalog } from "@/lib/catalog/ai-access";
 import { getPublicMenu } from "@/lib/catalog/publishing";
 import { readVariants } from "@/lib/catalog/dish-info";
+import { AI_MODELS } from "@/lib/ai/models";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const MODEL = "gemini-2.0-flash";
 
 const MAX_HISTORY_MESSAGES = 10;
 const MAX_USER_TEXT_LENGTH = 500;
+
+// Shapes the guest's browser sends (untrusted JSON, read defensively)
+type ChatTurn = { role?: string; content?: string };
+type CartLine = { id?: string; name_en?: string; name_ar?: string; quantity?: number };
+
+type WaiterAction =
+  | { type: "ADD_TO_CART" | "UPDATE_CART"; itemId: string; quantity: number }
+  | { type: "REMOVE_FROM_CART"; itemId: string };
 
 export async function POST(
   request: NextRequest,
@@ -45,10 +53,10 @@ export async function POST(
     const rawHistory = formData.get("history") as string;
     const rawCart = formData.get("cart") as string;
 
-    let history = [];
+    let history: ChatTurn[] = [];
     try { history = JSON.parse(rawHistory || "[]").slice(-MAX_HISTORY_MESSAGES); } catch { history = []; }
 
-    let currentCart = [];
+    let currentCart: CartLine[] = [];
     try { currentCart = JSON.parse(rawCart || "[]"); } catch { currentCart = []; }
 
     let userText = message;
@@ -94,13 +102,13 @@ export async function POST(
         return `- [ID: ${r.id}] ${r.name_en || r.name_ar} (${r.price} ${currency}${optionText})`;
       })
       .join("\n");
-    const cartDisplay = currentCart.map((c: any) => `- ${c.name_en || c.name_ar} (ID: ${c.id}, Qty: ${c.quantity})`).join("\n") || "Cart is currently empty.";
+    const cartDisplay = currentCart.map((c) => `- ${c.name_en || c.name_ar} (ID: ${c.id}, Qty: ${c.quantity})`).join("\n") || "Cart is currently empty.";
 
     const settingsRes = await db.execute({
       sql: "SELECT ai_waiter_name, ai_waiter_persona FROM catalog_settings WHERE catalog_id = ?",
       args: [catalogId]
     });
-    const settings = settingsRes.rows[0] as any;
+    const settings = settingsRes.rows[0];
     const aiName = settings?.ai_waiter_name || "AI Waiter";
     const aiPersona = settings?.ai_waiter_persona || "You are a professional, charming, and helpful AI Waiter.";
 
@@ -136,7 +144,7 @@ ${menuItems}
 LANGUAGE: Respond only in Arabic or English. If the latest message is in Arabic (including Lebanese dialect or Arabizi), respond in Arabic with full diacritics (Harakat); otherwise respond in English.`;
 
     const chatMessages = [
-      ...history.map((h: any) => ({
+      ...history.map((h) => ({
         role: h.role === "user" ? "user" : "model",
         parts: [{ text: h.content }]
       })),
@@ -144,14 +152,15 @@ LANGUAGE: Respond only in Arabic or English. If the latest message is in Arabic 
     ];
 
     const aiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODELS.waiter}:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": GOOGLE_API_KEY },
         body: JSON.stringify({
           contents: chatMessages,
           systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { temperature: 0.4, maxOutputTokens: 500, topP: 0.8, topK: 40 }
+          // Newer models count their thinking against maxOutputTokens; the prompt keeps replies short
+          generationConfig: { temperature: 0.4, maxOutputTokens: 1500, topP: 0.8, topK: 40 }
         })
       }
     );
@@ -162,7 +171,7 @@ LANGUAGE: Respond only in Arabic or English. If the latest message is in Arabic 
     let aiResponse = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "I apologize, I missed that. Could you repeat?";
 
     // Action detection & Cleaning
-    const actions: any[] = [];
+    const actions: WaiterAction[] = [];
 
     // Global regex to find all actions
     const allActionsRegex = /\[ACTION:.*?\]/gi;
@@ -192,7 +201,7 @@ LANGUAGE: Respond only in Arabic or English. If the latest message is in Arabic 
       actions // Now returning plural actions
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("AI Waiter Security/Logic Error:", error);
     return NextResponse.json({ error: "Service temporarily unavailable" }, { status: 500 });
   }

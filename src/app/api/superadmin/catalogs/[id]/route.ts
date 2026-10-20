@@ -235,10 +235,11 @@ export async function PUT(
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to update catalog:', error);
+    const isTimeout = typeof error === 'object' && error !== null && 'code' in error && error.code === 'UND_ERR_CONNECT_TIMEOUT';
     return NextResponse.json(
-      { error: error.code === 'UND_ERR_CONNECT_TIMEOUT' ? 'Database connection timeout. Please try again.' : 'Failed to update catalog' },
+      { error: isTimeout ?'Database connection timeout. Please try again.' : 'Failed to update catalog' },
       { status: 500 }
     );
   }

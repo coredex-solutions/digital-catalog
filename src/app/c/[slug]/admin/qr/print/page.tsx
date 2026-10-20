@@ -7,7 +7,6 @@ import { ArrowLeft, Loader2, Printer } from "lucide-react";
 import { CatalogAdminShell, useCatalogAdmin } from "../../_components/CatalogAdminShell";
 import { CatalogAdminContent, CatalogAdminHeader } from "../../_components/CatalogAdminSidebar";
 import { qrPrintedKey } from "../../_components/SetupChecklist";
-import { ADMIN_NAV_LABELS } from "../../_components/adminNav";
 import { useAdminLang, useCopy, plural, type AdminLang } from "../../_lib/i18n";
 
 type Layout = "cards" | "poster";
@@ -86,8 +85,8 @@ function QrPrintContent() {
   const [from, setFrom] = useState("1");
   const [to, setTo] = useState("12");
   const [names, setNames] = useState<{ en: string; ar: string }>({ en: "", ar: "" });
-  const [cards, setCards] = useState<Card[]>([]);
-  const [building, setBuilding] = useState(true);
+  /** The latest finished codes, with the table range and link they were made for */
+  const [built, setBuilt] = useState<{ cards: Card[]; tables: (number | null)[]; menuUrl: string } | null>(null);
 
   const baseUrl = useMemo(() => {
     const configured = process.env.NEXT_PUBLIC_BASE_URL?.replace(/\/+$/, "");
@@ -127,10 +126,13 @@ function QrPrintContent() {
     return { tables: Array.from({ length: end - start + 1 }, (_, i) => start + i), error: "" };
   }, [withTables, from, to, t]);
 
+  // Until the codes for the current options are ready, the previous ones stay on screen
+  const cards = built?.cards ?? [];
+  const building = !built || built.tables !== tableRange.tables || built.menuUrl !== menuUrl;
+
   useEffect(() => {
     if (!baseUrl) return;
     let cancelled = false;
-    setBuilding(true);
     Promise.all(
       tableRange.tables.map(async (table) => {
         const url = table ? `${menuUrl}/?table=${table}` : `${menuUrl}/`;
@@ -144,8 +146,7 @@ function QrPrintContent() {
       })
     ).then((result) => {
       if (!cancelled) {
-        setCards(result);
-        setBuilding(false);
+        setBuilt({ cards: result, tables: tableRange.tables, menuUrl });
       }
     });
     return () => {

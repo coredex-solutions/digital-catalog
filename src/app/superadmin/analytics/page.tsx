@@ -4,15 +4,14 @@ import { useEffect, useState } from "react";
 import { SuperAdminShell } from "../_components/SuperAdminShell";
 import { SuperAdminHeader, SuperAdminContent } from "../_components/SuperAdminSidebar";
 import {
-  BarChart3,
   TrendingUp,
-  TrendingDown,
   Eye,
   MessageCircle,
   Calendar as CalendarIcon,
   Loader2,
   ArrowUp,
   ArrowDown,
+  type LucideIcon,
 } from "lucide-react";
 
 interface PlatformStats {
@@ -38,78 +37,76 @@ interface PlatformStats {
   }[];
 }
 
+const StatCard = ({
+  icon: Icon,
+  label,
+  value,
+  change,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: number;
+  change: number;
+  color?: "emerald" | "blue" | "amber" | "purple";
+}) => {
+
+  const isPositive = change >= 0;
+
+  return (
+    <div className="bg-ui-surface rounded-panel p-6 border border-ui-line">
+      <div className="flex items-start justify-between mb-4">
+        <div
+          className="w-12 h-12 rounded-control bg-ui-subtle flex items-center justify-center"
+        >
+          <Icon className="w-6 h-6 text-ui-primary" />
+        </div>
+        <div
+          className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isPositive
+              ? "bg-ui-subtle text-ui-success"
+              : "bg-ui-bg text-ui-danger"
+            }`}
+        >
+          {isPositive ? (
+            <ArrowUp className="w-3 h-3" />
+          ) : (
+            <ArrowDown className="w-3 h-3" />
+          )}
+          {Math.abs(change)}%
+        </div>
+      </div>
+      <p className="text-3xl font-bold text-ui-ink mb-1">
+        {value.toLocaleString()}
+      </p>
+      <p className="text-ui-muted text-sm">{label}</p>
+    </div>
+  );
+};
+
 export default function AnalyticsPage() {
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d">("30d");
 
+  // Loading is switched on where the range changes (initially and in the range buttons)
   useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("superadmin_token");
+        const res = await fetch(`/api/superadmin/analytics/?range=${dateRange}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch analytics:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchStats();
   }, [dateRange]);
-
-  const fetchStats = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("superadmin_token");
-      const res = await fetch(`/api/superadmin/analytics/?range=${dateRange}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch analytics:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const StatCard = ({
-    icon: Icon,
-    label,
-    value,
-    change,
-    color = "emerald",
-  }: {
-    icon: any;
-    label: string;
-    value: number;
-    change: number;
-    color?: "emerald" | "blue" | "amber" | "purple";
-  }) => {
-
-    const isPositive = change >= 0;
-
-    return (
-      <div className="bg-ui-surface rounded-panel p-6 border border-ui-line">
-        <div className="flex items-start justify-between mb-4">
-          <div
-            className="w-12 h-12 rounded-control bg-ui-subtle flex items-center justify-center"
-          >
-            <Icon className="w-6 h-6 text-ui-primary" />
-          </div>
-          <div
-            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${isPositive
-                ? "bg-ui-subtle text-ui-success"
-                : "bg-ui-bg text-ui-danger"
-              }`}
-          >
-            {isPositive ? (
-              <ArrowUp className="w-3 h-3" />
-            ) : (
-              <ArrowDown className="w-3 h-3" />
-            )}
-            {Math.abs(change)}%
-          </div>
-        </div>
-        <p className="text-3xl font-bold text-ui-ink mb-1">
-          {value.toLocaleString()}
-        </p>
-        <p className="text-ui-muted text-sm">{label}</p>
-      </div>
-    );
-  };
 
   return (
     <SuperAdminShell>
@@ -119,7 +116,12 @@ export default function AnalyticsPage() {
             {(["7d", "30d", "90d"] as const).map((range) => (
               <button
                 key={range}
-                onClick={() => setDateRange(range)}
+                onClick={() => {
+                  if (range !== dateRange) {
+                    setLoading(true);
+                    setDateRange(range);
+                  }
+                }}
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${dateRange === range
                     ? "bg-ui-primary text-ui-primary-fg"
                     : "text-ui-muted hover:text-ui-ink"

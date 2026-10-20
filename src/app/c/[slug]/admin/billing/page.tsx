@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import { CatalogAdminHeader, CatalogAdminContent } from "../_components/CatalogAdminSidebar";
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
@@ -145,6 +145,8 @@ function BillingPageContent() {
     const [requests, setRequests] = useState<PlanRequest[]>([]);
     const [requesting, setRequesting] = useState<string | null>(null);
     const [message, setMessage] = useState<{ kind: "error" | "done"; text: string } | null>(null);
+    // The time the page opened, for "days left"
+    const [now] = useState(() => Date.now());
 
     // Owners request plans; editors and viewers can see this page but not change the plan
     const isOwner = !user?.role || user.role === "owner" || user.role === "admin";
@@ -155,22 +157,25 @@ function BillingPageContent() {
         return date ? f.date(date) : "";
     };
 
+    // State is only set once the request settles
+    const fetchRequests = useCallback(
+        () =>
+            fetchWithAuth(`/api/c/${slug}/upgrade/`)
+                .then(async (res) => {
+                    if (res.ok) {
+                        const data = await res.json();
+                        setRequests(data.requests || []);
+                    }
+                })
+                .catch(() => {
+                    // The history is a convenience; the page still works without it
+                }),
+        [fetchWithAuth, slug]
+    );
+
     useEffect(() => {
         fetchRequests();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    const fetchRequests = async () => {
-        try {
-            const res = await fetchWithAuth(`/api/c/${slug}/upgrade/`);
-            if (res.ok) {
-                const data = await res.json();
-                setRequests(data.requests || []);
-            }
-        } catch {
-            // The history is a convenience; the page still works without it
-        }
-    };
+    }, [fetchRequests]);
 
     const handleRequest = async (planId: string) => {
         setRequesting(planId);
@@ -198,7 +203,7 @@ function BillingPageContent() {
 
     // Where the plan stands, in one sentence
     const expires = parseExpiry(features?.expires_at);
-    const daysLeft = expires ? Math.max(0, Math.ceil((expires.getTime() - Date.now()) / DAY)) : null;
+    const daysLeft = expires ? Math.max(0, Math.ceil((expires.getTime() - now) / DAY)) : null;
     let status: { tone: "ok" | "warn" | "danger"; text: string };
     if (features?.is_expired) {
         status = { tone: "danger", text: t.endedExpired(formatDate(features.plan_ended_at)) };

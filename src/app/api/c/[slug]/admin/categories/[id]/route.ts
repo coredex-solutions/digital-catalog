@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
+import type { InValue } from "@libsql/client";
 
 // PUT: Update category
 export async function PUT(
@@ -42,7 +43,7 @@ export async function PUT(
 
     // Build update query dynamically
     const updates: string[] = [];
-    const args: any[] = [];
+    const args: InValue[] = [];
 
     if (name_ar !== undefined) {
       updates.push("name_ar = ?");
@@ -79,7 +80,7 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Update category error:", error);
     return NextResponse.json({ error: "Failed to update category" }, { status: 500 });
   }

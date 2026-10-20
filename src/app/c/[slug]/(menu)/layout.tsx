@@ -27,8 +27,8 @@ export async function generateMetadata({
   const lang = await resolveMenuLanguage(slug, getMenuLanguages(settings?.enabled_languages, subscription), settings?.default_language);
 
   const name = localized(catalog, 'name', lang) || catalog.name;
-  const title = (settings as any)?.[`seo_title_${lang}`] || settings?.seo_title_en || name;
-  const description = (settings as any)?.[`seo_description_${lang}`] || settings?.seo_description_en
+  const title = settings?.[`seo_title_${lang}` as const] || settings?.seo_title_en || name;
+  const description = settings?.[`seo_description_${lang}` as const] || settings?.seo_description_en
     || localized(catalog, 'description', lang) || `${name} — menu`;
   const image = settings?.hero_image_url || catalog.logo_url;
 
@@ -77,7 +77,7 @@ function generateJsonLd(data: NonNullable<Awaited<ReturnType<typeof getFullCatal
       : catalog.business_type === 'bakery' ? 'Bakery'
         : 'LocalBusiness';
 
-  const schema: any = {
+  const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': schemaType,
     name: catalog.name,
@@ -200,8 +200,8 @@ export default async function CatalogLayout({
     },
     settings: settings ? {
       ...withoutFrench(settings),
-      ai_waiter_enabled: Boolean((settings as any).ai_waiter_enabled),
-    } as any : null,
+      ai_waiter_enabled: Boolean(settings.ai_waiter_enabled),
+    } : null,
     contact: contact ? withoutFrench(contact) : null,
     operatingHours: operatingHours.map((h) => ({
       day_name: h.day_name,

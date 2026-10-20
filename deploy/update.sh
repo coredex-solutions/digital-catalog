@@ -8,7 +8,7 @@ echo "→ Pulling latest code"
 git pull --ff-only
 
 echo "→ Installing dependencies"
-npm ci --legacy-peer-deps
+npm ci
 
 echo "→ Updating database schema (safe to re-run)"
 node scripts/init-db.mjs

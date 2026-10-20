@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { MessageCircle } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { trackEvent } from "../AnalyticsTracker";
@@ -80,17 +80,21 @@ export function CheckoutSheet() {
   const [errors, setErrors] = useState<Partial<Record<keyof Details | "table", string>>>({});
   const [sent, setSent] = useState(false);
 
-  useEffect(() => {
-    if (!open) return;
-    setSent(false);
-    setErrors({});
-    try {
-      const saved = JSON.parse(localStorage.getItem(DETAILS_KEY) || "{}");
-      setDetails((prev) => ({ ...prev, ...saved }));
-    } catch {
-      // Nothing saved yet
+  // Each time the sheet opens: start fresh and pre-fill the diner's saved details
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setSent(false);
+      setErrors({});
+      try {
+        const saved = JSON.parse(localStorage.getItem(DETAILS_KEY) || "{}");
+        setDetails((prev) => ({ ...prev, ...saved }));
+      } catch {
+        // Nothing saved yet
+      }
     }
-  }, [open]);
+  }
 
   const update = (field: keyof Details, value: string) => setDetails((prev) => ({ ...prev, [field]: value }));
 

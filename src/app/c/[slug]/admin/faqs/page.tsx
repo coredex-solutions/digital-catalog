@@ -77,23 +77,23 @@ function FAQsPageContent() {
   } | null>(null);
 
   useEffect(() => {
-    fetchFaqs();
-  }, [slug]);
+    const fetchFaqs = async () => {
+      try {
+        const res = await fetchWithAuth(`/api/c/${slug}/admin/faqs/`);
 
-  const fetchFaqs = async () => {
-    try {
-      const res = await fetchWithAuth(`/api/c/${slug}/admin/faqs/`);
-
-      if (res.ok) {
-        const data = await res.json();
-        setFaqs(data.faqs || []);
+        if (res.ok) {
+          const data = await res.json();
+          setFaqs(data.faqs || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch FAQs:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch FAQs:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchFaqs();
+  }, [slug, fetchWithAuth]);
 
   const handleSave = async () => {
     setSaving(true);

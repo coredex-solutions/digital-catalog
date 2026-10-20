@@ -13,6 +13,12 @@ interface Props {
     params: Promise<{ slug: string }>;
 }
 
+/** The owner's "about" text in this language (a stored about_content_<lang> column) */
+function aboutContent(settings: object | null | undefined, lang: string): string | undefined {
+    const value = settings ? (settings as Record<string, unknown>)[`about_content_${lang}`] : undefined;
+    return typeof value === "string" ? value : undefined;
+}
+
 async function load(slug: string) {
     const data = await getMenuData(slug);
     if (!data) return null;
@@ -27,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const { data, lang } = loaded;
     const name = localized(data.catalog, "name", lang) || data.catalog.name;
-    const about = (data.settings as any)?.[`about_content_${lang}`] || localized(data.catalog, "description", lang);
+    const about = aboutContent(data.settings, lang) || localized(data.catalog, "description", lang);
 
     return {
         title: getDictionary(lang).about,
@@ -49,7 +55,7 @@ export default async function AboutPage({ params }: Props) {
     const { catalog, settings, contact } = data;
     const t = getDictionary(lang);
     const name = localized(catalog, "name", lang) || catalog.name;
-    const about = (settings as any)?.[`about_content_${lang}`] || (settings as any)?.about_content_en || localized(catalog, "description", lang);
+    const about = aboutContent(settings, lang) || settings?.about_content_en || localized(catalog, "description", lang);
     const address = contact ? [localized(contact, "address", lang), localized(contact, "city", lang)].filter(Boolean).join(lang === "ar" ? "، " : ", ") : "";
     const directions = mapsLink({ mapUrl: contact?.google_map_iframe_url, name, address: contact?.address_en, city: contact?.city_en });
 

@@ -25,8 +25,8 @@ async function run() {
       if (res.rows && res.rows.length > 0) {
         console.table(res.rows);
       }
-    } catch (error: any) {
-      console.error("❌ Error:", error.message);
+    } catch (error) {
+      console.error("❌ Error:", error instanceof Error ? error.message : String(error));
     }
   }
 }

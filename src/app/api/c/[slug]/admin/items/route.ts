@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
+import type { InValue } from "@libsql/client";
 import { parseItemCurrency, parseItemPrice } from "@/lib/catalog/price";
 import {
   allergensToDb,
@@ -42,7 +43,7 @@ export async function GET(
     LEFT JOIN categories c ON c.id = m.category_id
     WHERE m.catalog_id = ?
   `;
-  const args: any[] = [catalog.id];
+  const args: InValue[] = [catalog.id];
 
   if (categoryId) {
     sql += " AND m.category_id = ?";
@@ -230,7 +231,7 @@ export async function POST(
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Create item error:", error);
     return NextResponse.json(
       { error: "Failed to create item" },

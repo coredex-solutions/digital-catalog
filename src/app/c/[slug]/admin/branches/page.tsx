@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import { CatalogAdminHeader, CatalogAdminContent } from "../_components/CatalogAdminSidebar";
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
@@ -131,7 +131,8 @@ function BranchesPageContent() {
     const [showModal, setShowModal] = useState(false);
     const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
     const [saving, setSaving] = useState(false);
-    const [activeLang, setActiveLang] = useState<"ar" | "en">("en");
+    // Start on the menu's default language (features are loaded before the page renders)
+    const [activeLang, setActiveLang] = useState<"ar" | "en">(() => features?.default_language === "ar" ? "ar" : "en");
 
     const [formData, setFormData] = useState({
         name_ar: "",
@@ -142,26 +143,28 @@ function BranchesPageContent() {
         map_url: "",
     });
 
-    const fetchBranches = async () => {
-        try {
-            const res = await fetchWithAuth(`/api/c/${slug}/admin/branches/`);
-            if (res.ok) {
-                const data = await res.json();
-                setBranches(data.branches);
-            }
-        } catch (error) {
-            console.error("Failed to fetch branches:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // State is only set once the request settles
+    const fetchBranches = useCallback(
+        () =>
+            fetchWithAuth(`/api/c/${slug}/admin/branches/`)
+                .then(async (res) => {
+                    if (res.ok) {
+                        const data = await res.json();
+                        setBranches(data.branches);
+                    }
+                })
+                .catch((error) => {
+                    console.error("Failed to fetch branches:", error);
+                })
+                .finally(() => {
+                    setLoading(false);
+                }),
+        [fetchWithAuth, slug]
+    );
 
     useEffect(() => {
         fetchBranches();
-        if (features) {
-            setActiveLang(features.default_language === "ar" ? "ar" : "en");
-        }
-    }, [slug, features]);
+    }, [fetchBranches]);
 
     const openAddModal = () => {
         if (isViewer) return;

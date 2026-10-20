@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: true, message: "Code sent" });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error("Send verification error:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseAIJson, AI_CONSTRAINTS } from "@/lib/ai-utils";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit/middleware";
+import { AI_MODELS } from "@/lib/ai/models";
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const GROQ_MODEL = "llama-3.1-8b-instant";
 
 interface BusinessDetails {
   name: string;
@@ -47,7 +47,7 @@ async function callGroq(prompt: string, systemPrompt: string): Promise<string> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: GROQ_MODEL,
+      model: AI_MODELS.writer,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt }
@@ -320,7 +320,7 @@ Return only the JSON object with title and description for each language.`;
       { status: 400 }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("AI generation error:", error);
     return NextResponse.json(
       { error: "AI generation failed. Please try again." },

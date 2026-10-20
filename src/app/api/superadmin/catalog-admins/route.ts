@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       success: true,
       admin: { id, catalog_id, email: email.toLowerCase().trim(), name, role },
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Create catalog admin error:', error);
     return NextResponse.json(
       { error: 'Failed to create admin' },

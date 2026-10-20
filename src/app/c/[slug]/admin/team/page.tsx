@@ -118,20 +118,21 @@ function TeamPageContent() {
   const [confirmRemove, setConfirmRemove] = useState<Member | null>(null);
 
   const loadError = t.loadError;
-  const load = useCallback(async () => {
-    try {
-      const res = await fetchWithAuth(`/api/c/${slug}/admin/team/`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setMembers(data.members);
-      setCanManage(data.can_manage);
-      setError(null);
-    } catch {
-      setError(loadError);
-    } finally {
-      setLoading(false);
-    }
-  }, [slug, fetchWithAuth, loadError]);
+  // State is only set in the promise callbacks, once the request has answered
+  const load = useCallback(
+    () =>
+      fetchWithAuth(`/api/c/${slug}/admin/team/`)
+        .then(async (res) => {
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          setMembers(data.members);
+          setCanManage(data.can_manage);
+          setError(null);
+        })
+        .catch(() => setError(loadError))
+        .finally(() => setLoading(false)),
+    [slug, fetchWithAuth, loadError]
+  );
 
   useEffect(() => {
     load();

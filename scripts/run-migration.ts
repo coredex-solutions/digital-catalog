@@ -25,9 +25,10 @@ async function main() {
         try {
             await db.execute(statement);
             console.log("Executed successfully:", statement.substring(0, 60).replace(/\s+/g, " ") + "...");
-        } catch (error: any) {
+        } catch (error) {
             // Re-running a migration is safe: existing columns/tables are skipped
-            if (error.message?.includes("duplicate column name") || error.message?.includes("already exists")) {
+            const message = error instanceof Error ? error.message : "";
+            if (message.includes("duplicate column name") || message.includes("already exists")) {
                 console.log("Skipping (already exists):", statement.substring(0, 60).replace(/\s+/g, " ") + "...");
             } else {
                 throw error;

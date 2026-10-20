@@ -84,7 +84,7 @@ export async function PUT(
   const auth = await requireCatalogAdmin(request, catalog.id);
   if (!auth.success) return auth.response;
 
-  let body: any;
+  let body: { faqs?: unknown } | null;
   try {
     body = await request.json();
   } catch {

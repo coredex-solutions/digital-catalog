@@ -6,13 +6,13 @@
  * Extracts and parses JSON from an AI response string.
  * Handles cases where the AI includes conversational filler or code blocks.
  */
-export function parseAIJson(text: string): any {
+export function parseAIJson(text: string): unknown {
   if (!text) return null;
 
   try {
     // 1. Try direct parse (ideal case)
     return JSON.parse(text.trim());
-  } catch (e) {
+  } catch {
     // 2. Handle Markdown code blocks (```json ... ```)
     let cleaned = text;
     
@@ -25,23 +25,20 @@ export function parseAIJson(text: string): any {
 
     try {
       return JSON.parse(cleaned.trim());
-    } catch (e2) {
+    } catch {
       // 3. Last resort: Find the first { or [ and the lastCorresponding } or ]
       const firstBrace = cleaned.indexOf('{');
       const firstBracket = cleaned.indexOf('[');
       
       let startIdx = -1;
       let endIdx = -1;
-      let targetType: 'object' | 'array' | null = null;
 
       if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
         startIdx = firstBrace;
         endIdx = cleaned.lastIndexOf('}');
-        targetType = 'object';
       } else if (firstBracket !== -1) {
         startIdx = firstBracket;
         endIdx = cleaned.lastIndexOf(']');
-        targetType = 'array';
       }
 
       if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {

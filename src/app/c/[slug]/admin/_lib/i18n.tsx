@@ -84,7 +84,6 @@ export function plural(lang: AdminLang, n: number, forms: PluralForms): string {
 
 const LOCALE: Record<AdminLang, string> = { en: "en-GB", ar: "ar-LB-u-nu-latn" };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function formatNumber(value: number, _lang: AdminLang, options?: Intl.NumberFormatOptions): string {
   // "1,250" in both languages (Arabic separators would read as a different number to many owners)
   return new Intl.NumberFormat("en-US", options).format(value);

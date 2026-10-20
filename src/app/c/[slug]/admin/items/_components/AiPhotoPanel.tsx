@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, Check, ImagePlus, Loader2, RotateCcw, Wand2 } from "lucide-react";
 import { formatNumber, plural, useAdminLang, useCopy } from "../../_lib/i18n";
 import { translateApiMessage } from "../../_lib/api-errors";
@@ -174,25 +174,24 @@ export function AiPhotoPanel({ slug, fetchWithAuth, itemId, savedImageUrl, formI
   // One key per request: a double click or a retried network call can't start (or charge) twice
   const requestKey = useRef(newKey());
 
-  const load = useCallback(async () => {
-    if (!itemId) return;
-    const res = await fetchWithAuth(`/api/c/${slug}/admin/ai-images/?item_id=${encodeURIComponent(itemId)}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    setConfigured(Boolean(data.configured));
-    setCredits(data.credits);
-    setStyles(data.styles || []);
-    const latest: Job | undefined = data.jobs?.[0];
-    // Show a request that still needs attention (a failure only for a day); finished history
-    // stays out of the way
-    const recent = latest ? Date.now() - Date.parse(`${latest.createdAt.replace(" ", "T")}Z`) < 24 * 60 * 60 * 1000 : false;
-    const show = latest && (["queued", "processing", "ready", "approved"].includes(latest.status) || (latest.status === "failed" && recent));
-    setJob(show ? latest : null);
-  }, [fetchWithAuth, itemId, slug]);
-
   useEffect(() => {
+    const load = async () => {
+      if (!itemId) return;
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/ai-images/?item_id=${encodeURIComponent(itemId)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setConfigured(Boolean(data.configured));
+      setCredits(data.credits);
+      setStyles(data.styles || []);
+      const latest: Job | undefined = data.jobs?.[0];
+      // Show a request that still needs attention (a failure only for a day); finished history
+      // stays out of the way
+      const recent = latest ? Date.now() - Date.parse(`${latest.createdAt.replace(" ", "T")}Z`) < 24 * 60 * 60 * 1000 : false;
+      const show = latest && (["queued", "processing", "ready", "approved"].includes(latest.status) || (latest.status === "failed" && recent));
+      setJob(show ? latest : null);
+    };
     load();
-  }, [load]);
+  }, [fetchWithAuth, itemId, slug]);
 
   // While the image is being made, check every few seconds (it also keeps going if the form closes)
   const pending = job?.status === "queued" || job?.status === "processing";

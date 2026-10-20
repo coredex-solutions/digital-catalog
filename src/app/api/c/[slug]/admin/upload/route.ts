@@ -11,6 +11,13 @@ import { withRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 const DEFAULT_MAX_IMAGES = 500;
 const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 
+// S3/R2 HeadObject reports a missing object as a "NotFound" error with a 404 status
+function isNotFoundError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const e = error as { name?: unknown; $metadata?: { httpStatusCode?: unknown } };
+  return e.name === "NotFound" || e.$metadata?.httpStatusCode === 404;
+}
+
 async function uploadHandler(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -90,7 +97,7 @@ async function uploadHandler(
       url,
       remaining: maxImages - currentCount - 1,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json(
       { error: "Upload failed" },
@@ -145,8 +152,8 @@ export async function DELETE(
     // R2 deletes succeed even for missing objects, so confirm it exists to keep the count honest
     try {
       await getR2Client().send(new HeadObjectCommand({ Bucket: getR2BucketName(), Key: key }));
-    } catch (error: any) {
-      if (error?.name === "NotFound" || error?.$metadata?.httpStatusCode === 404) {
+    } catch (error) {
+      if (isNotFoundError(error)) {
         return NextResponse.json({ error: "Image not found" }, { status: 404 });
       }
       throw error;
@@ -163,7 +170,7 @@ export async function DELETE(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Delete image error:", error);
     return NextResponse.json(
       { error: "Failed to delete image" },

@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
         expires_at: expiresAt,
       },
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Create subscription error:', error);
     return NextResponse.json(
       { error: 'Failed to create subscription' },

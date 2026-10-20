@@ -33,7 +33,7 @@ export async function GET(
 
   // Don't return password hash
   const admin = { ...result.rows[0] };
-  delete (admin as any).password_hash;
+  delete admin.password_hash;
 
   return NextResponse.json({ admin });
 }

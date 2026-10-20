@@ -66,7 +66,7 @@ async function handler(request: NextRequest) {
         name: superAdmin.name,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Super admin login error:', error);
     return NextResponse.json(
       { error: 'Login failed' },

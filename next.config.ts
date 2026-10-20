@@ -27,6 +27,9 @@ const nextConfig = {
   // Remove static export to enable ISR and API routes
   // output: 'export', // Commented out to enable ISR
   trailingSlash: true,
+  // The app folder is the root, even when a package-lock.json sits in a parent folder
+  // (otherwise Turbopack watches that whole folder and recompiles on unrelated changes)
+  turbopack: { root: process.cwd() },
 };
 
 module.exports = nextConfig;

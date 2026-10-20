@@ -93,6 +93,9 @@ interface Settings {
   };
 }
 
+/** Part of the settings, as sent when one section is saved */
+type SettingsUpdate = { [K in keyof Settings]?: Partial<NonNullable<Settings[K]>> };
+
 type SettingsTab = "appearance" | "contact" | "pricing" | "features" | "ai";
 /** Each tab saves its own part of the settings */
 type SaveSection = "branding" | "contact" | "pricing" | "features" | "ai";
@@ -508,29 +511,29 @@ function SettingsPageContent() {
   } | null>(null);
   const [savingSection, setSavingSection] = useState<SaveSection | null>(null);
 
-  const fetchSettings = async () => {
-    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-    if (!token) return;
-
-    try {
-      const res = await fetchWithAuth(`/api/c/${slug}/admin/settings/`);
-
-      if (res.ok) {
-        const data = await res.json();
-        setSettings(data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch settings:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchSettings();
-  }, [slug]);
+    const fetchSettings = async () => {
+      const token = localStorage.getItem(`catalog_admin_token_${slug}`);
+      if (!token) return;
 
-  const handleSaveSection = async (section: SaveSection, dataToSave: any = settings) => {
+      try {
+        const res = await fetchWithAuth(`/api/c/${slug}/admin/settings/`);
+
+        if (res.ok) {
+          const data = await res.json();
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, [slug, fetchWithAuth]);
+
+  const handleSaveSection = async (section: SaveSection, dataToSave: SettingsUpdate | null = settings) => {
     if (!settings) return;
     setSavingSection(section);
     setMessage(null);
@@ -551,8 +554,8 @@ function SettingsPageContent() {
         const err = await res.json().catch(() => null);
         throw new Error(err?.error || t.saveFailed);
       }
-    } catch (error: any) {
-      setMessage({ type: "error", text: error?.message || t.saveFailed });
+    } catch (error) {
+      setMessage({ type: "error", text: (error instanceof Error && error.message) || t.saveFailed });
     } finally {
       setSavingSection(null);
     }
@@ -563,7 +566,7 @@ function SettingsPageContent() {
   const updateSettings = (
     section: keyof Settings,
     field: string,
-    value: any
+    value: string | boolean
   ) => {
     if (!settings) return;
     setSettings({

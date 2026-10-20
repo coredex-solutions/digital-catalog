@@ -16,7 +16,7 @@ interface HoursRow {
 }
 
 // Utility function to check if restaurant is open
-export function isRestaurantOpen(operatingHours?: any[]): boolean {
+export function isRestaurantOpen(operatingHours?: HoursRow[]): boolean {
   const now = new Date();
   const currentDay = DAYS[now.getDay()] as string;
   const currentHour = now.getHours() + now.getMinutes() / 60;

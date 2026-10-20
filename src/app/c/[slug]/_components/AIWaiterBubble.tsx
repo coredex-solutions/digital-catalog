@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useEffectEvent, useSyncExternalStore } from "react";
 import { useParams } from "next/navigation";
 import {
   X,
@@ -14,12 +14,49 @@ import {
 } from "lucide-react";
 import { useCatalog } from "../_providers/CatalogProvider";
 import { OPEN_WAITER_EVENT } from "../_lib/events";
-import { Language } from "@/types";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
+
+/** A cart change the waiter asked for (see the chat route) */
+interface WaiterAction {
+  type: "ADD_TO_CART" | "UPDATE_CART" | "REMOVE_FROM_CART";
+  itemId: string;
+  quantity: number;
+}
+
+// The browser's speech recognition (not in TypeScript's DOM types; Chrome prefixes it)
+interface SpeechRecognitionEventLike {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+}
+interface SpeechRecognitionLike {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+function getSpeechRecognition(): SpeechRecognitionConstructor | undefined {
+  const w = window as Window & {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return w.SpeechRecognition || w.webkitSpeechRecognition;
+}
+
+// Neither changes while the page is open; the server render assumes a secure context without speech support
+const subscribeNever = () => () => {};
+const getSpeechSupported = () => Boolean(getSpeechRecognition());
+const getSpeechSupportedOnServer = () => false;
+const getSecureContext = () => window.isSecureContext;
+const getSecureContextOnServer = () => true;
 
 // Translations for the AI Waiter popup
 const translations = {
@@ -79,30 +116,24 @@ export default function AIWaiterBubble() {
   const t = translations[catalogLang as keyof typeof translations] || translations.en;
   const isRTL = catalogLang === "ar";
   const [isOpen, setIsOpen] = useState(false);
-
-  // Opened from the "Ask a question" button in the menu header. A floating button would sit on
-  // top of dishes and their add buttons, so there isn't one.
-  useEffect(() => {
-    const open = () => setIsOpen(true);
-    window.addEventListener(OPEN_WAITER_EVENT, open);
-    return () => window.removeEventListener(OPEN_WAITER_EVENT, open);
-  }, []);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const isSpeechSupported = useSyncExternalStore(subscribeNever, getSpeechSupported, getSpeechSupportedOnServer);
   const [hasMicrophone, setHasMicrophone] = useState(true);
-  const [isSecureContext, setIsSecureContext] = useState(true);
+  const isSecureContext = useSyncExternalStore(subscribeNever, getSecureContext, getSecureContextOnServer);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceUsed, setVoiceUsed] = useState(false);
-  const [activeVoiceLang, setActiveVoiceLang] = useState<string>("en-US");
 
-  useEffect(() => {
-    if (catalogLang === "ar") setActiveVoiceLang("ar-SA");
-    else setActiveVoiceLang("en-US");
-  }, [catalogLang]);
+  // Voice input follows the menu language (until the guest picks another one)
+  const menuVoiceLang = catalogLang === "ar" ? "ar-SA" : "en-US";
+  const [activeVoiceLang, setActiveVoiceLang] = useState<string>(menuVoiceLang);
+  const [voiceLangFor, setVoiceLangFor] = useState(catalogLang);
+  if (catalogLang !== voiceLangFor) {
+    setVoiceLangFor(catalogLang);
+    setActiveVoiceLang(menuVoiceLang);
+  }
 
   // Escape closes the chat, like the menu's other panels
   useEffect(() => {
@@ -113,13 +144,11 @@ export default function AIWaiterBubble() {
   }, [isOpen]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setIsSecureContext(window.isSecureContext);
-
       // Check for microphone hardware availability
       if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
         navigator.mediaDevices.enumerateDevices()
@@ -136,27 +165,27 @@ export default function AIWaiterBubble() {
           });
       }
 
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = getSpeechRecognition();
       if (SpeechRecognition) {
-        setIsSpeechSupported(true);
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = true;
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        recognition.continuous = false;
+        recognition.interimResults = true;
 
-        recognitionRef.current.onresult = (event: any) => {
+        recognition.onresult = (event) => {
           const transcript = Array.from(event.results)
-            .map((result: any) => result[0])
-            .map((result: any) => result.transcript)
+            .map((result) => result[0])
+            .map((result) => result.transcript)
             .join("");
 
           setInputText(transcript);
         };
 
-        recognitionRef.current.onend = () => {
+        recognition.onend = () => {
           setIsRecording(false);
         };
 
-        recognitionRef.current.onerror = (event: any) => {
+        recognition.onerror = (event) => {
           // Ignore common non-error scenarios
           if (event.error === "no-speech" || event.error === "aborted") {
             setIsRecording(false);
@@ -191,40 +220,11 @@ export default function AIWaiterBubble() {
     }
   }, []);
 
-  // Stop talking immediately when muted
-  useEffect(() => {
-    if (isMuted && isSpeaking) {
-      if (typeof window !== "undefined" && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      setIsSpeaking(false);
-    }
-  }, [isMuted]);
-
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
-
-  useEffect(() => {
-    // Initial greeting based on catalog language
-    if (isOpen && messages.length === 0) {
-      const greeting = t.greeting;
-      setMessages([{
-        role: "assistant",
-        content: greeting
-      }]);
-      // Play greeting automatically
-      if (!isMuted) {
-        playMessage(greeting, catalogLang || "en");
-      }
-    }
-  }, [isOpen, t.greeting]);
 
   const handleSendMessage = async (audioBlob?: Blob, textOverride?: string) => {
     const textToSend = textOverride || inputText;
@@ -263,11 +263,11 @@ export default function AIWaiterBubble() {
         if (data.actions && Array.isArray(data.actions)) {
           // A dish with options can't be added without the guest choosing one: open it instead
           let dishToChoose: (typeof menuItems)[number] | null = null;
-          data.actions.forEach((action: any) => {
+          data.actions.forEach((action: WaiterAction) => {
             const { type, itemId, quantity } = action;
 
             if (type === "ADD_TO_CART") {
-              const item = (menuItems || []).find((i: any) => i.id === itemId);
+              const item = (menuItems || []).find((i) => i.id === itemId);
               if (item && !addToCart(item, quantity || 1) && item.variants?.length) {
                 dishToChoose = item;
               }
@@ -296,7 +296,6 @@ export default function AIWaiterBubble() {
       console.error("Chat error:", error);
     } finally {
       setIsLoading(false);
-      setVoiceUsed(false);
     }
   };
 
@@ -383,12 +382,34 @@ export default function AIWaiterBubble() {
     window.speechSynthesis.speak(utterance);
   };
 
+  // Opened from the "Ask a question" button in the menu header. A floating button would sit on
+  // top of dishes and their add buttons, so there isn't one.
+  const openChat = useEffectEvent(() => {
+    setIsOpen(true);
+    // Initial greeting based on catalog language, played automatically unless muted
+    if (!isOpen && messages.length === 0) {
+      const greeting = t.greeting;
+      setMessages([{
+        role: "assistant",
+        content: greeting
+      }]);
+      if (!isMuted) {
+        playMessage(greeting, catalogLang || "en");
+      }
+    }
+  });
+
+  useEffect(() => {
+    const open = () => openChat();
+    window.addEventListener(OPEN_WAITER_EVENT, open);
+    return () => window.removeEventListener(OPEN_WAITER_EVENT, open);
+  }, []);
+
   const toggleRecording = () => {
     if (isRecording) {
       recognitionRef.current?.stop();
       setIsRecording(false);
       if (inputText.trim()) {
-        setVoiceUsed(true);
         handleSendMessage(undefined, inputText);
       }
     } else {
@@ -406,11 +427,11 @@ export default function AIWaiterBubble() {
       }
 
       setInputText("");
-      recognitionRef.current.lang = activeVoiceLang;
+      recognitionRef.current!.lang = activeVoiceLang;
       try {
-        recognitionRef.current.start();
+        recognitionRef.current!.start();
         setIsRecording(true);
-      } catch (e) {
+      } catch {
         setIsRecording(false);
       }
     }

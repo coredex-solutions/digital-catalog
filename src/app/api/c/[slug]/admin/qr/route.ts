@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getBaseUrl } from "@/lib/utils/base-url";
+import { checkQrColors } from "@/lib/qr/contrast";
 import QRCode from "qrcode";
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -34,6 +35,11 @@ export async function GET(
   if (!HEX_COLOR.test(darkColor) || (lightColor !== "transparent" && !HEX_COLOR.test(lightColor))) {
     return NextResponse.json({ error: "Colors must be #RRGGBB" }, { status: 400 });
   }
+  // Refuse pairs phones can't read, so an unreadable code is never downloaded or printed
+  const contrast = checkQrColors(darkColor, lightColor);
+  if (contrast?.message) {
+    return NextResponse.json({ error: contrast.message }, { status: 400 });
+  }
 
   // Construct the catalog URL
   const baseUrl = getBaseUrl(request);
@@ -50,7 +56,7 @@ export async function GET(
         },
         margin: QUIET_ZONE,
         width: size,
-        errorCorrectionLevel: "H", // High error correction for logo placement
+        errorCorrectionLevel: "M", // Nothing covers the code, so fewer, larger modules scan more easily
       });
 
       return new NextResponse(svgString, {
@@ -69,7 +75,7 @@ export async function GET(
           light: lightColor === "transparent" ? "#ffffff00" : lightColor,
         },
         margin: QUIET_ZONE,
-        errorCorrectionLevel: "H",
+        errorCorrectionLevel: "M",
       });
 
       return NextResponse.json({
@@ -87,7 +93,7 @@ export async function GET(
           light: lightColor === "transparent" ? "#ffffff00" : lightColor,
         },
         margin: QUIET_ZONE,
-        errorCorrectionLevel: "H",
+        errorCorrectionLevel: "M",
       });
 
       return new NextResponse(new Uint8Array(buffer), {
@@ -97,7 +103,7 @@ export async function GET(
         },
       });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error("QR generation error:", error);
     return NextResponse.json(
       { error: "Failed to generate QR code" },

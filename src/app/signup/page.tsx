@@ -67,7 +67,7 @@ function SignupForm() {
                 const data = await res.json();
                 setError(data.error || "Failed to send code");
             }
-        } catch (err) {
+        } catch {
             setError("Connection error");
         } finally {
             setLoading(false);
@@ -91,7 +91,7 @@ function SignupForm() {
                 const data = await res.json();
                 setError(data.error || "Invalid code");
             }
-        } catch (err) {
+        } catch {
             setError("Verification failed");
         } finally {
             setVerifying(false);
@@ -120,7 +120,7 @@ function SignupForm() {
             } else {
                 setError(data.error || "Signup failed");
             }
-        } catch (err) {
+        } catch {
             setError("An unexpected error occurred");
         } finally {
             setLoading(false);
@@ -244,7 +244,7 @@ function SignupForm() {
                                                     onClick={handleSendCode}
                                                     className="text-xs font-semibold text-ui-muted hover:text-ui-ink transition-colors"
                                                 >
-                                                    Didn't receive code? Resend
+                                                    Didn&apos;t receive code? Resend
                                                 </button>
                                             </div>
 

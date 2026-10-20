@@ -66,8 +66,8 @@ export async function GET(
       ai_waiter_enabled: Boolean(settings?.ai_waiter_enabled),
       ai_image_enhancement_limit: subscription?.ai_image_enhancement_limit || 0,
       ai_image_enhancement_used: subscription?.ai_image_enhancement_used || 0,
-      max_items: (subscription as any)?.max_items || getPlanForSubscriptionType(subscription?.subscription_type).limits.max_items,
-      max_categories: (subscription as any)?.max_categories || getPlanForSubscriptionType(subscription?.subscription_type).limits.max_categories,
+      max_items: subscription?.max_items || getPlanForSubscriptionType(subscription?.subscription_type).limits.max_items,
+      max_categories: subscription?.max_categories || getPlanForSubscriptionType(subscription?.subscription_type).limits.max_categories,
       // Menus are Arabic and English only; legacy values such as "fr" are dropped
       enabled_languages: enabledLanguages,
       default_language: ['ar', 'en'].includes(String(settings?.default_language)) && enabledLanguages.split(',').includes(String(settings?.default_language))

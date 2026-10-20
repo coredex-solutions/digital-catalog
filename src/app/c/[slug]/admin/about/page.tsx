@@ -205,6 +205,36 @@ interface SuggestedKeyword {
 const CONTENT_LANGS: ContentLang[] = ["ar", "en"];
 const dirOf = (l: ContentLang) => (l === "ar" ? "rtl" : "ltr");
 
+// Google Preview
+function GooglePreview({ data, langSuffix, activeLang, slug }: {
+  data: AboutSEOData | null;
+  langSuffix: "_en" | "_ar";
+  activeLang: ContentLang;
+  slug: string;
+}) {
+  const t = useCopy({ en, ar });
+  const title = data?.seo[`seo_title${langSuffix}` as keyof typeof data.seo] || data?.catalog.name || t.previewTitleFallback;
+  const description = data?.seo[`seo_description${langSuffix}` as keyof typeof data.seo] || t.previewDescriptionFallback;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Search className="w-3.5 h-3.5 text-ui-muted" aria-hidden />
+        <span className="text-xs font-bold text-ui-muted">{t.googlePreview}</span>
+      </div>
+      <div className="bg-white rounded-xl p-4" dir={dirOf(activeLang)} lang={activeLang}>
+        <p className="text-xs text-ui-muted truncate mb-0.5" dir="ltr">example.com/c/{slug}</p>
+        <h3 className="text-lg text-ui-primary hover:underline cursor-pointer truncate" style={{ fontFamily: "arial" }}>
+          {String(title).slice(0, 60)}
+        </h3>
+        <p className="text-sm text-ui-muted line-clamp-2 mt-1" style={{ fontFamily: "arial" }}>
+          {String(description).slice(0, 160)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function AboutSEOPageContent() {
   const { slug, user, fetchWithAuth } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
@@ -213,7 +243,6 @@ function AboutSEOPageContent() {
   const f = useFormat();
 
   const [data, setData] = useState<AboutSEOData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"about" | "seo">("about");
   // Start on the text in the dashboard language
@@ -257,13 +286,11 @@ function AboutSEOPageContent() {
         }
       } catch (error) {
         console.error("Failed to fetch about/SEO data:", error);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchData();
-  }, [slug]);
+  }, [slug, fetchWithAuth]);
 
   const handleSave = async () => {
     if (!data) return;
@@ -289,8 +316,8 @@ function AboutSEOPageContent() {
         const error = await res.json();
         throw new Error(error.error || t.saveFailed);
       }
-    } catch (error: any) {
-      setMessage({ type: "error", text: error.message || t.saveFailed });
+    } catch (error) {
+      setMessage({ type: "error", text: (error instanceof Error && error.message) || t.saveFailed });
     } finally {
       setSaving(false);
     }
@@ -398,10 +425,10 @@ function AboutSEOPageContent() {
         const err = await res.json();
         throw new Error(err.error || t.writeFailed);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("AI generation error:", error);
       // A network failure has a browser message in English
-      setWizardError(error instanceof TypeError ? t.writeFailed : error.message || t.writeFailed);
+      setWizardError(error instanceof TypeError || !(error instanceof Error) ? t.writeFailed : error.message || t.writeFailed);
     } finally {
       setAiLoading(false);
     }
@@ -542,36 +569,12 @@ function AboutSEOPageContent() {
         const error = await res.json();
         throw new Error(error.error || t.seoFailed);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("SEO generation error:", error);
-      setMessage({ type: "error", text: error.message || t.seoFailed });
+      setMessage({ type: "error", text: (error instanceof Error && error.message) || t.seoFailed });
     } finally {
       setAiLoading(false);
     }
-  };
-
-  // Google Preview
-  const GooglePreview = () => {
-    const title = data?.seo[`seo_title${langSuffix}` as keyof typeof data.seo] || data?.catalog.name || t.previewTitleFallback;
-    const description = data?.seo[`seo_description${langSuffix}` as keyof typeof data.seo] || t.previewDescriptionFallback;
-
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Search className="w-3.5 h-3.5 text-ui-muted" aria-hidden />
-          <span className="text-xs font-bold text-ui-muted">{t.googlePreview}</span>
-        </div>
-        <div className="bg-white rounded-xl p-4" dir={dirOf(activeLang)} lang={activeLang}>
-          <p className="text-xs text-ui-muted truncate mb-0.5" dir="ltr">example.com/c/{slug}</p>
-          <h3 className="text-lg text-ui-primary hover:underline cursor-pointer truncate" style={{ fontFamily: "arial" }}>
-            {String(title).slice(0, 60)}
-          </h3>
-          <p className="text-sm text-ui-muted line-clamp-2 mt-1" style={{ fontFamily: "arial" }}>
-            {String(description).slice(0, 160)}
-          </p>
-        </div>
-      </div>
-    );
   };
 
   const inputClass = "w-full px-4 py-2.5 bg-ui-subtle border border-ui-input rounded-lg text-ui-ink text-sm focus:outline-none focus:border-ui-primary text-start";
@@ -816,7 +819,7 @@ function AboutSEOPageContent() {
                 </div>
 
                 <div className="glass-card p-6">
-                  <GooglePreview />
+                  <GooglePreview data={data} langSuffix={langSuffix} activeLang={activeLang} slug={slug} />
                 </div>
               </div>
             )}

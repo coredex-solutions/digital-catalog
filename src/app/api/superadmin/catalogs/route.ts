@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error) {
     console.error("Create catalog error:", error);
     return NextResponse.json(
       { error: "Failed to create catalog" },

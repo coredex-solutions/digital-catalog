@@ -7,6 +7,7 @@ import {
   getCatalogSubscription,
 } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
+import type { InValue } from "@libsql/client";
 
 // Column names are interpolated into the UPDATE statements below, so only these
 // known columns (the same ones GET returns) may ever be written. Only settings the
@@ -49,8 +50,10 @@ function sanitizeDefaultLanguage(value: unknown, enabled: string): string {
     : enabled.split(",")[0];
 }
 
+type SettingsSection = Record<string, unknown> | null | undefined;
+
 /** Validate pricing/ordering values before they reach the database */
-function sanitizePricingAndOrdering(pricing: any, ordering: any): Record<string, unknown> {
+function sanitizePricingAndOrdering(pricing: SettingsSection, ordering: SettingsSection): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   if (pricing) {
     if (pricing.currency_primary !== undefined) {
@@ -199,7 +202,7 @@ export async function PUT(
     // Update catalog
     if (catalogData) {
       const catalogUpdates: string[] = [];
-      const catalogArgs: any[] = [];
+      const catalogArgs: InValue[] = [];
 
       if (catalogData.name !== undefined) {
         catalogUpdates.push("name = ?");
@@ -242,7 +245,7 @@ export async function PUT(
 
     // Update settings (appearance, features, cta)
     const settingsUpdates: string[] = [];
-    const settingsArgs: any[] = [];
+    const settingsArgs: InValue[] = [];
 
     const settingsFields = {
       ...(appearance || {}),
@@ -253,7 +256,8 @@ export async function PUT(
       ...sanitizePricingAndOrdering(pricing, ordering),
     };
 
-    for (const [key, value] of Object.entries(settingsFields)) {
+    // Values are JSON body values, passed to the database as they are
+    for (const [key, value] of Object.entries(settingsFields) as [string, InValue | undefined][]) {
       if (value !== undefined && SETTINGS_FIELDS.has(key)) {
         settingsUpdates.push(`${key} = ?`);
         if (typeof value === "boolean") {
@@ -283,9 +287,9 @@ export async function PUT(
     // Update contact
     if (contact) {
       const contactUpdates: string[] = [];
-      const contactArgs: any[] = [];
+      const contactArgs: InValue[] = [];
 
-      for (const [key, value] of Object.entries(contact)) {
+      for (const [key, value] of Object.entries(contact) as [string, InValue | undefined][]) {
         if (value !== undefined && CONTACT_FIELDS.has(key)) {
           contactUpdates.push(`${key} = ?`);
           contactArgs.push(value || null);
@@ -305,7 +309,7 @@ export async function PUT(
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Update settings error:", error);
     return NextResponse.json(
       { error: "Failed to update settings" },

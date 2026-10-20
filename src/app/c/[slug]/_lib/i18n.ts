@@ -270,13 +270,14 @@ export function getDictionary(lang: Language): Dictionary {
  * Pick the localized field (name_ar / name_en), falling back to English then Arabic. Only
  * Arabic and English are read; any other language falls back the same way.
  */
-export function localized<T extends Record<string, any>>(record: T, field: string, lang: Language): string {
-  const own = lang === "ar" || lang === "en" ? (record[`${field}_${lang}`] as string) : "";
+export function localized(record: object, field: string, lang: Language): string {
+  const fields = record as Record<string, unknown>;
+  const own = lang === "ar" || lang === "en" ? (fields[`${field}_${lang}`] as string) : "";
   return (
     own ||
-    (record[`${field}_en`] as string) ||
-    (record[`${field}_ar`] as string) ||
-    (record[field] as string) ||
+    (fields[`${field}_en`] as string) ||
+    (fields[`${field}_ar`] as string) ||
+    (fields[field] as string) ||
     ""
   );
 }

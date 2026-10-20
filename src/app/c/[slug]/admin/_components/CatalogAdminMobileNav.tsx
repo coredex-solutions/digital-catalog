@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Drawer } from "vaul";
@@ -73,9 +73,11 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
   const moreActive = moreItems.some((i) => isNavItemActive(i, pathname));
 
   // Close the sheet after navigating
-  useEffect(() => {
+  const [sheetPathname, setSheetPathname] = useState(pathname);
+  if (sheetPathname !== pathname) {
+    setSheetPathname(pathname);
     setMoreOpen(false);
-  }, [pathname]);
+  }
 
   const handleLogout = () => {
     localStorage.removeItem(`catalog_admin_token_${slug}`);

@@ -15,6 +15,7 @@ import {
   TrendingUp,
   TrendingDown,
   BarChart3,
+  type LucideIcon,
 } from "lucide-react";
 import {
   AreaChart,
@@ -109,7 +110,7 @@ function StatCard({
   change,
   color = "var(--color-primary)",
 }: {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   value: number;
   change?: number;

@@ -9,8 +9,7 @@ import {
     XCircle,
     Loader2,
     Clock,
-    ExternalLink,
-    MessageSquare
+    ExternalLink
 } from "lucide-react";
 import Link from "next/link";
 
@@ -29,27 +28,29 @@ export default function RequestsPage() {
     const [requests, setRequests] = useState<PlanRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [actioning, setActioning] = useState<string | null>(null);
+    // Bumped after an approve/reject to reload the list
+    const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
-        fetchRequests();
-    }, []);
-
-    const fetchRequests = async () => {
-        try {
-            const token = localStorage.getItem("superadmin_token");
-            const res = await fetch("/api/superadmin/requests/", {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setRequests(data.requests || []);
+        const fetchRequests = async () => {
+            try {
+                const token = localStorage.getItem("superadmin_token");
+                const res = await fetch("/api/superadmin/requests/", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setRequests(data.requests || []);
+                }
+            } catch (error) {
+                console.error("Failed to fetch requests:", error);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Failed to fetch requests:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        };
+
+        fetchRequests();
+    }, [reloadKey]);
 
     const handleAction = async (requestId: string, status: 'approved' | 'rejected') => {
         setActioning(requestId);
@@ -64,7 +65,7 @@ export default function RequestsPage() {
                 body: JSON.stringify({ requestId, status }),
             });
             if (res.ok) {
-                fetchRequests();
+                setReloadKey((key) => key + 1);
             }
         } catch (error) {
             console.error("Action failed:", error);

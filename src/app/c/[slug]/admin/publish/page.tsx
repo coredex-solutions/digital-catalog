@@ -199,18 +199,19 @@ function PublishPageContent() {
   const formatWhen = (value: string) => f.dateTime(parseWhen(value)) || value;
 
   const loadError = t.loadError;
-  const load = useCallback(async () => {
-    try {
-      const res = await fetchWithAuth(`/api/c/${slug}/admin/publish/`);
-      if (!res.ok) throw new Error();
-      setStatus(await res.json());
-      setError(null);
-    } catch {
-      setError(loadError);
-    } finally {
-      setLoading(false);
-    }
-  }, [slug, fetchWithAuth, loadError]);
+  // State is only set in the promise callbacks, once the request has answered
+  const load = useCallback(
+    () =>
+      fetchWithAuth(`/api/c/${slug}/admin/publish/`)
+        .then(async (res) => {
+          if (!res.ok) throw new Error();
+          setStatus(await res.json());
+          setError(null);
+        })
+        .catch(() => setError(loadError))
+        .finally(() => setLoading(false)),
+    [slug, fetchWithAuth, loadError]
+  );
 
   useEffect(() => {
     load();

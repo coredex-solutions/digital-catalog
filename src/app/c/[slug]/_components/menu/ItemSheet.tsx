@@ -2,7 +2,7 @@
 
 import { MenuImage } from "./MenuImage";
 import { CircleSlash } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { formatPrice } from "@/lib/catalog/price";
 import { cartQuantityOf, needsVariant, useCatalog } from "../../_providers/CatalogProvider";
 import { allergenLabel, dietaryLabel, lowestVariantPrice, variantName } from "@/lib/catalog/dish-info";
@@ -23,14 +23,16 @@ export function ItemSheet() {
 
   // Reset the form each time a dish is opened. A different special request becomes its own
   // line in the order; the same one adds to the existing line.
-  useEffect(() => {
-    if (open) {
+  const openedId = open && item ? item.id : null;
+  const [formFor, setFormFor] = useState(openedId);
+  if (openedId !== formFor) {
+    setFormFor(openedId);
+    if (openedId) {
       setQuantity(1);
       setNote("");
       setVariantId(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, item?.id]);
+  }
 
   if (!item) return null;
 

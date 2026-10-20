@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CheckCheck, Store } from "lucide-react";
 import { buildOrderMessage } from "../c/[slug]/_lib/whatsapp";
 import type { SiteCopy, SiteLang } from "./copy";
@@ -10,6 +10,19 @@ const SAMPLE_LINES = [
   { name_en: "Fattoush", name_ar: "فتوش", price: 5, currency: "USD", quantity: 1, note: "" },
   { name_en: "Mixed grill", name_ar: "مشاوي مشكّلة", price: 14, currency: "USD", quantity: 1 },
 ];
+
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
+function subscribeReducedMotion(onChange: () => void) {
+  const query = window.matchMedia(REDUCED_MOTION);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+/** No animation: the visitor asked for reduced motion, or the browser can't tell when it scrolls into view */
+function getSkipAnimation() {
+  return window.matchMedia(REDUCED_MOTION).matches || !("IntersectionObserver" in window);
+}
 
 /** WhatsApp's *bold* markup, rendered as it appears in the chat */
 export function Formatted({ text }: { text: string }) {
@@ -33,7 +46,10 @@ export function Formatted({ text }: { text: string }) {
  */
 export function WhatsAppDemo({ t, lang }: { t: SiteCopy["whatsappDemo"]; lang: SiteLang }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [stage, setStage] = useState<"idle" | "typing" | "sent">("idle");
+  const [animatedStage, setStage] = useState<"idle" | "typing" | "sent">("idle");
+  // The server renders the idle chat; the client then shows the message at once when it won't animate
+  const skipAnimation = useSyncExternalStore(subscribeReducedMotion, getSkipAnimation, () => false);
+  const stage = skipAnimation ? "sent" : animatedStage;
 
   const message = buildOrderMessage(
     SAMPLE_LINES,
@@ -44,11 +60,7 @@ export function WhatsAppDemo({ t, lang }: { t: SiteCopy["whatsappDemo"]; lang: S
 
   useEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || !("IntersectionObserver" in window)) {
-      setStage("sent");
-      return;
-    }
+    if (!el || skipAnimation) return;
     let timer = 0;
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -64,7 +76,7 @@ export function WhatsAppDemo({ t, lang }: { t: SiteCopy["whatsappDemo"]; lang: S
       observer.disconnect();
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [skipAnimation]);
 
   return (
     <div ref={ref} className="overflow-hidden rounded-panel border border-ui-line bg-ui-surface shadow-[0_24px_48px_-32px_rgba(23,21,46,0.4)]">

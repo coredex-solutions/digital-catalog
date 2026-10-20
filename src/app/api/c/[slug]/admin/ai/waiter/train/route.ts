@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db/client";
 import { parseAIJson, AI_CONSTRAINTS } from "@/lib/ai-utils";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
+import { AI_MODELS } from "@/lib/ai/models";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const MODEL = "gemini-2.0-flash";
 
 export async function GET(
   request: NextRequest,
@@ -35,7 +35,7 @@ export async function GET(
     });
 
     return NextResponse.json({ questions: queueRes.rows });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Fetch Training Queue Error:", error);
     return NextResponse.json({ error: "Failed to fetch training queue" }, { status: 500 });
   }
@@ -147,10 +147,10 @@ Based on this data, find the biggest knowledge gaps. Focus on items NOT in the e
       }
 
       const aiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${GOOGLE_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODELS.waiter}:generateContent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-goog-api-key": GOOGLE_API_KEY },
           body: JSON.stringify({
             contents: [{ parts: [{ text: `${systemPrompt}\n\n${prompt}` }] }],
             generationConfig: {
@@ -214,7 +214,7 @@ Based on this data, find the biggest knowledge gaps. Focus on items NOT in the e
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (error: any) {
+  } catch (error) {
     // Upstream AI errors can carry request details, so they are only logged
     console.error("AI Training Action Error:", error);
     return NextResponse.json({ error: "Failed to process training action" }, { status: 500 });

@@ -59,7 +59,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       key: "dishes",
       title: "Add your dishes",
       count: activeItems.length,
-      hint: activeItems.length > 0 ? `${activeItems.length} so far.` : "Start with a few; you can add more any time.",
+      hint: activeItems.length > 0 ? `${activeItems.length} so far.` : "Add them one by one, or import your menu from a spreadsheet or a photo.",
       done: activeItems.length > 0,
       href: `/c/${slug}/admin/items`,
     },

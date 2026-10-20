@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useCallback, useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SuperAdminShell } from "../../_components/SuperAdminShell";
@@ -11,7 +11,6 @@ import {
   ExternalLink,
   Save,
   Trash2,
-  AlertTriangle,
   Loader2,
   CheckCircle,
   XCircle,
@@ -21,7 +20,6 @@ import {
   BarChart3,
   Globe,
   Store,
-  Clock,
   Key,
   ShieldAlert,
   Lock,
@@ -35,6 +33,69 @@ function sanitizeLanguages(value: unknown): string {
   return ["ar", "en"].filter((l) => list.includes(l)).join(",") || "ar,en";
 }
 
+/** Catalog row (joined with its subscription) as returned by GET /api/superadmin/catalogs/[id] */
+interface CatalogRecord {
+  name: string;
+  slug: string;
+  business_type: string;
+  description: string | null;
+  is_suspended: number;
+  suspension_reason: string | null;
+  created_at: string;
+  subscription_type: string | null;
+  starts_at: string | null;
+  expires_at: string | null;
+  booking_enabled: number | null;
+  analytics_enabled: number | null;
+  custom_domain_enabled: number | null;
+  ai_image_enhancement_limit: number | null;
+  ai_image_enhancement_used: number | null;
+  max_items: number | null;
+  max_categories: number | null;
+  amount_paid: number | null;
+  payment_method: string | null;
+  payment_notes: string | null;
+}
+
+interface CatalogAdmin {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  last_login: string | null;
+}
+
+interface CatalogDetails {
+  catalog: CatalogRecord;
+  admins: CatalogAdmin[];
+  settings: { enabled_languages?: string | null; default_language?: string | null } | null;
+  analytics: { total_views: number | null } | null;
+  counts: { items: number; categories: number; branches: number } | null;
+}
+
+interface EditForm {
+  name: string;
+  slug: string;
+  business_type: string;
+  description: string;
+  is_suspended: number;
+  suspension_reason: string;
+  booking_enabled: boolean;
+  analytics_enabled: boolean;
+  custom_domain_enabled: boolean;
+  ai_image_enhancement_limit: number;
+  max_items: number;
+  max_categories: number;
+  subscription_type: string;
+  starts_at: string;
+  expires_at: string | null;
+  amount_paid: number | string;
+  payment_method: string;
+  payment_notes: string;
+  enabled_languages: string;
+  default_language: string;
+}
+
 export default function CatalogDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
@@ -45,11 +106,11 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
   const [successMessage, setSuccessMessage] = useState("");
   const [activeTab, setActiveTab] = useState<"overview" | "settings" | "subscription" | "admins">("overview");
 
-  const [data, setData] = useState<any>(null);
-  const [editForm, setEditForm] = useState<any>(null);
+  const [data, setData] = useState<CatalogDetails | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
 
   // Password Reset State
-  const [resetAdmin, setResetAdmin] = useState<any>(null);
+  const [resetAdmin, setResetAdmin] = useState<CatalogAdmin | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [resetting, setResetting] = useState(false);
 
@@ -65,11 +126,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
   });
   const [savingAdmin, setSavingAdmin] = useState(false);
 
-  useEffect(() => {
-    fetchCatalogDetails();
-  }, [id]);
-
-  const fetchCatalogDetails = async () => {
+  const fetchCatalogDetails = useCallback(async () => {
     try {
       const token = localStorage.getItem("superadmin_token");
       if (!token) return;
@@ -80,7 +137,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
 
       if (!res.ok) throw new Error("Failed to load catalog");
 
-      const result = await res.json();
+      const result: CatalogDetails = await res.json();
       setData(result);
 
       // Initialize edit form with catalog AND subscription data
@@ -112,19 +169,24 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         // Settings fields
         // Menus are Arabic and English only; legacy values such as "fr" are dropped
         enabled_languages: sanitizeLanguages(result.settings?.enabled_languages),
-        default_language: ["ar", "en"].includes(result.settings?.default_language)
+        default_language: result.settings?.default_language && ["ar", "en"].includes(result.settings.default_language)
           ? result.settings.default_language
           : sanitizeLanguages(result.settings?.enabled_languages).split(",")[0],
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetchCatalogDetails sets state once the awaited request settles (the rule does not model await); it is shared with the save handlers, which await the reload before showing success
+    fetchCatalogDetails();
+  }, [fetchCatalogDetails]);
 
   // Section-specific save handlers
-  const handleSaveSection = async (section: string, fields: Record<string, any>) => {
+  const handleSaveSection = async (section: string, fields: Record<string, unknown>) => {
     setSavingSection(section);
     setError("");
     setSuccessMessage("");
@@ -148,14 +210,14 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
       await fetchCatalogDetails();
       setSuccessMessage(`${section} saved successfully!`);
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSavingSection(null);
     }
   };
 
-  const saveCatalogSettings = () => handleSaveSection("Catalog Settings", {
+  const saveCatalogSettings = () => editForm && handleSaveSection("Catalog Settings", {
     name: editForm.name,
     slug: editForm.slug,
     business_type: editForm.business_type,
@@ -164,13 +226,14 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
     max_categories: editForm.max_categories,
   });
 
-  const saveFeatureAccess = () => handleSaveSection("Feature Access", {
+  const saveFeatureAccess = () => editForm && handleSaveSection("Feature Access", {
     booking_enabled: editForm.booking_enabled,
     analytics_enabled: editForm.analytics_enabled,
     custom_domain_enabled: editForm.custom_domain_enabled,
   });
 
   const saveLanguageConfig = () => {
+    if (!editForm) return;
     const enabled = sanitizeLanguages(editForm.enabled_languages);
     return handleSaveSection("Language Configuration", {
       enabled_languages: enabled,
@@ -185,7 +248,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
     setShowAdminModal(true);
   };
 
-  const openEditAdmin = (admin: any) => {
+  const openEditAdmin = (admin: CatalogAdmin) => {
     setAdminForm({ id: admin.id, name: admin.name, email: admin.email, password: "", role: admin.role });
     setAdminModalMode("edit");
     setShowAdminModal(true);
@@ -208,7 +271,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
         ? `/api/superadmin/catalogs/${id}/admins/`
         : `/api/superadmin/catalogs/${id}/admins/${adminForm.id}/`;
 
-      const body: any = {
+      const body: { name: string; email: string; role: string; password?: string } = {
         name: adminForm.name,
         email: adminForm.email,
         role: adminForm.role,
@@ -233,8 +296,8 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
       setShowAdminModal(false);
       setSuccessMessage(adminModalMode === "add" ? "Admin added successfully!" : "Admin updated successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
     } finally {
       setSavingAdmin(false);
     }
@@ -258,8 +321,8 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
       await fetchCatalogDetails();
       setSuccessMessage("Admin removed successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -276,12 +339,13 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
       if (!res.ok) throw new Error("Deletion failed");
 
       router.push("/superadmin/catalogs");
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
     }
   };
 
   const handleResetPassword = async () => {
+    if (!resetAdmin) return;
     if (!newPassword || newPassword.length < 8) {
       alert("Password must be at least 8 characters long");
       return;
@@ -307,8 +371,8 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
       alert("Password reset successfully!");
       setResetAdmin(null);
       setNewPassword("");
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
     } finally {
       setResetting(false);
     }
@@ -329,7 +393,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
     );
   }
 
-  if (!data) return null;
+  if (!data || !editForm) return null;
 
   const { catalog, admins, analytics, counts } = data;
 
@@ -408,15 +472,15 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
 
         {/* Tabs */}
         <div className="flex gap-8 border-b border-ui-line mb-8">
-          {[
+          {([
             { id: "overview", label: "Overview" },
             { id: "subscription", label: "Subscription" },
             { id: "settings", label: "Settings" },
             { id: "admins", label: "Admins" },
-          ].map((tab) => (
+          ] as const).map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`pb-4 px-1 text-sm font-semibold transition-colors relative ${activeTab === tab.id ? "text-ui-primary" : "text-ui-muted hover:text-ui-ink"
                 }`}
             >
@@ -779,7 +843,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                 <div className="pt-6 mt-6 border-t border-ui-line">
                   <button
                     onClick={() => handleSaveSection("Payment", {
-                      amount_paid: parseFloat(editForm.amount_paid) || null,
+                      amount_paid: parseFloat(String(editForm.amount_paid)) || null,
                       payment_method: editForm.payment_method,
                       payment_notes: editForm.payment_notes,
                     })}
@@ -910,11 +974,11 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                 <p className="text-ui-muted text-sm mb-8 font-medium">Turn features on or off for this catalog.</p>
 
                 <div className="space-y-3">
-                  {[
+                  {([
                     { key: "booking_enabled", label: "Booking System", desc: "Enable table or appointment bookings" },
                     { key: "analytics_enabled", label: "Detailed Analytics", desc: "Track visitor behavior and clicks" },
                     { key: "custom_domain_enabled", label: "Custom Domain", desc: "Use a custom website address" },
-                  ].map((feature) => (
+                  ] as const).map((feature) => (
                     <div key={feature.key} className="flex items-center justify-between p-4 bg-ui-surface border border-ui-line rounded-control hover:bg-ui-subtle transition-colors">
                       <div>
                         <p className="text-ui-ink font-bold text-sm">{feature.label}</p>
@@ -1098,7 +1162,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ui-line">
-                  {admins.map((admin: any) => (
+                  {admins.map((admin) => (
                     <tr key={admin.id} className="group hover:bg-ui-subtle transition-colors">
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-3">

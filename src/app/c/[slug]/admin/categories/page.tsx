@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { keepFocusOnRow } from "../_components/keepFocusOnRow";
-import { useParams } from "next/navigation";
 import Image from "next/image";
 import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import {
@@ -125,7 +124,8 @@ function CategoriesPageContent() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const [activeLang, setActiveLang] = useState<'en' | 'ar'>('en');
+  // Start on the menu's default language (features are loaded before the page renders)
+  const [activeLang, setActiveLang] = useState<'en' | 'ar'>(() => features?.default_language === 'ar' ? 'ar' : 'en');
 
   const [formData, setFormData] = useState({
     name_ar: "",
@@ -139,6 +139,29 @@ function CategoriesPageContent() {
   const [ordering, setOrdering] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
   const orderQueue = useRef<Promise<void>>(Promise.resolve());
+
+  // State is only set once the request settles
+  const fetchCategories = useCallback(() => {
+    // Runs after every save too: lets the shell refresh its "unpublished changes" bar
+    window.dispatchEvent(new Event("menu-draft-changed"));
+    return fetchWithAuth(`/api/c/${slug}/admin/categories/`)
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          setCategories(data.categories);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to fetch categories:", error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [fetchWithAuth, slug]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   // Move a category one place up or down. Shown at once; saved in order of the clicks.
   const moveCategory = (id: string, delta: -1 | 1) => {
@@ -171,29 +194,6 @@ function CategoriesPageContent() {
     });
   };
 
-  const fetchCategories = async () => {
-    // Runs after every save too: lets the shell refresh its "unpublished changes" bar
-    window.dispatchEvent(new Event("menu-draft-changed"));
-    try {
-      const res = await fetchWithAuth(`/api/c/${slug}/admin/categories/`);
-
-      if (res.ok) {
-        const data = await res.json();
-        setCategories(data.categories);
-      }
-    } catch (error) {
-      console.error("Failed to fetch categories:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategories();
-    if (features) {
-      setActiveLang(features.default_language === 'ar' ? 'ar' : 'en');
-    }
-  }, [slug, features]);
 
   const openAddModal = () => {
     if (features && categories.length >= features.max_categories) {
@@ -312,7 +312,7 @@ function CategoriesPageContent() {
       } else {
         setUploadError(data.error || t.uploadFailed);
       }
-    } catch (error) {
+    } catch {
       setUploadError(t.uploadFailed);
     } finally {
       setUploading(false);

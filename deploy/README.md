@@ -99,7 +99,7 @@ Then lock the file down: `chmod 600 .env.local`.
 ## 5. Build and start
 
 ```bash
-npm ci --legacy-peer-deps
+npm ci
 node scripts/init-db.mjs          # creates or updates the database tables; safe to re-run
 npm run build
 pm2 start deploy/ecosystem.config.cjs
@@ -156,6 +156,15 @@ cd /var/www/coredex && bash deploy/update.sh
 ```
 
 It pulls the code, installs packages, updates the database tables, builds, and restarts without downtime.
+
+When `deploy/nginx.conf` changes (for example, the longer timeout for reading photographed menus), copy it again and reload nginx:
+
+```bash
+cp deploy/nginx.conf /etc/nginx/sites-available/coredex
+sed -i 's/example.com/YOUR-DOMAIN.com/g' /etc/nginx/sites-available/coredex
+certbot install --nginx --cert-name YOUR-DOMAIN.com   # puts the HTTPS lines back, using the existing certificate
+nginx -t && systemctl reload nginx
+```
 
 ## Useful commands
 

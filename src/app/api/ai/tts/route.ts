@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 import { getAiWaiterCatalog } from "@/lib/catalog/ai-access";
+import { AI_MODELS } from "@/lib/ai/models";
 
 // Spoken replies for the AI waiter, from official paid providers only (Google Cloud
 // Text-to-Speech, then OpenAI). When neither is configured, or the restaurant doesn't run the
@@ -102,7 +103,7 @@ async function tryOpenAITTS(text: string) {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model: "tts-1", voice: OPENAI_VOICE, input: text }),
+      body: JSON.stringify({ model: AI_MODELS.textToSpeech, voice: OPENAI_VOICE, input: text }),
     });
     if (res.ok) return audio(await res.arrayBuffer());
     console.error("OpenAI TTS error:", res.status);

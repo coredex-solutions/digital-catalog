@@ -102,9 +102,9 @@ export async function sendEmail(
 
     console.log("📧 Email sent:", info.messageId);
     return { success: true, messageId: info.messageId };
-  } catch (error: any) {
+  } catch (error) {
     console.error("Email send failed:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 

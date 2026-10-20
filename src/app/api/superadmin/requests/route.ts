@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/client";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-middleware";
 import { PLAN_CONFIG, isPaidPlanId, type PaidPlanId } from "@/lib/plans";
 import { v4 as uuidv4 } from "uuid";
+import type { Row } from "@libsql/client";
 
 export async function GET(request: NextRequest) {
     const auth = await requireSuperAdmin(request);
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
             ORDER BY r.created_at DESC
         `);
         return NextResponse.json({ requests: result.rows });
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: "DB Error" }, { status: 500 });
     }
 }
@@ -31,7 +32,7 @@ export async function PATCH(request: NextRequest) {
     const auth = await requireSuperAdmin(request);
     if (!auth.success) return auth.response;
 
-    let body: any;
+    let body: { requestId?: string; status?: string; adminNotes?: unknown } | null;
     try {
         body = await request.json();
     } catch {
@@ -58,7 +59,7 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: "Request not found" }, { status: 404 });
         }
 
-        const planReq = requestData.rows[0] as any;
+        const planReq = requestData.rows[0];
 
         // A request is decided once; approving it twice would add another year
         if (planReq.status !== 'pending') {
@@ -85,7 +86,7 @@ export async function PATCH(request: NextRequest) {
             sql: "SELECT id, expires_at FROM catalog_subscriptions WHERE catalog_id = ?",
             args: [planReq.catalog_id]
         });
-        const existing = subRes.rows[0] as any;
+        const existing: Row | undefined = subRes.rows[0];
 
         // Paid time is added on top of whatever is left, so renewing early loses nothing
         const now = new Date();

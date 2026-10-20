@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useEffectEvent, useState, useRef, useSyncExternalStore } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "next/navigation";
 import { CatalogAdminShell } from "../_components/CatalogAdminShell";
@@ -93,6 +93,40 @@ interface Question {
   context: string;
 }
 
+// The parts of the Web Speech API this page uses (not in the TypeScript DOM types)
+interface SpeechRecognitionResultLike {
+  isFinal: boolean;
+  0: { transcript: string };
+}
+interface SpeechRecognitionEventLike {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResultLike>;
+}
+interface SpeechRecognitionLike {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+function getSpeechRecognition(): SpeechRecognitionConstructor | undefined {
+  const w = window as Window & {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  };
+  return w.SpeechRecognition || w.webkitSpeechRecognition;
+}
+
+// Support never changes while the page is open; the server render assumes no support
+const subscribeNever = () => () => {};
+const getSpeechSupported = () => Boolean(getSpeechRecognition());
+const getSpeechSupportedOnServer = () => false;
+
 export default function AIWaiterTraining() {
   const params = useParams();
   const slug = params.slug as string;
@@ -108,7 +142,7 @@ export default function AIWaiterTraining() {
   const [isRecording, setIsRecording] = useState(false);
   const [progress, setProgress] = useState(0);
   const [completed, setCompleted] = useState(false);
-  const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+  const isSpeechSupported = useSyncExternalStore(subscribeNever, getSpeechSupported, getSpeechSupportedOnServer);
   // Voice input starts in the dashboard language
   const [recordingLang, setRecordingLang] = useState<"ar-SA" | "en-US">(lang === "ar" ? "ar-SA" : "en-US");
   const [error, setError] = useState<string | null>(null);
@@ -122,10 +156,49 @@ export default function AIWaiterTraining() {
   const [hasMicrophone, setHasMicrophone] = useState(false);
 
   // For Speech-to-Text
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  const requestQuestions = async () => {
+    const token = localStorage.getItem(`catalog_admin_token_${slug}`);
+    return fetch(`/api/c/${slug}/admin/ai/waiter/train/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  };
+
+  // State is only set once the request settles
+  const loadQuestions = () =>
+    requestQuestions()
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          const pendingQuestions = data.questions || [];
+          setQuestions(pendingQuestions);
+          setProgress(0);
+          setCurrentIndex(0);
+        } else {
+          await failWith(res, t.loadFailed);
+        }
+      })
+      .catch(() => {
+        setError(t.loadFailed);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+
+  const fetchQuestions = async () => {
+    setLoading(true);
+    setError(null);
+    await loadQuestions();
+  };
+
+  // Load once when the page opens (loading already starts true); not again when the language changes
+  const loadInitialQuestions = useEffectEvent(() => {
+    loadQuestions();
+  });
 
   useEffect(() => {
-    fetchQuestions();
+    loadInitialQuestions();
 
     // Initialize Web Speech API if supported
     if (typeof window !== "undefined") {
@@ -139,14 +212,14 @@ export default function AIWaiterTraining() {
           .catch(() => setHasMicrophone(false));
       }
 
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const SpeechRecognition = getSpeechRecognition();
       if (SpeechRecognition) {
-        setIsSpeechSupported(true);
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
+        const recognition = new SpeechRecognition();
+        recognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
 
-        recognitionRef.current.onresult = (event: any) => {
+        recognition.onresult = (event) => {
           let interimText = "";
           let finalTranscript = "";
 
@@ -164,7 +237,7 @@ export default function AIWaiterTraining() {
           setInterimAnswer(interimText);
         };
 
-        recognitionRef.current.onerror = (event: any) => {
+        recognition.onerror = (event) => {
           // "not-allowed" usually means no mic or permission denied - handle silently
           if (event.error !== "no-speech" && event.error !== "not-allowed") {
             console.error("Speech recognition error:", event.error);
@@ -173,7 +246,7 @@ export default function AIWaiterTraining() {
           setInterimAnswer("");
         };
 
-        recognitionRef.current.onend = () => {
+        recognition.onend = () => {
           setIsRecording(false);
           setInterimAnswer("");
         };
@@ -214,30 +287,6 @@ export default function AIWaiterTraining() {
     utterance.onerror = () => setIsSpeaking(false);
 
     window.speechSynthesis.speak(utterance);
-  };
-
-  const fetchQuestions = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem(`catalog_admin_token_${slug}`);
-      const res = await fetch(`/api/c/${slug}/admin/ai/waiter/train/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const pendingQuestions = data.questions || [];
-        setQuestions(pendingQuestions);
-        setProgress(0);
-        setCurrentIndex(0);
-      } else {
-        await failWith(res, t.loadFailed);
-      }
-    } catch {
-      setError(t.loadFailed);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const [generating, setGenerating] = useState(false);

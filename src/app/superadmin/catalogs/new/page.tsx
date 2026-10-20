@@ -15,8 +15,7 @@ import {
   MoreHorizontal,
   ChevronRight,
   ShieldCheck,
-  Zap,
-  Globe
+  Zap
 } from "lucide-react";
 import Link from "next/link";
 
@@ -67,11 +66,11 @@ export default function NewCatalogPage() {
     admin_password: "",
   });
 
-  const updateFormData = (field: string, value: any) => {
+  const updateFormData = (field: string, value: string | number | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     
     // Auto-generate slug from name
-    if (field === "name") {
+    if (field === "name" && typeof value === "string") {
       const slug = value
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, "")
@@ -109,8 +108,8 @@ export default function NewCatalogPage() {
       }
 
       router.push(`/superadmin/catalogs/${data.catalog.id}`);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
       setLoading(false);
     }
   };

@@ -121,12 +121,12 @@ export async function GET(request: NextRequest) {
       return Math.round(((current - previous) / previous) * 100);
     };
 
-    const totalViews = Number((viewsResult.rows[0] as any)?.total || 0);
-    const prevViews = Number((prevViewsResult.rows[0] as any)?.total || 0);
-    const totalWhatsapp = Number((whatsappResult.rows[0] as any)?.total || 0);
-    const prevWhatsapp = Number((prevWhatsappResult.rows[0] as any)?.total || 0);
-    const totalBookings = Number((bookingsResult.rows[0] as any)?.total || 0);
-    const prevBookings = Number((prevBookingsResult.rows[0] as any)?.total || 0);
+    const totalViews = Number(viewsResult.rows[0]?.total || 0);
+    const prevViews = Number(prevViewsResult.rows[0]?.total || 0);
+    const totalWhatsapp = Number(whatsappResult.rows[0]?.total || 0);
+    const prevWhatsapp = Number(prevWhatsappResult.rows[0]?.total || 0);
+    const totalBookings = Number(bookingsResult.rows[0]?.total || 0);
+    const prevBookings = Number(prevBookingsResult.rows[0]?.total || 0);
 
     return NextResponse.json({
       total_views: totalViews,
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
       whatsapp_change: calcChange(totalWhatsapp, prevWhatsapp),
       total_bookings: totalBookings,
       bookings_change: calcChange(totalBookings, prevBookings),
-      top_catalogs: topCatalogsResult.rows.map((row: any) => ({
+      top_catalogs: topCatalogsResult.rows.map((row) => ({
         id: row.id,
         name: row.name,
         slug: row.slug,
