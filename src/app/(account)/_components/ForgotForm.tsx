@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MailCheck } from "lucide-react";
 import type { SiteLang } from "../../_landing/copy";
 import { getAccountCopy } from "../_copy";
+import { accountError } from "../_errors";
 import { Card, ErrorNote, Field, SubmitButton, inputClass } from "./fields";
 
 export function ForgotForm({ lang }: { lang: SiteLang }) {
@@ -28,7 +29,7 @@ export function ForgotForm({ lang }: { lang: SiteLang }) {
       if (!res.ok) throw new Error(data.error || "Something went wrong. Please try again.");
       setSentTo(email.trim());
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(accountError(err instanceof Error ? err.message : String(err), lang));
     } finally {
       setBusy(false);
     }

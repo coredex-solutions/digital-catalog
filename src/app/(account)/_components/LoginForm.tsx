@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, Store } from "lucide-react";
 import type { SiteLang } from "../../_landing/copy";
 import { getAccountCopy } from "../_copy";
+import { accountError } from "../_errors";
 import { Card, ErrorNote, Field, PasswordInput, SubmitButton, inputClass } from "./fields";
 
 interface Account {
@@ -49,7 +50,7 @@ export function LoginForm({ lang, restaurant }: { lang: SiteLang; restaurant?: s
       setChoices(accounts);
       setBusy(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(accountError(err instanceof Error ? err.message : String(err), lang));
       setBusy(false);
     }
   };

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import type { SiteLang } from "../../_landing/copy";
 import { getAccountCopy } from "../_copy";
+import { accountError } from "../_errors";
 import { Card, ErrorNote, Field, PasswordInput, SubmitButton } from "./fields";
 
 type Status =
@@ -30,10 +31,10 @@ export function ResetForm({ lang, token }: { lang: SiteLang; token: string }) {
     fetch(`/api/auth/reset-password/?token=${encodeURIComponent(token)}`)
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        setStatus(res.ok ? { kind: "ready", email: data.email, restaurant: data.restaurant } : { kind: "invalid", message: data.error || "This link no longer works." });
+        setStatus(res.ok ? { kind: "ready", email: data.email, restaurant: data.restaurant } : { kind: "invalid", message: accountError(data.error || "This link no longer works.", lang) });
       })
-      .catch(() => setStatus({ kind: "invalid", message: "Couldn't check the link. Check your connection and reload." }));
-  }, [token]);
+      .catch(() => setStatus({ kind: "invalid", message: accountError("Couldn't check the link. Check your connection and reload.", lang) }));
+  }, [token, lang]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +52,7 @@ export function ResetForm({ lang, token }: { lang: SiteLang; token: string }) {
       if (!res.ok) throw new Error(data.error || "Couldn't change the password. Please try again.");
       setStatus({ kind: "done", slug: data.slug });
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(accountError(err instanceof Error ? err.message : String(err), lang));
     } finally {
       setBusy(false);
     }

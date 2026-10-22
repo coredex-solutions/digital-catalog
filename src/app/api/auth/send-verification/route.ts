@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
 
         const body = await request.json();
         const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
+        const lang = body.lang === "ar" ? "ar" : "en";
         if (!email || !EMAIL_REGEX.test(email)) {
             return NextResponse.json({ error: "A valid email is required" }, { status: 400 });
         }
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
         // Send Email. A failed send is an error everywhere: the owner must not be told a code
         // is on its way when it isn't.
         try {
-            await sendVerificationEmail(email, code);
+            await sendVerificationEmail(email, code, lang);
         } catch (emailErr) {
             console.error("Email send failed:", emailErr);
             return NextResponse.json({ error: "Failed to send verification email" }, { status: 500 });

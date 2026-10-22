@@ -67,20 +67,39 @@ export async function sendBrandedEmail({ to, subject, paragraphs, button, footer
     await deliver(to, subject, text, html);
 }
 
-export async function sendVerificationEmail(email: string, code: string) {
+const VERIFICATION_COPY = {
+    en: {
+        subject: (code: string) => `${code} is your Coredex verification code`,
+        text: (code: string) => `Your Coredex verification code is ${code}. It expires in 10 minutes. If you didn't request it, you can ignore this email.`,
+        heading: "Your verification code",
+        expires: "It expires in 10 minutes.",
+        ignore: "If you didn't ask for this code, you can ignore this email.",
+    },
+    ar: {
+        subject: (code: string) => `${code} هو رمز التحقق من Coredex`,
+        text: (code: string) => `رمز التحقق من Coredex هو ${code}. تنتهي صلاحيته بعد 10 دقائق. إذا لم تطلبه، يمكنك تجاهل هذه الرسالة.`,
+        heading: "رمز التحقق",
+        expires: "تنتهي صلاحيته بعد 10 دقائق.",
+        ignore: "إذا لم تطلب هذا الرمز، يمكنك تجاهل هذه الرسالة.",
+    },
+};
+
+export async function sendVerificationEmail(email: string, code: string, lang: "en" | "ar" = "en") {
+    const t = VERIFICATION_COPY[lang];
+    const dir = lang === "ar" ? "rtl" : "ltr";
     await deliver(
         email,
-        `${code} is your Coredex verification code`,
-        `Your Coredex verification code is ${code}. It expires in 10 minutes. If you didn't request it, you can ignore this email.`,
+        t.subject(code),
+        t.text(code),
         `
-            <div style="font-family: Inter, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #F7F8FC; color: #17152E;">
+            <div dir="${dir}" style="font-family: Inter, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px; background: #F7F8FC; color: #17152E; text-align: ${dir === "rtl" ? "right" : "left"};">
                 <p style="margin: 0 0 24px; font-size: 18px; font-weight: 600; color: #4028C9;">Coredex</p>
                 <div style="background: #FFFFFF; border: 1px solid #E0E3EF; border-radius: 16px; padding: 28px; text-align: center;">
-                    <p style="margin: 0 0 12px; font-size: 16px;">Your verification code</p>
-                    <p style="margin: 0; font-size: 36px; font-weight: 600; letter-spacing: 8px; color: #4028C9;">${code}</p>
-                    <p style="margin: 16px 0 0; font-size: 14px; color: #62657A;">It expires in 10 minutes.</p>
+                    <p style="margin: 0 0 12px; font-size: 16px;">${t.heading}</p>
+                    <p dir="ltr" style="margin: 0; font-size: 36px; font-weight: 600; letter-spacing: 8px; color: #4028C9;">${code}</p>
+                    <p style="margin: 16px 0 0; font-size: 14px; color: #62657A;">${t.expires}</p>
                 </div>
-                <p style="margin: 24px 0 0; font-size: 13px; color: #62657A;">If you didn't ask for this code, you can ignore this email.</p>
+                <p style="margin: 24px 0 0; font-size: 13px; color: #62657A;">${t.ignore}</p>
             </div>
         `
     );

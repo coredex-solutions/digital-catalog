@@ -11,7 +11,7 @@ import { resolveSiteLang } from "./_landing/site-lang";
 export async function documentLang(): Promise<"ar" | "en"> {
   const path = (await headers()).get("x-pathname") || "/";
   if (path === "/ar" || path.startsWith("/ar/")) return "ar";
-  if (/^\/(login|forgot-password|reset-password)(\/|$)/.test(path)) return resolveSiteLang();
+  if (/^\/(login|signup|forgot-password|reset-password)(\/|$)/.test(path)) return resolveSiteLang();
   // The owner dashboard follows the same saved choice as the site and sign-in
   if (/^\/c\/[^/]+\/admin(\/|$)/.test(path)) return resolveSiteLang();
 
