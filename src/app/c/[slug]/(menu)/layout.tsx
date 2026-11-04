@@ -31,7 +31,7 @@ export async function generateMetadata({
   const name = localized(catalog, 'name', lang) || catalog.name;
   const title = settings?.[`seo_title_${lang}` as const] || settings?.seo_title_en || name;
   const description = settings?.[`seo_description_${lang}` as const] || settings?.seo_description_en
-    || localized(catalog, 'description', lang) || `${name} — menu`;
+    || localized(catalog, 'description', lang) || `${name} — ${getModule(catalog).vocab[lang].catalog}`;
   const image = settings?.hero_image_url || catalog.logo_url;
 
   return {

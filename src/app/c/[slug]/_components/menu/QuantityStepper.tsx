@@ -11,9 +11,11 @@ interface QuantityStepperProps {
   min?: number;
   size?: "md" | "lg";
   label?: string;
+  /** Highest allowed value (e.g. the stock left); 99 by default */
+  max?: number;
 }
 
-export function QuantityStepper({ value, onChange, min = 1, size = "md", label }: QuantityStepperProps) {
+export function QuantityStepper({ value, onChange, min = 1, size = "md", label, max = 99 }: QuantityStepperProps) {
   const { t } = useCatalog();
   const showRemove = min === 0 && value <= 1;
   const button = size === "lg" ? "h-12 w-12" : "h-11 w-11";
@@ -38,8 +40,8 @@ export function QuantityStepper({ value, onChange, min = 1, size = "md", label }
       </span>
       <button
         type="button"
-        onClick={() => onChange(Math.min(99, value + 1))}
-        disabled={value >= 99}
+        onClick={() => onChange(Math.min(max, value + 1))}
+        disabled={value >= max}
         className={cn(button, "flex items-center justify-center rounded-control text-menu-ink transition-colors hover:bg-menu-raised disabled:opacity-35")}
         aria-label={t.increase}
       >

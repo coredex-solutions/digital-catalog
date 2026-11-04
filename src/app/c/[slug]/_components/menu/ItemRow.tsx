@@ -2,7 +2,8 @@
 
 import { MenuImage } from "./MenuImage";
 import { CircleSlash, Plus, Star } from "lucide-react";
-import { cartQuantityOf, needsVariant, useCatalog, type MenuItem } from "../../_providers/CatalogProvider";
+import { cartQuantityOf, needsVariant, remainingFor, useCatalog, type MenuItem } from "../../_providers/CatalogProvider";
+import { ItemFacts, WasPrice } from "./ItemMeta";
 import { dietaryLabel, lowestVariantPrice } from "@/lib/catalog/dish-info";
 import { localized } from "../../_lib/i18n";
 import { Price } from "./Price";
@@ -15,11 +16,11 @@ interface ItemRowProps {
 }
 
 /**
- * One dish in the menu list. The whole row opens the dish sheet (a stretched button, so the
+ * One item in the list layout (restaurants and services). The whole row opens the dish sheet (a stretched button, so the
  * row stays a single tab stop); the separate add button puts it straight in the order.
  */
 export function ItemRow({ item, priority }: ItemRowProps) {
-  const { lang, t, openItem, addToCart, cart, orderingEnabled } = useCatalog();
+  const { lang, t, openItem, addToCart, cart, orderingEnabled, addons } = useCatalog();
   const name = localized(item, "name", lang);
   const description = localized(item, "description", lang);
   // All lines of this dish (different special requests are separate lines)
@@ -28,14 +29,17 @@ export function ItemRow({ item, priority }: ItemRowProps) {
   // Dishes with options are added from the dish sheet, where the option is chosen
   const hasOptions = needsVariant(item);
   const fromPrice = lowestVariantPrice(item.variants);
-  const dietary = (item.dietary || []).map((code) => dietaryLabel(code, lang)).join(" · ");
+  // Dietary tags only where the module uses them (food)
+  const dietary = addons.includes("dietary") ? (item.dietary || []).map((code) => dietaryLabel(code, lang)).join(" · ") : "";
+  const full = remainingFor(item, cart) <= 0;
 
   const addButton = orderingEnabled && !soldOut && (
     <button
       type="button"
       onClick={() => (hasOptions ? openItem(item) : addToCart(item, 1))}
+      disabled={!hasOptions && full}
       className={cn(
-        "relative z-10 flex h-11 min-w-11 items-center justify-center rounded-control px-3 text-sm font-semibold shadow-menu-sm transition-transform active:scale-95",
+        "relative z-10 flex h-11 min-w-11 items-center justify-center rounded-control px-3 text-sm font-semibold shadow-menu-sm transition-transform active:scale-95 disabled:opacity-50",
         inCart > 0
           ? "bg-brand text-brand-fg"
           : "border border-menu-line bg-menu-surface text-menu-ink hover:border-brand-ink"
@@ -66,15 +70,20 @@ export function ItemRow({ item, priority }: ItemRowProps) {
         </h3>
         {description && <p className="mt-1 line-clamp-2 text-sm text-menu-muted">{description}</p>}
         {dietary && <p className="mt-1 text-xs font-medium text-menu-muted">{dietary}</p>}
+        <ItemFacts item={item} className="mt-1" />
         <div className="mt-auto flex items-end justify-between gap-3 pt-2">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {fromPrice !== null ? (
               <span className="inline-flex flex-wrap items-baseline gap-x-1.5 text-base">
                 <span className="text-sm text-menu-muted">{t.priceFrom}</span>
                 <Price amount={fromPrice} currency={item.currency} />
+                <WasPrice item={item} />
               </span>
             ) : (
-              <Price amount={item.price} currency={item.currency} className="text-base" />
+              <>
+                <Price amount={item.price} currency={item.currency} className="text-base" />
+                <WasPrice item={item} />
+              </>
             )}
             {soldOut && (
               <span className="inline-flex items-center gap-1 text-sm font-medium text-menu-warning">

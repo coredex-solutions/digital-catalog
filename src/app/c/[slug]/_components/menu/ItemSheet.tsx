@@ -4,7 +4,8 @@ import { MenuImage } from "./MenuImage";
 import { CircleSlash } from "lucide-react";
 import { useState } from "react";
 import { formatPrice } from "@/lib/catalog/price";
-import { cartQuantityOf, needsVariant, useCatalog } from "../../_providers/CatalogProvider";
+import { cartQuantityOf, needsVariant, remainingFor, useCatalog } from "../../_providers/CatalogProvider";
+import { ItemFacts, WasPrice } from "./ItemMeta";
 import { allergenLabel, dietaryLabel, lowestVariantPrice, variantName } from "@/lib/catalog/dish-info";
 import { localized } from "../../_lib/i18n";
 import { Price } from "./Price";
@@ -12,7 +13,8 @@ import { QuantityStepper } from "./QuantityStepper";
 import { Sheet } from "./Sheet";
 
 export function ItemSheet() {
-  const { activeSheet, closeSheet, selectedItem: item, lang, t, addToCart, cart, orderingEnabled, priceConfig } = useCatalog();
+  const { activeSheet, closeSheet, selectedItem: item, lang, t, addToCart, cart, orderingEnabled, priceConfig, addons } = useCatalog();
+  const showDietary = addons.includes("dietary");
   const open = activeSheet === "item" && !!item;
   const inCart = item ? cartQuantityOf(cart, item.id) : 0;
 
@@ -45,13 +47,15 @@ export function ItemSheet() {
   const lineTotal = formatPrice(unitPrice * quantity, item.currency, priceConfig, lang);
   const canAdd = !hasOptions || !!variant;
   const fromPrice = lowestVariantPrice(item.variants);
+  // Never more than the stock left after what is already in the order
+  const room = remainingFor(item, cart);
 
   const footer = orderingEnabled && !soldOut ? (
     <div className="flex items-center gap-3">
-      <QuantityStepper value={quantity} onChange={setQuantity} size="lg" />
+      <QuantityStepper value={Math.min(quantity, Math.max(room, 1))} onChange={setQuantity} size="lg" max={Math.max(room, 1)} />
       <button
         type="button"
-        disabled={!canAdd}
+        disabled={!canAdd || room <= 0}
         aria-describedby={canAdd ? undefined : "item-option-hint"}
         onClick={() => {
           if (addToCart(item, quantity, note.trim(), variant?.id)) closeSheet();
@@ -82,14 +86,19 @@ export function ItemSheet() {
           {name}
         </p>
         {variant || fromPrice === null ? (
-          <Price amount={unitPrice} currency={item.currency} className="mt-2 text-lg" secondaryClassName="text-sm" />
+          <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
+            <Price amount={unitPrice} currency={item.currency} className="text-lg" secondaryClassName="text-sm" />
+            {!variant && <WasPrice item={item} />}
+          </p>
         ) : (
           <p className="mt-2 inline-flex flex-wrap items-baseline gap-x-1.5 text-lg">
             <span className="text-base text-menu-muted">{t.priceFrom}</span>
             <Price amount={fromPrice} currency={item.currency} secondaryClassName="text-sm" />
+            <WasPrice item={item} />
           </p>
         )}
-        {item.dietary && item.dietary.length > 0 && (
+        <ItemFacts item={item} className="mt-2 text-sm" />
+        {showDietary && item.dietary && item.dietary.length > 0 && (
           <p className="mt-2 text-sm font-medium text-menu-muted">{item.dietary.map((code) => dietaryLabel(code, lang)).join(" · ")}</p>
         )}
         {soldOut && (
@@ -130,7 +139,8 @@ export function ItemSheet() {
           </fieldset>
         )}
 
-        {/* Allergens: only what the restaurant verified; otherwise say it's unknown */}
+        {/* Allergens (food only): only what the business verified; otherwise say it's unknown */}
+        {showDietary && (
         <div className="mt-5 rounded-control bg-menu-raised px-4 py-3 text-sm">
           <p className="font-semibold">{t.allergens}</p>
           <p className="mt-1 text-menu-muted">
@@ -141,6 +151,7 @@ export function ItemSheet() {
                 : `${t.allergensContains}: ${item.allergens.map((code) => allergenLabel(code, lang)).join(lang === "ar" ? "، " : ", ")}`}
           </p>
         </div>
+        )}
         {inCart > 0 && (
           <p className="mt-3 text-sm font-semibold text-brand-ink">
             {t.yourOrder}: {inCart}

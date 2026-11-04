@@ -5,6 +5,7 @@ import { useCatalog, type MenuCategory, type MenuItem } from "../../_providers/C
 import { localized } from "../../_lib/i18n";
 import { sectionId } from "./CategoryNav";
 import { ItemRow } from "./ItemRow";
+import { ItemCard } from "./ItemCard";
 
 /** Categories that actually have dishes, in the owner's order, with their dishes */
 export function useMenuSections(categories: MenuCategory[], items: MenuItem[]) {
@@ -23,7 +24,9 @@ export function useMenuSections(categories: MenuCategory[], items: MenuItem[]) {
 }
 
 export function MenuSections({ sections }: { sections: ReturnType<typeof useMenuSections> }) {
-  const { lang } = useCatalog();
+  const { lang, module } = useCatalog();
+  // Cafés and shops show photo cards in two columns; restaurants and services a list
+  const grid = module.itemLayout === "grid";
   let rendered = 0;
 
   return (
@@ -35,11 +38,19 @@ export function MenuSections({ sections }: { sections: ReturnType<typeof useMenu
             <h2 id={headingId} className="text-[1.375rem] font-semibold leading-tight">
               {localized(category, "name", lang)}
             </h2>
-            <div className="mt-1 divide-y divide-[var(--menu-line)]">
-              {items.map((item) => (
-                <ItemRow key={item.id} item={item} priority={rendered++ < 4} />
-              ))}
-            </div>
+            {grid ? (
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {items.map((item) => (
+                  <ItemCard key={item.id} item={item} priority={rendered++ < 4} />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-1 divide-y divide-[var(--menu-line)]">
+                {items.map((item) => (
+                  <ItemRow key={item.id} item={item} priority={rendered++ < 4} />
+                ))}
+              </div>
+            )}
           </section>
         );
       })}

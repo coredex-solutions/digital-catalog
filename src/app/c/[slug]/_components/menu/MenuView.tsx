@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { UtensilsCrossed } from "lucide-react";
+import { Coffee, ShoppingBag, Sparkles, UtensilsCrossed } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { CartBar } from "./CartBar";
 import { CartSheet } from "./CartSheet";
@@ -14,9 +14,10 @@ import { MenuSections, useMenuSections } from "./MenuSections";
 import { ReservationSheet } from "./ReservationSheet";
 import { SearchSheet } from "./SearchSheet";
 
-/** The whole diner menu on one page: header, sticky categories, dishes, order bar, sheets */
+/** The whole catalog on one page: header, sticky categories, items, order bar, sheets */
 export function MenuView() {
-  const { categories, menuItems, t, bookingEnabled, cartItemCount, orderingEnabled } = useCatalog();
+  const { categories, menuItems, t, bookingEnabled, cartItemCount, orderingEnabled, module } = useCatalog();
+  const EmptyIcon = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles }[module.icon];
   const sections = useMenuSections(categories, menuItems);
 
   // Old per-category links redirect here with ?c=<id>; open the menu at that section
@@ -44,7 +45,7 @@ export function MenuView() {
         ) : (
           <div className="mx-auto flex max-w-xl flex-col items-center px-4 py-16 text-center">
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-menu-raised text-menu-muted">
-              <UtensilsCrossed className="h-6 w-6" aria-hidden />
+              <EmptyIcon className="h-6 w-6" aria-hidden />
             </span>
             <p className="mt-4 font-semibold">{t.menu}</p>
             <p className="mt-1 text-sm text-menu-muted">{t.menuEmpty}</p>
