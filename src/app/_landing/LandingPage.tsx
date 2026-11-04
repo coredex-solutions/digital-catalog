@@ -19,7 +19,14 @@ import {
   ScanLine,
   Search,
   Sparkles,
+  Coffee,
+  ShoppingBag,
+  UtensilsCrossed,
 } from "lucide-react";
+import { MODULES, MODULE_IDS, type ModuleId } from "@/lib/modules/registry";
+
+/** Demo pages per module (scripts/seed-demo.ts and seed-demo-modules.ts); shown only when they exist */
+const MODULE_DEMO_SLUGS: Record<ModuleId, string> = { restaurant: "demo", cafe: "demo-cafe", shop: "demo-shop", services: "demo-services" };
 import {
   DEMO_PATH,
   SALES_EMAIL,
@@ -95,6 +102,58 @@ function SectionIntro({ eyebrow, title, body, center }: { eyebrow?: string; titl
       <h2 className="mt-2 text-[1.75rem] font-semibold leading-tight sm:text-4xl">{title}</h2>
       {body && <p className="mt-4 text-lg text-ui-muted">{body}</p>}
     </Reveal>
+  );
+}
+
+const MODULE_ICONS = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles };
+
+/** The four built-in modules, each with what it does and a signup link that preselects it */
+function ModuleCards({ lang, t, demos }: { lang: SiteLang; t: ReturnType<typeof getSiteCopy>; demos: Partial<Record<ModuleId, string>> }) {
+  return (
+    <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {MODULE_IDS.map((id, index) => {
+        const definition = MODULES[id];
+        const Icon = MODULE_ICONS[definition.icon];
+        return (
+          <Reveal as="li" key={id} delay={index * 90}>
+            <div className="flex h-full flex-col rounded-panel border border-ui-line bg-ui-surface p-5">
+              <span className="flex h-11 w-11 items-center justify-center rounded-control bg-ui-subtle text-ui-primary">
+                <Icon className="h-5 w-5" aria-hidden />
+              </span>
+              <h3 className="mt-4 text-lg font-semibold">{definition.label[lang]}</h3>
+              <p className="mt-1 text-sm text-ui-muted">{definition.tagline[lang]}</p>
+              <ul className="mt-4 space-y-2 text-sm">
+                {(t.modules.points[id] || []).map((point) => (
+                  <li key={point} className="flex gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-ui-primary" aria-hidden />
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-auto flex flex-wrap gap-x-4 pt-5">
+                <Link
+                  href={`/signup/?type=${id}`}
+                  aria-label={t.modules.startAs(definition.label[lang])}
+                  className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-ui-primary hover:underline"
+                >
+                  {t.modules.start}
+                  <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+                </Link>
+                {demos[id] && (
+                  <a
+                    href={`/c/${demos[id]}/?lang=${lang}`}
+                    aria-label={t.modules.demoOf(definition.label[lang])}
+                    className="inline-flex min-h-11 items-center text-sm font-semibold text-ui-muted hover:text-ui-ink hover:underline"
+                  >
+                    {t.modules.demo}
+                  </a>
+                )}
+              </div>
+            </div>
+          </Reveal>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -228,6 +287,12 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
   const whatsappHref = `https://wa.me/${SALES_WHATSAPP}`;
   // The live demo needs a catalog with the demo slug; without one, demo links and the QR are hidden
   const hasDemo = await getCatalogBySlug(DEMO_PATH.split("/").filter(Boolean).pop()!).then(Boolean, () => false);
+  // Each module's demo page, when its catalog exists in this database
+  const moduleDemos = Object.fromEntries(
+    await Promise.all(
+      MODULE_IDS.map(async (id) => [id, (await getCatalogBySlug(MODULE_DEMO_SLUGS[id]).then(Boolean, () => false)) ? MODULE_DEMO_SLUGS[id] : null] as const)
+    ).then((entries) => entries.filter(([, slug]) => slug))
+  ) as Partial<Record<ModuleId, string>>;
   // Real QR code to the live demo (scannable from a laptop screen), with a 4-module quiet zone
   const demoQr = hasDemo ? await QRCode.toString(await demoUrl(), { type: "svg", margin: 4, color: { dark: "#17152E", light: "#FFFFFF" } }) : null;
 
@@ -250,6 +315,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
           </Link>
           <nav aria-label="Main" className="ms-6 hidden items-center gap-1 md:flex">
             {[
+              ["#modules", t.nav.modules],
               ["#features", t.nav.features],
               ["#demo", t.nav.demo],
               ["#pricing", t.nav.pricing],
@@ -306,6 +372,14 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
               </p>
             </div>
             <HeroVisual lang={lang} t={t} demoQr={demoQr} />
+          </div>
+        </section>
+
+        {/* The four kinds of business */}
+        <section id="modules" className="scroll-mt-20 border-t border-ui-line">
+          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+            <SectionIntro eyebrow={t.modules.eyebrow} title={t.modules.title} body={t.modules.body} />
+            <ModuleCards lang={lang} t={t} demos={moduleDemos} />
           </div>
         </section>
 

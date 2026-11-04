@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Loader2, MailCheck } from "lucide-react";
+import { ArrowLeft, Check, Coffee, Loader2, MailCheck, ShoppingBag, Sparkles, UtensilsCrossed } from "lucide-react";
+import { MODULES, MODULE_IDS, type ModuleId } from "@/lib/modules/registry";
 import type { SiteLang } from "../../_landing/copy";
 import { CATALOG_THEMES, DEFAULT_THEME_ID } from "@/config/themes";
 import { getSiteUrl } from "@/lib/utils/base-url";
@@ -14,7 +15,7 @@ import { Card, ErrorNote, Field, PasswordInput, SubmitButton, inputClass } from 
 type Step = "details" | "code" | "restaurant" | "colours";
 
 const STEP_NUMBER: Record<Step, number> = { details: 1, code: 1, restaurant: 2, colours: 3 };
-const BUSINESS_TYPES = ["restaurant", "cafe", "bakery", "other"] as const;
+const MODULE_ICONS = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles };
 // Same rule as /api/auth/signup
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const validSlug = (slug: string) => slug.length >= 3 && slug.length <= 50 && SLUG_REGEX.test(slug);
@@ -34,7 +35,7 @@ async function postJson(url: string, body: unknown) {
   return { ok: res.ok, data };
 }
 
-export function SignupForm({ lang, plan }: { lang: SiteLang; plan: string }) {
+export function SignupForm({ lang, plan, initialModule = "restaurant" }: { lang: SiteLang; plan: string; initialModule?: ModuleId }) {
   const t = getAccountCopy(lang);
   const s = t.signup;
   const router = useRouter();
@@ -51,7 +52,13 @@ export function SignupForm({ lang, plan }: { lang: SiteLang; plan: string }) {
   const [resendIn, setResendIn] = useState(0);
   const [resent, setResent] = useState(false);
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
-  const [businessType, setBusinessType] = useState<string>("restaurant");
+  // Main module (restaurant, café, shop, services) and its finer type
+  const [moduleId, setModuleId] = useState<ModuleId>(initialModule);
+  const [businessType, setBusinessType] = useState<string>(MODULES[initialModule].subTypes[0].id);
+  const chooseModule = (id: ModuleId) => {
+    setModuleId(id);
+    setBusinessType(MODULES[id].subTypes[0].id);
+  };
   const [catalogName, setCatalogName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
@@ -139,7 +146,7 @@ export function SignupForm({ lang, plan }: { lang: SiteLang; plan: string }) {
     setBusy(true);
     try {
       const { ok, data } = await postJson("/api/auth/signup/", {
-        email, password, name, catalogName: catalogName.trim(), catalogSlug: slug, businessType, themeId, plan, verificationToken,
+        email, password, name, catalogName: catalogName.trim(), catalogSlug: slug, module: moduleId, businessType, themeId, plan, verificationToken,
       });
       if (!ok) {
         const message = data.error || "Internal server error during registration";
@@ -306,15 +313,39 @@ export function SignupForm({ lang, plan }: { lang: SiteLang; plan: string }) {
         {step === "restaurant" && (
           <form onSubmit={submitRestaurant} className="space-y-5" noValidate>
             <ErrorNote message={error} />
-            <Field id="business-type" label={s.restaurant.type}>
+            <fieldset>
+              <legend className="text-sm font-medium text-ui-ink">{s.restaurant.type}</legend>
+              <p className="mt-1 text-sm text-ui-muted">{s.restaurant.typeHint}</p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {MODULE_IDS.map((id) => {
+                  const definition = MODULES[id];
+                  const Icon = MODULE_ICONS[definition.icon];
+                  const selected = moduleId === id;
+                  return (
+                    <label
+                      key={id}
+                      className={`flex min-h-28 cursor-pointer flex-col gap-1.5 rounded-panel border p-3 transition-colors has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ui-focus ${selected ? "border-ui-primary bg-ui-subtle" : "border-ui-line bg-ui-surface hover:bg-ui-bg"}`}
+                    >
+                      <input type="radio" name="module" value={id} checked={selected} onChange={() => chooseModule(id)} className="sr-only" />
+                      <span className={`flex h-9 w-9 items-center justify-center rounded-control ${selected ? "bg-ui-primary text-ui-primary-fg" : "bg-ui-subtle text-ui-primary"}`}>
+                        <Icon className="h-5 w-5" aria-hidden />
+                      </span>
+                      <span className="text-sm font-semibold text-ui-ink">{definition.label[lang]}</span>
+                      <span className="text-xs leading-snug text-ui-muted">{definition.tagline[lang]}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <Field id="business-type" label={s.restaurant.subType}>
               <select id="business-type" value={businessType} onChange={(e) => setBusinessType(e.target.value)} className={inputClass}>
-                {BUSINESS_TYPES.map((type) => (
-                  <option key={type} value={type}>{s.restaurant.types[type]}</option>
+                {MODULES[moduleId].subTypes.map((sub) => (
+                  <option key={sub.id} value={sub.id}>{sub.label[lang]}</option>
                 ))}
               </select>
             </Field>
-            <Field id="catalog-name" label={s.restaurant.name}>
-              <input id="catalog-name" value={catalogName} onChange={(e) => onCatalogName(e.target.value)} placeholder={s.restaurant.namePlaceholder} dir="auto" required className={inputClass} />
+            <Field id="catalog-name" label={s.restaurant.names[moduleId]}>
+              <input id="catalog-name" value={catalogName} onChange={(e) => onCatalogName(e.target.value)} placeholder={s.restaurant.placeholders[moduleId]} dir="auto" required className={inputClass} />
             </Field>
             <div className="space-y-1.5">
               <label htmlFor="slug" className="block text-sm font-medium text-ui-ink">{s.restaurant.link}</label>

@@ -129,6 +129,7 @@ Open `https://YOUR-DOMAIN.com`.
 ```bash
 npm run create-superadmin          # your platform admin login
 npx tsx scripts/seed-demo.ts       # optional: the live demo menu at /c/demo (prints its admin password once)
+npx tsx scripts/seed-demo-modules.ts   # optional: café, shop and services demos at /c/demo-cafe, /c/demo-shop, /c/demo-services
 ```
 
 ## 8. Daily reminder emails

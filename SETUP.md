@@ -28,6 +28,7 @@ Without `SMTP_*` settings, signup verification codes are printed in the terminal
 node scripts/init-db.mjs             # creates or updates all tables; safe to re-run
 npm run create-superadmin            # platform admin login
 npx tsx scripts/seed-demo.ts         # optional: the "Sofra" demo menu at /c/demo
+npx tsx scripts/seed-demo-modules.ts # optional: café, shop and services demos (/c/demo-cafe, /c/demo-shop, /c/demo-services)
 ```
 
 ## 4. Run

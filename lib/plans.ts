@@ -27,10 +27,10 @@ export const PLAN_CONFIG = {
             custom_domain_enabled: false,
         },
         display_features: [
-            'Up to 200 dishes',
+            'Up to 200 items',
             'Up to 20 categories',
             '5 AI photo enhancements/mo',
-            'Arabic and English menu',
+            'Arabic and English',
             'Visit and order-click analytics',
         ],
     },
@@ -53,10 +53,10 @@ export const PLAN_CONFIG = {
             custom_domain_enabled: false,
         },
         display_features: [
-            'Up to 200 dishes',
+            'Up to 200 items',
             'Up to 20 categories',
             '5 AI photo enhancements/mo',
-            'Arabic and English menu',
+            'Arabic and English',
             'Visit and order-click analytics',
         ],
     },
@@ -79,10 +79,10 @@ export const PLAN_CONFIG = {
             custom_domain_enabled: false,
         },
         display_features: [
-            'Up to 1,000 dishes',
+            'Up to 1,000 items',
             'Up to 50 categories',
             '20 AI photo enhancements/mo',
-            'Arabic and English menu',
+            'Arabic and English',
         ],
     },
     enterprise: {
@@ -104,10 +104,10 @@ export const PLAN_CONFIG = {
             custom_domain_enabled: false,
         },
         display_features: [
-            'Up to 10,000 dishes',
+            'Up to 10,000 items',
             'Up to 200 categories',
             '100 AI photo enhancements/mo',
-            'Arabic and English menu',
+            'Arabic and English',
         ],
     },
 } as const;
