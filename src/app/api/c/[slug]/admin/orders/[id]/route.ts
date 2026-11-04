@@ -3,7 +3,7 @@ import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { ORDER_STATUSES, setOrderStatus, type OrderStatus } from "@/lib/orders/store";
 
-/** PATCH { status }: confirm, mark ready, complete or cancel an order (cancelling gives stock back) */
+/** PATCH { status }: confirm, mark ready, complete, cancel or reopen an order (cancelling gives stock back, reopening takes it again) */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ slug: string; id: string }> }) {
   const { slug, id } = await params;
   const catalog = await getCatalogBySlug(slug);
@@ -24,9 +24,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const result = await setOrderStatus(catalog.id, id, status);
   if (!result.ok) {
-    return result.code === "not_found"
-      ? NextResponse.json({ error: "Order not found" }, { status: 404 })
-      : NextResponse.json({ error: "This order can't be changed to that status" }, { status: 409 });
+    if (result.code === "not_found") return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    if (result.code === "out_of_stock") {
+      return NextResponse.json({ error: "Not enough stock left to reopen this order", code: "out_of_stock" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "This order can't be changed to that status" }, { status: 409 });
   }
   return NextResponse.json({ order: result.order });
 }

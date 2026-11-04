@@ -39,6 +39,7 @@ const EXACT: Record<string, string> = {
   // Sent to customers (the page shows its own words by code); listed so nothing shows in English
   "This page is not taking orders": "هذه الصفحة لا تستقبل طلبات حالياً.",
   "Not enough stock for an item": "الكمية المتوفرة من أحد الأصناف غير كافية.",
+  "Not enough stock left to reopen this order": "لم يبقَ في المخزون ما يكفي لإعادة فتح هذا الطلب.",
   "Unknown order status": GENERIC,
   "This order can't be changed to that status": "لا يمكن نقل هذا الطلب إلى هذه الحالة. أعد تحميل الصفحة.",
   "Invalid request": GENERIC,

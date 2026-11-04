@@ -11,17 +11,12 @@ import { stockToReserve, type OrderLineSnapshot, type ValidOrder } from "./valid
 export const ORDER_STATUSES = ["new", "confirmed", "ready", "completed", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 
-/** Which status can follow which. Completed and cancelled are final. */
-const NEXT: Record<OrderStatus, OrderStatus[]> = {
-  new: ["confirmed", "ready", "completed", "cancelled"],
-  confirmed: ["ready", "completed", "cancelled"],
-  ready: ["completed", "cancelled"],
-  completed: [],
-  cancelled: [],
-};
-
+/**
+ * Any status can follow any other, so a mistaken tap can be undone and a finished or cancelled
+ * order reopened. Leaving "cancelled" takes the order's stock again (see setOrderStatus).
+ */
 export function canMoveTo(from: OrderStatus, to: OrderStatus): boolean {
-  return NEXT[from]?.includes(to) ?? false;
+  return (ORDER_STATUSES as readonly string[]).includes(from) && (ORDER_STATUSES as readonly string[]).includes(to) && from !== to;
 }
 
 export interface SavedOrder {
@@ -204,26 +199,38 @@ export async function listOrders(
   return rowsOf(result).map(toOrder);
 }
 
-/** Counts per tab, for the tab labels and the navigation badge */
+/**
+ * Counts per tab, for the tab labels and the navigation badge, plus the newest order's number
+ * and kind: the dashboard alerts when that number goes up, so confirming one order while another
+ * arrives still alerts.
+ */
 export async function countOrders(catalogId: string) {
   const result = await getDb().execute({
     sql: `SELECT
             SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) AS new_count,
-            SUM(CASE WHEN status IN ('confirmed', 'ready') THEN 1 ELSE 0 END) AS active_count
+            SUM(CASE WHEN status IN ('confirmed', 'ready') THEN 1 ELSE 0 END) AS active_count,
+            (SELECT number FROM orders WHERE catalog_id = ? ORDER BY number DESC LIMIT 1) AS latest_number,
+            (SELECT kind FROM orders WHERE catalog_id = ? ORDER BY number DESC LIMIT 1) AS latest_kind
           FROM orders WHERE catalog_id = ?`,
-    args: [catalogId],
+    args: [catalogId, catalogId, catalogId],
   });
   const row = result.rows[0];
-  return { new: Number(row?.new_count ?? 0), active: Number(row?.active_count ?? 0) };
+  return {
+    new: Number(row?.new_count ?? 0),
+    active: Number(row?.active_count ?? 0),
+    latest: row?.latest_number == null ? 0 : Number(row.latest_number),
+    latestKind: (row?.latest_kind == null ? "order" : String(row.latest_kind)) as SavedOrder["kind"],
+  };
 }
 
 export type StatusResult =
   | { ok: true; order: SavedOrder }
-  | { ok: false; code: "not_found" | "invalid_status" };
+  | { ok: false; code: "not_found" | "invalid_status" | "out_of_stock" };
 
 /**
- * Move an order to a new status. Cancelling gives its stock back, once: the stock statements
- * only run while the order still holds stock, and the batch runs as one transaction.
+ * Move an order to a new status, in one transaction. Cancelling gives its stock back, once: the
+ * stock statements only run while the order still holds stock. Reopening a cancelled order takes
+ * the same stock again, and fails with out_of_stock (changing nothing) if there isn't enough left.
  */
 export async function setOrderStatus(catalogId: string, orderId: string, status: OrderStatus): Promise<StatusResult> {
   const db = getDb();
@@ -235,23 +242,34 @@ export async function setOrderStatus(catalogId: string, orderId: string, status:
   if (!canMoveTo(order.status, status)) return { ok: false, code: "invalid_status" };
 
   const statements: InStatement[] = [];
-  if (status === "cancelled") {
-    for (const [itemId, quantity] of stockToReserve(order.lines)) {
-      statements.push({
-        sql: `UPDATE menu_items SET stock_qty = stock_qty + ?
-              WHERE id = ? AND catalog_id = ? AND stock_qty IS NOT NULL
-                AND (SELECT stock_reserved = 1 AND status = ? FROM orders WHERE id = ?) = 1`,
-        args: [quantity, itemId, catalogId, order.status, orderId],
-      });
-    }
+  const reserve = stockToReserve(order.lines);
+  const giveBack = status === "cancelled";
+  const takeAgain = order.status === "cancelled" && reserve.size > 0;
+  for (const [itemId, quantity] of giveBack || takeAgain ? reserve : []) {
+    statements.push({
+      // Only while the order is still as read above (and holds, or doesn't hold, its stock), so
+      // two people changing it at once can't move the stock twice. Taking stock below zero makes
+      // the menu_items_stock_not_negative trigger abort the whole batch.
+      sql: `UPDATE menu_items SET stock_qty = stock_qty ${giveBack ? "+" : "-"} ?
+            WHERE id = ? AND catalog_id = ? AND stock_qty IS NOT NULL
+              AND (SELECT stock_reserved = ? AND status = ? FROM orders WHERE id = ?) = 1`,
+      args: [quantity, itemId, catalogId, giveBack ? 1 : 0, order.status, orderId],
+    });
   }
+  const stockColumn = giveBack ? ", stock_reserved = 0" : takeAgain ? ", stock_reserved = 1" : "";
   statements.push({
     // Guarded by the status read above, so two people changing it at once can't skip a step
-    sql: `UPDATE orders SET status = ?, updated_at = datetime('now')${status === "cancelled" ? ", stock_reserved = 0" : ""}
+    sql: `UPDATE orders SET status = ?, updated_at = datetime('now')${stockColumn}
           WHERE id = ? AND catalog_id = ? AND status = ? RETURNING *`,
     args: [status, orderId, catalogId, order.status],
   });
-  const results = await db.batch(statements, "write");
+  let results: ResultSet[];
+  try {
+    results = await db.batch(statements, "write");
+  } catch (error) {
+    if (String(error instanceof Error ? error.message : error).includes("out_of_stock")) return { ok: false, code: "out_of_stock" };
+    throw error;
+  }
   const updated = rowsOf(results[results.length - 1])[0];
   if (!updated) {
     // Someone else changed it first; report what it is now

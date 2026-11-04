@@ -2,7 +2,7 @@
 
 import type { AddonId, ModuleId } from "@/lib/modules/registry";
 import { moduleFor } from "@/lib/modules/resolve";
-import { useCallback, useEffect, useState, createContext, useContext } from "react";
+import { useCallback, useEffect, useRef, useState, createContext, useContext } from "react";
 import Link from "next/link";
 import { useRouter, useParams, usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,6 +12,15 @@ import { Loader2, Zap, MessageCircle, CreditCard, AlertTriangle, Rocket } from "
 import { SALES_WHATSAPP } from "@/lib/contact";
 import { useAdminLang, useCopy, useFormat, plural, type AdminLang } from "../_lib/i18n";
 import { translateApiMessage } from "../_lib/api-errors";
+import {
+  askNotificationPermission,
+  playChime,
+  readAlertsSetting,
+  saveAlertsSetting,
+  showOrderNotification,
+  titleWithCount,
+  unlockSound,
+} from "../_lib/order-alerts";
 
 const en = {
   loading: "Loading your dashboard…",
@@ -30,6 +39,7 @@ const en = {
   whatsappText: (slug: string) => `Hello, I want to renew the Coredex plan for my menu "${slug}".`,
   readOnly: "View dashboard (read-only)",
   reference: "Reference:",
+  arrived: { order: "New order", booking: "New table booking", request: "New request" } as Record<string, string>,
 };
 const ar: typeof en = {
   loading: "جارٍ تحميل لوحة التحكم…",
@@ -50,6 +60,7 @@ const ar: typeof en = {
   reviewPublish: "مراجعة ونشر",
   pausedTitle: "قائمتك متوقفة",
   pausedBody: "انتهت باقتك، لذلك القائمة غير متاحة للزبائن ولا يمكن حفظ التعديلات. جدّد باقتك لإعادتها.",
+  arrived: { order: "طلب جديد", booking: "حجز طاولة جديد", request: "طلب موعد جديد" },
   goBilling: "الانتقال إلى الباقة والدفع",
   whatsapp: "تواصل معنا على واتساب",
   whatsappText: (slug) => `مرحباً، أريد تجديد باقة Coredex لقائمتي "${slug}".`,
@@ -104,6 +115,10 @@ interface AdminContextType {
   /** Orders and requests with status "new" (refreshed every 20 seconds) */
   newOrders: number;
   refreshNewOrders: () => void;
+  /** Chime and notification for new orders on this device (see _lib/order-alerts.ts) */
+  alertsOn: boolean;
+  /** Call from a tap: turning on asks for notification permission and plays the chime once */
+  setAlertsOn: (on: boolean) => Promise<{ notifications: boolean }>;
   /** Apply a saved change to the catalog (e.g. add-ons) without signing in again */
   updateCatalog: (patch: Partial<CatalogInfo>) => void;
 }
@@ -128,6 +143,11 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
   const [user, setUser] = useState<AdminUser | null>(null);
   const [features, setFeatures] = useState<Features | null>(null);
   const [newOrders, setNewOrders] = useState(0);
+  const [alertsOn, setAlertsState] = useState(() => typeof window !== "undefined" && readAlertsSetting(slug));
+  const alertsRef = useRef(alertsOn);
+  // Newest order number seen; null until the first check, so opening the dashboard doesn't alert
+  const latestSeen = useRef<number | null>(null);
+  const catalogName = useRef("");
   const pathname = usePathname();
   // The paused notice is dismissible (the dashboard stays readable) and never covers Billing,
   // which is where owners renew.
@@ -215,6 +235,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
         }
 
         const data = await res.json();
+        catalogName.current = data.catalog?.name ?? "";
         setCatalog(data.catalog);
         setUser(data.user);
         setFeatures(data.features);
@@ -230,23 +251,58 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
     verifyAuth();
   }, [router, slug]);
 
-  // New orders count for the navigation. Polled while the dashboard is open and visible; a
-  // failed check keeps the last count.
+  // New orders count for the navigation. Polled while the dashboard is open and visible (and in
+  // the background too when alerts are on); a failed check keeps the last count. A higher newest
+  // order number than last time means something arrived: chime, and notify if in the background.
   const refreshNewOrders = useCallback(async () => {
     try {
       const res = await fetchWithAuth(`/api/c/${slug}/admin/orders/count/`);
       if (!res.ok) return;
       const data = await res.json();
       setNewOrders(Number(data.new) || 0);
+      const latest = Number(data.latest) || 0;
+      if (latestSeen.current !== null && latest > latestSeen.current && alertsRef.current) {
+        playChime();
+        showOrderNotification(`${t.arrived[data.latestKind] || t.arrived.order} #${latest}`, catalogName.current, () =>
+          router.push(`/c/${slug}/admin/orders/`)
+        );
+      }
+      latestSeen.current = Math.max(latest, latestSeen.current ?? 0);
     } catch {
       // Offline for a moment; try again on the next tick
     }
-  }, [fetchWithAuth, slug]);
+  }, [fetchWithAuth, slug, t, router]);
+
+  const setAlertsOn = useCallback(
+    async (on: boolean) => {
+      alertsRef.current = on;
+      setAlertsState(on);
+      saveAlertsSetting(slug, on);
+      if (!on) return { notifications: false };
+      // Inside the tap: wake the sound and let the owner hear it once
+      playChime();
+      return { notifications: await askNotificationPermission() };
+    },
+    [slug]
+  );
+
+  // Browsers keep sound off until the page is tapped; wake it on the first tap of each visit
+  useEffect(() => {
+    if (!alertsOn) return;
+    const wake = () => unlockSound();
+    window.addEventListener("pointerdown", wake, { once: true });
+    return () => window.removeEventListener("pointerdown", wake);
+  }, [alertsOn]);
+
+  // "(2) …" in the tab title while orders are waiting
+  useEffect(() => {
+    document.title = titleWithCount(document.title, newOrders);
+  }, [newOrders, pathname]);
 
   useEffect(() => {
     if (!authenticated) return;
     const tick = () => {
-      if (document.visibilityState === "visible") refreshNewOrders();
+      if (document.visibilityState === "visible" || alertsRef.current) refreshNewOrders();
     };
     tick();
     const timer = window.setInterval(tick, 20000);
@@ -288,6 +344,8 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
           fetchWithAuth,
           newOrders,
           refreshNewOrders,
+          alertsOn,
+          setAlertsOn,
           updateCatalog: (patch) => setCatalog((current) => (current ? { ...current, ...patch } : current)),
         }}
       >

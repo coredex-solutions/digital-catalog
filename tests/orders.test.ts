@@ -158,12 +158,14 @@ test("USD report totals convert LBP lines only with a rate", () => {
   assert.equal(totalInUsd([{ price: 90000, currency: "LBP", quantity: 1 }], { ...config, lbpRate: null }), null);
 });
 
-test("status moves forward only; done and cancelled are final", () => {
+test("any status can follow any other, so changes can be undone", () => {
   assert.ok(canMoveTo("new", "confirmed"));
   assert.ok(canMoveTo("confirmed", "cancelled"));
-  assert.ok(!canMoveTo("completed", "new"));
-  assert.ok(!canMoveTo("cancelled", "confirmed"));
-  assert.ok(!canMoveTo("ready", "confirmed"));
+  assert.ok(canMoveTo("completed", "confirmed"));
+  assert.ok(canMoveTo("cancelled", "new"));
+  assert.ok(canMoveTo("ready", "confirmed"));
+  assert.ok(!canMoveTo("ready", "ready"));
+  assert.ok(!canMoveTo("new", "archived" as never));
 });
 
 test("items sell out at zero stock only when stock is tracked", () => {

@@ -3,7 +3,7 @@ import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { countOrders } from "@/lib/orders/store";
 
-/** GET: how many orders are new and in progress (polled by the dashboard navigation) */
+/** GET: how many orders are new and in progress, and the newest order's number (polled by the dashboard for its badge and alerts) */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const catalog = await getCatalogBySlug(slug);

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
-import { CalendarClock, Check, ChefHat, MapPin, MessageCircle, Phone, Users, X, Inbox, Loader2, RefreshCw } from "lucide-react";
+import { Bell, BellOff, CalendarClock, Check, ChefHat, MapPin, MessageCircle, Phone, Users, X, Inbox, Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import { CatalogAdminContent, CatalogAdminHeader } from "../_components/CatalogAdminSidebar";
 import { adminNavLabels } from "../_components/adminNav";
@@ -51,6 +51,17 @@ const en = {
   refresh: "Refresh",
   failed: "Couldn't load orders. Check your connection.",
   stockBack: "Stock is given back when you cancel.",
+  reopen: "Reopen",
+  undo: "Undo",
+  moved: (number: number, status: string) => `#${number} is now: ${status}`,
+  undone: (number: number) => `#${number} is back as it was`,
+  changeFailed: "Couldn't change the order. Check your connection.",
+  alertsOff: "Alerts off",
+  alertsOn: "Alerts on",
+  alertsHint: "Play a sound when an order arrives, while this page is open on this device",
+  alertsEnabled: "Alerts are on. Keep this page open to hear new orders.",
+  alertsNoNotify: "Sound is on. Notifications are blocked in this browser, so keep this tab in view.",
+  alertsDisabled: "Alerts are off on this device.",
 };
 const ar: typeof en = {
   tabs: { new: "جديدة", active: "قيد التنفيذ", done: "منتهية" },
@@ -80,7 +91,21 @@ const ar: typeof en = {
   refresh: "تحديث",
   failed: "تعذّر تحميل الطلبات. تحقق من الاتصال.",
   stockBack: "تُعاد الكمية إلى المخزون عند الإلغاء.",
+  reopen: "إعادة فتح",
+  undo: "تراجع",
+  moved: (number, status) => `الطلب #${number} أصبح: ${status}`,
+  undone: (number) => `أُعيد الطلب #${number} كما كان`,
+  changeFailed: "تعذّر تغيير الطلب. تحقق من الاتصال.",
+  alertsOff: "التنبيهات متوقفة",
+  alertsOn: "التنبيهات مفعّلة",
+  alertsHint: "تشغيل صوت عند وصول طلب، طالما هذه الصفحة مفتوحة على هذا الجهاز",
+  alertsEnabled: "التنبيهات مفعّلة. أبقِ هذه الصفحة مفتوحة لتسمع الطلبات الجديدة.",
+  alertsNoNotify: "الصوت مفعّل. الإشعارات محظورة في هذا المتصفح، لذا أبقِ هذه الصفحة ظاهرة.",
+  alertsDisabled: "التنبيهات متوقفة على هذا الجهاز.",
 };
+
+/** How long the Undo bar stays after a change */
+const UNDO_MS = 8000;
 
 /** SQLite datetime('now') is UTC without a zone */
 const utc = (value: string) => (value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
@@ -197,9 +222,10 @@ function OrderCard({ order, onStatus, busy }: { order: SavedOrder; onStatus: (st
           {total && (
             <p className="mt-2 flex justify-between border-t border-ui-line pt-2 font-semibold">
               <span>{t.total}</span>
-              <span className="tabular-nums">
-                {total.primary}
-                {total.secondary && <span className="ms-2 font-normal text-ui-muted">{total.secondary}</span>}
+              {/* Separate flex items, so Arabic text direction can't run the two numbers together */}
+              <span className="inline-flex flex-wrap items-baseline justify-end gap-x-2 tabular-nums">
+                <span>{total.primary}</span>
+                {total.secondary && <span className="font-normal text-ui-muted">{total.secondary}</span>}
               </span>
             </p>
           )}
@@ -210,6 +236,21 @@ function OrderCard({ order, onStatus, busy }: { order: SavedOrder; onStatus: (st
         <p className="mt-3 rounded-control border border-ui-line px-3 py-2 text-sm">
           <strong>{t.note}:</strong> {order.note}
         </p>
+      )}
+
+      {(order.status === "completed" || order.status === "cancelled") && (
+        <div className="mt-4">
+          <button
+            type="button"
+            disabled={busy}
+            // A cancelled order goes back to New (taking its stock again); a done one to Confirmed
+            onClick={() => onStatus(order.status === "cancelled" ? "new" : "confirmed")}
+            className="inline-flex min-h-11 items-center gap-2 rounded-control border border-ui-line px-4 text-sm font-semibold hover:bg-ui-subtle disabled:opacity-60"
+          >
+            <RotateCcw className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+            {t.reopen}
+          </button>
+        </div>
       )}
 
       {order.status !== "completed" && order.status !== "cancelled" && (
@@ -286,7 +327,7 @@ function OrderCard({ order, onStatus, busy }: { order: SavedOrder; onStatus: (st
 function OrdersView() {
   const t = useCopy({ en, ar });
   const lang = useAdminLang();
-  const { slug, fetchWithAuth, refreshNewOrders, newOrders } = useCatalogAdmin();
+  const { slug, fetchWithAuth, refreshNewOrders, newOrders, alertsOn, setAlertsOn } = useCatalogAdmin();
   const { module } = useModule();
   const [tab, setTab] = useState<Tab>("new");
   const [kind, setKind] = useState<KindFilter>("all");
@@ -296,7 +337,15 @@ function OrdersView() {
   const [failed, setFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  const [notice, setNotice] = useState<{ text: string; undo?: { order: SavedOrder; from: OrderStatus } } | null>(null);
   const request = useRef(0);
+
+  // The bar hides by itself after a few seconds
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(null), UNDO_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   const load = useCallback(
     async (options: { before?: string; quiet?: boolean } = {}) => {
@@ -338,8 +387,10 @@ function OrdersView() {
     }
   }, [newOrders, tab, load]);
 
-  const changeStatus = async (order: SavedOrder, status: OrderStatus) => {
+  /** Change an order's status. Each change offers Undo, which moves it back (and isn't undoable itself). */
+  const changeStatus = async (order: SavedOrder, status: OrderStatus, isUndo = false) => {
     setBusyId(order.id);
+    setNotice(null);
     try {
       const res = await fetchWithAuth(`/api/c/${slug}/admin/orders/${order.id}/`, {
         method: "PATCH",
@@ -347,13 +398,20 @@ function OrdersView() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
+        setNotice(
+          isUndo
+            ? { text: t.undone(order.number) }
+            : { text: t.moved(order.number, t.status[status]), undo: { order: { ...order, status }, from: order.status } }
+        );
         await load({ quiet: true });
         refreshNewOrders();
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || t.failed);
+        setNotice({ text: data.error || t.changeFailed });
         await load({ quiet: true });
       }
+    } catch {
+      setNotice({ text: t.changeFailed });
     } finally {
       setBusyId(null);
     }
@@ -365,6 +423,22 @@ function OrdersView() {
   return (
     <>
       <CatalogAdminHeader title={adminNavLabels(lang, module).orders}>
+        <button
+          type="button"
+          aria-pressed={alertsOn}
+          title={t.alertsHint}
+          onClick={async () => {
+            const result = await setAlertsOn(!alertsOn);
+            setNotice({ text: alertsOn ? t.alertsDisabled : result.notifications ? t.alertsEnabled : t.alertsNoNotify });
+          }}
+          className={clsx(
+            "inline-flex min-h-11 items-center gap-2 rounded-control border px-4 text-sm font-semibold",
+            alertsOn ? "border-ui-primary bg-ui-subtle text-ui-heading" : "border-ui-line bg-ui-surface hover:bg-ui-subtle"
+          )}
+        >
+          {alertsOn ? <Bell className="h-4 w-4" aria-hidden /> : <BellOff className="h-4 w-4" aria-hidden />}
+          {alertsOn ? t.alertsOn : t.alertsOff}
+        </button>
         <button
           type="button"
           onClick={() => load()}
@@ -451,6 +525,37 @@ function OrdersView() {
           </div>
         </div>
       </CatalogAdminContent>
+
+      {/* Result of the last change, with Undo. Above the phone tab bar; centred on the content beside the sidebar. */}
+      <div
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-50 flex justify-center px-4 lg:bottom-6 lg:ms-64"
+        role="status"
+        aria-live="polite"
+      >
+        {notice && (
+          <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-panel bg-ui-ink px-4 py-2 text-sm text-ui-bg shadow-lg">
+            <span className="min-w-0 flex-1 py-2">{notice.text}</span>
+            {notice.undo && (
+              <button
+                type="button"
+                disabled={busyId !== null}
+                onClick={() => notice.undo && changeStatus(notice.undo.order, notice.undo.from, true)}
+                className="min-h-11 shrink-0 rounded-control px-3 font-semibold underline-offset-2 hover:underline disabled:opacity-60"
+              >
+                {t.undo}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setNotice(null)}
+              aria-label={lang === "ar" ? "إغلاق" : "Close"}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control opacity-80 hover:opacity-100"
+            >
+              <X className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        )}
+      </div>
     </>
   );
 }
