@@ -6,6 +6,8 @@ import Link from "next/link";
 import { SuperAdminShell } from "../../_components/SuperAdminShell";
 import { getPlanConfig, getPlanPrice } from "@/lib/plans";
 import { SuperAdminHeader, SuperAdminContent } from "../../_components/SuperAdminSidebar";
+import { ModuleTypePicker } from "../../_components/ModuleTypePicker";
+import { legacyBusinessTypeToModule } from "@/lib/modules/resolve";
 import {
   ArrowLeft,
   ExternalLink,
@@ -221,6 +223,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
     name: editForm.name,
     slug: editForm.slug,
     business_type: editForm.business_type,
+    module: legacyBusinessTypeToModule(editForm.business_type),
     ai_image_enhancement_limit: editForm.ai_image_enhancement_limit,
     max_items: editForm.max_items,
     max_categories: editForm.max_categories,
@@ -905,22 +908,14 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-ui-ink mb-2">Business Category</label>
-                    <select
+                    <label htmlFor="business-type" className="block text-sm font-medium text-ui-ink mb-2">Business type (module)</label>
+                    <ModuleTypePicker
+                      id="business-type"
                       value={editForm.business_type}
-                      onChange={(e) => setEditForm({ ...editForm, business_type: e.target.value })}
+                      onChange={(businessType) => setEditForm({ ...editForm, business_type: businessType })}
                       className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="restaurant">Restaurant</option>
-                      <option value="cafe">Cafe</option>
-                      <option value="retail">Retail</option>
-                      <option value="salon">Salon</option>
-                      <option value="bakery">Bakery</option>
-                      <option value="supermarket">Supermarket</option>
-                      <option value="gym">Gym / Fitness</option>
-                      <option value="medical">Medical / Clinic</option>
-                      <option value="other">Other</option>
-                    </select>
+                    />
+                    <p className="mt-1 text-xs text-ui-muted">Changing the module resets add-ons to its defaults and keeps only the order types it offers.</p>
                   </div>
 
                   <div className="pt-4 border-t border-ui-line grid grid-cols-1 md:grid-cols-2 gap-6">

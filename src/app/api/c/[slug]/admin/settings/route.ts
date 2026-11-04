@@ -8,6 +8,8 @@ import {
 } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
 import type { InValue } from "@libsql/client";
+import { getModule, resolveOrderTypes } from "@/lib/modules/resolve";
+import type { ModuleDefinition } from "@/lib/modules/registry";
 
 // Column names are interpolated into the UPDATE statements below, so only these
 // known columns (the same ones GET returns) may ever be written. Only settings the
@@ -34,7 +36,6 @@ const SETTINGS_FIELDS = new Set([
   "order_types", "delivery_note_ar", "delivery_note_en",
 ]);
 
-const ORDER_TYPES = ["dine_in", "takeaway", "delivery"];
 
 /** Menus are offered in Arabic and English only; anything else (e.g. a legacy "fr") is dropped */
 const MENU_LANGUAGES = ["ar", "en"] as const;
@@ -53,7 +54,7 @@ function sanitizeDefaultLanguage(value: unknown, enabled: string): string {
 type SettingsSection = Record<string, unknown> | null | undefined;
 
 /** Validate pricing/ordering values before they reach the database */
-function sanitizePricingAndOrdering(pricing: SettingsSection, ordering: SettingsSection): Record<string, unknown> {
+function sanitizePricingAndOrdering(pricing: SettingsSection, ordering: SettingsSection, module: ModuleDefinition): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   if (pricing) {
     if (pricing.currency_primary !== undefined) {
@@ -70,8 +71,8 @@ function sanitizePricingAndOrdering(pricing: SettingsSection, ordering: Settings
   }
   if (ordering) {
     if (ordering.order_types !== undefined) {
-      const list = String(ordering.order_types).split(",").map((t: string) => t.trim());
-      out.order_types = ORDER_TYPES.filter((t) => list.includes(t)).join(",");
+      // Only the order types this catalog's module offers (a shop has no dine-in)
+      out.order_types = resolveOrderTypes(module, String(ordering.order_types)).join(",");
     }
     if (ordering.delivery_note_ar !== undefined) out.delivery_note_ar = String(ordering.delivery_note_ar || "").slice(0, 300);
     if (ordering.delivery_note_en !== undefined) out.delivery_note_en = String(ordering.delivery_note_en || "").slice(0, 300);
@@ -157,7 +158,7 @@ export async function GET(
       show_dual_currency: Boolean(settings?.show_dual_currency ?? 0),
     },
     ordering: {
-      order_types: settings?.order_types ?? "dine_in,takeaway",
+      order_types: resolveOrderTypes(getModule(catalog), settings?.order_types ?? null).join(","),
       delivery_note_ar: settings?.delivery_note_ar || "",
       delivery_note_en: settings?.delivery_note_en || "",
     },
@@ -253,7 +254,7 @@ export async function PUT(
       ...(cta || {}),
       ...(seo || {}),
       ...(about || {}),
-      ...sanitizePricingAndOrdering(pricing, ordering),
+      ...sanitizePricingAndOrdering(pricing, ordering, getModule(catalog)),
     };
 
     // Values are JSON body values, passed to the database as they are

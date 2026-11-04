@@ -4,6 +4,8 @@ import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 import { categoriesFromExtraction, IMPORT_LIMITS } from "@/lib/catalog/import";
+import { getModule } from "@/lib/modules/resolve";
+import type { ModuleId } from "@/lib/modules/registry";
 import { AI_MODELS } from "@/lib/ai/models";
 
 // Reads dishes from photos or a PDF of a printed menu. Nothing is saved here: the dashboard shows
@@ -13,6 +15,16 @@ import { AI_MODELS } from "@/lib/ai/models";
 
 const FAKE = process.env.NODE_ENV !== "production" && process.env.AI_IMPORT_FAKE === "1";
 const TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif", "application/pdf"];
+
+/** What the printed list is, per module (the JSON keeps the "dishes" key for every module) */
+const SOURCES: Record<ModuleId, string> = {
+  restaurant: "restaurant menus, copying the dishes",
+  cafe: "café, bakery and sweets menus, copying the items",
+  shop: "a shop's price lists or product catalogues, copying the products",
+  services: "a business's price lists of services (salons, clinics, repair shops and similar), copying the services",
+};
+
+const promptFor = (moduleId: ModuleId) => PROMPT.replace("restaurant and café menus and copy the dishes", SOURCES[moduleId]);
 
 const PROMPT = `You read photos or PDFs of restaurant and café menus and copy the dishes into JSON.
 
@@ -27,7 +39,8 @@ Rules:
 - Use the menu's section headings as categories, in the printed order. Dishes before any heading go in a category with empty names.
 - Do not add allergens, calories, dietary labels or ingredients that are not printed.
 - Leave out the restaurant's name, address, phone numbers, opening hours, slogans and decorative text.
-- If the files are not a menu, return {"categories":[]}.`;
+- Each item (dish, product or service) goes in the "dishes" list of its category.
+- If the files are not a menu or price list, return {"categories":[]}.`;
 
 const SAMPLE = {
   categories: [
@@ -86,7 +99,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         generationConfig: { responseMimeType: "application/json", temperature: 0 },
       });
       const parts = [
-        PROMPT,
+        promptFor(getModule(catalog).id),
         ...(await Promise.all(
           files.map(async (f) => ({ inlineData: { mimeType: f.type, data: Buffer.from(await f.arrayBuffer()).toString("base64") } }))
         )),

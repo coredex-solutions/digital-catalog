@@ -19,7 +19,7 @@ export async function GET(
 
   const db = getDb();
 
-  const [categoriesResult, itemsResult, analyticsResult, recentItemsResult] =
+  const [categoriesResult, itemsResult, analyticsResult, recentItemsResult, ordersResult] =
     await Promise.all([
       // Category count
       db.execute({
@@ -58,6 +58,20 @@ export async function GET(
         `,
         args: [catalog.id],
       }),
+
+      // Saved orders and bookings in the last 30 days (cancelled ones not counted)
+      db.execute({
+        sql: `
+          SELECT
+            SUM(CASE WHEN kind != 'booking' THEN 1 ELSE 0 END) AS orders,
+            SUM(CASE WHEN kind = 'booking' THEN 1 ELSE 0 END) AS bookings,
+            SUM(CASE WHEN status = 'new' THEN 1 ELSE 0 END) AS waiting,
+            ROUND(SUM(COALESCE(total_usd, 0)), 2) AS revenue_usd
+          FROM orders
+          WHERE catalog_id = ? AND status != 'cancelled' AND created_at >= datetime('now', '-30 days')
+        `,
+        args: [catalog.id],
+      }).catch(() => null),
     ]);
 
   return NextResponse.json({
@@ -70,6 +84,13 @@ export async function GET(
       total_bookings: 0,
     },
     recent_items: recentItemsResult.rows,
+    // Last 30 days; revenue only counts orders whose total could be put in dollars
+    orders_30d: {
+      orders: Number(ordersResult?.rows[0]?.orders || 0),
+      bookings: Number(ordersResult?.rows[0]?.bookings || 0),
+      waiting: Number(ordersResult?.rows[0]?.waiting || 0),
+      revenue_usd: Number(ordersResult?.rows[0]?.revenue_usd || 0),
+    },
   });
 }
 

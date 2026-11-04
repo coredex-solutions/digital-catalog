@@ -4,6 +4,7 @@ import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { getDb } from "@/lib/db/client";
 import type { InValue } from "@libsql/client";
 import { parseItemCurrency, parseItemPrice } from "@/lib/catalog/price";
+import { parseItemExtras } from "@/lib/catalog/item-extras";
 import {
   allergensToDb,
   dietaryToDb,
@@ -69,6 +70,11 @@ export async function PUT(
       body.allergens = allergensToDb(allergens.value);
     }
 
+    // Stock, SKU, old price and duration (shops and services); null clears
+    const extras = parseItemExtras(body);
+    if (!extras.ok) return NextResponse.json({ error: extras.error }, { status: 400 });
+    Object.assign(body, extras.value);
+
     const db = getDb();
 
     // Verify item belongs to this catalog
@@ -117,11 +123,16 @@ export async function PUT(
       "variants",
       "dietary",
       "allergens",
+      "stock_qty",
+      "sku",
+      "compare_at_price",
+      "duration_minutes",
     ];
+    const VALIDATED = ["variants", "dietary", "allergens", "stock_qty", "sku", "compare_at_price", "duration_minutes"];
 
     for (const field of fields) {
-      // JSON fields are already converted; null clears them (allergens: null = not checked)
-      if (field === "variants" || field === "dietary" || field === "allergens") {
+      // Already validated and converted; null clears them (allergens: null = not checked)
+      if (VALIDATED.includes(field)) {
         if (body[field] !== undefined) {
           updates.push(`${field} = ?`);
           args.push(body[field]);

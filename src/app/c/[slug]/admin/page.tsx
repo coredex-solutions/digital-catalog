@@ -1,70 +1,104 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ModuleDefinition } from "@/lib/modules/registry";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { CatalogAdminShell } from "./_components/CatalogAdminShell";
+import { CatalogAdminShell, useCatalogAdmin } from "./_components/CatalogAdminShell";
+import { pageWord, useModule } from "./_lib/module";
 import { CatalogAdminHeader, CatalogAdminContent } from "./_components/CatalogAdminSidebar";
 import { SetupChecklist } from "./_components/SetupChecklist";
 import { ADMIN_NAV_LABELS } from "./_components/adminNav";
+import { Inbox, Banknote } from "lucide-react";
 import { useAdminLang, useCopy, useFormat, plural, type AdminLang } from "./_lib/i18n";
 import {
   FolderKanban,
   Package,
   Eye,
-  MessageCircle,
   TrendingUp,
   Plus,
   type LucideIcon,
 } from "lucide-react";
 
-const en = {
-  addDish: "Add a dish",
-  categories: "Categories",
-  categoriesSub: "Sections on your menu",
-  dishes: "Dishes",
-  dishesSub: "Dishes on your menu",
-  views: "Menu views",
-  visitors: (n: number, lang: AdminLang) => plural(lang, n, { one: "# visitor", other: "# visitors" }),
-  whatsappClicks: "WhatsApp order clicks",
-  whatsappSub: "Guests who tapped to order",
-  manageCategories: "Manage categories",
-  manageCategoriesDesc: "Organise and reorder the sections of your menu.",
-  manageDishes: "Manage dishes",
-  manageDishesDesc: "Add, edit or remove dishes on your menu.",
-  settings: "Settings",
-  settingsDesc: "Update your branding, colours and features.",
-  analyticsTitle: "Menu analytics",
-  analyticsDesc: "How guests use your menu",
-  visitorsLabel: "Visitors",
-  bookingClicks: "Booking clicks",
-  noData: "No numbers to show yet.",
-  loading: "Loading…",
-};
-const ar: typeof en = {
-  addDish: "أضف طبقاً",
-  categories: "الأقسام",
-  categoriesSub: "أقسام قائمتك",
-  dishes: "الأطباق",
-  dishesSub: "الأطباق في قائمتك",
-  views: "مشاهدات القائمة",
-  visitors: (n, lang) =>
-    plural(lang, n, { zero: "لا زوار", one: "زائر واحد", two: "زائران", few: "# زوار", many: "# زائراً", other: "# زائر" }),
-  whatsappClicks: "نقرات الطلب عبر واتساب",
-  whatsappSub: "زبائن ضغطوا للطلب",
-  manageCategories: "إدارة الأقسام",
-  manageCategoriesDesc: "نظّم أقسام قائمتك وغيّر ترتيبها.",
-  manageDishes: "إدارة الأطباق",
-  manageDishesDesc: "أضف أطباق قائمتك أو عدّلها أو احذفها.",
-  settings: "الإعدادات",
-  settingsDesc: "حدّث هويتك وألوانك وميزات قائمتك.",
-  analyticsTitle: "إحصاءات القائمة",
-  analyticsDesc: "كيف يستخدم الزبائن قائمتك",
-  visitorsLabel: "الزوار",
-  bookingClicks: "نقرات الحجز",
-  noData: "لا توجد أرقام لعرضها بعد.",
-  loading: "جارٍ التحميل…",
-};
+/** Dashboard text with the module's words (dishes / items / products / services, menu / store / page) */
+function makeEn(module: ModuleDefinition) {
+  const n = module.nouns.en;
+  const page = pageWord(module, "en");
+  const One = n.one.charAt(0).toUpperCase() + n.one.slice(1);
+  const Many = n.many.charAt(0).toUpperCase() + n.many.slice(1);
+  return {
+    addDish: `Add ${n.one === "item" ? "an item" : `a ${n.one}`}`,
+    categories: "Categories",
+    categoriesSub: `Sections of your ${page}`,
+    dishes: Many,
+    dishesSub: `${Many} on your ${page}`,
+    orders: module.id === "services" ? "Requests (30 days)" : "Orders (30 days)",
+    ordersSub: (waiting: number, bookings: number, lang: AdminLang) =>
+      [
+        waiting > 0 ? plural(lang, waiting, { one: "# waiting", other: "# waiting" }) : "",
+        bookings > 0 ? plural(lang, bookings, { one: "+ # table booking", other: "+ # table bookings" }) : "",
+      ].filter(Boolean).join(" · ") || "Saved from your page",
+    revenue: "Sales (30 days)",
+    revenueSub: "Orders not cancelled, in dollars",
+    views: "Page views",
+    visitors: (x: number, lang: AdminLang) => plural(lang, x, { one: "# visitor", other: "# visitors" }),
+    whatsappClicks: "WhatsApp order clicks",
+    manageCategories: "Manage categories",
+    manageCategoriesDesc: `Organise and reorder the sections of your ${page}.`,
+    manageDishes: `Manage ${n.many}`,
+    manageDishesDesc: `Add, edit or remove ${n.many}.`,
+    manageOrders: module.id === "services" ? "Requests" : "Orders",
+    manageOrdersDesc: "Confirm, complete or cancel what customers send.",
+    settings: "Settings",
+    settingsDesc: "Update your branding, colours and features.",
+    analyticsTitle: `${page.charAt(0).toUpperCase() + page.slice(1)} analytics`,
+    analyticsDesc: `How customers use your ${page}`,
+    visitorsLabel: "Visitors",
+    bookingClicks: "Booking clicks",
+    noData: "No numbers to show yet.",
+    loading: "Loading…",
+    one: One,
+  };
+}
+
+function makeAr(module: ModuleDefinition): ReturnType<typeof makeEn> {
+  const n = module.nouns.ar;
+  const page = pageWord(module, "ar");
+  return {
+    addDish: `أضف ${n.acc}`,
+    categories: "الأقسام",
+    categoriesSub: `أقسام ${page}`,
+    dishes: `ال${n.plural}`,
+    dishesSub: `ال${n.plural} في ${page}`,
+    orders: module.id === "services" ? "الطلبات (30 يوماً)" : "الطلبات (30 يوماً)",
+    ordersSub: (waiting, bookings, lang) =>
+      [
+        waiting > 0 ? plural(lang, waiting, { one: "طلب واحد بانتظارك", two: "طلبان بانتظارك", few: "# طلبات بانتظارك", many: "# طلباً بانتظارك", other: "# طلب بانتظارك" }) : "",
+        bookings > 0 ? plural(lang, bookings, { one: "+ حجز طاولة واحد", two: "+ حجزا طاولة", few: "+ # حجوزات طاولات", many: "+ # حجزاً", other: "+ # حجز" }) : "",
+      ].filter(Boolean).join(" · ") || "محفوظة من صفحتك",
+    revenue: "المبيعات (30 يوماً)",
+    revenueSub: "الطلبات غير الملغاة، بالدولار",
+    views: "مشاهدات الصفحة",
+    visitors: (x, lang) =>
+      plural(lang, x, { zero: "لا زوار", one: "زائر واحد", two: "زائران", few: "# زوار", many: "# زائراً", other: "# زائر" }),
+    whatsappClicks: "نقرات الطلب عبر واتساب",
+    manageCategories: "إدارة الأقسام",
+    manageCategoriesDesc: `نظّم أقسام ${page} وغيّر ترتيبها.`,
+    manageDishes: `إدارة ال${n.plural}`,
+    manageDishesDesc: `أضف ${n.plural}ك أو عدّلها أو احذفها.`,
+    manageOrders: "الطلبات",
+    manageOrdersDesc: "أكّد ما يرسله الزبائن أو أنهِه أو ألغِه.",
+    settings: "الإعدادات",
+    settingsDesc: "حدّث هويتك وألوانك وميزاتك.",
+    analyticsTitle: "الإحصاءات",
+    analyticsDesc: `كيف يستخدم الزبائن ${page}`,
+    visitorsLabel: "الزوار",
+    bookingClicks: "نقرات الحجز",
+    noData: "لا توجد أرقام لعرضها بعد.",
+    loading: "جارٍ التحميل…",
+    one: n.one,
+  };
+}
 
 interface DashboardStats {
   categories: number;
@@ -75,6 +109,7 @@ interface DashboardStats {
     total_whatsapp: number;
     total_bookings: number;
   };
+  orders_30d?: { orders: number; bookings: number; waiting: number; revenue_usd: number };
   recent_items: Array<{
     id: string;
     name_en: string;
@@ -133,10 +168,21 @@ function StatCard({
 }
 
 export default function CatalogAdminDashboard() {
+  return (
+    <CatalogAdminShell>
+      <DashboardView />
+    </CatalogAdminShell>
+  );
+}
+
+function DashboardView() {
   const params = useParams();
   const slug = params.slug as string;
   const lang = useAdminLang();
-  const t = useCopy({ en, ar });
+  const { module } = useModule();
+  const { newOrders } = useCatalogAdmin();
+  const copy = useMemo(() => ({ en: makeEn(module), ar: makeAr(module) }), [module]);
+  const t = useCopy(copy);
   const f = useFormat();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -168,8 +214,10 @@ export default function CatalogAdminDashboard() {
   // SUM() comes back as null when there are no analytics rows yet
   const n = (value: unknown) => Number(value) || 0;
 
+  const orders = stats?.orders_30d;
+
   return (
-    <CatalogAdminShell>
+    <>
       <CatalogAdminHeader title={ADMIN_NAV_LABELS[lang].dashboard}>
         <Link
           href={`/c/${slug}/admin/items?new=true`}
@@ -196,10 +244,16 @@ export default function CatalogAdminDashboard() {
             {/* Key numbers */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
               <StatCard
-                icon={FolderKanban}
-                label={t.categories}
-                value={f.number(n(stats.categories))}
-                subtext={t.categoriesSub}
+                icon={Inbox}
+                label={t.orders}
+                value={f.number(n(orders?.orders))}
+                subtext={t.ordersSub(Math.max(newOrders, n(orders?.waiting)), n(orders?.bookings), lang)}
+              />
+              <StatCard
+                icon={Banknote}
+                label={t.revenue}
+                value={`$${f.number(n(orders?.revenue_usd), { maximumFractionDigits: 0 })}`}
+                subtext={t.revenueSub}
               />
               <StatCard
                 icon={Package}
@@ -213,22 +267,16 @@ export default function CatalogAdminDashboard() {
                 value={f.number(n(stats.analytics.total_views))}
                 subtext={t.visitors(n(stats.analytics.total_unique), lang)}
               />
-              <StatCard
-                icon={MessageCircle}
-                label={t.whatsappClicks}
-                value={f.number(n(stats.analytics.total_whatsapp))}
-                subtext={t.whatsappSub}
-              />
             </div>
 
             {/* Shortcuts */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6">
               {[
                 {
-                  href: `/c/${slug}/admin/categories`,
-                  icon: FolderKanban,
-                  title: t.manageCategories,
-                  desc: t.manageCategoriesDesc,
+                  href: `/c/${slug}/admin/orders`,
+                  icon: Inbox,
+                  title: t.manageOrders,
+                  desc: t.manageOrdersDesc,
                   color: "var(--color-primary)"
                 },
                 {
@@ -237,6 +285,13 @@ export default function CatalogAdminDashboard() {
                   title: t.manageDishes,
                   desc: t.manageDishesDesc,
                   color: "var(--color-secondary)"
+                },
+                {
+                  href: `/c/${slug}/admin/categories`,
+                  icon: FolderKanban,
+                  title: t.manageCategories,
+                  desc: t.manageCategoriesDesc,
+                  color: "var(--color-accent)"
                 },
                 {
                   href: `/c/${slug}/admin/settings`,
@@ -311,6 +366,6 @@ export default function CatalogAdminDashboard() {
           </div>
         )}
       </CatalogAdminContent>
-    </CatalogAdminShell>
+    </>
   );
 }

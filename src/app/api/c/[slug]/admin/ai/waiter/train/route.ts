@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db/client";
 import { parseAIJson, AI_CONSTRAINTS } from "@/lib/ai-utils";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
 import { AI_MODELS } from "@/lib/ai/models";
+import { getModule } from "@/lib/modules/resolve";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
@@ -53,7 +54,7 @@ export async function POST(
     const { action = 'answer', question_id, question_en, answer, category, source_type = 'manual' } = body;
 
     const catalogRes = await db.execute({
-      sql: "SELECT id, name, business_type FROM catalogs WHERE slug = ?",
+      sql: "SELECT id, name, business_type, module FROM catalogs WHERE slug = ?",
       args: [slug]
     });
 
@@ -68,6 +69,10 @@ export async function POST(
 
     const businessName = catalogRes.rows[0].name as string;
     const businessType = catalogRes.rows[0].business_type as string;
+    // Questions follow the module: dishes for restaurants, products for shops, services…
+    const moduleDef = getModule(catalogRes.rows[0] as unknown as { module?: unknown; business_type?: unknown });
+    const noun = moduleDef.nouns.en;
+    const assistantRole = moduleDef.assistant.title.en.replace(/^AI /, "");
 
     if (action === 'generate') {
       // 1. Fetch current context to avoid duplicates and be specific
@@ -112,15 +117,15 @@ export async function POST(
       // Min 8 questions, max 20 per batch for better performance/quality
       const targetCount = Math.min(Math.max(8, Math.ceil(items.length * 1.5)), 20);
 
-      const systemPrompt = `You are an expert Restaurant Consultant training an AI Waiter. 
-Analyze the provided menu data and identify specific knowledge gaps for individual items.
+      const systemPrompt = `You are an expert ${moduleDef.label.en} consultant training an ${moduleDef.assistant.title.en}.
+Analyze the provided ${noun.many} and identify specific knowledge gaps for individual ${noun.many}.
 
 STRICT RULES:
-1. BE SPECIFIC: Never ask broad questions like "list all ingredients" or "what are the allergens for all dishes".
-2. NAME DROPPING: You MUST mention at least 4 specific dish names from the provided menu in your questions.
-3. QUALITY OVER QUANTITY: Ask about unique selling points, spiciness levels, preparation methods, or recommended pairings for SPECIFIC items you see in the data.
-4. ANALYZE DESCRIPTIONS: If a dish description is short, ask for missing details (e.g., "What comes inside the [Dish Name] sandwich?").
-5. FOCUS ON NEW: Avoid items mentioned in the "Existing Knowledge" list. Focus on unexplored parts of the menu.
+1. BE SPECIFIC: Never ask broad questions like "describe all your ${noun.many}".
+2. NAME DROPPING: You MUST mention at least 4 specific ${noun.one} names from the provided data in your questions.
+3. QUALITY OVER QUANTITY: Ask what customers would ask a ${assistantRole} about (${moduleDef.assistant.focus}) for SPECIFIC ${noun.many} you see in the data.
+4. ANALYZE DESCRIPTIONS: If a ${noun.one}'s description is short, ask for the missing details.
+5. FOCUS ON NEW: Avoid ${noun.many} mentioned in the "Existing Knowledge" list. Focus on unexplored ones.
 
 ${AI_CONSTRAINTS}
 
@@ -138,7 +143,7 @@ Return exactly ${targetCount} high-value, item-specific questions as a JSON arra
 
       const prompt = `Business: ${businessName} (${businessType})
 Existing Knowledge/Queue: ${JSON.stringify(existingQuestions.slice(-100))}
-Menu Data Samples: ${JSON.stringify(menuSummary.slice(0, 150))}
+${moduleDef.label.en} data samples (${noun.many}): ${JSON.stringify(menuSummary.slice(0, 150))}
 
 Based on this data, find the biggest knowledge gaps. Focus on items NOT in the existing knowledge. Generate exactly ${targetCount} questions.`;
 

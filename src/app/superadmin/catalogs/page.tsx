@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SuperAdminShell } from "../_components/SuperAdminShell";
 import { SuperAdminHeader, SuperAdminContent } from "../_components/SuperAdminSidebar";
+import { getModule } from "@/lib/modules/resolve";
 import { 
   Plus, 
   Search, 
@@ -22,6 +23,7 @@ interface CatalogItem {
   slug: string;
   name: string;
   business_type: string;
+  module?: string;
   is_active: number;
   is_suspended: number;
   created_at: string;
@@ -33,13 +35,12 @@ interface CatalogItem {
   total_views: number;
 }
 
-const businessTypeIcons: Record<string, LucideIcon> = {
-  restaurant: Coffee,
-  retail: ShoppingBag,
+/** One icon per module (catalogs.module, or the old business type for older rows) */
+const moduleIcons: Record<string, LucideIcon> = {
+  restaurant: Store,
   cafe: Coffee,
-  salon: Scissors,
-  bakery: Package,
-  other: Store,
+  shop: ShoppingBag,
+  services: Scissors,
 };
 
 export default function CatalogsPage() {
@@ -178,7 +179,9 @@ export default function CatalogsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCatalogs.map((catalog) => {
-              const Icon = businessTypeIcons[catalog.business_type] || Store;
+              const moduleDef = getModule(catalog);
+              const Icon = moduleIcons[moduleDef.id] || Package;
+              const subType = moduleDef.subTypes.find((sub) => sub.id === catalog.business_type);
               return (
                 <div
                   key={catalog.id}
@@ -193,6 +196,10 @@ export default function CatalogsPage() {
                         <div>
                           <h3 className="font-bold text-ui-heading text-lg group-hover:text-ui-primary transition-colors">{catalog.name}</h3>
                           <p className="text-xs text-ui-muted font-mono">/{catalog.slug}</p>
+                          <p className="text-xs text-ui-muted">
+                            {moduleDef.label.en}
+                            {subType && subType.label.en !== moduleDef.label.en ? ` · ${subType.label.en}` : ""}
+                          </p>
                         </div>
                       </div>
                       {getStatusBadge(catalog)}

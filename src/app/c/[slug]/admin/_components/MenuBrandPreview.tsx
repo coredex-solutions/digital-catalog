@@ -5,6 +5,7 @@ import { buildMenuTheme } from "../../_lib/theme";
 import { getDictionary } from "../../_lib/i18n";
 import { cn } from "@/utils/helpers";
 import { formatMoney } from "@/lib/catalog/price";
+import { MODULES, type ModuleId } from "@/lib/modules/registry";
 
 export type PreviewLang = "en" | "ar";
 
@@ -18,6 +19,8 @@ interface MenuBrandPreviewProps {
   hasPhone: boolean;
   hasWhatsapp: boolean;
   currency: "USD" | "LBP";
+  /** The catalog's module: sample names and words follow it (dish / product / service) */
+  module?: ModuleId;
 }
 
 // Placeholder content, clearly marked as sample: the settings page has no dishes loaded.
@@ -44,6 +47,35 @@ const SAMPLE = {
   },
 };
 
+/** The sample with the module's own noun ("Sample product", "خدمة تجريبية") */
+function sampleFor(module: ModuleId, lang: PreviewLang) {
+  if (module === "restaurant") return SAMPLE[lang];
+  const def = MODULES[module];
+  if (lang === "ar") {
+    const one = def.nouns.ar.one;
+    const sampleWord = def.nouns.ar.feminine ? "تجريبية" : "تجريبي";
+    return {
+      ...SAMPLE.ar,
+      dishes: [
+        { name: `${one} ${sampleWord}`, description: `يظهر هنا وصف قصير لل${one.replace(/^ال/, "")}، حتى سطرين.` },
+        { name: `${one} ${sampleWord} 2`, description: "يمكن ذكر التفاصيل المهمة للزبون في الوصف." },
+        { name: `${one} ${sampleWord} 3`, description: "للمعاينة فقط." },
+      ],
+      restaurant: module === "shop" ? "متجرك" : module === "cafe" ? "مقهاك" : "محلك",
+    };
+  }
+  const one = def.nouns.en.one;
+  return {
+    ...SAMPLE.en,
+    dishes: [
+      { name: `Sample ${one}`, description: `A short description of the ${one} appears here, up to two lines.` },
+      { name: `Sample ${one} 2`, description: "Details customers care about can go in the description." },
+      { name: `Sample ${one} 3`, description: "Shown for preview only." },
+    ],
+    restaurant: module === "shop" ? "Your shop" : module === "cafe" ? "Your café" : "Your business",
+  };
+}
+
 // Sample amounts only, formatted like the live menu ("$12.50", "720,000 L.L." / "720,000 ل.ل.")
 const SAMPLE_AMOUNTS = { USD: [8, 12.5, 5], LBP: [720000, 1120000, 450000] };
 
@@ -62,9 +94,10 @@ export function MenuBrandPreview({
   hasPhone,
   hasWhatsapp,
   currency,
+  module = "restaurant",
 }: MenuBrandPreviewProps) {
-  const t = getDictionary(lang);
-  const sample = SAMPLE[lang];
+  const t = getDictionary(lang, module);
+  const sample = sampleFor(module, lang);
   const name =
     (lang === "ar" ? names.name_ar || names.name_en || names.name : names.name_en || names.name || names.name_ar) ||
     sample.restaurant;

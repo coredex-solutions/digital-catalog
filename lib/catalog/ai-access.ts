@@ -5,6 +5,8 @@ export interface AiWaiterCatalog {
   id: string;
   name: string;
   business_type: string;
+  /** Main module (lib/modules); null before migration 20261105 */
+  module: string | null;
   /** The owner switched the AI waiter on in settings */
   aiWaiterEnabled: boolean;
   /** The catalog has an active subscription that has not expired */
@@ -20,7 +22,7 @@ export async function getAiWaiterCatalog(slug: string): Promise<AiWaiterCatalog 
   const db = getDb();
   const result = await db.execute({
     sql: `
-      SELECT c.id, c.name, c.business_type, s.ai_waiter_enabled,
+      SELECT c.id, c.name, c.business_type, c.module, s.ai_waiter_enabled,
         (SELECT sub.expires_at FROM catalog_subscriptions sub
           WHERE sub.catalog_id = c.id AND sub.is_active = 1 LIMIT 1) as expires_at,
         (SELECT COUNT(*) FROM catalog_subscriptions sub
@@ -42,6 +44,7 @@ export async function getAiWaiterCatalog(slug: string): Promise<AiWaiterCatalog 
     id: String(row.id),
     name: String(row.name),
     business_type: String(row.business_type || ''),
+    module: row.module == null ? null : String(row.module),
     aiWaiterEnabled: Number(row.ai_waiter_enabled || 0) === 1,
     subscriptionLive: Number(row.active_subscriptions || 0) > 0 && notExpired,
   };

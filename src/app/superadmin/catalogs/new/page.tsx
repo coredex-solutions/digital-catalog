@@ -7,29 +7,13 @@ import { SuperAdminHeader, SuperAdminContent } from "../../_components/SuperAdmi
 import { 
   ArrowLeft, 
   Loader2,
-  Store,
-  Coffee,
-  ShoppingBag,
-  Scissors,
   Package,
-  MoreHorizontal,
   ChevronRight,
   ShieldCheck,
   Zap
 } from "lucide-react";
 import Link from "next/link";
-
-const businessTypes = [
-  { id: "restaurant", label: "Restaurant", icon: Coffee },
-  { id: "cafe", label: "Cafe", icon: Coffee },
-  { id: "retail", label: "Retail Shop", icon: ShoppingBag },
-  { id: "salon", label: "Salon / Spa", icon: Scissors },
-  { id: "bakery", label: "Bakery", icon: Package },
-  { id: "supermarket", label: "Supermarket", icon: Store },
-  { id: "gym", label: "Gym / Fitness", icon: Zap },
-  { id: "medical", label: "Medical / Clinic", icon: ShieldCheck },
-  { id: "other", label: "Other", icon: MoreHorizontal },
-];
+import { ModuleTypePicker } from "../../_components/ModuleTypePicker";
 
 const subscriptionTypes = [
   { id: "yearly", label: "1 Year", description: "Renews annually" },
@@ -239,29 +223,12 @@ export default function NewCatalogPage() {
                   <label className="block text-sm font-medium text-ui-ink mb-3">
                     Business type *
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {businessTypes.map((type) => (
-                      <button
-                        key={type.id}
-                        type="button"
-                        onClick={() => updateFormData("business_type", type.id)}
-                        className={`group flex flex-col items-center gap-3 p-5 rounded-control border transition-all duration-300 ${
-                          formData.business_type === type.id
-                            ? "bg-ui-primary border-ui-primary text-ui-primary-fg"
-                            : "bg-ui-surface border-ui-line text-ui-muted hover:border-ui-input hover:bg-ui-subtle"
-                        }`}
-                      >
-                        <div className={`p-3 rounded-control transition-colors ${
-                          formData.business_type === type.id
-                            ? "bg-ui-primary-hover"
-                            : "bg-ui-subtle group-hover:bg-ui-line"
-                        }`}>
-                          <type.icon className="w-5 h-5" />
-                        </div>
-                        <span className="text-xs font-bold">{type.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <ModuleTypePicker
+                    value={formData.business_type}
+                    onChange={(businessType) => updateFormData("business_type", businessType)}
+                    className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer"
+                  />
+                  <p className="mt-1 text-xs text-ui-muted">The module (Restaurant, Café & Bakery, Shop or Services) decides the page&apos;s words, layout and ordering.</p>
                 </div>
 
                 <div>

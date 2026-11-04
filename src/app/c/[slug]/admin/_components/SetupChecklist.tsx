@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ChevronRight, Circle } from "lucide-react";
 import { useCatalogAdmin } from "./CatalogAdminShell";
-import { useAdminLang, useCopy, useFormat, plural, formatNumber, type AdminLang } from "../_lib/i18n";
+import { useMemo } from "react";
+import { useAdminLang, useCopy, useFormat, plural, type AdminLang } from "../_lib/i18n";
+import { countNoun, pageWord, useModule } from "../_lib/module";
+import type { ModuleDefinition } from "@/lib/modules/registry";
 
 interface Step {
   key: string;
@@ -25,102 +28,108 @@ export const qrPrintedKey = (slug: string) => `qr_print_opened_${slug}`;
 // text is rebuilt here from those, so it can be shown in the dashboard language.
 type StepCopy = (step: Step, n: number, lang: AdminLang) => { title: string; hint: string };
 
-const en = {
-  title: "Get your menu ready",
-  progress: (done: string, total: string) => `${done} of ${total} done`,
-  next: (title: string) => ` · Next: ${title.charAt(0).toLowerCase()}${title.slice(1)}`,
-  progressLabel: "Setup progress",
-  done: " (done)",
-  todo: " (to do)",
-  steps: {
-    details: () => ({ title: "Add your logo and cover photo", hint: "Guests recognise your menu from them." }),
-    whatsapp: () => ({ title: "Add your WhatsApp number", hint: "Orders and table bookings are sent to it." }),
-    currency: (step) =>
-      step.variant === "rate"
-        ? { title: "Set your exchange rate", hint: "Pound prices are worked out from the rate you enter." }
-        : { title: "Choose how prices are shown", hint: "Dollars, pounds, or both." },
-    dishes: (_step, n, lang) => ({
-      title: "Add your dishes",
-      hint: n > 0 ? `${formatNumber(n, lang)} so far.` : "Add them one by one, or import your menu from a spreadsheet or a photo.",
-    }),
-    arabic: (_step, n, lang) => ({
-      title: "Check the Arabic names",
-      hint: n > 0 ? plural(lang, n, { one: "# dish has no Arabic name yet.", other: "# dishes have no Arabic name yet." }) : "Every dish has an Arabic name.",
-    }),
-    hours: () => ({ title: "Set your opening hours", hint: "So guests see whether you're open now." }),
-    publish: (_step, n, lang) => ({
-      title: "Preview and publish",
-      hint: n > 0 ? plural(lang, n, { one: "# unpublished change.", other: "# unpublished changes." }) : "Guests only see what you publish.",
-    }),
-    qr: () => ({ title: "Print your QR codes", hint: "Table cards with a short web address under the code." }),
-  } as Record<string, StepCopy>,
-};
-const ar: typeof en = {
-  title: "جهّز قائمتك",
-  progress: (done, total) => `أنجزت ${done} من ${total}`,
-  next: (title) => ` · التالي: ${title}`,
-  progressLabel: "تقدّم تجهيز القائمة",
-  done: " (تم)",
-  todo: " (لم يتم بعد)",
-  steps: {
-    details: () => ({ title: "أضف شعارك وصورة الغلاف", hint: "يتعرّف الزبائن على قائمتك من خلالهما." }),
-    whatsapp: () => ({ title: "أضف رقم واتساب", hint: "تصلك عليه الطلبات وحجوزات الطاولات." }),
-    currency: (step) =>
-      step.variant === "rate"
-        ? { title: "حدّد سعر الصرف", hint: "تُحسب الأسعار بالليرة اللبنانية من سعر الصرف الذي تدخله." }
-        : { title: "اختر طريقة عرض الأسعار", hint: "بالدولار أو بالليرة أو بالاثنين معاً." },
-    dishes: (_step, n, lang) => ({
-      title: "أضف أطباقك",
-      hint:
-        n > 0
-          ? plural(lang, n, {
-              one: "أضفت طبقاً واحداً حتى الآن.",
-              two: "أضفت طبقين حتى الآن.",
-              few: "أضفت # أطباق حتى الآن.",
-              many: "أضفت # طبقاً حتى الآن.",
-              other: "أضفت # طبق حتى الآن.",
-            })
-          : "أضفها واحداً تلو الآخر، أو استورد قائمتك من جدول أو من صورة.",
-    }),
-    arabic: (_step, n, lang) => ({
-      title: "راجع الأسماء بالعربية",
-      hint:
-        n > 0
-          ? plural(lang, n, {
-              one: "طبق واحد بلا اسم بالعربية بعد.",
-              two: "طبقان بلا اسم بالعربية بعد.",
-              few: "# أطباق بلا اسم بالعربية بعد.",
-              many: "# طبقاً بلا اسم بالعربية بعد.",
-              other: "# طبق بلا اسم بالعربية بعد.",
-            })
-          : "لكل طبق اسم بالعربية.",
-    }),
-    hours: () => ({ title: "حدّد ساعات العمل", hint: "ليعرف الزبائن إن كنت مفتوحاً الآن." }),
-    publish: (_step, n, lang) => ({
-      title: "عاين قائمتك وانشرها",
-      hint:
-        n > 0
-          ? plural(lang, n, {
-              one: "تعديل واحد غير منشور.",
-              two: "تعديلان غير منشورين.",
-              few: "# تعديلات غير منشورة.",
-              many: "# تعديلاً غير منشور.",
-              other: "# تعديل غير منشور.",
-            })
-          : "لا يرى الزبائن إلا ما تنشره.",
-    }),
-    qr: () => ({ title: "اطبع رموز QR", hint: "بطاقات للطاولات مع رابط قصير تحت الرمز." }),
-  },
-};
+interface CopyContext {
+  module: ModuleDefinition;
+  /** Table QR codes add-on on */
+  tables: boolean;
+}
+
+function makeEn({ module, tables }: CopyContext) {
+  const n = module.nouns.en;
+  const page = pageWord(module, "en");
+  return {
+    title: `Get your ${page} ready`,
+    progress: (done: string, total: string) => `${done} of ${total} done`,
+    next: (title: string) => ` · Next: ${title.charAt(0).toLowerCase()}${title.slice(1)}`,
+    progressLabel: "Setup progress",
+    done: " (done)",
+    todo: " (to do)",
+    steps: {
+      details: () => ({ title: "Add your logo and cover photo", hint: "Customers recognise you from them." }),
+      whatsapp: () => ({ title: "Add your WhatsApp number", hint: "Customers can also send their orders to it." }),
+      currency: (step) =>
+        step.variant === "rate"
+          ? { title: "Set your exchange rate", hint: "Pound prices are worked out from the rate you enter." }
+          : { title: "Choose how prices are shown", hint: "Dollars, pounds, or both." },
+      dishes: (_step, count) => ({
+        title: `Add your ${n.many}`,
+        hint: count > 0 ? `${countNoun(module, "en", count)} so far.` : "Add them one by one, or import them from a spreadsheet or a photo.",
+      }),
+      arabic: (_step, count) => ({
+        title: "Check the Arabic names",
+        hint: count > 0 ? `${countNoun(module, "en", count)} without an Arabic name yet.` : `Every ${n.one} has an Arabic name.`,
+      }),
+      hours: () => ({ title: "Set your opening hours", hint: "So customers see whether you're open now." }),
+      publish: (_step, count, lang) => ({
+        title: "Preview and publish",
+        hint: count > 0 ? plural(lang, count, { one: "# unpublished change.", other: "# unpublished changes." }) : "Customers only see what you publish.",
+      }),
+      qr: () => ({
+        title: "Print your QR codes",
+        hint: tables ? "Table cards with a short web address under the code." : "A printable card with your short link under the code.",
+      }),
+    } as Record<string, StepCopy>,
+  };
+}
+
+function makeAr({ module, tables }: CopyContext): ReturnType<typeof makeEn> {
+  const n = module.nouns.ar;
+  const page = pageWord(module, "ar");
+  return {
+    title: `جهّز ${page}`,
+    progress: (done, total) => `أنجزت ${done} من ${total}`,
+    next: (title) => ` · التالي: ${title}`,
+    progressLabel: "تقدّم التجهيز",
+    done: " (تم)",
+    todo: " (لم يتم بعد)",
+    steps: {
+      details: () => ({ title: "أضف شعارك وصورة الغلاف", hint: "يتعرّف الزبائن عليك من خلالهما." }),
+      whatsapp: () => ({ title: "أضف رقم واتساب", hint: "يمكن للزبائن إرسال طلباتهم إليه أيضاً." }),
+      currency: (step) =>
+        step.variant === "rate"
+          ? { title: "حدّد سعر الصرف", hint: "تُحسب الأسعار بالليرة اللبنانية من سعر الصرف الذي تدخله." }
+          : { title: "اختر طريقة عرض الأسعار", hint: "بالدولار أو بالليرة أو بالاثنين معاً." },
+      dishes: (_step, count) => ({
+        title: `أضف ${n.plural}ك`,
+        hint: count > 0 ? `حتى الآن: ${countNoun(module, "ar", count)}.` : "أضفها واحداً تلو الآخر، أو استوردها من جدول أو من صورة.",
+      }),
+      arabic: (_step, count) => ({
+        title: "راجع الأسماء بالعربية",
+        hint: count > 0 ? `${countNoun(module, "ar", count)} بلا اسم بالعربية بعد.` : `لكل ${n.one} اسم بالعربية.`,
+      }),
+      hours: () => ({ title: "حدّد ساعات العمل", hint: "ليعرف الزبائن إن كنت مفتوحاً الآن." }),
+      publish: (_step, count, lang) => ({
+        title: "المعاينة والنشر",
+        hint:
+          count > 0
+            ? plural(lang, count, {
+                one: "تعديل واحد غير منشور.",
+                two: "تعديلان غير منشورين.",
+                few: "# تعديلات غير منشورة.",
+                many: "# تعديلاً غير منشور.",
+                other: "# تعديل غير منشور.",
+              })
+            : "لا يرى الزبائن إلا ما تنشره.",
+      }),
+      qr: () => ({
+        title: "اطبع رموز QR",
+        hint: tables ? "بطاقات للطاولات مع رابط قصير تحت الرمز." : "بطاقة للطباعة مع رابطك القصير تحت الرمز.",
+      }),
+    },
+  };
+}
 
 /**
- * "Get your menu ready" on the dashboard. Progress comes from the menu's own data, so it is
+ * "Get your menu / store / page ready" on the dashboard. Progress comes from the menu's own data, so it is
  * saved automatically; the card disappears once every step is done.
  */
 export function SetupChecklist() {
   const { slug, fetchWithAuth } = useCatalogAdmin();
   const lang = useAdminLang();
-  const t = useCopy({ en, ar });
+  const { module, has } = useModule();
+  const tables = has("tables");
+  const copy = useMemo(() => ({ en: makeEn({ module, tables }), ar: makeAr({ module, tables }) }), [module, tables]);
+  const t = useCopy(copy);
   const f = useFormat();
   const [steps, setSteps] = useState<Step[] | null>(null);
 

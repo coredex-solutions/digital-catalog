@@ -8,6 +8,9 @@ import {
   CatalogAdminContent,
 } from "../_components/CatalogAdminSidebar";
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
+import { useModule } from "../_lib/module";
+import { AddonsCard } from "./_components/AddonsCard";
+import type { OrderType } from "@/lib/modules/registry";
 import { useAdminLang, useCopy, useFormat } from "../_lib/i18n";
 import { translateApiMessage } from "../_lib/api-errors";
 import {
@@ -99,10 +102,8 @@ type SettingsUpdate = { [K in keyof Settings]?: Partial<NonNullable<Settings[K]>
 type SettingsTab = "appearance" | "contact" | "pricing" | "features" | "ai";
 /** Each tab saves its own part of the settings */
 type SaveSection = "branding" | "contact" | "pricing" | "features" | "ai";
-type OrderType = "dine_in" | "takeaway" | "delivery";
 type UploadField = "logo_url" | "hero_image_url";
 
-const ORDER_TYPE_IDS: OrderType[] = ["dine_in", "takeaway", "delivery"];
 
 const copyEn = {
   sectionsLabel: "Settings sections",
@@ -180,12 +181,15 @@ const copyEn = {
   showBoth: "Show both currencies",
   showBothOn: "Turn off to show only the main currency.",
   showBothNeedsRate: "Set an exchange rate first.",
-  whatsappOrders: "WhatsApp orders",
-  whatsappOrdersBody: "Choose how guests can order. Orders arrive on the WhatsApp number from the Contact tab.",
+  whatsappOrders: "Orders",
+  whatsappOrdersBody: "Choose how customers can order. Orders appear on the Orders page, and customers can also send them to the WhatsApp number from the Contact tab.",
   orderTypes: {
-    dine_in: { label: "Dine-in", hint: "Guests order from their table (they're asked for the table number)" },
-    takeaway: { label: "Takeaway", hint: "Guests pick up their order" },
-    delivery: { label: "Delivery", hint: "Guests enter an address and area" },
+    dine_in: { label: "Dine-in", hint: "Customers order from their table (they're asked for the table number)" },
+    takeaway: { label: "Takeaway / pickup", hint: "Customers pick up their order" },
+    delivery: { label: "Delivery", hint: "Customers enter an address and area" },
+    pickup: { label: "Pickup", hint: "Customers collect their order from the shop" },
+    at_location: { label: "At the shop", hint: "Customers come to you for the service" },
+    home_visit: { label: "Home visit", hint: "You go to the customer; they enter an address" },
   } as Record<OrderType, { label: string; hint: string }>,
   deliveryNoteEn: "Delivery note in English",
   deliveryNoteAr: "Delivery note in Arabic",
@@ -195,8 +199,8 @@ const copyEn = {
   features: "Features",
   whatsappOrdering: "WhatsApp orders",
   whatsappOrderingBody: "Let guests send their order on WhatsApp",
-  bookings: "Bookings",
-  bookingsBody: "Let guests book a table or an appointment",
+  bookings: "Table bookings",
+  bookingsBody: "Let customers ask for a table. Requests appear on the Orders page.",
   aiWaiter: "AI waiter",
   aiWaiterBody: "Let the AI waiter answer guests' questions about the menu",
   buttonLabels: "Button labels",
@@ -287,12 +291,15 @@ const copyAr: typeof copyEn = {
   showBoth: "عرض العملتين",
   showBothOn: "أوقفه لعرض العملة الأساسية فقط.",
   showBothNeedsRate: "حدّد سعر الصرف أولاً.",
-  whatsappOrders: "الطلبات عبر واتساب",
-  whatsappOrdersBody: "اختر كيف يمكن للزبائن الطلب. تصل الطلبات إلى رقم واتساب المذكور في تبويب التواصل.",
+  whatsappOrders: "الطلبات",
+  whatsappOrdersBody: "اختر كيف يمكن للزبائن الطلب. تظهر الطلبات في صفحة الطلبات، ويمكن للزبائن إرسالها أيضاً إلى رقم واتساب المذكور في تبويب التواصل.",
   orderTypes: {
-    dine_in: { label: "في المطعم", hint: "يطلب الزبائن من طاولتهم (ويُطلب منهم رقم الطاولة)" },
-    takeaway: { label: "سفري", hint: "يستلم الزبائن طلبهم بأنفسهم" },
+    dine_in: { label: "في المحل", hint: "يطلب الزبائن من طاولتهم (ويُطلب منهم رقم الطاولة)" },
+    takeaway: { label: "سفري / استلام", hint: "يستلم الزبائن طلبهم بأنفسهم" },
     delivery: { label: "توصيل", hint: "يُدخل الزبائن العنوان والمنطقة" },
+    pickup: { label: "استلام من المحل", hint: "يستلم الزبائن طلبهم من المتجر" },
+    at_location: { label: "في المحل", hint: "يأتي الزبائن إليك للخدمة" },
+    home_visit: { label: "زيارة منزلية", hint: "تذهب أنت إلى الزبون، ويُدخل عنوانه" },
   },
   deliveryNoteEn: "ملاحظة التوصيل بالإنجليزية",
   deliveryNoteAr: "ملاحظة التوصيل بالعربية",
@@ -301,8 +308,8 @@ const copyAr: typeof copyEn = {
   features: "الميزات",
   whatsappOrdering: "الطلبات عبر واتساب",
   whatsappOrderingBody: "اسمح للزبائن بإرسال طلبهم عبر واتساب",
-  bookings: "الحجوزات",
-  bookingsBody: "اسمح للزبائن بحجز طاولة أو موعد",
+  bookings: "حجز الطاولات",
+  bookingsBody: "اسمح للزبائن بطلب حجز طاولة. تظهر الطلبات في صفحة الطلبات.",
   aiWaiter: "النادل الذكي",
   aiWaiterBody: "دع النادل الذكي يجيب عن أسئلة الزبائن حول القائمة",
   buttonLabels: "نصوص الأزرار",
@@ -498,6 +505,7 @@ function SettingsPageContent() {
   const lang = useAdminLang();
   const t = useCopy({ en: copyEn, ar: copyAr });
   const f = useFormat();
+  const { module } = useModule();
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -884,6 +892,7 @@ function SettingsPageContent() {
                     <figure>
                       <div className="relative mx-auto w-full max-w-[300px] h-[560px] rounded-[28px] border-[8px] border-[#1c2622] shadow-xl overflow-hidden bg-ui-bg">
                         <MenuBrandPreview
+                          module={module.id}
                           brandColor={settings.appearance.color_primary}
                           theme={previewMode}
                           lang={previewLang}
@@ -1064,7 +1073,7 @@ function SettingsPageContent() {
                     </div>
 
                     <div className="space-y-4">
-                      {ORDER_TYPE_IDS.map((id) => {
+                      {module.orderTypes.map((id) => {
                         const enabled = settings.ordering.order_types.split(",").includes(id);
                         return (
                           <ToggleSwitch
@@ -1078,7 +1087,7 @@ function SettingsPageContent() {
                               updateSettings(
                                 "ordering",
                                 "order_types",
-                                ORDER_TYPE_IDS.filter((type) => next.includes(type)).join(",")
+                                module.orderTypes.filter((type) => next.includes(type)).join(",")
                               );
                             }}
                           />
@@ -1131,6 +1140,7 @@ function SettingsPageContent() {
               {/* Features */}
               {activeTab === "features" && (
                 <div className="space-y-8">
+                  <AddonsCard />
                   <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-6">
                     <h3 className="text-sm font-semibold text-ui-heading mb-10">{t.features}</h3>
                     <ToggleSwitch
@@ -1139,12 +1149,14 @@ function SettingsPageContent() {
                       checked={settings.features.whatsapp_order_enabled}
                       onChange={(v) => updateSettings("features", "whatsapp_order_enabled", v)}
                     />
-                    <ToggleSwitch
-                      label={t.bookings}
-                      description={t.bookingsBody}
-                      checked={settings.features.booking_enabled}
-                      onChange={(v) => updateSettings("features", "booking_enabled", v)}
-                    />
+                    {module.tableBooking && (
+                      <ToggleSwitch
+                        label={t.bookings}
+                        description={t.bookingsBody}
+                        checked={settings.features.booking_enabled}
+                        onChange={(v) => updateSettings("features", "booking_enabled", v)}
+                      />
+                    )}
                     <ToggleSwitch
                       label={t.aiWaiter}
                       description={t.aiWaiterBody}

@@ -20,6 +20,8 @@ import { v4 as uuidv4 } from "uuid";
 import { getDb } from "@/lib/db/client";
 import { getR2PublicUrl } from "@/lib/r2/client";
 import { uploadBufferToR2 } from "@/lib/r2/upload";
+import { getModule } from "../modules/resolve";
+import type { ModuleId } from "../modules/registry";
 import { AI_MODELS } from "@/lib/ai/models";
 
 export type ImageJobKind = "enhance" | "illustrate";
@@ -30,6 +32,11 @@ export const IMAGE_STYLES = {
   bright: { label: "Clean and bright", prompt: "bright, even light and a plain, light, uncluttered background" },
   warm: { label: "Warm restaurant", prompt: "warm, gentle restaurant lighting with a softly blurred table in the background" },
 } as const;
+
+/** The "warm" style outside food businesses: same mood, no restaurant table */
+const WARM_NON_FOOD = "warm, gentle indoor lighting with a softly blurred background";
+
+const styleFor = (style: ImageStyle, food: boolean) => (style === "warm" && !food ? WARM_NON_FOOD : IMAGE_STYLES[style].prompt);
 export type ImageStyle = keyof typeof IMAGE_STYLES;
 
 const STALE_MINUTES = 10;
@@ -246,11 +253,15 @@ export async function runJob(catalogId: string, jobId: string) {
 
   try {
     const item = (
-      await db.execute({ sql: "SELECT name_en, name_ar, description_en FROM menu_items WHERE id = ? AND catalog_id = ?", args: [String(row.item_id), catalogId] })
+      await db.execute({
+        sql: `SELECT m.name_en, m.name_ar, m.description_en, c.module, c.business_type
+              FROM menu_items m JOIN catalogs c ON c.id = m.catalog_id WHERE m.id = ? AND m.catalog_id = ?`,
+        args: [String(row.item_id), catalogId],
+      })
     ).rows[0];
     if (!item) throw new Error("This dish was deleted.");
 
-    const image = await generate(row.kind as ImageJobKind, row.style as ImageStyle, row.source_url as string | null, item as Row);
+    const image = await generate(row.kind as ImageJobKind, row.style as ImageStyle, row.source_url as string | null, item as Row, getModule(item as Row).id);
     const resultUrl = await storeResult(catalogId, image);
     await db.execute({
       sql: "UPDATE ai_image_jobs SET status = 'ready', result_url = ?, updated_at = datetime('now') WHERE id = ? AND status = 'processing'",
@@ -338,7 +349,20 @@ interface GeneratedImage {
   mimeType: string;
 }
 
-function enhancePrompt(style: ImageStyle): string {
+function enhancePrompt(style: ImageStyle, moduleId: ModuleId): string {
+  if (moduleId === "shop") {
+    return `Edit this photo of a real product sold in a shop. It will be shown to customers as the photo of what they will receive.
+Improve only the lighting, white balance, sharpness and background: ${styleFor(style, false)}.
+Do not change the product's shape, size, colour, material, pattern, label, packaging or any text or logo printed on it, and do not add or remove items.
+Do not complete or extend anything cut off at the edges of the frame; keep the original framing.
+No filters, no added text, no watermark. Return only the edited photo.`;
+  }
+  if (moduleId === "services") {
+    return `Edit this photo taken by a local business to show one of its services. Customers will see it next to the service.
+Improve only the lighting, white balance, sharpness and background: ${styleFor(style, false)}.
+Do not add, remove or change people, faces, results of the work, tools, products or anything in the scene. Keep the original framing.
+No filters, no added text, no watermark. Return only the edited photo.`;
+  }
   return `Edit this photo of a real dish served at a restaurant. It will be shown to guests as the photo of what they will receive.
 Improve only the lighting, white balance, sharpness and background: ${IMAGE_STYLES[style].prompt}.
 Do not add, remove, move, resize or change any food, ingredient, garnish, sauce, portion, piece count, plate, bowl, glass or container.
@@ -346,15 +370,24 @@ Do not complete or extend anything cut off at the edges of the frame; keep the o
 Keep the food's real colours and texture. No filters, no text, no logos, no watermark. Return only the edited photo.`;
 }
 
-function illustratePrompt(style: ImageStyle, item: Row): string {
+function illustratePrompt(style: ImageStyle, item: Row, moduleId: ModuleId): string {
   const name = String(item.name_en || item.name_ar || "the dish");
   const description = item.description_en ? `: ${String(item.description_en)}` : "";
+  if (moduleId === "shop") {
+    return `Create a realistic, catalogue-style product photograph of "${name}"${description}.
+Lighting and background: ${styleFor(style, false)}. The product centred with space around it, nothing else in the frame.
+No text, no logos or brand names, no watermark, no people, no hands.`;
+  }
+  if (moduleId === "services") {
+    return `Create a calm, realistic photograph-style image that represents the service "${name}"${description}, as offered by a local business in Lebanon.
+Lighting and background: ${styleFor(style, false)}. No recognisable faces, no text, no logos, no watermark.`;
+  }
   return `Create a realistic, appetising photograph-style image of "${name}"${description}, as a single serving typically presented in a Lebanese restaurant.
 Lighting and background: ${IMAGE_STYLES[style].prompt}. Natural three-quarter angle, the dish centred with space around it.
 Show only this dish and what is described. No text, no logos, no watermark, no people, no hands.`;
 }
 
-async function generate(kind: ImageJobKind, style: ImageStyle, sourceUrl: string | null, item: Row): Promise<GeneratedImage> {
+async function generate(kind: ImageJobKind, style: ImageStyle, sourceUrl: string | null, item: Row, moduleId: ModuleId = "restaurant"): Promise<GeneratedImage> {
   if (FAKE) {
     await new Promise((resolve) => setTimeout(resolve, Number(process.env.AI_IMAGE_FAKE_DELAY_MS || 1500)));
     if (String(item.name_en || "").includes("[fail]")) throw new Error("fake failure");
@@ -382,9 +415,9 @@ async function generate(kind: ImageJobKind, style: ImageStyle, sourceUrl: string
     if (bytes.length > MAX_SOURCE_BYTES) throw new Error("The photo is too large to enhance");
     // Normalise to JPEG so any uploaded format is accepted
     const jpeg = await sharp(bytes).rotate().jpeg({ quality: 90 }).toBuffer();
-    parts.push(enhancePrompt(style), { inlineData: { mimeType: "image/jpeg", data: jpeg.toString("base64") } });
+    parts.push(enhancePrompt(style, moduleId), { inlineData: { mimeType: "image/jpeg", data: jpeg.toString("base64") } });
   } else {
-    parts.push(illustratePrompt(style, item));
+    parts.push(illustratePrompt(style, item, moduleId));
   }
 
   const result = await model.generateContent(parts);

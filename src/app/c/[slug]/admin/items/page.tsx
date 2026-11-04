@@ -9,7 +9,9 @@ import {
   type DietaryCode,
   type DishVariant,
 } from "@/lib/catalog/dish-info";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ItemNouns } from "@/lib/modules/registry";
+import { useModule } from "../_lib/module";
 import { matchesQuery } from "../../_lib/search";
 import { keepFocusOnRow } from "../_components/keepFocusOnRow";
 import { AiPhotoPanel } from "./_components/AiPhotoPanel";
@@ -20,7 +22,7 @@ import {
   CatalogAdminHeader,
   CatalogAdminContent,
 } from "../_components/CatalogAdminSidebar";
-import { ADMIN_NAV_LABELS } from "../_components/adminNav";
+import { adminNavLabels } from "../_components/adminNav";
 import { formatNumber, pickName, plural, useAdminLang, useCopy, useFormat } from "../_lib/i18n";
 import {
   Plus,
@@ -67,7 +69,16 @@ interface Item {
   dietary?: DietaryCode[];
   /** null = allergens not checked yet */
   allergens?: AllergenCode[] | null;
+  /** Shops and services (migration 20261105) */
+  stock_qty?: number | null;
+  sku?: string | null;
+  compare_at_price?: number | null;
+  duration_minutes?: number | null;
 }
+
+/** The shop/service fields as typed in the form ("" = empty) */
+const EMPTY_EXTRAS = { stock_qty: "", sku: "", compare_at_price: "", duration_minutes: "" };
+const asText = (value: unknown) => (value === null || value === undefined ? "" : String(value));
 
 /** An option row being edited (price kept as typed text) */
 interface OptionDraft {
@@ -77,164 +88,232 @@ interface OptionDraft {
   price: string;
 }
 
-const en = {
-  addDish: "Add dish",
-  importDishes: "Import",
-  importHint: "Or import them from a spreadsheet or a photo of your printed menu.",
-  limitReached: (max: number) =>
-    `You've reached your plan's limit of ${plural("en", max, { one: "# dish", other: "# dishes" })}. Upgrade in Plan & billing to add more.`,
-  saveFailed: "Could not save this dish. Please try again.",
-  nameRequired: "Enter the dish name in Arabic or English.",
-  categoryRequired: "Choose a category for this dish. Add one on the Categories page first if you have none.",
-  priceRequired: "Enter a price, or add options with their own prices.",
-  offline: "Could not reach the server. Check your connection and try again.",
-  availabilityFailed: "Couldn't update availability. Please try again.",
-  deleteConfirm: (name: string) => `Delete “${name}”? This can't be undone.`,
-  deleteConfirmUnnamed: "Delete this dish? This can't be undone.",
-  uploadFailed: "Couldn't upload the photo. Please try again.",
-  deleteFailed: "Couldn't delete this dish. Please try again.",
-  noCategory: "Without a category",
-  orderFailed: "Couldn't save the new order. Please try again.",
-  searchLabel: "Search dishes",
-  searchPlaceholder: "Search by name, English or Arabic",
-  filterLabel: "Filter by category",
-  allCategories: "All categories",
-  count: (n: number) => plural("en", n, { one: "# dish", other: "# dishes" }),
-  countFiltered: (shown: number, total: number) =>
-    `${formatNumber(shown, "en")} of ${plural("en", total, { one: "# dish", other: "# dishes" })}`,
-  noMatch: (query: string) => `No dishes match “${query}”`,
-  noneInCategory: "No dishes in this category yet",
-  showAll: "Show all dishes",
-  empty: "You haven't added any dishes yet",
-  addFirst: "Add your first dish",
-  done: "Done",
-  changeOrder: "Change order",
-  moveUp: (name: string) => `Move ${name} up`,
-  moveDown: (name: string) => `Move ${name} down`,
-  orderHint: "Saved as you go. Guests see the new order after you publish.",
-  recommended: "Recommended",
-  edit: (name: string) => `Edit ${name}`,
-  delete: (name: string) => `Delete ${name}`,
-  soldOutRestore: "Sold out · Restore",
-  markSoldOut: "Mark sold out",
-  editDish: "Edit dish",
-  newDish: "Add a dish",
-  close: "Close",
-  photo: "Photo",
-  dishPhoto: "Dish photo",
-  removePhoto: "Remove photo",
-  illustrative: "Illustrative image",
-  uploading: "Uploading…",
-  uploadPhoto: "Upload a photo",
-  uploadHint: "JPEG, PNG or WebP, up to 2 MB",
-  contentLanguage: "Language of the text",
-  nameEn: "Name in English",
-  descriptionEn: "Description in English",
-  nameAr: "Name in Arabic",
-  descriptionAr: "Description in Arabic",
-  price: "Price",
-  currency: "Currency",
-  currencies: { USD: "US dollar (USD)", LBP: "Lebanese pound (L.L.)" } as Record<string, string>,
-  category: "Category",
-  recommendedDish: "Recommended dish",
-  options: "Options",
-  optionsHint: "For sizes or choices with their own price, e.g. Regular $6 and Large $8. Guests must pick one.",
-  optionEn: (n: number) => `Option ${n} in English`,
-  optionAr: (n: number) => `Option ${n} in Arabic`,
-  removeOption: (n: number) => `Remove option ${n}`,
-  remove: "Remove",
-  addOption: "+ Add option",
-  optionsPriceHint: "The dish shows “from” the cheapest option; the price field above is not used.",
-  dietary: "Dietary tags",
-  allergens: "Allergens",
-  allergensChecked: "I have checked this dish's allergens",
-  allergensHint: "Leave unchecked if you're not sure. Guests will be told to ask staff.",
-  noAllergens: "Guests will see: no listed allergens, as checked by the restaurant.",
-  cancel: "Cancel",
-  saving: "Saving…",
-  saveDish: "Save dish",
-};
-const ar: typeof en = {
-  addDish: "إضافة طبق",
-  importDishes: "استيراد",
-  importHint: "أو استوردها من جدول أو من صورة قائمتك المطبوعة.",
-  limitReached: (max) => `وصلت إلى الحد الأقصى للأطباق في باقتك (${formatNumber(max, "ar")}). رقِّ باقتك من «الباقة والدفع» لإضافة المزيد.`,
-  saveFailed: "تعذّر حفظ هذا الطبق. حاول مرة أخرى.",
-  nameRequired: "أدخل اسم الطبق بالعربية أو بالإنجليزية.",
-  categoryRequired: "اختر قسماً لهذا الطبق. إن لم يكن لديك أقسام، أضف قسماً من صفحة الأقسام أولاً.",
-  priceRequired: "أدخل السعر، أو أضف خيارات لكل منها سعره.",
-  offline: "تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت وحاول مجدداً.",
-  availabilityFailed: "تعذّر تحديث التوفر. حاول مرة أخرى.",
-  deleteConfirm: (name) => `حذف «${name}»؟ لا يمكن التراجع عن ذلك.`,
-  deleteConfirmUnnamed: "حذف هذا الطبق؟ لا يمكن التراجع عن ذلك.",
-  uploadFailed: "تعذّر رفع الصورة. حاول مرة أخرى.",
-  deleteFailed: "تعذّر حذف هذا الطبق. حاول مرة أخرى.",
-  noCategory: "بلا قسم",
-  orderFailed: "تعذّر حفظ الترتيب الجديد. حاول مرة أخرى.",
-  searchLabel: "البحث في الأطباق",
-  searchPlaceholder: "ابحث بالاسم، بالعربية أو الإنجليزية",
-  filterLabel: "تصفية حسب القسم",
-  allCategories: "كل الأقسام",
-  count: (n) => plural("ar", n, { zero: "لا أطباق", one: "طبق واحد", two: "طبقان", few: "# أطباق", many: "# طبقاً", other: "# طبق" }),
-  countFiltered: (shown, total) =>
-    `يظهر ${formatNumber(shown, "ar")} من أصل ${plural("ar", total, { zero: "# طبق", one: "طبق واحد", two: "طبقين", few: "# أطباق", many: "# طبقاً", other: "# طبق" })}`,
-  noMatch: (query) => `لا توجد أطباق تطابق «${query}»`,
-  noneInCategory: "لا أطباق في هذا القسم بعد",
-  showAll: "عرض كل الأطباق",
-  empty: "لم تضف أي طبق بعد",
-  addFirst: "أضف طبقك الأول",
-  done: "تم",
-  changeOrder: "تغيير الترتيب",
-  moveUp: (name) => `نقل ${name} للأعلى`,
-  moveDown: (name) => `نقل ${name} للأسفل`,
-  orderHint: "يُحفظ الترتيب تلقائياً، ويظهر للضيوف بعد النشر.",
-  recommended: "ننصح به",
-  edit: (name) => `تعديل ${name}`,
-  delete: (name) => `حذف ${name}`,
-  soldOutRestore: "نفدت الكمية · إعادة التوفر",
-  markSoldOut: "تحديد كنافد",
-  editDish: "تعديل الطبق",
-  newDish: "إضافة طبق",
-  close: "إغلاق",
-  photo: "الصورة",
-  dishPhoto: "صورة الطبق",
-  removePhoto: "إزالة الصورة",
-  illustrative: "صورة توضيحية",
-  uploading: "جارٍ الرفع…",
-  uploadPhoto: "رفع صورة",
-  uploadHint: "JPEG أو PNG أو WebP، حتى 2 ميغابايت",
-  contentLanguage: "لغة النص",
-  nameEn: "الاسم بالإنجليزية",
-  descriptionEn: "الوصف بالإنجليزية",
-  nameAr: "الاسم بالعربية",
-  descriptionAr: "الوصف بالعربية",
-  price: "السعر",
-  currency: "العملة",
-  currencies: { USD: "الدولار (USD)", LBP: "الليرة اللبنانية (ل.ل.)" },
-  category: "القسم",
-  recommendedDish: "طبق ننصح به",
-  options: "الخيارات",
-  optionsHint: "للأحجام أو الخيارات التي لها سعر خاص، مثل عادي 6$ وكبير 8$. على الضيف اختيار واحد منها.",
-  optionEn: (n) => `الخيار ${n} بالإنجليزية`,
-  optionAr: (n) => `الخيار ${n} بالعربية`,
-  removeOption: (n) => `إزالة الخيار ${n}`,
-  remove: "إزالة",
-  addOption: "+ إضافة خيار",
-  optionsPriceHint: "يظهر الطبق بسعر «ابتداءً من» أرخص خيار، ولا يُستخدم حقل السعر أعلاه.",
-  dietary: "الوسوم الغذائية",
-  allergens: "مسببات الحساسية",
-  allergensChecked: "تحققت من مسببات الحساسية في هذا الطبق",
-  allergensHint: "اتركه بلا تحديد إن لم تكن متأكداً، وسيُطلب من الضيوف سؤال الموظفين.",
-  noAllergens: "سيرى الضيوف: لا مسببات حساسية مذكورة، بحسب تحقق المطعم.",
-  cancel: "إلغاء",
-  saving: "جارٍ الحفظ…",
-  saveDish: "حفظ الطبق",
-};
+/** Text for the item editor, with the module's nouns (dish / item / product / service) */
+function makeEn(n: ItemNouns["en"]) {
+  const One = cap(n.one);
+  const count = (x: number) => plural("en", x, { one: `# ${n.one}`, other: `# ${n.many}` });
+  return {
+    addDish: `Add ${n.one}`,
+    importDishes: "Import",
+    importHint: "Or import them from a spreadsheet or a photo of your printed list.",
+    limitReached: (max: number) => `You've reached your plan's limit of ${count(max)}. Upgrade in Plan & billing to add more.`,
+    saveFailed: `Could not save this ${n.one}. Please try again.`,
+    nameRequired: `Enter the ${n.one} name in Arabic or English.`,
+    categoryRequired: `Choose a category for this ${n.one}. Add one on the Categories page first if you have none.`,
+    priceRequired: "Enter a price, or add options with their own prices.",
+    offline: "Could not reach the server. Check your connection and try again.",
+    availabilityFailed: "Couldn't update availability. Please try again.",
+    deleteConfirm: (name: string) => `Delete “${name}”? This can't be undone.`,
+    deleteConfirmUnnamed: `Delete this ${n.one}? This can't be undone.`,
+    uploadFailed: "Couldn't upload the photo. Please try again.",
+    deleteFailed: `Couldn't delete this ${n.one}. Please try again.`,
+    noCategory: "Without a category",
+    orderFailed: "Couldn't save the new order. Please try again.",
+    searchLabel: `Search ${n.many}`,
+    searchPlaceholder: "Search by name, English or Arabic",
+    filterLabel: "Filter by category",
+    allCategories: "All categories",
+    count,
+    countFiltered: (shown: number, total: number) => `${formatNumber(shown, "en")} of ${count(total)}`,
+    noMatch: (query: string) => `No ${n.many} match “${query}”`,
+    noneInCategory: `No ${n.many} in this category yet`,
+    showAll: `Show all ${n.many}`,
+    empty: `You haven't added any ${n.many} yet`,
+    addFirst: `Add your first ${n.one}`,
+    done: "Done",
+    changeOrder: "Change order",
+    moveUp: (name: string) => `Move ${name} up`,
+    moveDown: (name: string) => `Move ${name} down`,
+    orderHint: "Saved as you go. Customers see the new order after you publish.",
+    recommended: "Recommended",
+    edit: (name: string) => `Edit ${name}`,
+    delete: (name: string) => `Delete ${name}`,
+    soldOutRestore: "Sold out · Restore",
+    markSoldOut: "Mark sold out",
+    editDish: `Edit ${n.one}`,
+    newDish: `Add a ${n.one}`,
+    close: "Close",
+    photo: "Photo",
+    dishPhoto: `${One} photo`,
+    removePhoto: "Remove photo",
+    illustrative: "Illustrative image",
+    uploading: "Uploading…",
+    uploadPhoto: "Upload a photo",
+    uploadHint: "JPEG, PNG or WebP, up to 2 MB",
+    contentLanguage: "Language of the text",
+    nameEn: "Name in English",
+    descriptionEn: "Description in English",
+    nameAr: "Name in Arabic",
+    descriptionAr: "Description in Arabic",
+    price: "Price",
+    currency: "Currency",
+    currencies: { USD: "US dollar (USD)", LBP: "Lebanese pound (L.L.)" } as Record<string, string>,
+    category: "Category",
+    recommendedDish: `Recommended ${n.one}`,
+    options: "Options",
+    optionsHint: "For sizes, colours or choices with their own price, e.g. Regular $6 and Large $8. Customers must pick one.",
+    optionEn: (x: number) => `Option ${x} in English`,
+    optionAr: (x: number) => `Option ${x} in Arabic`,
+    removeOption: (x: number) => `Remove option ${x}`,
+    remove: "Remove",
+    addOption: "+ Add option",
+    optionsPriceHint: `The ${n.one} shows “from” the cheapest option; the price field above is not used.`,
+    dietary: "Dietary tags",
+    allergens: "Allergens",
+    allergensChecked: `I have checked this ${n.one}'s allergens`,
+    allergensHint: "Leave unchecked if you're not sure. Customers will be told to ask staff.",
+    noAllergens: "Customers will see: no listed allergens, as checked by you.",
+    stock: "Stock",
+    stockHint: "Units left. Leave empty to not track it; at 0 it shows as sold out.",
+    sku: "SKU / code",
+    skuHint: "For your own reference; customers don't see it.",
+    compareAt: "Old price",
+    compareAtHint: "Shown crossed out next to the price, for a sale. Must be higher than the price.",
+    duration: "Duration (minutes)",
+    durationHint: "How long it takes. Customers see it next to the price.",
+    stockLeft: (x: number) => `${formatNumber(x, "en")} left`,
+    outOfStock: "Out of stock",
+    cancel: "Cancel",
+    saving: "Saving…",
+    saveDish: `Save ${n.one}`,
+  };
+}
+
+function makeAr(n: ItemNouns["ar"]): ReturnType<typeof makeEn> {
+  const the = `ال${n.one}`;
+  const theMany = `ال${n.plural}`;
+  const thisOne = `${n.feminine ? "هذه" : "هذا"} ${the}`;
+  const yourOne = `${n.one.replace(/ة$/, "ت")}ك ${n.feminine ? "الأولى" : "الأول"}`;
+  const count = (x: number) =>
+    plural("ar", x, {
+      zero: `لا ${n.plural}`,
+      one: `${n.one} ${n.feminine ? "واحدة" : "واحد"}`,
+      two: n.two,
+      few: `# ${n.plural}`,
+      many: `# ${n.acc}`,
+      other: `# ${n.one}`,
+    });
+  return {
+    addDish: `إضافة ${n.one}`,
+    importDishes: "استيراد",
+    importHint: "أو استوردها من جدول أو من صورة لائحتك المطبوعة.",
+    limitReached: (max) => `وصلت إلى الحد الأقصى لل${n.plural} في باقتك (${formatNumber(max, "ar")}). رقِّ باقتك من «الباقة والدفع» لإضافة المزيد.`,
+    saveFailed: `تعذّر حفظ ${thisOne}. حاول مرة أخرى.`,
+    nameRequired: `أدخل اسم ${the} بالعربية أو بالإنجليزية.`,
+    categoryRequired: `اختر قسماً ل${thisOne}. إن لم يكن لديك أقسام، أضف قسماً من صفحة الأقسام أولاً.`,
+    priceRequired: "أدخل السعر، أو أضف خيارات لكل منها سعره.",
+    offline: "تعذّر الاتصال بالخادم. تحقق من اتصالك بالإنترنت وحاول مجدداً.",
+    availabilityFailed: "تعذّر تحديث التوفر. حاول مرة أخرى.",
+    deleteConfirm: (name) => `حذف «${name}»؟ لا يمكن التراجع عن ذلك.`,
+    deleteConfirmUnnamed: `حذف ${thisOne}؟ لا يمكن التراجع عن ذلك.`,
+    uploadFailed: "تعذّر رفع الصورة. حاول مرة أخرى.",
+    deleteFailed: `تعذّر حذف ${thisOne}. حاول مرة أخرى.`,
+    noCategory: "بلا قسم",
+    orderFailed: "تعذّر حفظ الترتيب الجديد. حاول مرة أخرى.",
+    searchLabel: `البحث في ${theMany}`,
+    searchPlaceholder: "ابحث بالاسم، بالعربية أو الإنجليزية",
+    filterLabel: "تصفية حسب القسم",
+    allCategories: "كل الأقسام",
+    count,
+    countFiltered: (shown, total) => `يظهر ${formatNumber(shown, "ar")} من أصل ${count(total)}`,
+    noMatch: (query) => `لا توجد ${n.plural} تطابق «${query}»`,
+    noneInCategory: `لا ${n.plural} في هذا القسم بعد`,
+    showAll: `عرض كل ${theMany}`,
+    empty: `لم تضف أي ${n.one} بعد`,
+    addFirst: `أضف ${yourOne}`,
+    done: "تم",
+    changeOrder: "تغيير الترتيب",
+    moveUp: (name) => `نقل ${name} للأعلى`,
+    moveDown: (name) => `نقل ${name} للأسفل`,
+    orderHint: "يُحفظ الترتيب تلقائياً، ويظهر للزبائن بعد النشر.",
+    recommended: "ننصح به",
+    edit: (name) => `تعديل ${name}`,
+    delete: (name) => `حذف ${name}`,
+    soldOutRestore: "نفدت الكمية · إعادة التوفر",
+    markSoldOut: "تحديد كنافد",
+    editDish: `تعديل ${the}`,
+    newDish: `إضافة ${n.one}`,
+    close: "إغلاق",
+    photo: "الصورة",
+    dishPhoto: `صورة ${the}`,
+    removePhoto: "إزالة الصورة",
+    illustrative: "صورة توضيحية",
+    uploading: "جارٍ الرفع…",
+    uploadPhoto: "رفع صورة",
+    uploadHint: "JPEG أو PNG أو WebP، حتى 2 ميغابايت",
+    contentLanguage: "لغة النص",
+    nameEn: "الاسم بالإنجليزية",
+    descriptionEn: "الوصف بالإنجليزية",
+    nameAr: "الاسم بالعربية",
+    descriptionAr: "الوصف بالعربية",
+    price: "السعر",
+    currency: "العملة",
+    currencies: { USD: "الدولار (USD)", LBP: "الليرة اللبنانية (ل.ل.)" },
+    category: "القسم",
+    recommendedDish: `${n.one} ننصح ${n.feminine ? "بها" : "به"}`,
+    options: "الخيارات",
+    optionsHint: "للأحجام أو الألوان أو الخيارات التي لها سعر خاص، مثل عادي 6$ وكبير 8$. على الزبون اختيار واحد منها.",
+    optionEn: (x) => `الخيار ${x} بالإنجليزية`,
+    optionAr: (x) => `الخيار ${x} بالعربية`,
+    removeOption: (x) => `إزالة الخيار ${x}`,
+    remove: "إزالة",
+    addOption: "+ إضافة خيار",
+    optionsPriceHint: `${n.feminine ? "تظهر" : "يظهر"} ${the} بسعر «ابتداءً من» أرخص خيار، ولا يُستخدم حقل السعر أعلاه.`,
+    dietary: "الوسوم الغذائية",
+    allergens: "مسببات الحساسية",
+    allergensChecked: `تحققت من مسببات الحساسية في ${thisOne}`,
+    allergensHint: "اتركه بلا تحديد إن لم تكن متأكداً، وسيُطلب من الزبائن سؤال الموظفين.",
+    noAllergens: "سيرى الزبائن: لا مسببات حساسية مذكورة، بحسب تحققك.",
+    stock: "المخزون",
+    stockHint: "الكمية المتبقية. اتركه فارغاً لعدم التتبع، وعند 0 يظهر كنافد.",
+    sku: "الرمز (SKU)",
+    skuHint: "للاستخدام الداخلي، لا يراه الزبائن.",
+    compareAt: "السعر القديم",
+    compareAtHint: "يظهر مشطوباً بجانب السعر، للتخفيضات. يجب أن يكون أعلى من السعر.",
+    duration: "المدة (بالدقائق)",
+    durationHint: "كم تستغرق. يراها الزبائن بجانب السعر.",
+    stockLeft: (x) => `بقي ${formatNumber(x, "ar")}`,
+    outOfStock: "نفد المخزون",
+    cancel: "إلغاء",
+    saving: "جارٍ الحفظ…",
+    saveDish: `حفظ ${the}`,
+  };
+}
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** A number (or text) field for stock, old price, duration or SKU */
+function ExtraField({ id, label, hint, value, onChange, step, text }: { id: string; label: string; hint: string; value: string; onChange: (value: string) => void; step?: string; text?: boolean }) {
+  return (
+    <div>
+      <label htmlFor={id} className="text-xs font-semibold text-ui-muted block mb-2">{label}</label>
+      <input
+        id={id}
+        type={text ? "text" : "number"}
+        dir="ltr"
+        min={text ? undefined : 0}
+        step={step}
+        inputMode={text ? "text" : step === "0.01" ? "decimal" : "numeric"}
+        maxLength={text ? 40 : undefined}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-describedby={`${id}-hint`}
+        className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary"
+      />
+      <p id={`${id}-hint`} className="mt-1 text-xs text-ui-muted">{hint}</p>
+    </div>
+  );
+}
 
 function ItemsPageContent() {
   const { slug, user, fetchWithAuth, features } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
-  const t = useCopy({ en, ar });
+  // Words and fields follow the module: dishes, items, products or services
+  const { module, has } = useModule();
+  const copy = useMemo(() => ({ en: makeEn(module.nouns.en), ar: makeAr(module.nouns.ar) }), [module]);
+  const t = useCopy(copy);
+  const showStock = has("stock");
+  const showDietary = has("dietary");
   const lang = useAdminLang();
   const f = useFormat();
 
@@ -270,6 +349,7 @@ function ItemsPageContent() {
     image_url: "",
     is_featured: false,
   });
+  const [extras, setExtras] = useState(EMPTY_EXTRAS);
   const [options, setOptions] = useState<OptionDraft[]>([]);
   const [dietary, setDietary] = useState<DietaryCode[]>([]);
   // Allergens are only saved once the owner confirms they checked them; otherwise unknown (null)
@@ -339,6 +419,7 @@ function ItemsPageContent() {
       image_url: "",
       is_featured: false,
     });
+    setExtras(EMPTY_EXTRAS);
     setOptions([]);
     setDietary([]);
     setAllergensChecked(false);
@@ -362,6 +443,12 @@ function ItemsPageContent() {
       currency: item.currency,
       image_url: item.image_url || "",
       is_featured: Boolean(item.is_featured),
+    });
+    setExtras({
+      stock_qty: asText(item.stock_qty),
+      sku: asText(item.sku),
+      compare_at_price: asText(item.compare_at_price),
+      duration_minutes: asText(item.duration_minutes),
     });
     setOptions((item.variants || []).map((v) => ({ id: v.id, name_en: v.name_en, name_ar: v.name_ar, price: String(v.price) })));
     setDietary(item.dietary || []);
@@ -400,8 +487,12 @@ function ItemsPageContent() {
       name_ar: formData.name_ar,
       description_ar: formData.description_ar,
       variants: options.map((o) => ({ id: o.id, name_en: o.name_en.trim(), name_ar: o.name_ar.trim(), price: o.price })),
-      dietary,
-      allergens: allergensChecked ? allergens : null,
+      // Fields the module doesn't use are left as they are
+      ...(showDietary ? { dietary, allergens: allergensChecked ? allergens : null } : {}),
+      ...(showStock ? { stock_qty: extras.stock_qty } : {}),
+      ...(module.itemFields.sku ? { sku: extras.sku } : {}),
+      ...(module.itemFields.compareAtPrice ? { compare_at_price: extras.compare_at_price } : {}),
+      ...(module.itemFields.duration ? { duration_minutes: extras.duration_minutes } : {}),
     };
 
     try {
@@ -554,7 +645,7 @@ function ItemsPageContent() {
 
   return (
     <>
-      <CatalogAdminHeader title={ADMIN_NAV_LABELS[lang].items}>
+      <CatalogAdminHeader title={adminNavLabels(lang, module).items}>
         <button
           onClick={openAddModal}
           disabled={isViewer}
@@ -780,6 +871,11 @@ function ItemsPageContent() {
                         <span className="text-xs text-ui-primary me-1">{item.currency}</span>
                         {f.number(Number(item.price) || 0, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
+                      {showStock && item.stock_qty != null && (
+                        <span className={`text-xs font-semibold ${item.stock_qty <= 0 ? "text-ui-warning" : "text-ui-muted"}`}>
+                          {item.stock_qty <= 0 ? t.outOfStock : t.stockLeft(item.stock_qty)}
+                        </span>
+                      )}
                       <button
                         type="button"
                         onClick={() => toggleAvailability(item)}
@@ -948,6 +1044,23 @@ function ItemsPageContent() {
                     </div>
                   </div>
 
+                  {(showStock || module.itemFields.sku || module.itemFields.compareAtPrice || module.itemFields.duration) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {module.itemFields.compareAtPrice && (
+                        <ExtraField id="item-compare" label={t.compareAt} hint={t.compareAtHint} value={extras.compare_at_price} step="0.01" onChange={(v) => setExtras((p) => ({ ...p, compare_at_price: v }))} />
+                      )}
+                      {showStock && (
+                        <ExtraField id="item-stock" label={t.stock} hint={t.stockHint} value={extras.stock_qty} step="1" onChange={(v) => setExtras((p) => ({ ...p, stock_qty: v }))} />
+                      )}
+                      {module.itemFields.duration && (
+                        <ExtraField id="item-duration" label={t.duration} hint={t.durationHint} value={extras.duration_minutes} step="5" onChange={(v) => setExtras((p) => ({ ...p, duration_minutes: v }))} />
+                      )}
+                      {module.itemFields.sku && (
+                        <ExtraField id="item-sku" label={t.sku} hint={t.skuHint} value={extras.sku} text onChange={(v) => setExtras((p) => ({ ...p, sku: v }))} />
+                      )}
+                    </div>
+                  )}
+
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="dish-category" className="text-xs font-semibold text-ui-muted block mb-2">{t.category}</label>
@@ -998,7 +1111,8 @@ function ItemsPageContent() {
                     {options.length > 0 && <p className="text-xs text-ui-muted">{t.optionsPriceHint}</p>}
                   </fieldset>
 
-                  {/* Dietary tags: the restaurant's own claim */}
+                  {/* Dietary tags and allergens: food modules only (the business's own claim) */}
+                  {showDietary && (<>
                   <fieldset className="rounded-panel border border-ui-line p-4">
                     <legend className="px-1 text-sm font-semibold">{t.dietary}</legend>
                     <div className="grid grid-cols-2 gap-2">
@@ -1034,6 +1148,7 @@ function ItemsPageContent() {
                       <p className="mt-2 text-xs text-ui-muted">{t.noAllergens}</p>
                     )}
                   </fieldset>
+                  </>)}
 
                   {saveError && (
                     <p role="alert" className="rounded-control border border-ui-danger bg-ui-subtle px-4 py-3 text-sm text-ui-danger">{saveError}</p>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { AlertTriangle, Check, ImagePlus, Loader2, RotateCcw, Wand2 } from "lucide-react";
 import { formatNumber, plural, useAdminLang, useCopy } from "../../_lib/i18n";
+import { useModule } from "../../_lib/module";
 import { translateApiMessage } from "../../_lib/api-errors";
 
 type Kind = "enhance" | "illustrate";
@@ -154,6 +155,54 @@ const ar: typeof en = {
   noPhoto: "لا صورة",
 };
 
+
+/**
+ * The panel's text with the module's noun: "dish" for restaurants, "product", "service"…
+ * Food-only wording (plate, portion, warm restaurant) is replaced outside food modules.
+ */
+function usePanelCopy() {
+  const { module } = useModule();
+  const copy = useMemo(() => {
+    if (module.id === "restaurant") return { en, ar };
+    const n = module.nouns;
+    const food = module.id === "cafe";
+    const theAr = `ال${n.ar.one}`;
+    const yourAr = `${n.ar.one.replace(/ة$/, "ت")}ك`;
+    const enCopy: typeof en = {
+      ...en,
+      kinds: {
+        enhance: { title: en.kinds.enhance.title, body: food ? en.kinds.enhance.body : `Better light and background. The ${n.en.one} stays exactly as in your photo.` },
+        illustrate: { title: en.kinds.illustrate.title, body: `Made from the ${n.en.one}'s name and description. Customers see it labelled “Illustrative image”.` },
+      },
+      styles: { ...en.styles, warm: food ? "Warm café" : "Warm" },
+      saveFirst: `Save the ${n.en.one} first, then you can improve its photo or create one with AI.`,
+      checkEnhance: food ? en.checkEnhance : `Make sure the ${n.en.one} looks exactly like the real one.`,
+      checkIllustrate: `Make sure it looks like your ${n.en.one}. Customers will see it labelled “Illustrative image”.`,
+      approvedEnhance: "The improved photo is in use. Customers see it after you publish.",
+      approvedIllustrate: "The illustrative image is in use. Customers see it after you publish.",
+      saveForNewPhoto: `Save the ${n.en.one} first to use the new photo.`,
+      uploadFirst: `Upload a photo of the ${n.en.one} first.`,
+    };
+    const arCopy: typeof en = {
+      ...ar,
+      kinds: {
+        enhance: { title: ar.kinds.enhance.title, body: food ? ar.kinds.enhance.body : `إضاءة وخلفية أفضل، ${n.ar.feminine ? "وتبقى" : "ويبقى"} ${theAr} تماماً كما في صورتك.` },
+        illustrate: { title: ar.kinds.illustrate.title, body: `تُصنع من اسم ${theAr} ووصفه، ويراها الزبائن مع عبارة «صورة توضيحية».` },
+      },
+      styles: { ...ar.styles, warm: food ? "أجواء مقهى دافئة" : "أجواء دافئة" },
+      saveFirst: `احفظ ${theAr} أولاً، ثم يمكنك تحسين صورته أو إنشاء صورة له بالذكاء الاصطناعي.`,
+      checkEnhance: food ? ar.checkEnhance : `تأكد أن ${theAr} ${n.ar.feminine ? "تبدو" : "يبدو"} تماماً كما في الواقع.`,
+      checkIllustrate: `تأكد أنها تشبه ${yourAr}. سيراها الزبائن مع عبارة «صورة توضيحية».`,
+      approvedEnhance: "الصورة المحسّنة مستخدمة الآن. يراها الزبائن بعد النشر.",
+      approvedIllustrate: "الصورة التوضيحية مستخدمة الآن. يراها الزبائن بعد النشر.",
+      saveForNewPhoto: `احفظ ${theAr} أولاً لاستخدام الصورة الجديدة.`,
+      uploadFirst: `ارفع صورة لل${n.ar.one} أولاً.`,
+    };
+    return { en: enCopy, ar: arCopy };
+  }, [module]);
+  return useCopy(copy);
+}
+
 const newKey = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
 
 /**
@@ -161,7 +210,7 @@ const newKey = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? 
  * result (no invented progress), compare it with the current photo, then use it or discard it.
  */
 export function AiPhotoPanel({ slug, fetchWithAuth, itemId, savedImageUrl, formImageUrl, readOnly, onImageChange }: Props) {
-  const t = useCopy({ en, ar });
+  const t = usePanelCopy();
   const lang = useAdminLang();
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [credits, setCredits] = useState<Credits | null>(null);
@@ -410,7 +459,7 @@ const secondaryButton =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-ui-input px-4 text-sm font-medium text-ui-ink hover:bg-ui-subtle disabled:opacity-50";
 
 function Shell({ children, credits }: { children: React.ReactNode; credits?: Credits | null }) {
-  const t = useCopy({ en, ar });
+  const t = usePanelCopy();
   return (
     <section aria-labelledby="ai-photo-title" className="rounded-panel border border-ui-line bg-ui-surface p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -430,7 +479,7 @@ function Shell({ children, credits }: { children: React.ReactNode; credits?: Cre
 }
 
 function Figure({ label, src, highlight = false }: { label: string; src: string | null; highlight?: boolean }) {
-  const t = useCopy({ en, ar });
+  const t = usePanelCopy();
   return (
     <figure>
       <div className={`aspect-[4/3] overflow-hidden rounded-control border bg-ui-bg ${highlight ? "border-ui-primary" : "border-ui-line"}`}>

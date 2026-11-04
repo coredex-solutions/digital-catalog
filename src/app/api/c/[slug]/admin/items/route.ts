@@ -16,6 +16,7 @@ import {
 } from "@/lib/catalog/dish-info";
 import { PLAN_CONFIG } from "@/lib/plans";
 import { planReorder } from "@/lib/catalog/reorder";
+import { parseItemExtras } from "@/lib/catalog/item-extras";
 import { v4 as uuidv4 } from "uuid";
 
 // GET: List all items for this catalog
@@ -97,6 +98,9 @@ export async function POST(
     // Omitted means not checked: allergens stay unknown until the owner verifies them
     const allergens = parseAllergensInput(body.allergens === undefined ? null : body.allergens);
     if (!allergens.ok) return NextResponse.json({ error: allergens.error }, { status: 400 });
+    // Stock, SKU, old price and duration (shops and services)
+    const extras = parseItemExtras(body);
+    if (!extras.ok) return NextResponse.json({ error: extras.error }, { status: 400 });
 
     // With options, the item's price is the cheapest option (for sorting and "from" prices)
     const lowest = lowestVariantPrice(variants.value);
@@ -171,7 +175,7 @@ export async function POST(
     // The option columns are only written when used, so plain dishes can still be created on
     // a database that hasn't run migration 20261010_dish_options yet
     const extraColumns: string[] = [];
-    const extraArgs: (string | null)[] = [];
+    const extraArgs: (string | number | null)[] = [];
     if (variants.value.length > 0) {
       extraColumns.push("variants");
       extraArgs.push(variantsToDb(variants.value));
@@ -183,6 +187,11 @@ export async function POST(
     if (allergens.value !== null) {
       extraColumns.push("allergens");
       extraArgs.push(allergensToDb(allergens.value));
+    }
+    for (const [column, value] of Object.entries(extras.value)) {
+      if (value === null || value === undefined) continue;
+      extraColumns.push(column);
+      extraArgs.push(value);
     }
     const extraSql = extraColumns.map((c) => `, ${c}`).join("");
     const extraValues = extraColumns.map(() => ", ?").join("");

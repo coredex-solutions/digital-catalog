@@ -104,6 +104,8 @@ interface AdminContextType {
   /** Orders and requests with status "new" (refreshed every 20 seconds) */
   newOrders: number;
   refreshNewOrders: () => void;
+  /** Apply a saved change to the catalog (e.g. add-ons) without signing in again */
+  updateCatalog: (patch: Partial<CatalogInfo>) => void;
 }
 
 const AdminContext = createContext<AdminContextType | null>(null);
@@ -286,6 +288,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
           fetchWithAuth,
           newOrders,
           refreshNewOrders,
+          updateCatalog: (patch) => setCatalog((current) => (current ? { ...current, ...patch } : current)),
         }}
       >
         <CatalogAdminSidebar catalog={catalog} features={features} newOrders={newOrders} />

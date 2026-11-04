@@ -32,6 +32,25 @@ export interface ModuleVocab {
   business: string;
 }
 
+/**
+ * The item noun in every form the dashboard needs. Arabic counts need the dual and the plural
+ * forms (3-10 take the plural, 11+ the accusative singular); services are feminine.
+ */
+export interface ItemNouns {
+  en: { one: string; many: string };
+  ar: {
+    /** طبق */
+    one: string;
+    /** طبقاً: "add a dish", 11+ */
+    acc: string;
+    /** طبقان */
+    two: string;
+    /** أطباق (3-10, and in general) */
+    plural: string;
+    feminine: boolean;
+  };
+}
+
 export interface ModuleDefinition {
   id: ModuleId;
   /** lucide-react icon name */
@@ -42,6 +61,7 @@ export interface ModuleDefinition {
   /** Optional finer type, stored in catalogs.business_type (used for schema.org and labels) */
   subTypes: { id: string; label: Text; schemaType?: string }[];
   vocab: { en: ModuleVocab; ar: ModuleVocab };
+  nouns: ItemNouns;
   /** Order types the owner can offer, and the ones switched on for a new catalog */
   orderTypes: readonly OrderType[];
   defaultOrderTypes: readonly OrderType[];
@@ -79,6 +99,10 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
       en: { item: "Dish", items: "Dishes", catalog: "Menu", business: "restaurant" },
       ar: { item: "طبق", items: "الأطباق", catalog: "القائمة", business: "المطعم" },
     },
+    nouns: {
+      en: { one: "dish", many: "dishes" },
+      ar: { one: "طبق", acc: "طبقاً", two: "طبقان", plural: "أطباق", feminine: false },
+    },
     orderTypes: ["dine_in", "takeaway", "delivery"],
     defaultOrderTypes: ["dine_in", "takeaway"],
     schedule: "none",
@@ -107,6 +131,10 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     vocab: {
       en: { item: "Item", items: "Items", catalog: "Menu", business: "café" },
       ar: { item: "صنف", items: "الأصناف", catalog: "القائمة", business: "المقهى" },
+    },
+    nouns: {
+      en: { one: "item", many: "items" },
+      ar: { one: "صنف", acc: "صنفاً", two: "صنفان", plural: "أصناف", feminine: false },
     },
     orderTypes: ["dine_in", "takeaway", "delivery"],
     defaultOrderTypes: ["takeaway", "dine_in"],
@@ -139,6 +167,10 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
       en: { item: "Product", items: "Products", catalog: "Store", business: "shop" },
       ar: { item: "منتج", items: "المنتجات", catalog: "المتجر", business: "المتجر" },
     },
+    nouns: {
+      en: { one: "product", many: "products" },
+      ar: { one: "منتج", acc: "منتجاً", two: "منتجان", plural: "منتجات", feminine: false },
+    },
     orderTypes: ["delivery", "pickup"],
     defaultOrderTypes: ["delivery", "pickup"],
     schedule: "none",
@@ -170,6 +202,10 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     vocab: {
       en: { item: "Service", items: "Services", catalog: "Services", business: "business" },
       ar: { item: "خدمة", items: "الخدمات", catalog: "الخدمات", business: "المحل" },
+    },
+    nouns: {
+      en: { one: "service", many: "services" },
+      ar: { one: "خدمة", acc: "خدمة", two: "خدمتان", plural: "خدمات", feminine: true },
     },
     orderTypes: ["at_location", "home_visit"],
     defaultOrderTypes: ["at_location"],

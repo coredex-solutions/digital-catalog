@@ -33,6 +33,9 @@ const EXACT: Record<string, string> = {
 
   // Orders
   "Order not found": "الطلب غير موجود.",
+  "Stock must be a whole number of 0 or more": "المخزون يجب أن يكون عدداً صحيحاً يساوي 0 أو أكثر.",
+  "The old price must be a number of 0 or more": "السعر القديم يجب أن يكون رقماً يساوي 0 أو أكثر.",
+  "Duration must be between 5 minutes and 24 hours": "المدة يجب أن تكون بين 5 دقائق و24 ساعة.",
   // Sent to customers (the page shows its own words by code); listed so nothing shows in English
   "This page is not taking orders": "هذه الصفحة لا تستقبل طلبات حالياً.",
   "Not enough stock for an item": "الكمية المتوفرة من أحد الأصناف غير كافية.",
