@@ -9,6 +9,8 @@ import { getMenuLanguages, resolveMenuLanguage, resolveMenuTheme } from '../_lib
 import { getSiteUrl } from '@/lib/utils/base-url';
 import { getDictionary, localized } from '../_lib/i18n';
 import { readDishInfo } from '@/lib/catalog/dish-info';
+import { getModule, moduleInfo, schemaTypeFor } from '@/lib/modules/resolve';
+import { isItemAvailable } from '@/lib/orders/context';
 
 // Generate metadata for SEO
 export async function generateMetadata({
@@ -72,10 +74,9 @@ function formatSchemaHour(hour: number): string {
 function generateJsonLd(data: NonNullable<Awaited<ReturnType<typeof getFullCatalogData>>>) {
   const { catalog, settings, contact, operatingHours } = data;
 
-  const schemaType = catalog.business_type === 'restaurant' ? 'Restaurant'
-    : catalog.business_type === 'cafe' ? 'CafeOrCoffeeShop'
-      : catalog.business_type === 'bakery' ? 'Bakery'
-        : 'LocalBusiness';
+  const def = getModule(catalog);
+  const schemaType = schemaTypeFor(def, catalog.business_type);
+  const page = `${getSiteUrl()}/c/${catalog.slug}/`;
 
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -83,8 +84,9 @@ function generateJsonLd(data: NonNullable<Awaited<ReturnType<typeof getFullCatal
     name: catalog.name,
     description: catalog.description || settings?.seo_description_en,
     image: settings?.hero_image_url || catalog.logo_url,
-    url: `${getSiteUrl()}/c/${catalog.slug}/`,
-    hasMenu: `${getSiteUrl()}/c/${catalog.slug}/`,
+    url: page,
+    // Food businesses have a menu; shops and services list what they offer on the same page
+    ...(def.id === 'restaurant' || def.id === 'cafe' ? { hasMenu: page } : {}),
   };
 
   if (contact) {
@@ -147,10 +149,12 @@ export default async function CatalogLayout({
     resolveMenuTheme(),
   ]);
   const themeStyle = buildMenuTheme(settings?.color_primary);
+  const modules = moduleInfo(catalog);
+  const trackStock = modules.addons.includes('stock');
 
   if (data.isExpired) {
     const isAr = lang === 'ar';
-    const t = getDictionary(lang);
+    const t = getDictionary(lang, modules.module);
     return (
       <div
         className={`menu min-h-screen flex items-center justify-center p-6 font-menu-sans`}
@@ -197,6 +201,8 @@ export default async function CatalogLayout({
       description_ar: catalog.description_ar,
       description_en: catalog.description_en,
       logo_url: catalog.logo_url,
+      business_type: catalog.business_type,
+      ...modules,
     },
     settings: settings ? {
       ...withoutFrench(settings),
@@ -222,7 +228,10 @@ export default async function CatalogLayout({
       name_en: c.name_en,
       image_url: c.image_url,
     })),
-    menuItems: (menuItems || []).map((i) => ({
+    menuItems: (menuItems || []).map((i) => {
+      const row = i as unknown as Record<string, unknown>;
+      const stock = trackStock && row.stock_qty != null ? Number(row.stock_qty) : null;
+      return {
       id: i.id,
       category_id: i.category_id,
       name_ar: i.name_ar,
@@ -234,11 +243,16 @@ export default async function CatalogLayout({
       image_url: i.image_url,
       image_is_illustrative: Boolean(Number((i as unknown as Record<string, unknown>).image_is_illustrative)),
       is_featured: Boolean(Number(i.is_featured)),
-      // Missing column (migration not run yet) means available
-      is_available: i.is_available === undefined || i.is_available === null ? true : Boolean(Number(i.is_available)),
+      // Sold-out switch, and (with the stock add-on) zero units left
+      is_available: isItemAvailable(row, trackStock),
       // Options, dietary tags and verified allergens (stored as JSON text)
-      ...readDishInfo(i as unknown as Record<string, unknown>),
-    })),
+      ...readDishInfo(row),
+      // Units left, only shown when few are left and stock is tracked
+      stock_qty: stock,
+      compare_at_price: row.compare_at_price != null && Number(row.compare_at_price) > Number(i.price) ? Number(row.compare_at_price) : null,
+      duration_minutes: row.duration_minutes != null && Number(row.duration_minutes) > 0 ? Number(row.duration_minutes) : null,
+      };
+    }),
     faqs: faqs.map((f) => ({
       id: f.id,
       question_ar: f.question_ar,
@@ -272,9 +286,9 @@ export default async function CatalogLayout({
       />
       {preview && (
         <div role="status" className="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-menu-ink px-4 py-2 text-center text-sm font-semibold text-menu-bg">
-          <span>{getDictionary(lang).previewBanner}</span>
+          <span>{getDictionary(lang, modules.module).previewBanner}</span>
           <a href={`/c/${slug}/preview/?exit=1`} className="underline underline-offset-4">
-            {getDictionary(lang).previewExit}
+            {getDictionary(lang, modules.module).previewExit}
           </a>
         </div>
       )}

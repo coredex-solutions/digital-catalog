@@ -1,8 +1,12 @@
-// Diner-facing strings in Arabic and English. Which languages a menu offers is set by
-// the owner (enabled_languages); dish content falls back to English, then Arabic, when a
-// translation is missing so untranslated dishes are never hidden.
+// Customer-facing strings in Arabic and English. Which languages a page offers is set by
+// the owner (enabled_languages); item content falls back to English, then Arabic, when a
+// translation is missing so untranslated items are never hidden.
+//
+// The base dictionary uses restaurant words. Each module (lib/modules/registry.ts) overrides
+// the strings that differ, e.g. "Add to cart" in a shop or "Request" for services.
 
 import type { Language } from "@/types";
+import type { ModuleId } from "@/lib/modules/registry";
 
 const en = {
   menu: "Menu",
@@ -131,6 +135,38 @@ const en = {
   msgDate: "Date",
   msgTime: "Time",
   msgGuests: "Guests",
+  msgOrderNumber: "Order",
+  msgWhen: "When",
+  // Order types beyond the restaurant ones
+  pickup: "Pickup",
+  at_location: "At the shop",
+  home_visit: "Home visit",
+  visitAddress: "Visit address",
+  // When: café pre-orders (optional) and service appointments (required)
+  whenLabel: "When do you want it?",
+  whenHint: "Leave empty for as soon as possible",
+  whenAsap: "As soon as possible",
+  appointmentLabel: "Preferred date and time",
+  appointmentHint: "The business will confirm the time with you",
+  preferredDate: "Date",
+  preferredTime: "Time",
+  // Stock, sale price and duration (shops and services)
+  onlyLeft: (n: number) => `Only ${n} left`,
+  wasPrice: "Was",
+  onSale: "Sale",
+  minutes: (n: number) => (n < 60 ? `${n} min` : n % 60 === 0 ? `${n / 60} h` : `${Math.floor(n / 60)} h ${n % 60} min`),
+  // Saving the order before WhatsApp opens
+  sending: "Sending…",
+  savedTitle: (n: number) => `Order #${n} received`,
+  savedBody: "Now send it on WhatsApp so the restaurant gets it straight away.",
+  saveFailed: "Couldn't send your order. Check your connection and try again, or send it on WhatsApp only.",
+  saveRetry: "Try again",
+  sendWithoutSaving: "Send on WhatsApp only",
+  stockChanged: "Some items just sold out or have fewer left. Please check your order.",
+  privacyNote: (business: string) => `Your name and phone number are shared with ${business} to handle your order.`,
+  reserveSaved: (n: number) => `Request #${n} received`,
+  savedNoWhatsapp: "We will contact you to confirm.",
+  done: "Done",
 };
 
 type Dictionary = typeof en;
@@ -258,13 +294,232 @@ const ar: Dictionary = {
   msgDate: "التاريخ",
   msgTime: "الوقت",
   msgGuests: "عدد الأشخاص",
+  msgOrderNumber: "الطلب",
+  msgWhen: "الموعد",
+  pickup: "استلام من المحل",
+  at_location: "في المحل",
+  home_visit: "زيارة منزلية",
+  visitAddress: "عنوان الزيارة",
+  whenLabel: "متى تريده؟",
+  whenHint: "اتركه فارغاً لأقرب وقت ممكن",
+  whenAsap: "بأقرب وقت",
+  appointmentLabel: "التاريخ والوقت المفضلان",
+  appointmentHint: "سيؤكد المحل الموعد معك",
+  preferredDate: "التاريخ",
+  preferredTime: "الوقت",
+  onlyLeft: (n: number) => (n === 1 ? "بقيت قطعة واحدة" : n === 2 ? "بقيت قطعتان" : n <= 10 ? `بقيت ${n} قطع` : `بقيت ${n} قطعة`),
+  wasPrice: "كان",
+  onSale: "تخفيض",
+  minutes: (n: number) => (n < 60 ? `${n} د` : n % 60 === 0 ? `${n / 60} س` : `${Math.floor(n / 60)} س ${n % 60} د`),
+  sending: "جارٍ الإرسال…",
+  savedTitle: (n: number) => `استلمنا الطلب رقم ${n}`,
+  savedBody: "أرسله الآن عبر واتساب ليصل إلى المطعم فوراً.",
+  saveFailed: "تعذّر إرسال طلبك. تحقق من الاتصال وحاول مجدداً، أو أرسله عبر واتساب فقط.",
+  saveRetry: "حاول مجدداً",
+  sendWithoutSaving: "أرسل عبر واتساب فقط",
+  stockChanged: "نفدت بعض الأصناف للتو أو قلّت كميتها. يرجى مراجعة طلبك.",
+  privacyNote: (business: string) => `يُشارَك اسمك ورقم هاتفك مع ${business} لتنفيذ طلبك.`,
+  reserveSaved: (n: number) => `استلمنا الطلب رقم ${n}`,
+  savedNoWhatsapp: "سنتواصل معك للتأكيد.",
+  done: "تم",
 };
 
 export type { Dictionary };
 
-export function getDictionary(lang: Language): Dictionary {
-  return lang === "ar" ? ar : en;
+type Overrides = { en: Partial<Dictionary>; ar: Partial<Dictionary> };
+
+const MODULE_COPY: Record<Exclude<ModuleId, "restaurant">, Overrides> = {
+  cafe: {
+    en: {
+      searchEmpty: "Nothing matches your search",
+      searchHint: "Search by name or ingredient",
+      optionRequired: "Choose an option to add this item",
+      allergensNone: "No listed allergens, as checked by the café",
+      illustrativeImage: "Illustrative image. What you get may look different.",
+      emptyOrderHint: "Add items from the menu to get started",
+      notesPlaceholder: "Anything the café should know",
+      handoffBody: "Your order isn't placed until you press Send in WhatsApp. The café will reply there to confirm it.",
+      orderUnavailable: "Online ordering isn't available here yet.",
+      takeaway: "Pickup",
+      notePlaceholder: "e.g. oat milk, less sugar",
+      menuUnavailable: "This menu is temporarily unavailable. Please ask the team.",
+      callRestaurant: "Call us",
+      savedBody: "Now send it on WhatsApp so the café gets it straight away.",
+    },
+    ar: {
+      searchEmpty: "لا توجد نتائج مطابقة لبحثك",
+      searchHint: "ابحث بالاسم أو المكوّنات",
+      optionRequired: "اختر نوعاً لإضافة هذا الصنف",
+      allergensNone: "لا يحتوي على مسببات الحساسية المدرجة، حسب تحقق المقهى",
+      illustrativeImage: "صورة توضيحية. قد يختلف شكل ما يُقدَّم لك.",
+      emptyOrderHint: "أضف أصنافاً من القائمة للبدء",
+      notesPlaceholder: "أي شيء يجب أن يعرفه المقهى",
+      handoffBody: "لا يُعتبر طلبك مرسلاً حتى تضغط إرسال في واتساب. سيرد المقهى هناك لتأكيده.",
+      orderUnavailable: "الطلب عبر الإنترنت غير متاح هنا حالياً.",
+      takeaway: "استلام",
+      notePlaceholder: "مثلاً: حليب شوفان، سكر أقل",
+      menuUnavailable: "القائمة غير متاحة مؤقتاً. يرجى سؤال الفريق.",
+      callRestaurant: "اتصل بنا",
+      savedBody: "أرسله الآن عبر واتساب ليصل إلى المقهى فوراً.",
+    },
+  },
+  shop: {
+    en: {
+      menu: "Products",
+      viewMenu: "View products",
+      searchPlaceholder: "Search products",
+      searchEmpty: "No products match your search",
+      searchHint: "Search by product name",
+      menuEmpty: "The store is being prepared. Please check back soon.",
+      optionRequired: "Choose an option to add this product",
+      allergensNone: "No listed allergens, as checked by the shop",
+      illustrativeImage: "Illustrative image. The product may look different.",
+      addToOrder: "Add to cart",
+      updateOrder: "Update cart",
+      noteLabel: "Note",
+      notePlaceholder: "e.g. gift wrap",
+      viewOrder: "View cart",
+      yourOrder: "Your cart",
+      emptyOrder: "Your cart is empty",
+      emptyOrderHint: "Add products to get started",
+      clearOrder: "Empty cart",
+      notesPlaceholder: "Anything the shop should know",
+      handoffBody: "Your order isn't placed until you press Send in WhatsApp. The shop will reply there to confirm it.",
+      orderUnavailable: "Online ordering isn't available for this shop yet.",
+      poweredBy: "Store by Coredex",
+      notFoundSection: "This section is no longer in the store",
+      menuUnavailable: "This store is temporarily unavailable. Please contact the shop.",
+      callRestaurant: "Call the shop",
+      savedBody: "Now send it on WhatsApp so the shop gets it straight away.",
+    },
+    ar: {
+      menu: "المنتجات",
+      viewMenu: "عرض المنتجات",
+      searchPlaceholder: "ابحث في المنتجات",
+      searchEmpty: "لا توجد منتجات مطابقة لبحثك",
+      searchHint: "ابحث باسم المنتج",
+      menuEmpty: "المتجر قيد التحضير. يرجى العودة قريباً.",
+      optionRequired: "اختر نوعاً لإضافة هذا المنتج",
+      allergensNone: "لا يحتوي على مسببات الحساسية المدرجة، حسب تحقق المتجر",
+      illustrativeImage: "صورة توضيحية. قد يختلف شكل المنتج.",
+      addToOrder: "أضف إلى السلة",
+      updateOrder: "تحديث السلة",
+      noteLabel: "ملاحظة",
+      notePlaceholder: "مثلاً: تغليف هدية",
+      viewOrder: "عرض السلة",
+      yourOrder: "سلتك",
+      emptyOrder: "سلتك فارغة",
+      emptyOrderHint: "أضف منتجات للبدء",
+      clearOrder: "إفراغ السلة",
+      notesPlaceholder: "أي شيء يجب أن يعرفه المتجر",
+      handoffBody: "لا يُعتبر طلبك مرسلاً حتى تضغط إرسال في واتساب. سيرد المتجر هناك لتأكيده.",
+      orderUnavailable: "الطلب عبر الإنترنت غير متاح لهذا المتجر حالياً.",
+      poweredBy: "متجر من Coredex",
+      notFoundSection: "هذا القسم لم يعد في المتجر",
+      menuUnavailable: "المتجر غير متاح مؤقتاً. يرجى التواصل مع المتجر.",
+      callRestaurant: "اتصل بالمتجر",
+      savedBody: "أرسله الآن عبر واتساب ليصل إلى المتجر فوراً.",
+    },
+  },
+  services: {
+    en: {
+      menu: "Services",
+      viewMenu: "View services",
+      searchPlaceholder: "Search services",
+      searchEmpty: "No services match your search",
+      searchHint: "Search by service name",
+      menuEmpty: "The service list is being prepared. Please check back soon.",
+      optionRequired: "Choose an option to add this service",
+      illustrativeImage: "Illustrative image.",
+      add: "Add",
+      addToOrder: "Add to request",
+      updateOrder: "Update request",
+      noteLabel: "Note",
+      notePlaceholder: "Anything about this service",
+      viewOrder: "View request",
+      yourOrder: "Your request",
+      emptyOrder: "Your request is empty",
+      emptyOrderHint: "Choose the services you want",
+      checkout: "Request an appointment",
+      clearOrder: "Clear request",
+      notes: "Notes",
+      notesPlaceholder: "Anything the business should know",
+      sendWhatsApp: "Send request on WhatsApp",
+      whatsappHint: "WhatsApp opens with your request written out. It's only sent when you press Send there.",
+      handoffBody: "Your request isn't sent until you press Send in WhatsApp. The business will reply there to confirm your appointment.",
+      handoffDone: "I sent it, clear my request",
+      orderUnavailable: "Online requests aren't available here yet.",
+      poweredBy: "Page by Coredex",
+      notFoundSection: "This section is no longer on the list",
+      menuUnavailable: "This page is temporarily unavailable. Please contact the business.",
+      callRestaurant: "Call us",
+      msgNewOrder: "New appointment request",
+      msgItems: "Services",
+      orderType: "Where",
+      savedTitle: (n: number) => `Request #${n} received`,
+      savedBody: "Now send it on WhatsApp so the business gets it straight away.",
+      stockChanged: "Some services are no longer available. Please check your request.",
+      privacyNote: (business: string) => `Your name and phone number are shared with ${business} to handle your request.`,
+    },
+    ar: {
+      menu: "الخدمات",
+      viewMenu: "عرض الخدمات",
+      searchPlaceholder: "ابحث في الخدمات",
+      searchEmpty: "لا توجد خدمات مطابقة لبحثك",
+      searchHint: "ابحث باسم الخدمة",
+      menuEmpty: "لائحة الخدمات قيد التحضير. يرجى العودة قريباً.",
+      optionRequired: "اختر نوعاً لإضافة هذه الخدمة",
+      illustrativeImage: "صورة توضيحية.",
+      add: "أضف",
+      addToOrder: "أضف إلى الطلب",
+      updateOrder: "تحديث الطلب",
+      noteLabel: "ملاحظة",
+      notePlaceholder: "أي شيء بخصوص هذه الخدمة",
+      viewOrder: "عرض الطلب",
+      yourOrder: "طلبك",
+      emptyOrder: "طلبك فارغ",
+      emptyOrderHint: "اختر الخدمات التي تريدها",
+      checkout: "طلب موعد",
+      clearOrder: "إفراغ الطلب",
+      notes: "ملاحظات",
+      notesPlaceholder: "أي شيء يجب أن يعرفه المحل",
+      sendWhatsApp: "إرسال الطلب عبر واتساب",
+      whatsappHint: "سيفتح واتساب وفيه طلبك مكتوباً. لا يُرسل إلا عندما تضغط إرسال هناك.",
+      handoffBody: "لا يُعتبر طلبك مرسلاً حتى تضغط إرسال في واتساب. سيرد المحل هناك لتأكيد موعدك.",
+      handoffDone: "أرسلته، أفرغ طلبي",
+      orderUnavailable: "الطلب عبر الإنترنت غير متاح هنا حالياً.",
+      poweredBy: "صفحة من Coredex",
+      notFoundSection: "هذا القسم لم يعد في اللائحة",
+      menuUnavailable: "الصفحة غير متاحة مؤقتاً. يرجى التواصل مع المحل.",
+      callRestaurant: "اتصل بنا",
+      msgNewOrder: "طلب موعد جديد",
+      msgItems: "الخدمات",
+      orderType: "المكان",
+      savedTitle: (n: number) => `استلمنا الطلب رقم ${n}`,
+      savedBody: "أرسله الآن عبر واتساب ليصل إلى المحل فوراً.",
+      stockChanged: "بعض الخدمات لم تعد متاحة. يرجى مراجعة طلبك.",
+      privacyNote: (business: string) => `يُشارَك اسمك ورقم هاتفك مع ${business} لتنفيذ طلبك.`,
+    },
+  },
+};
+
+const merged = new Map<string, Dictionary>();
+
+/** The customer-facing strings for a language, with the module's own words */
+export function getDictionary(lang: Language, module: ModuleId = "restaurant"): Dictionary {
+  const base = lang === "ar" ? ar : en;
+  if (module === "restaurant" || !(module in MODULE_COPY)) return base;
+  const key = `${module}:${lang}`;
+  let dictionary = merged.get(key);
+  if (!dictionary) {
+    dictionary = { ...base, ...MODULE_COPY[module as Exclude<ModuleId, "restaurant">][lang === "ar" ? "ar" : "en"] };
+    merged.set(key, dictionary);
+  }
+  return dictionary;
 }
+
+/** For tests: every module's overrides, to check both languages cover the same keys */
+export const MODULE_COPY_FOR_TESTS = MODULE_COPY;
 
 /**
  * Pick the localized field (name_ar / name_en), falling back to English then Arabic. Only

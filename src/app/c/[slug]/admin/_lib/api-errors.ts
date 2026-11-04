@@ -31,6 +31,17 @@ const EXACT: Record<string, string> = {
   "Service temporarily unavailable": "الخدمة غير متاحة مؤقتاً. حاول بعد قليل.",
   "Something went wrong. Please try again.": GENERIC,
 
+  // Orders
+  "Order not found": "الطلب غير موجود.",
+  // Sent to customers (the page shows its own words by code); listed so nothing shows in English
+  "This page is not taking orders": "هذه الصفحة لا تستقبل طلبات حالياً.",
+  "Not enough stock for an item": "الكمية المتوفرة من أحد الأصناف غير كافية.",
+  "Unknown order status": GENERIC,
+  "This order can't be changed to that status": "لا يمكن نقل هذا الطلب إلى هذه الحالة. أعد تحميل الصفحة.",
+  "Invalid request": GENERIC,
+  "Unknown module": GENERIC,
+  "Add-ons must be a list": GENERIC,
+
   // Dishes and categories
   "Category not found": "القسم غير موجود.",
   "Item not found": "الطبق غير موجود.",

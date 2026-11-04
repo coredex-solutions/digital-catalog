@@ -6,12 +6,17 @@ import { LogOut, Store, ExternalLink, Languages } from "lucide-react";
 import { clsx } from "clsx";
 import { getAdminNavItems, isNavItemActive } from "./adminNav";
 import { useAdminLang, useCopy, useSetAdminLang } from "../_lib/i18n";
+import { moduleFor } from "@/lib/modules/resolve";
+import type { AddonId } from "@/lib/modules/registry";
+import { NavBadge } from "./NavBadge";
 
 interface CatalogInfo {
   id: string;
   slug: string;
   name: string;
   business_type: string;
+  module?: string;
+  addons?: AddonId[];
 }
 
 interface Features {
@@ -31,28 +36,29 @@ interface Features {
 interface CatalogAdminSidebarProps {
   catalog: CatalogInfo;
   features: Features | null;
+  /** Orders waiting for the owner, shown on the Orders link */
+  newOrders?: number;
 }
 
 const en = {
   nav: "Dashboard sections",
-  viewMenu: "View menu",
+  viewMenu: "View my page",
   newTab: "(opens in a new tab)",
   signOut: "Sign out",
   switchLanguage: "العربية",
-  businessTypes: { restaurant: "Restaurant", cafe: "Café", bakery: "Bakery" } as Record<string, string>,
 };
 const ar: typeof en = {
   nav: "أقسام لوحة التحكم",
-  viewMenu: "عرض القائمة",
+  viewMenu: "عرض صفحتي",
   newTab: "(تُفتح في نافذة جديدة)",
   signOut: "تسجيل الخروج",
   switchLanguage: "English",
-  businessTypes: { restaurant: "مطعم", cafe: "مقهى", bakery: "مخبز" },
 };
 
 export function CatalogAdminSidebar({
   catalog,
   features,
+  newOrders = 0,
 }: CatalogAdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -62,7 +68,11 @@ export function CatalogAdminSidebar({
   const setLang = useSetAdminLang();
   const t = useCopy({ en, ar });
 
-  const navItems = getAdminNavItems(slug, features, lang);
+  const { module } = moduleFor(catalog);
+  const navItems = getAdminNavItems(slug, features, lang, module);
+  // "Café & Bakery · Bakery": the module, then the sub-type when it says more
+  const subType = module.subTypes.find((s) => s.id === catalog.business_type);
+  const typeLabel = subType && subType.label.en !== module.label.en ? `${module.label[lang]} · ${subType.label[lang]}` : module.label[lang];
 
   const handleLogout = () => {
     localStorage.removeItem(`catalog_admin_token_${slug}`);
@@ -78,9 +88,7 @@ export function CatalogAdminSidebar({
           </div>
           <div className="min-w-0">
             <p className="truncate text-base font-semibold text-ui-ink">{catalog.name}</p>
-            {t.businessTypes[catalog.business_type] && (
-              <p className="text-xs text-ui-muted">{t.businessTypes[catalog.business_type]}</p>
-            )}
+            <p className="truncate text-xs text-ui-muted">{typeLabel}</p>
           </div>
         </div>
       </div>
@@ -101,7 +109,8 @@ export function CatalogAdminSidebar({
             >
               {isActive && <span className="absolute start-0 h-5 w-1 rounded-full bg-ui-primary" aria-hidden />}
               <item.icon className="w-5 h-5 shrink-0" strokeWidth={isActive ? 2.5 : 2} aria-hidden />
-              <span className={clsx("text-sm", isActive ? "font-semibold" : "font-medium")}>{item.label}</span>
+              <span className={clsx("flex-1 text-sm", isActive ? "font-semibold" : "font-medium")}>{item.label}</span>
+              {item.badgeKey === "newOrders" && <NavBadge count={newOrders} lang={lang} />}
             </Link>
           );
         })}

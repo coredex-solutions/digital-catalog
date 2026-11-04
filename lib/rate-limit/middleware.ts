@@ -27,6 +27,10 @@ export const RATE_LIMITS = {
   aiChat: { windowMs: 60 * 1000, maxRequests: 15, keyPrefix: 'ai-chat' },  // 15 msgs/min
   tts: { windowMs: 60 * 1000, maxRequests: 30, keyPrefix: 'ai-tts' },     // 30 clips/min
 
+  // Customers sending orders and bookings from a catalog page (per address+catalog, per phone+catalog)
+  order: { windowMs: 10 * 60 * 1000, maxRequests: 15, keyPrefix: 'order' },
+  orderPerPhone: { windowMs: 10 * 60 * 1000, maxRequests: 8, keyPrefix: 'order-phone' },
+
   // Owner-side AI writing tools, counted per catalog rather than per IP
   aiGenerate: { windowMs: 60 * 60 * 1000, maxRequests: 30, keyPrefix: 'ai-generate' }, // 30 calls/hour
   // Reading a printed menu with AI, per catalog

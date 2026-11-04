@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth/super-admin-middleware";
 import { getDb } from "@/lib/db/client";
 import { v4 as uuidv4 } from "uuid";
-import type { BusinessType, SubscriptionType } from "@/lib/db/types";
+import type { SubscriptionType } from "@/lib/db/types";
+import { newCatalogModuleColumns, newCatalogSettings } from "@/lib/modules/resolve";
 import { sendEmail, emailTemplates } from "@/lib/email/send";
 import { getPlanForSubscriptionType, getSubscriptionExpiry, isSubscriptionType } from "@/lib/plans";
 import { getBaseUrl } from "@/lib/utils/base-url";
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
     const {
       slug,
       name,
+      module: moduleId,
       business_type = "restaurant",
       description,
       // Subscription details
@@ -115,18 +117,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Main module, sub-type and default add-ons, checked against the registry
+    const moduleColumns = newCatalogModuleColumns(moduleId, business_type);
+    const moduleSettings = newCatalogSettings(moduleColumns.module);
+
     // Create catalog
     const catalogId = uuidv4();
     await db.execute({
       sql: `
-        INSERT INTO catalogs (id, slug, name, business_type, description, is_active, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
+        INSERT INTO catalogs (id, slug, name, business_type, module, addons, description, is_active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))
       `,
       args: [
         catalogId,
         slug,
         name,
-        business_type as BusinessType,
+        moduleColumns.business_type,
+        moduleColumns.module.id,
+        moduleColumns.addons,
         description || null,
       ],
     });
@@ -170,10 +178,10 @@ export async function POST(request: NextRequest) {
     // Create default settings
     await db.execute({
       sql: `
-        INSERT INTO catalog_settings (catalog_id, enabled_languages, color_primary, updated_at)
-        VALUES (?, 'ar,en', '#4028C9', datetime('now'))
+        INSERT INTO catalog_settings (catalog_id, enabled_languages, color_primary, order_types, booking_enabled, updated_at)
+        VALUES (?, 'ar,en', '#4028C9', ?, ?, datetime('now'))
       `,
-      args: [catalogId],
+      args: [catalogId, moduleSettings.order_types, moduleSettings.booking_enabled],
     });
 
     // Start in draft mode: nothing is public until the owner publishes

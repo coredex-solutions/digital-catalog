@@ -1,5 +1,7 @@
 "use client";
 
+import type { AddonId, ModuleId } from "@/lib/modules/registry";
+import { moduleFor } from "@/lib/modules/resolve";
 import { useCallback, useEffect, useState, createContext, useContext } from "react";
 import Link from "next/link";
 import { useRouter, useParams, usePathname } from "next/navigation";
@@ -60,6 +62,9 @@ interface CatalogInfo {
   slug: string;
   name: string;
   business_type: string;
+  /** Main module and its add-ons (lib/modules); missing from servers older than modules */
+  module?: ModuleId;
+  addons?: AddonId[];
 }
 
 interface Features {
@@ -96,6 +101,9 @@ interface AdminContextType {
   features: Features | null;
   getToken: () => string | null;
   fetchWithAuth: (url: string, options?: RequestInit) => Promise<Response>;
+  /** Orders and requests with status "new" (refreshed every 20 seconds) */
+  newOrders: number;
+  refreshNewOrders: () => void;
 }
 
 const AdminContext = createContext<AdminContextType | null>(null);
@@ -117,6 +125,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
   const [catalog, setCatalog] = useState<CatalogInfo | null>(null);
   const [user, setUser] = useState<AdminUser | null>(null);
   const [features, setFeatures] = useState<Features | null>(null);
+  const [newOrders, setNewOrders] = useState(0);
   const pathname = usePathname();
   // The paused notice is dismissible (the dashboard stays readable) and never covers Billing,
   // which is where owners renew.
@@ -219,6 +228,33 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
     verifyAuth();
   }, [router, slug]);
 
+  // New orders count for the navigation. Polled while the dashboard is open and visible; a
+  // failed check keeps the last count.
+  const refreshNewOrders = useCallback(async () => {
+    try {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/orders/count/`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setNewOrders(Number(data.new) || 0);
+    } catch {
+      // Offline for a moment; try again on the next tick
+    }
+  }, [fetchWithAuth, slug]);
+
+  useEffect(() => {
+    if (!authenticated) return;
+    const tick = () => {
+      if (document.visibilityState === "visible") refreshNewOrders();
+    };
+    tick();
+    const timer = window.setInterval(tick, 20000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [authenticated, refreshNewOrders]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-ui-bg flex flex-col items-center justify-center space-y-6">
@@ -248,9 +284,11 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
           features,
           getToken: () => localStorage.getItem(`catalog_admin_token_${slug}`),
           fetchWithAuth,
+          newOrders,
+          refreshNewOrders,
         }}
       >
-        <CatalogAdminSidebar catalog={catalog} features={features} />
+        <CatalogAdminSidebar catalog={catalog} features={features} newOrders={newOrders} />
         <div className="flex-1 min-w-0 lg:ms-64 relative min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0">
           <CatalogAdminTopBar slug={slug} catalogName={catalog.name} />
 
@@ -381,7 +419,13 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
             )}
           </AnimatePresence>
         </div>
-        <CatalogAdminBottomNav slug={slug} catalogName={catalog.name} features={features} />
+        <CatalogAdminBottomNav
+          slug={slug}
+          catalogName={catalog.name}
+          features={features}
+          module={moduleFor(catalog).module}
+          newOrders={newOrders}
+        />
       </AdminContext.Provider>
     </div>
   );

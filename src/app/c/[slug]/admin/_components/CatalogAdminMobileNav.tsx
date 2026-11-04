@@ -8,10 +8,12 @@ import { clsx } from "clsx";
 import { ExternalLink, Languages, LogOut, MoreHorizontal, X } from "lucide-react";
 import { getAdminNavItems, isNavItemActive, PHONE_TAB_KEYS } from "./adminNav";
 import { useAdminLang, useCopy, useSetAdminLang } from "../_lib/i18n";
+import type { ModuleDefinition } from "@/lib/modules/registry";
+import { NavBadge } from "./NavBadge";
 
 const en = {
-  viewMenu: "View menu",
-  viewLiveMenu: "View live menu",
+  viewMenu: "View page",
+  viewLiveMenu: "View my live page",
   newTab: "(opens in a new tab)",
   sections: "Dashboard sections",
   more: "More",
@@ -21,8 +23,8 @@ const en = {
   switchLanguage: "العربية",
 };
 const ar: typeof en = {
-  viewMenu: "عرض القائمة",
-  viewLiveMenu: "عرض القائمة كما يراها الزبائن",
+  viewMenu: "عرض الصفحة",
+  viewLiveMenu: "عرض صفحتي كما يراها الزبائن",
   newTab: "(تُفتح في نافذة جديدة)",
   sections: "أقسام لوحة التحكم",
   more: "المزيد",
@@ -36,10 +38,12 @@ interface MobileNavProps {
   slug: string;
   catalogName: string;
   features: { analytics_enabled?: boolean } | null;
+  module?: ModuleDefinition;
+  newOrders?: number;
 }
 
 /** Compact sticky top bar shown below lg, in place of the sidebar's brand header. */
-export function CatalogAdminTopBar({ slug, catalogName }: Omit<MobileNavProps, "features">) {
+export function CatalogAdminTopBar({ slug, catalogName }: Pick<MobileNavProps, "slug" | "catalogName">) {
   const t = useCopy({ en, ar });
   return (
     <div className="lg:hidden sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-ui-line bg-ui-surface px-4">
@@ -59,7 +63,7 @@ export function CatalogAdminTopBar({ slug, catalogName }: Omit<MobileNavProps, "
 }
 
 /** Fixed bottom tab bar (Home, Menu, Insights?, More) plus the "More" sheet, below lg only. */
-export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNavProps) {
+export function CatalogAdminBottomNav({ slug, catalogName, features, module, newOrders = 0 }: MobileNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -67,7 +71,7 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
   const setLang = useSetAdminLang();
   const t = useCopy({ en, ar });
 
-  const items = getAdminNavItems(slug, features, lang);
+  const items = getAdminNavItems(slug, features, lang, module);
   const tabs = items.filter((i) => PHONE_TAB_KEYS.includes(i.key));
   const moreItems = items.filter((i) => !PHONE_TAB_KEYS.includes(i.key));
   const moreActive = moreItems.some((i) => isNavItemActive(i, pathname));
@@ -114,6 +118,11 @@ export function CatalogAdminBottomNav({ slug, catalogName, features }: MobileNav
                     )}
                   >
                     <item.icon className="h-5 w-5" strokeWidth={active ? 2.5 : 2} aria-hidden />
+                    {item.badgeKey === "newOrders" && (
+                      <span className="absolute -mt-6 ms-7">
+                        <NavBadge count={newOrders} lang={lang} />
+                      </span>
+                    )}
                   </span>
                   {item.shortLabel ?? item.label}
                 </Link>

@@ -3,7 +3,8 @@
 //
 // Owners edit the live `categories` / `menu_items` rows: that is the draft. Publishing copies
 // them into `catalog_menu_versions` as a JSON snapshot, and guests see the latest snapshot.
-// Not versioned (stay instant): an item's sold-out switch (`is_available`), settings and the
+// Not versioned (stay instant): an item's sold-out switch (`is_available`) and stock count
+// (`stock_qty`, changed by orders), settings and the
 // exchange rate, hours, branches, FAQs and contact details.
 // Catalogs that have never published (created before this feature) show the live rows.
 
@@ -115,11 +116,11 @@ async function getVisibleVersion(versionId: string) {
 /** SQL for buildPublicMenu; `catalog` is the SQL for the catalog id (a parameter by default) */
 export const latestVersionSql = (catalog = "?") =>
   `SELECT id, version FROM catalog_menu_versions WHERE catalog_id = ${catalog} ORDER BY version DESC LIMIT 1`;
-export const availabilitySql = (catalog = "?") => `SELECT id, is_available FROM menu_items WHERE catalog_id = ${catalog}`;
+export const availabilitySql = (catalog = "?") => `SELECT id, is_available, stock_qty FROM menu_items WHERE catalog_id = ${catalog}`;
 
 /**
- * Guests' menu from the latest version row (latestVersionSql) and the live sold-out switches
- * (availabilitySql), or the owner's live rows when there is no version row (never published).
+ * Guests' menu from the latest version row (latestVersionSql) and the live sold-out switches and
+ * stock counts (availabilitySql), or the owner's live rows when there is no version row (never published).
  */
 export async function buildPublicMenu(catalogId: string, latest: ResultSet | null, availability: ResultSet | null) {
   const head = latest?.rows[0];
@@ -129,11 +130,15 @@ export async function buildPublicMenu(catalogId: string, latest: ResultSet | nul
   }
 
   const { categories, items } = await getVisibleVersion(String(head.id));
-  // Sold out is operational, not content: always use the live switch where the item still exists
-  const live = new Map((availability?.rows ?? []).map((row) => [String(row.id), row.is_available]));
+  // Sold out and stock are operational, not content: always use the live values where the item
+  // still exists
+  const live = new Map((availability?.rows ?? []).map((row) => [String(row.id), row]));
   return {
     categories,
-    items: items.map((item) => (live.has(String(item.id)) ? { ...item, is_available: live.get(String(item.id)) } : item)),
+    items: items.map((item) => {
+      const row = live.get(String(item.id));
+      return row ? { ...item, is_available: row.is_available, stock_qty: row.stock_qty ?? null } : item;
+    }),
     version: Number(head.version),
   };
 }
@@ -159,6 +164,7 @@ export async function getPublicMenu(catalogId: string, options: { preview?: bool
 const ITEM_FIELDS = [
   "name_en", "name_ar", "description_en", "description_ar", "price", "currency", "image_url",
   "category_id", "display_order", "is_active", "is_featured", "variants", "dietary", "allergens",
+  "sku", "compare_at_price", "duration_minutes",
 ] as const;
 const CATEGORY_FIELDS = ["name_en", "name_ar", "image_url", "display_order", "is_active"] as const;
 
@@ -211,7 +217,7 @@ function diffRows(type: "item" | "category", live: Row[], published: Row[], fiel
   return changes;
 }
 
-/** Draft vs latest published version (sold-out switches are not changes: they're instant) */
+/** Draft vs latest published version (sold-out switches and stock are not changes: they're instant) */
 export function diffMenus(live: MenuSnapshot, published: MenuSnapshot | null): MenuChange[] {
   const base = published ?? { categories: [], items: [] };
   return [
@@ -258,7 +264,7 @@ function insertRow(table: "categories" | "menu_items", row: Row): InStatement {
 /**
  * Put an older version back: the draft is replaced by that version's categories and items, and
  * it is published again as a new version (history is never rewritten). Columns that no longer
- * exist are skipped; today's sold-out switches are kept for items that still exist.
+ * exist are skipped; today's sold-out switches and stock counts are kept for items that still exist.
  */
 export async function restoreVersion(catalogId: string, versionId: string, by: string | null) {
   const db = getDb();
@@ -273,13 +279,13 @@ export async function restoreVersion(catalogId: string, versionId: string, by: s
   const [categoryColumns, itemColumns, availability] = await Promise.all([
     db.execute("PRAGMA table_info(categories)"),
     db.execute("PRAGMA table_info(menu_items)"),
-    db.execute({ sql: "SELECT id, is_available FROM menu_items WHERE catalog_id = ?", args: [catalogId] }),
+    db.execute({ sql: "SELECT id, is_available, stock_qty FROM menu_items WHERE catalog_id = ?", args: [catalogId] }),
   ]);
   const keep = (columnsResult: ResultSet, source: Row) => {
     const allowed = new Set(columnsResult.rows.map((c) => String(c.name)));
     return Object.fromEntries(Object.entries(source).filter(([key]) => allowed.has(key)));
   };
-  const soldOut = new Map(availability.rows.map((r) => [String(r.id), r.is_available]));
+  const live = new Map(availability.rows.map((r) => [String(r.id), r]));
 
   const statements: InStatement[] = [
     { sql: "DELETE FROM menu_items WHERE catalog_id = ?", args: [catalogId] },
@@ -287,7 +293,8 @@ export async function restoreVersion(catalogId: string, versionId: string, by: s
     ...snapshot.categories.map((c) => insertRow("categories", keep(categoryColumns, { ...c, catalog_id: catalogId }))),
     ...snapshot.items.map((i) => {
       const id = String(i.id);
-      const withAvailability = soldOut.has(id) ? { ...i, is_available: soldOut.get(id) } : i;
+      const now = live.get(id);
+      const withAvailability = now ? { ...i, is_available: now.is_available, stock_qty: now.stock_qty ?? null } : i;
       return insertRow("menu_items", keep(itemColumns, { ...withAvailability, catalog_id: catalogId }));
     }),
   ];

@@ -27,6 +27,7 @@ const FILES = [
   "lib/db/migrations/20261019_reminders.sql",
   "lib/db/migrations/20261019_ai_image_jobs.sql",
   "lib/db/migrations/20261020_menu_imports.sql",
+  "lib/db/migrations/20261105_modules.sql",
 ];
 
 // Tables that were only ever created by one-off scripts or at runtime
@@ -47,6 +48,11 @@ const EXTRA = [
   `ALTER TABLE catalog_ai_knowledge ADD COLUMN question_fr TEXT`,
   `ALTER TABLE catalog_ai_knowledge ADD COLUMN answer_fr TEXT`,
   `ALTER TABLE catalog_ai_knowledge ADD COLUMN answer_ar TEXT`,
+  // Stock never goes below zero: an order for more than is left fails as a whole (lib/orders)
+  `CREATE TRIGGER IF NOT EXISTS menu_items_stock_not_negative
+    BEFORE UPDATE OF stock_qty ON menu_items
+    WHEN NEW.stock_qty IS NOT NULL AND NEW.stock_qty < 0
+    BEGIN SELECT RAISE(ABORT, 'out_of_stock'); END`,
   `CREATE TABLE IF NOT EXISTS verification_codes (
     id TEXT PRIMARY KEY,
     email TEXT NOT NULL,

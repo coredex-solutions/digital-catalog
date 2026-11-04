@@ -3,6 +3,7 @@ import { requireCatalogAdmin } from '@/lib/auth/catalog-admin-middleware';
 import { getCatalogBySlug, getCatalogSettings, getCatalogSubscription } from '@/lib/catalog/queries';
 import { getPlanForSubscriptionType, getSubscriptionState } from '@/lib/plans';
 import { getDb } from '@/lib/db/client';
+import { moduleInfo } from '@/lib/modules/resolve';
 
 export async function GET(
   request: NextRequest,
@@ -59,6 +60,8 @@ export async function GET(
       slug: catalog.slug,
       name: catalog.name,
       business_type: catalog.business_type,
+      // Main module and add-ons decide the dashboard's words, pages and fields
+      ...moduleInfo(catalog),
     },
     features: {
       booking_enabled: subscription?.booking_enabled || false,

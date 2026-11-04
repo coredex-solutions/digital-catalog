@@ -6,12 +6,11 @@ import { verifyEmailVerificationToken } from "@/lib/auth/jwt";
 import { withRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { CATALOG_THEMES, DEFAULT_THEME_ID } from "@/config/themes";
-import type { BusinessType } from "@/lib/db/types";
+import { newCatalogModuleColumns, newCatalogSettings } from "@/lib/modules/resolve";
 import { PLAN_CONFIG } from "@/lib/plans";
 import { initialVersionStatement } from "@/lib/catalog/publishing";
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const BUSINESS_TYPES: BusinessType[] = ["restaurant", "retail", "cafe", "salon", "bakery", "pharmacy", "grocery", "other"];
 // Any paid plan picked at signup is queued for approval; the account starts on the trial
 const PAID_PLANS = ["essential", "pro", "enterprise"];
 const MIN_PASSWORD_LENGTH = 8;
@@ -19,7 +18,7 @@ const MIN_PASSWORD_LENGTH = 8;
 async function handler(request: NextRequest) {
     try {
         const body = await request.json();
-        const { email, password, name, catalogName, catalogSlug, businessType, themeId, plan, verificationToken } = body;
+        const { email, password, name, catalogName, catalogSlug, module: moduleId, businessType, themeId, plan, verificationToken } = body;
 
         // 1. Basic Validation
         if (!email || !password || !name || !catalogName || !catalogSlug) {
@@ -56,7 +55,9 @@ async function handler(request: NextRequest) {
             );
         }
 
-        const resolvedBusinessType: BusinessType = BUSINESS_TYPES.includes(businessType) ? businessType : "restaurant";
+        // Main module and sub-type (e.g. shop + clothing); unknown values fall back to the module's first
+        const { module, business_type: resolvedBusinessType, addons } = newCatalogModuleColumns(moduleId, businessType);
+        const moduleSettings = newCatalogSettings(module);
 
         const db = getDb();
 
@@ -97,9 +98,9 @@ async function handler(request: NextRequest) {
         const statements: InStatement[] = [
             // A. Create Catalog
             {
-                sql: `INSERT INTO catalogs (id, slug, name, business_type, created_at, updated_at)
-              VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
-                args: [catalogId, slug, catalogName, resolvedBusinessType],
+                sql: `INSERT INTO catalogs (id, slug, name, business_type, module, addons, created_at, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+                args: [catalogId, slug, catalogName, resolvedBusinessType, module.id, addons],
             },
             // B. Create Admin
             {
@@ -120,14 +121,14 @@ async function handler(request: NextRequest) {
             // D. Initialize Settings with Theme Colors (menus are Arabic and English; the column default still lists French)
             {
                 sql: `INSERT INTO catalog_settings (
-                    catalog_id, enabled_languages,
+                    catalog_id, enabled_languages, order_types, booking_enabled,
                     color_primary, color_secondary, color_accent,
                     color_background, color_surface, color_text, color_text_muted,
                     color_background_dark, color_surface_dark, color_text_dark, color_text_muted_dark,
                     updated_at
-                ) VALUES (?, 'ar,en', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+                ) VALUES (?, 'ar,en', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
                 args: [
-                    catalogId,
+                    catalogId, moduleSettings.order_types, moduleSettings.booking_enabled,
                     selectedTheme.light.primary, selectedTheme.light.secondary, selectedTheme.light.accent,
                     selectedTheme.light.background, selectedTheme.light.surface, selectedTheme.light.text, selectedTheme.light.textMuted,
                     selectedTheme.dark.background, selectedTheme.dark.surface, selectedTheme.dark.text, selectedTheme.dark.textMuted

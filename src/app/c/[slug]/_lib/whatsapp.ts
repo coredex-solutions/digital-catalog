@@ -1,20 +1,18 @@
-// Builds the WhatsApp messages the diner sends to the restaurant (orders and table requests).
+// Builds the WhatsApp messages a customer sends to the business: orders, service requests and
+// table reservations. Used in the browser and by the orders API (which adds the order number).
 
 import type { Language } from "@/types";
 import { formatPrice, formatTotal, type PriceConfig } from "@/lib/catalog/price";
 import { getDictionary, localized } from "./i18n";
 import { variantName } from "@/lib/catalog/dish-info";
+import { MODULES, ADDRESS_ORDER_TYPES, type ModuleId, type OrderType } from "@/lib/modules/registry";
+import { resolveOrderTypes } from "@/lib/modules/resolve";
 
-export type OrderType = "dine_in" | "takeaway" | "delivery";
+export type { OrderType };
 
-export const ALL_ORDER_TYPES: OrderType[] = ["dine_in", "takeaway", "delivery"];
-
-export function parseOrderTypes(value?: string | null): OrderType[] {
-  const types = (value ?? "dine_in,takeaway")
-    .split(",")
-    .map((s) => s.trim())
-    .filter((t): t is OrderType => (ALL_ORDER_TYPES as string[]).includes(t));
-  return ALL_ORDER_TYPES.filter((t) => types.includes(t));
+/** The order types a catalog offers (catalog_settings.order_types), limited to its module */
+export function parseOrderTypes(value?: string | null, module: ModuleId = "restaurant"): OrderType[] {
+  return resolveOrderTypes(MODULES[module], value ?? null);
 }
 
 /** wa.me link for a Lebanese or international number; local 0-prefixed numbers get +961 */
@@ -35,11 +33,12 @@ export interface OrderLine {
   currency?: string | null;
   quantity: number;
   note?: string;
-  /** The chosen option, shown after the dish name: "Chicken shawarma (Large)" */
+  /** The chosen option, shown after the item name: "Chicken shawarma (Large)" */
   variant?: { name_en: string; name_ar: string };
 }
 
 export interface OrderDetails {
+  /** The business name (kept as restaurantName for older callers) */
   restaurantName: string;
   orderType: OrderType;
   table?: string;
@@ -48,25 +47,37 @@ export interface OrderDetails {
   name: string;
   phone: string;
   notes?: string;
+  /** 'YYYY-MM-DD HH:MM': pre-order or appointment time */
+  when?: string;
+  /** Set once the order is saved: "Order #12" */
+  orderNumber?: number;
+}
+
+/** "2026-11-05 14:30" → "2026-11-05 · 14:30" (Western digits, as Lebanese menus write them) */
+function formatWhen(when: string): string {
+  return when.replace(" ", " · ");
 }
 
 export function buildOrderMessage(
   lines: OrderLine[],
   details: OrderDetails,
   priceConfig: PriceConfig,
-  lang: Language
+  lang: Language,
+  module: ModuleId = "restaurant"
 ): string {
-  const t = getDictionary(lang);
+  const t = getDictionary(lang, module);
   const out: string[] = [];
 
-  out.push(`*${t.msgNewOrder} · ${details.restaurantName}*`);
+  const number = details.orderNumber ? ` #${details.orderNumber}` : "";
+  out.push(`*${t.msgNewOrder}${number} · ${details.restaurantName}*`);
   out.push("");
   out.push(`*${t.msgOrderType}:* ${t[details.orderType]}`);
   if (details.orderType === "dine_in" && details.table) out.push(`*${t.msgTable}:* ${details.table}`);
-  if (details.orderType === "delivery") {
+  if (ADDRESS_ORDER_TYPES.includes(details.orderType)) {
     if (details.address) out.push(`*${t.msgAddress}:* ${details.address}`);
     if (details.area) out.push(`*${t.msgArea}:* ${details.area}`);
   }
+  if (details.when) out.push(`*${t.msgWhen}:* ${formatWhen(details.when)}`);
   out.push(`*${t.msgName}:* ${details.name}`);
   out.push(`*${t.msgPhone}:* ${details.phone}`);
   out.push("");
@@ -99,12 +110,14 @@ export interface ReservationDetails {
   time: string;
   guests: string;
   notes?: string;
+  orderNumber?: number;
 }
 
-export function buildReservationMessage(details: ReservationDetails, lang: Language): string {
-  const t = getDictionary(lang);
+export function buildReservationMessage(details: ReservationDetails, lang: Language, module: ModuleId = "restaurant"): string {
+  const t = getDictionary(lang, module);
+  const number = details.orderNumber ? ` #${details.orderNumber}` : "";
   const out = [
-    `*${t.msgReservation} · ${details.restaurantName}*`,
+    `*${t.msgReservation}${number} · ${details.restaurantName}*`,
     "",
     `*${t.msgName}:* ${details.name}`,
     `*${t.msgPhone}:* ${details.phone}`,

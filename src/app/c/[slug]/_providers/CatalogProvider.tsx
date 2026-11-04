@@ -24,6 +24,8 @@ import { getPriceConfig, formatTotal, type PriceConfig, type FormattedPrice } fr
 import { getDictionary, type Dictionary } from "../_lib/i18n";
 import { parseOrderTypes, type OrderType } from "../_lib/whatsapp";
 import type { AllergenCode, DietaryCode, DishVariant } from "@/lib/catalog/dish-info";
+import type { AddonId, ModuleDefinition } from "@/lib/modules/registry";
+import { moduleFor } from "@/lib/modules/resolve";
 
 // Menu item interface
 export interface MenuItem {
@@ -46,6 +48,12 @@ export interface MenuItem {
   dietary?: DietaryCode[];
   /** null = the restaurant hasn't verified allergens (unknown); [] = verified, none listed */
   allergens?: AllergenCode[] | null;
+  /** Units left when the stock add-on tracks this item; null = not tracked */
+  stock_qty?: number | null;
+  /** Old price, shown crossed out (always higher than price) */
+  compare_at_price?: number | null;
+  /** How long a service takes */
+  duration_minutes?: number | null;
 }
 
 // Cart item interface. The same dish with a different option or special request is kept as a
@@ -79,6 +87,12 @@ export function needsVariant(item: Pick<MenuItem, "variants">): boolean {
 
 function clampQuantity(quantity: number): number {
   return Math.min(MAX_LINE_QUANTITY, Math.max(0, Math.floor(Number(quantity) || 0)));
+}
+
+/** Most of an item a customer can still add: what stock is left minus what is already in the order */
+export function remainingFor(item: Pick<MenuItem, "id" | "stock_qty">, cart: CartItem[]): number {
+  if (item.stock_qty === null || item.stock_qty === undefined) return MAX_LINE_QUANTITY;
+  return Math.max(0, item.stock_qty - cartQuantityOf(cart, item.id));
 }
 
 /** How many of a dish are in the order, across all its lines */
@@ -131,6 +145,10 @@ interface CatalogContextType {
   menuItems: MenuItem[];
   faqs: MenuFaq[];
   branches: MenuBranch[];
+
+  // Module: words, layout and how customers order
+  module: ModuleDefinition;
+  addons: AddonId[];
 
   // Language & appearance
   lang: Language;
@@ -224,14 +242,16 @@ export function CatalogProvider({
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [table, setTableState] = useState("");
 
-  const t = getDictionary(lang);
+  const { module, addons } = useMemo(() => moduleFor(catalog), [catalog]);
+  const t = getDictionary(lang, module.id);
   const priceConfig = useMemo(() => getPriceConfig(settings), [settings]);
-  const orderTypes = useMemo(() => parseOrderTypes(settings?.order_types), [settings?.order_types]);
+  const orderTypes = useMemo(() => parseOrderTypes(settings?.order_types, module.id), [settings?.order_types, module.id]);
   const [orderType, setOrderType] = useState<OrderType>(orderTypes[0] || "dine_in");
 
-  const bookingEnabled = Boolean(settings?.booking_enabled ?? true) && !!contact?.phone_whatsapp;
-  const orderingEnabled =
-    Boolean(settings?.whatsapp_order_enabled ?? true) && !!contact?.phone_whatsapp && orderTypes.length > 0;
+  // Orders and bookings are saved for the owner's dashboard, so they work without a WhatsApp
+  // number too (WhatsApp is then simply not offered after sending)
+  const bookingEnabled = module.tableBooking && Boolean(Number(settings?.booking_enabled ?? 1));
+  const orderingEnabled = Boolean(Number(settings?.whatsapp_order_enabled ?? 1)) && orderTypes.length > 0;
 
   // Storage key unique to this catalog (same key as before, so existing carts survive)
   const storagePrefix = `catalog_${catalog.slug}_`;
@@ -248,10 +268,18 @@ export function CatalogProvider({
     if (needsVariant(item) && !variant) return false;
     const normalized = normalizeNote(note);
     const key = cartLineKey(item.id, normalized, variant?.id);
+    let added = true;
     setCart((prev) => {
+      // Never more than the stock left (counting the item's other lines)
+      const room = remainingFor(item, prev);
+      const take = Math.min(amount, room);
+      if (take <= 0) {
+        added = false;
+        return prev;
+      }
       if (prev.some((line) => line.key === key)) {
         return prev.map((line) =>
-          line.key === key ? { ...line, quantity: clampQuantity(line.quantity + amount) } : line
+          line.key === key ? { ...line, quantity: clampQuantity(line.quantity + take) } : line
         );
       }
       return [
@@ -265,22 +293,28 @@ export function CatalogProvider({
           price: variant ? variant.price : item.price,
           currency: item.currency,
           image_url: item.image_url,
-          quantity: amount,
+          stock_qty: item.stock_qty,
+          quantity: take,
           note: normalized || undefined,
           variant,
         },
       ];
     });
-    return true;
+    return added;
   }, []);
 
   const updateLineQuantity = useCallback((lineKey: string, quantity: number) => {
     const next = clampQuantity(quantity);
-    setCart((prev) =>
-      next <= 0
-        ? prev.filter((line) => line.key !== lineKey)
-        : prev.map((line) => (line.key === lineKey ? { ...line, quantity: next } : line))
-    );
+    setCart((prev) => {
+      if (next <= 0) return prev.filter((line) => line.key !== lineKey);
+      return prev.map((line) => {
+        if (line.key !== lineKey) return line;
+        // Room = stock left once the item's other lines are counted
+        const others = prev.filter((l) => l.id === line.id && l.key !== lineKey).reduce((sum, l) => sum + l.quantity, 0);
+        const cap = line.stock_qty == null ? next : Math.max(1, line.stock_qty - others);
+        return { ...line, quantity: Math.min(next, cap) };
+      });
+    });
   }, []);
 
   const removeFromCart = useCallback((itemId: string) => {
@@ -423,7 +457,8 @@ export function CatalogProvider({
             price: variant ? variant.price : item.price,
             currency: item.currency,
             image_url: item.image_url,
-            quantity: clampQuantity((existing?.quantity || 0) + quantity),
+            stock_qty: item.stock_qty,
+            quantity: Math.min(clampQuantity((existing?.quantity || 0) + quantity), item.stock_qty ?? MAX_LINE_QUANTITY),
             note: note || undefined,
             variant,
           });
@@ -484,6 +519,8 @@ export function CatalogProvider({
     menuItems,
     faqs,
     branches,
+    module,
+    addons,
     lang,
     t,
     dir: lang === "ar" ? "rtl" : "ltr",

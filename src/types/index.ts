@@ -112,6 +112,10 @@ export interface CatalogUIData {
     description_ar?: string | null;
     description_en?: string | null;
     logo_url?: string | null;
+    /** Main module and add-ons (lib/modules); restaurant with its defaults when missing */
+    module?: import("@/lib/modules/registry").ModuleId;
+    addons?: import("@/lib/modules/registry").AddonId[];
+    business_type?: string;
   };
   settings: CatalogSettingsData | null;
   contact: CatalogContactData | null;

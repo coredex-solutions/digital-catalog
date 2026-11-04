@@ -1,16 +1,19 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
-import { MessageCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CheckCircle2, Loader2, MessageCircle } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { trackEvent } from "../AnalyticsTracker";
 import { localized } from "../../_lib/i18n";
 import { buildOrderMessage, whatsappLink, type OrderType } from "../../_lib/whatsapp";
+import { newClientKey, sendOrder, type SentOrder } from "../../_lib/send-order";
+import { ADDRESS_ORDER_TYPES } from "@/lib/modules/registry";
 import { Price } from "./Price";
 import { Sheet } from "./Sheet";
 import { cn } from "@/utils/helpers";
 
-// Saved on this device so returning diners don't retype their details
+// Saved on this device so returning customers don't retype their details
 const DETAILS_KEY = "menu_diner_details";
 
 interface Details {
@@ -19,6 +22,8 @@ interface Details {
   address: string;
   area: string;
 }
+
+type FieldName = keyof Details | "table" | "when" | "orderType";
 
 export function Field({
   label,
@@ -53,7 +58,26 @@ export function Field({
 export const inputClass =
   "w-full min-h-12 rounded-control border border-menu-input-border bg-menu-surface px-4 text-base placeholder:text-menu-muted focus:border-brand-ink focus:outline-none aria-[invalid=true]:border-menu-danger";
 
+/** Today's date in Beirut as YYYY-MM-DD, for date pickers' minimum */
+export function todayInBeirut(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Beirut" }).format(new Date());
+}
+
+/** Saved order shown after sending: the number, then WhatsApp (when the business has it) */
+export function SavedNotice({ title, body }: { title: string; body: string }) {
+  return (
+    <div role="status" className="mb-3 rounded-control bg-menu-subtle px-4 py-3">
+      <p className="flex items-center gap-2 font-semibold">
+        <CheckCircle2 className="h-5 w-5 shrink-0 text-brand-ink" aria-hidden />
+        {title}
+      </p>
+      <p className="mt-1 text-sm text-menu-muted">{body}</p>
+    </div>
+  );
+}
+
 export function CheckoutSheet() {
+  const router = useRouter();
   const {
     activeSheet,
     closeSheet,
@@ -66,6 +90,7 @@ export function CheckoutSheet() {
     priceConfig,
     lang,
     t,
+    module,
     orderTypes,
     orderType,
     setOrderType,
@@ -74,22 +99,29 @@ export function CheckoutSheet() {
     clearCart,
   } = useCatalog();
   const open = activeSheet === "checkout";
+  const businessName = localized(catalog, "name", lang) || catalog.name;
 
   const [details, setDetails] = useState<Details>({ name: "", phone: "", address: "", area: "" });
+  const [when, setWhen] = useState({ date: "", time: "" });
   const [notes, setNotes] = useState("");
-  const [errors, setErrors] = useState<Partial<Record<keyof Details | "table", string>>>({});
-  const [sent, setSent] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
+  const [sending, setSending] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [saved, setSaved] = useState<SentOrder | null>(null);
+  const [clientKey, setClientKey] = useState("");
 
-  // Each time the sheet opens: start fresh and pre-fill the diner's saved details
+  // Each time the sheet opens: start fresh and pre-fill the customer's saved details
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setSent(false);
+      setSaved(null);
+      setFailure(null);
       setErrors({});
+      setClientKey(newClientKey());
       try {
-        const saved = JSON.parse(localStorage.getItem(DETAILS_KEY) || "{}");
-        setDetails((prev) => ({ ...prev, ...saved }));
+        const stored = JSON.parse(localStorage.getItem(DETAILS_KEY) || "{}");
+        setDetails((prev) => ({ ...prev, ...stored }));
       } catch {
         // Nothing saved yet
       }
@@ -99,26 +131,16 @@ export function CheckoutSheet() {
   const update = (field: keyof Details, value: string) => setDetails((prev) => ({ ...prev, [field]: value }));
 
   const deliveryNote = localized(settings || {}, "delivery_note", lang);
+  const needsAddress = ADDRESS_ORDER_TYPES.includes(orderType);
+  // Cafés: optional pre-order time (not for eating in). Services: required appointment time.
+  const askWhen = module.schedule === "required" || (module.schedule === "optional" && orderType !== "dine_in");
+  const whenRequired = module.schedule === "required";
 
-  const submit = () => {
-    const next: typeof errors = {};
-    if (!details.name.trim()) next.name = t.required;
-    if (details.phone.replace(/\D/g, "").length < 7) next.phone = t.required;
-    if (orderType === "dine_in" && !table.trim()) next.table = t.required;
-    if (orderType === "delivery" && !details.address.trim()) next.address = t.required;
-    setErrors(next);
-    if (Object.keys(next).length > 0 || !contact?.phone_whatsapp) return;
-
-    try {
-      localStorage.setItem(DETAILS_KEY, JSON.stringify(details));
-    } catch {
-      // Storage unavailable; ordering still works
-    }
-
-    const message = buildOrderMessage(
+  const localMessage = (orderNumber?: number) =>
+    buildOrderMessage(
       cart,
       {
-        restaurantName: localized(catalog, "name", lang) || catalog.name,
+        restaurantName: businessName,
         orderType,
         table: table.trim(),
         address: details.address.trim(),
@@ -126,64 +148,143 @@ export function CheckoutSheet() {
         name: details.name.trim(),
         phone: details.phone.trim(),
         notes: notes.trim(),
+        when: askWhen && when.date && when.time ? `${when.date} ${when.time}` : undefined,
+        orderNumber,
       },
       priceConfig,
-      lang
+      lang,
+      module.id
     );
 
+  const openWhatsApp = (link: string) => {
     trackEvent(catalog.id, "whatsapp_click");
     // Same-tab navigation: popup blockers on iOS Safari block window.open after async work
-    window.location.href = whatsappLink(contact.phone_whatsapp, message);
-    setSent(true);
+    window.location.href = link;
   };
 
-  // Opening WhatsApp is a handoff, not a placed order: say so, and let the diner reopen it
-  // or clear the order once they've actually sent it
-  const footer = sent ? (
-    <div>
-      <div role="status" className="mb-3 rounded-control bg-menu-subtle px-4 py-3">
-        <p className="flex items-center gap-2 font-semibold">
-          <MessageCircle className="h-5 w-5 shrink-0" aria-hidden />
-          {t.handoffTitle}
-        </p>
-        <p className="mt-1 text-sm text-menu-muted">{t.handoffBody}</p>
+  const submit = async () => {
+    if (sending) return;
+    const next: typeof errors = {};
+    if (!details.name.trim()) next.name = t.required;
+    if (details.phone.replace(/\D/g, "").length < 7) next.phone = t.required;
+    if (orderType === "dine_in" && !table.trim()) next.table = t.required;
+    if (needsAddress && !details.address.trim()) next.address = t.required;
+    if (askWhen && (whenRequired || when.date || when.time) && !(when.date && when.time)) next.when = t.required;
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
+
+    try {
+      localStorage.setItem(DETAILS_KEY, JSON.stringify(details));
+    } catch {
+      // Storage unavailable; ordering still works
+    }
+
+    setSending(true);
+    setFailure(null);
+    const result = await sendOrder(catalog.slug, {
+      kind: "order",
+      orderType,
+      lines: cart.map((line) => ({ itemId: line.id, variantId: line.variant?.id, quantity: line.quantity, note: line.note })),
+      name: details.name.trim(),
+      phone: details.phone.trim(),
+      table: table.trim(),
+      address: details.address.trim(),
+      area: details.area.trim(),
+      date: askWhen ? when.date : "",
+      time: askWhen ? when.time : "",
+      note: notes.trim(),
+      lang,
+      clientKey,
+    });
+    setSending(false);
+
+    if (result.ok) {
+      setSaved(result.order);
+      if (result.order.whatsapp) openWhatsApp(result.order.whatsapp);
+      return;
+    }
+    if (result.code === "stock_changed" || result.code === "item_unavailable") {
+      setFailure(t.stockChanged);
+      // Reload the items so sold-out and stock changes show
+      router.refresh();
+      return;
+    }
+    if (result.field) {
+      setErrors({ [result.field]: t.required } as typeof errors);
+      return;
+    }
+    setFailure(t.saveFailed);
+  };
+
+  let footer: ReactNode;
+  if (saved) {
+    footer = (
+      <div>
+        <SavedNotice title={t.savedTitle(saved.number)} body={saved.whatsapp ? t.savedBody : t.savedNoWhatsapp} />
+        <div className="flex flex-col gap-2">
+          {saved.whatsapp && (
+            <button
+              type="button"
+              onClick={() => openWhatsApp(saved.whatsapp!)}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-control bg-brand px-4 font-semibold text-brand-fg"
+            >
+              <MessageCircle className="h-5 w-5" aria-hidden />
+              {t.handoffAgain}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              clearCart();
+              closeSheet();
+            }}
+            className="flex min-h-12 items-center justify-center rounded-control border border-menu-input-border px-4 font-semibold"
+          >
+            {saved.whatsapp ? t.handoffDone : t.done}
+          </button>
+        </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <button type="button" onClick={submit} className="flex min-h-12 items-center justify-center gap-2 rounded-control bg-brand px-4 font-semibold text-brand-fg">
-          {t.handoffAgain}
-        </button>
+    );
+  } else {
+    footer = (
+      <div>
+        {failure && (
+          <div role="alert" className="mb-3 rounded-control border border-menu-danger px-4 py-3 text-sm text-menu-danger">
+            {failure}
+            {failure === t.saveFailed && contact?.phone_whatsapp && (
+              <button
+                type="button"
+                onClick={() => openWhatsApp(whatsappLink(contact.phone_whatsapp!, localMessage()))}
+                className="mt-2 block font-semibold underline underline-offset-4"
+              >
+                {t.sendWithoutSaving}
+              </button>
+            )}
+          </div>
+        )}
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <span className="text-menu-muted">{t.subtotal}</span>
+          <Price value={cartTotal} className="text-lg" />
+        </div>
         <button
           type="button"
-          onClick={() => {
-            clearCart();
-            closeSheet();
-          }}
-          className="flex min-h-12 items-center justify-center rounded-control border border-menu-input-border px-4 font-semibold"
+          onClick={submit}
+          disabled={sending || cart.length === 0}
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-control bg-brand px-4 font-semibold text-brand-fg transition-transform active:scale-[0.99] disabled:opacity-70"
         >
-          {t.handoffDone}
+          {sending ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : contact?.phone_whatsapp ? <MessageCircle className="h-5 w-5" aria-hidden /> : null}
+          {sending ? t.sending : failure === t.saveFailed ? t.saveRetry : contact?.phone_whatsapp ? t.sendWhatsApp : t.checkout}
         </button>
+        <p className="mt-2 text-center text-xs text-menu-muted">
+          {contact?.phone_whatsapp ? `${t.whatsappHint} ` : ""}
+          {t.privacyNote(businessName)}
+        </p>
       </div>
-    </div>
-  ) : (
-    <div>
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <span className="text-menu-muted">{t.subtotal}</span>
-        <Price value={cartTotal} className="text-lg" />
-      </div>
-      <button
-        type="button"
-        onClick={submit}
-        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-control bg-brand px-4 font-semibold text-brand-fg transition-transform active:scale-[0.99]"
-      >
-        <MessageCircle className="h-5 w-5" aria-hidden />
-        {t.sendWhatsApp}
-      </button>
-      <p className="mt-2 text-center text-xs text-menu-muted">{t.whatsappHint}</p>
-    </div>
-  );
+    );
+  }
 
   return (
-    <Sheet open={open} onClose={() => openSheet("cart")} title={t.checkout} footer={footer}>
+    <Sheet open={open} onClose={() => (saved ? closeSheet() : openSheet("cart"))} title={t.checkout} footer={footer}>
       <form
         className="space-y-5"
         onSubmit={(event) => {
@@ -191,6 +292,7 @@ export function CheckoutSheet() {
           submit();
         }}
         noValidate
+        inert={saved ? true : undefined}
       >
         {orderTypes.length > 1 && (
           <fieldset>
@@ -234,9 +336,9 @@ export function CheckoutSheet() {
           </Field>
         )}
 
-        {orderType === "delivery" && (
+        {needsAddress && (
           <>
-            <Field label={t.address} error={errors.address}>
+            <Field label={orderType === "home_visit" ? t.visitAddress : t.address} error={errors.address}>
               {(props) => (
                 <input
                   {...props}
@@ -259,8 +361,39 @@ export function CheckoutSheet() {
                 />
               )}
             </Field>
-            {deliveryNote && <p className="rounded-2xl bg-brand-soft px-4 py-3 text-sm leading-relaxed">{deliveryNote}</p>}
+            {orderType === "delivery" && deliveryNote && (
+              <p className="rounded-2xl bg-brand-soft px-4 py-3 text-sm leading-relaxed">{deliveryNote}</p>
+            )}
           </>
+        )}
+
+        {askWhen && (
+          <fieldset>
+            <legend className="text-sm font-semibold">{whenRequired ? t.appointmentLabel : t.whenLabel}</legend>
+            <div className="mt-1.5 grid grid-cols-2 gap-3">
+              <input
+                type="date"
+                min={todayInBeirut()}
+                value={when.date}
+                onChange={(event) => setWhen((prev) => ({ ...prev, date: event.target.value }))}
+                aria-invalid={!!errors.when}
+                aria-label={t.preferredDate}
+                className={inputClass}
+              />
+              <input
+                type="time"
+                step={900}
+                value={when.time}
+                onChange={(event) => setWhen((prev) => ({ ...prev, time: event.target.value }))}
+                aria-invalid={!!errors.when}
+                aria-label={t.preferredTime}
+                className={inputClass}
+              />
+            </div>
+            <p className={cn("mt-1 text-sm", errors.when ? "text-menu-danger" : "text-menu-muted")}>
+              {errors.when || (whenRequired ? t.appointmentHint : t.whenHint)}
+            </p>
+          </fieldset>
         )}
 
         <Field label={t.name} error={errors.name}>

@@ -1,9 +1,12 @@
+import type { ModuleId } from '../modules/registry';
+
 // ============================================
 // Multi-Tenant SaaS Types
 // ============================================
 
-// Business types supported
-export type BusinessType = 'restaurant' | 'retail' | 'cafe' | 'salon' | 'bakery' | 'pharmacy' | 'grocery' | 'other';
+// A sub-type id from lib/modules/registry.ts (e.g. restaurant, bakery, clothing, salon). Older
+// catalogs may hold other values; lib/modules/resolve.ts maps them to a module.
+export type BusinessType = string;
 
 // Subscription types
 export type SubscriptionType = 'trial' | 'essential' | 'pro' | 'enterprise' | 'yearly' | 'forever' | 'custom_years';
@@ -33,6 +36,10 @@ export interface Catalog {
   name_en?: string | null;
   name_fr?: string | null;
   business_type: BusinessType;
+  /** Main module (lib/modules/registry.ts); missing until migration 20261105 has run */
+  module?: ModuleId;
+  /** Comma list of add-ons; NULL = the module's defaults */
+  addons?: string | null;
   description: string | null;
   description_ar?: string | null;
   description_en?: string | null;
@@ -260,6 +267,18 @@ export interface MenuItem {
   is_featured: boolean;
   /** Sold out for now (shown, but can't be ordered). Optional until migration 20261008 has run */
   is_available?: boolean | number | null;
+  /** Options, dietary tags and allergens as JSON text (see lib/catalog/dish-info.ts) */
+  variants?: string | null;
+  dietary?: string | null;
+  allergens?: string | null;
+  image_is_illustrative?: number | null;
+  /** Units left; NULL = not tracked (migration 20261105) */
+  stock_qty?: number | null;
+  sku?: string | null;
+  /** Old price shown crossed out */
+  compare_at_price?: number | null;
+  /** How long a service takes */
+  duration_minutes?: number | null;
   created_at: string;
   updated_at: string;
 }

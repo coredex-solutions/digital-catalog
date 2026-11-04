@@ -1,44 +1,48 @@
 "use client";
 
-import { useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { trackEvent } from "../AnalyticsTracker";
 import { localized } from "../../_lib/i18n";
 import { buildReservationMessage, whatsappLink } from "../../_lib/whatsapp";
-import { Field, inputClass } from "./CheckoutSheet";
+import { newClientKey, sendOrder, type SentOrder } from "../../_lib/send-order";
+import { Field, inputClass, SavedNotice, todayInBeirut } from "./CheckoutSheet";
 import { QuantityStepper } from "./QuantityStepper";
 import { Sheet } from "./Sheet";
 
 const DETAILS_KEY = "menu_diner_details";
 
-/** Today's date in Beirut as YYYY-MM-DD, for the date picker's minimum */
-function todayInBeirut(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Beirut" }).format(new Date());
-}
-
 /**
- * Table reservation. Sends the request to the restaurant on WhatsApp, so it actually reaches
- * someone (the previous form only pretended to submit).
+ * Table reservation (restaurants and cafés). The request is saved for the owner's dashboard,
+ * then sent on WhatsApp when the business has a number.
  */
 export function ReservationSheet() {
-  const { activeSheet, closeSheet, catalog, contact, lang, t } = useCatalog();
+  const { activeSheet, closeSheet, catalog, contact, lang, t, module } = useCatalog();
   const open = activeSheet === "reservation";
   const ar = lang === "ar";
+  const businessName = localized(catalog, "name", lang) || catalog.name;
 
   const [form, setForm] = useState({ name: "", phone: "", date: "", time: "", notes: "" });
   const [guests, setGuests] = useState(2);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [saved, setSaved] = useState<SentOrder | null>(null);
+  const [clientKey, setClientKey] = useState("");
 
-  // Each time the sheet opens: clear old errors and pre-fill the diner's saved details
+  // Each time the sheet opens: clear old errors and pre-fill the customer's saved details
   const [wasOpen, setWasOpen] = useState(open);
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
       setErrors({});
+      setFailure(null);
+      setSaved(null);
+      setClientKey(newClientKey());
       try {
-        const saved = JSON.parse(localStorage.getItem(DETAILS_KEY) || "{}");
-        setForm((prev) => ({ ...prev, name: prev.name || saved.name || "", phone: prev.phone || saved.phone || "" }));
+        const stored = JSON.parse(localStorage.getItem(DETAILS_KEY) || "{}");
+        setForm((prev) => ({ ...prev, name: prev.name || stored.name || "", phone: prev.phone || stored.phone || "" }));
       } catch {
         // Nothing saved yet
       }
@@ -47,18 +51,56 @@ export function ReservationSheet() {
 
   const update = (field: keyof typeof form, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
 
-  const submit = () => {
+  const openWhatsApp = (link: string) => {
+    trackEvent(catalog.id, "booking_confirm");
+    window.location.href = link;
+  };
+
+  const submit = async () => {
+    if (sending) return;
     const next: Record<string, string> = {};
     if (!form.name.trim()) next.name = t.required;
     if (form.phone.replace(/\D/g, "").length < 7) next.phone = t.required;
     if (!form.date) next.date = t.required;
     if (!form.time) next.time = t.required;
     setErrors(next);
-    if (Object.keys(next).length > 0 || !contact?.phone_whatsapp) return;
+    if (Object.keys(next).length > 0) return;
 
-    const message = buildReservationMessage(
+    setSending(true);
+    setFailure(null);
+    const result = await sendOrder(catalog.slug, {
+      kind: "booking",
+      name: form.name.trim(),
+      phone: form.phone.trim(),
+      date: form.date,
+      time: form.time,
+      partySize: guests,
+      note: form.notes.trim(),
+      lang,
+      clientKey,
+    });
+    setSending(false);
+
+    if (result.ok) {
+      setSaved(result.order);
+      if (result.order.whatsapp) openWhatsApp(result.order.whatsapp);
+      return;
+    }
+    if (result.field === "when") {
+      setErrors({ date: t.required, time: t.required });
+      return;
+    }
+    if (result.field) {
+      setErrors({ [result.field]: t.required });
+      return;
+    }
+    setFailure(t.saveFailed);
+  };
+
+  const localMessage = () =>
+    buildReservationMessage(
       {
-        restaurantName: localized(catalog, "name", lang) || catalog.name,
+        restaurantName: businessName,
         name: form.name.trim(),
         phone: form.phone.trim(),
         date: form.date,
@@ -66,33 +108,72 @@ export function ReservationSheet() {
         guests: String(guests),
         notes: form.notes.trim(),
       },
-      lang
+      lang,
+      module.id
     );
-    trackEvent(catalog.id, "booking_confirm");
-    window.location.href = whatsappLink(contact.phone_whatsapp, message);
-  };
 
-  const footer = (
-    <div>
-      <button
-        type="button"
-        onClick={submit}
-        className="flex min-h-12 w-full items-center justify-center gap-2 rounded-control bg-brand px-4 font-semibold text-brand-fg transition-transform active:scale-[0.99]"
-      >
-        <MessageCircle className="h-5 w-5" aria-hidden />
-        {t.reserveSend}
-      </button>
-      <p className="mt-2 text-center text-xs text-menu-muted">
-        {t.reserveHint}
-      </p>
-    </div>
-  );
+  let footer: ReactNode;
+  if (saved) {
+    footer = (
+      <div>
+        <SavedNotice title={t.reserveSaved(saved.number)} body={saved.whatsapp ? t.reserveHint : t.savedNoWhatsapp} />
+        <div className="flex flex-col gap-2">
+          {saved.whatsapp && (
+            <button
+              type="button"
+              onClick={() => openWhatsApp(saved.whatsapp!)}
+              className="flex min-h-12 items-center justify-center gap-2 rounded-control bg-brand px-4 font-semibold text-brand-fg"
+            >
+              <MessageCircle className="h-5 w-5" aria-hidden />
+              {t.handoffAgain}
+            </button>
+          )}
+          <button type="button" onClick={closeSheet} className="flex min-h-12 items-center justify-center rounded-control border border-menu-input-border px-4 font-semibold">
+            {t.done}
+          </button>
+        </div>
+      </div>
+    );
+  } else {
+    footer = (
+      <div>
+        {failure && (
+          <div role="alert" className="mb-3 rounded-control border border-menu-danger px-4 py-3 text-sm text-menu-danger">
+            {failure}
+            {contact?.phone_whatsapp && (
+              <button
+                type="button"
+                onClick={() => openWhatsApp(whatsappLink(contact.phone_whatsapp!, localMessage()))}
+                className="mt-2 block font-semibold underline underline-offset-4"
+              >
+                {t.sendWithoutSaving}
+              </button>
+            )}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={submit}
+          disabled={sending}
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-control bg-brand px-4 font-semibold text-brand-fg transition-transform active:scale-[0.99] disabled:opacity-70"
+        >
+          {sending ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden /> : contact?.phone_whatsapp ? <MessageCircle className="h-5 w-5" aria-hidden /> : null}
+          {sending ? t.sending : failure ? t.saveRetry : contact?.phone_whatsapp ? t.reserveSend : t.send}
+        </button>
+        <p className="mt-2 text-center text-xs text-menu-muted">
+          {contact?.phone_whatsapp ? `${t.reserveHint} ` : ""}
+          {t.privacyNote(businessName)}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <Sheet open={open} onClose={closeSheet} title={t.reserveTitle} footer={footer}>
       <form
         className="space-y-5"
         noValidate
+        inert={saved ? true : undefined}
         onSubmit={(event) => {
           event.preventDefault();
           submit();

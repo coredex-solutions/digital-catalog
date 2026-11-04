@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdmin } from '@/lib/auth/super-admin-middleware';
 import { getDb } from '@/lib/db/client';
+import { getModule, isModuleId, parseAddonsInput, resolveAddons, resolveOrderTypes, resolveSubType } from '@/lib/modules/resolve';
+import { MODULES } from '@/lib/modules/registry';
 
 // GET: Get single catalog with all details
 export async function GET(
@@ -119,7 +121,7 @@ export async function PUT(
 
     // Check catalog exists
     const existing = await db.execute({
-      sql: 'SELECT id, slug FROM catalogs WHERE id = ?',
+      sql: 'SELECT id, slug, module, business_type, addons FROM catalogs WHERE id = ?',
       args: [id],
     });
 
@@ -148,7 +150,7 @@ export async function PUT(
     // 1. Update Catalog Table
     const catalogUpdates: string[] = [];
     const catalogArgs: (string | number | null)[] = [];
-    const allowedCatalogFields = ['slug', 'name', 'business_type', 'description', 'logo_url', 'is_active', 'is_suspended', 'suspension_reason'];
+    const allowedCatalogFields = ['slug', 'name', 'description', 'logo_url', 'is_active', 'is_suspended', 'suspension_reason'];
 
     for (const field of allowedCatalogFields) {
       if (body[field] !== undefined) {
@@ -156,6 +158,35 @@ export async function PUT(
         // Convert boolean to 1/0 for SQLite
         const val = typeof body[field] === 'boolean' ? (body[field] ? 1 : 0) : body[field];
         catalogArgs.push(val);
+      }
+    }
+
+    // Module, sub-type and add-ons are checked against the registry (lib/modules/registry.ts)
+    const current = existing.rows[0] as unknown as { module?: unknown; business_type?: unknown; addons?: unknown };
+    if (body.module !== undefined || body.business_type !== undefined || body.addons !== undefined) {
+      if (body.module !== undefined && !isModuleId(body.module)) {
+        return NextResponse.json({ error: 'Unknown module' }, { status: 400 });
+      }
+      const def = body.module !== undefined ? MODULES[body.module as keyof typeof MODULES] : getModule(current);
+      const moduleChanged = def.id !== getModule(current).id;
+      const subType = resolveSubType(def, body.business_type ?? current.business_type);
+      const addons = body.addons !== undefined
+        ? parseAddonsInput(def, body.addons)
+        : moduleChanged ? [...def.defaultAddons] : resolveAddons(def, current.addons);
+      if (addons === null) {
+        return NextResponse.json({ error: 'Add-ons must be a list' }, { status: 400 });
+      }
+      catalogUpdates.push('module = ?', 'business_type = ?', 'addons = ?');
+      catalogArgs.push(def.id, subType, addons.join(','));
+
+      // A new module offers different order types: keep the ones it allows, else its defaults
+      if (moduleChanged) {
+        const settings = await db.execute({ sql: 'SELECT order_types FROM catalog_settings WHERE catalog_id = ?', args: [id] });
+        const kept = resolveOrderTypes(def, settings.rows[0]?.order_types ?? null);
+        await db.execute({
+          sql: 'UPDATE catalog_settings SET order_types = ?, booking_enabled = CASE WHEN ? = 1 THEN booking_enabled ELSE 0 END WHERE catalog_id = ?',
+          args: [(kept.length > 0 ? kept : def.defaultOrderTypes).join(','), def.tableBooking ? 1 : 0, id],
+        });
       }
     }
 

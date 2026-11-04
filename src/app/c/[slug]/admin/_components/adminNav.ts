@@ -13,12 +13,15 @@ import {
   MapPin,
   Rocket,
   Users,
+  Inbox,
   type LucideIcon,
 } from "lucide-react";
 import type { AdminLang } from "../_lib/i18n";
+import { MODULES, type ModuleDefinition } from "@/lib/modules/registry";
 
 export type AdminNavKey =
   | "dashboard"
+  | "orders"
   | "categories"
   | "items"
   | "about"
@@ -39,6 +42,8 @@ export interface AdminNavItem {
   label: string;
   /** Shorter label for the phone tab bar */
   shortLabel?: string;
+  /** Shows a count (e.g. new orders) */
+  badgeKey?: "newOrders";
   icon: LucideIcon;
   exact?: boolean;
 }
@@ -53,6 +58,7 @@ type NavLabels = Record<AdminNavKey, string> & { home: string; menu: string; ins
 export const ADMIN_NAV_LABELS: Record<AdminLang, NavLabels> = {
   en: {
     dashboard: "Dashboard",
+    orders: "Orders",
     publish: "Preview & publish",
     categories: "Categories",
     items: "Dishes",
@@ -72,6 +78,7 @@ export const ADMIN_NAV_LABELS: Record<AdminLang, NavLabels> = {
   },
   ar: {
     dashboard: "لوحة التحكم",
+    orders: "الطلبات",
     publish: "المعاينة والنشر",
     categories: "الأقسام",
     items: "الأطباق",
@@ -92,14 +99,36 @@ export const ADMIN_NAV_LABELS: Record<AdminLang, NavLabels> = {
 };
 
 /**
+ * Section names with the module's own words: "Dishes" / "Products" / "Services", the AI
+ * assistant's title, and "Requests" instead of "Orders" for services.
+ */
+export function adminNavLabels(lang: AdminLang, module: ModuleDefinition = MODULES.restaurant): NavLabels {
+  const base = ADMIN_NAV_LABELS[lang];
+  const v = module.vocab[lang];
+  return {
+    ...base,
+    items: v.items,
+    menu: module.id === "restaurant" || module.id === "cafe" ? base.menu : v.items,
+    "ai-waiter": module.assistant.title[lang],
+    orders: module.id === "services" ? (lang === "ar" ? "الطلبات" : "Requests") : base.orders,
+  };
+}
+
+/**
  * Single source of truth for the merchant admin navigation, shared by the desktop sidebar and
  * the phone tab bar / "More" sheet so feature gating stays identical in both.
  */
-export function getAdminNavItems(slug: string, features: NavFeatures | null | undefined, lang: AdminLang = "en"): AdminNavItem[] {
+export function getAdminNavItems(
+  slug: string,
+  features: NavFeatures | null | undefined,
+  lang: AdminLang = "en",
+  module: ModuleDefinition = MODULES.restaurant
+): AdminNavItem[] {
   const basePath = `/c/${slug}/admin`;
-  const l = ADMIN_NAV_LABELS[lang];
+  const l = adminNavLabels(lang, module);
   return [
     { key: "dashboard", href: basePath, label: l.dashboard, shortLabel: l.home, icon: LayoutDashboard, exact: true },
+    { key: "orders", href: `${basePath}/orders`, label: l.orders, icon: Inbox, badgeKey: "newOrders" },
     { key: "publish", href: `${basePath}/publish`, label: l.publish, icon: Rocket },
     { key: "categories", href: `${basePath}/categories`, label: l.categories, icon: FolderKanban },
     { key: "items", href: `${basePath}/items`, label: l.items, shortLabel: l.menu, icon: Package },
@@ -124,4 +153,4 @@ export function isNavItemActive(item: Pick<AdminNavItem, "href" | "exact">, path
 }
 
 /** Keys shown as primary tabs on phones; everything else goes into the "More" sheet. */
-export const PHONE_TAB_KEYS: AdminNavKey[] = ["dashboard", "items", "analytics"];
+export const PHONE_TAB_KEYS: AdminNavKey[] = ["dashboard", "orders", "items"];
