@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of service",
-  description: "The terms for restaurants and cafés using Coredex digital menus.",
+  description: "The terms for businesses using Coredex for their online menu, store or services page.",
 };
 
-const UPDATED = "9 October 2026";
+const UPDATED = "4 November 2026";
 
 export default function TermsPage() {
   return (
@@ -14,15 +14,17 @@ export default function TermsPage() {
       <p className="text-ui-muted">Last updated {UPDATED}</p>
 
       <p>
-        These terms apply to restaurants, cafés and other businesses (&ldquo;you&rdquo;) that create a menu with
-        Coredex. By creating an account you agree to them. Questions:{" "}
+        These terms apply to restaurants, cafés, shops, service providers and other businesses (&ldquo;you&rdquo;)
+        that create a page with Coredex. By creating an account you agree to them. Questions:{" "}
         <a href="mailto:info@coredex.solutions">info@coredex.solutions</a>.
       </p>
 
       <h2>The service</h2>
       <p>
-        Coredex lets you publish a digital menu at a web address and QR code, in Arabic and English. Guests can send you orders and reservation requests through WhatsApp. Coredex passes the
-        message to WhatsApp; it does not take, confirm or track orders, and it does not process payments from guests.
+        Coredex lets you publish a menu, store or services page at a web address and QR code, in Arabic and English.
+        Customers can send you orders, bookings and appointment requests. Coredex saves them in your dashboard and
+        lets the customer send them to you on WhatsApp too. You decide whether to accept, prepare and deliver each
+        order; Coredex is not a party to the sale and does not process payments from customers.
       </p>
 
       <h2>Your account</h2>
@@ -31,19 +33,25 @@ export default function TermsPage() {
         <li>One account per business, unless we agree otherwise.</li>
       </ul>
 
-      <h2>Your menu content</h2>
+      <h2>Your content</h2>
       <ul>
-        <li>You own your content: dishes, prices, photos, descriptions and other information.</li>
-        <li>You let us store and display it so your menu works, including on your public menu page and in search engines.</li>
-        <li>You are responsible for its accuracy, including prices, the exchange rate you set, allergens and availability, and for having the rights to the photos you upload.</li>
-        <li>Content must be lawful and must not mislead guests.</li>
+        <li>You own your content: dishes, products, services, prices, photos, descriptions and other information.</li>
+        <li>You let us store and display it so your page works, including on your public page and in search engines.</li>
+        <li>You are responsible for its accuracy, including prices, sale prices, the exchange rate you set, stock, allergens and availability, and for having the rights to the photos you upload.</li>
+        <li>Content must be lawful and must not mislead customers.</li>
+      </ul>
+
+      <h2>Customer orders</h2>
+      <ul>
+        <li>Use the names, phone numbers and addresses customers send you only to handle their order, booking or request, and keep them private.</li>
+        <li>If a customer asks you to delete an order or request they sent, tell us and we will delete it.</li>
       </ul>
 
       <h2>AI features</h2>
       <p>
-        AI features (such as the AI waiter, writing help and AI photos) can make mistakes. Check AI-written
-        text and AI photos before you publish them. An improved photo must still show the dish as it is served.
-        Images created by AI from a dish&apos;s name are shown to guests labelled &quot;Illustrative image&quot;. Each AI photo
+        AI features (such as the AI assistant, writing help and AI photos) can make mistakes. Check AI-written
+        text and AI photos before you publish them. An improved photo must still show the item as it really is.
+        Images created by AI from an item&apos;s name are shown to customers labelled &quot;Illustrative image&quot;. Each AI photo
         uses one of your plan&apos;s monthly credits; a request that fails gives its credit back.
       </p>
 
@@ -51,8 +59,8 @@ export default function TermsPage() {
       <ul>
         <li>New accounts start with a free 2-day trial.</li>
         <li>Plans are paid yearly, at the prices shown on our website when you subscribe. Payment is arranged directly with us.</li>
-        <li>Each plan has limits, for example on the number of dishes and categories, and some features are only in higher plans.</li>
-        <li>When a trial or plan ends, your menu stays online for 7 more days so you can renew. After that, the menu stops being shown to guests and editing is paused until you renew. Your content is kept.</li>
+        <li>Each plan has limits, for example on the number of items and categories, and some features are only in higher plans.</li>
+        <li>When a trial or plan ends, your page stays online for 7 more days so you can renew. After that, the page stops being shown to customers, new orders can&apos;t be sent, and editing is paused until you renew. Your content and past orders are kept.</li>
       </ul>
 
       <h2>Acceptable use</h2>
