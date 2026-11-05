@@ -278,7 +278,7 @@ export async function PUT(
   });
   const plan = planReorder(body?.order, new Map(current.rows.map((r) => [String(r.id), Number(r.display_order) || 0])));
   if (!plan) {
-    return NextResponse.json({ error: "The dish list changed. Reload the page and try again." }, { status: 409 });
+    return NextResponse.json({ error: "The item list changed. Reload the page and try again." }, { status: 409 });
   }
 
   if (plan.length > 0) {

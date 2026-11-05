@@ -197,15 +197,15 @@ export async function createJob(input: {
   const item = (
     await db.execute({ sql: "SELECT id, image_url, name_en, name_ar FROM menu_items WHERE id = ? AND catalog_id = ?", args: [itemId, catalogId] })
   ).rows[0];
-  if (!item) throw new JobError("This dish no longer exists.", 404);
+  if (!item) throw new JobError("This item no longer exists.", 404);
 
   let sourceUrl: string | null = null;
   if (kind === "enhance") {
     sourceUrl = (item.image_url as string) || null;
-    if (!sourceUrl) throw new JobError("Add a photo of the dish first, then enhance it.", 400);
+    if (!sourceUrl) throw new JobError("Add a photo of the item first, then enhance it.", 400);
     // Only photos the owner uploaded can be sent: never fetch arbitrary addresses
     if (!FAKE && !sourceUrl.startsWith(`${getR2PublicUrl()}/`)) {
-      throw new JobError("Only photos you uploaded can be enhanced. Upload your own photo of the dish first.", 400);
+      throw new JobError("Only photos you uploaded can be enhanced. Upload your own photo of the item first.", 400);
     }
   }
 
@@ -214,7 +214,7 @@ export async function createJob(input: {
     sql: "SELECT id FROM ai_image_jobs WHERE catalog_id = ? AND item_id = ? AND status IN ('queued', 'processing') LIMIT 1",
     args: [catalogId, itemId],
   });
-  if (busy.rows.length > 0) throw new JobError("We're already working on an image for this dish.", 409);
+  if (busy.rows.length > 0) throw new JobError("We're already working on an image for this item.", 409);
 
   if (!(await reserveCredit(catalogId))) {
     const { limit } = await getCredits(catalogId);
@@ -259,7 +259,7 @@ export async function runJob(catalogId: string, jobId: string) {
         args: [String(row.item_id), catalogId],
       })
     ).rows[0];
-    if (!item) throw new Error("This dish was deleted.");
+    if (!item) throw new Error("This item was deleted.");
 
     const image = await generate(row.kind as ImageJobKind, row.style as ImageStyle, row.source_url as string | null, item as Row, getModule(item as Row).id);
     const resultUrl = await storeResult(catalogId, image);
@@ -295,7 +295,7 @@ export async function decideJob(catalogId: string, jobId: string, action: "appro
     const item = (
       await db.execute({ sql: "SELECT image_url, image_is_illustrative FROM menu_items WHERE id = ? AND catalog_id = ?", args: [job.itemId, catalogId] })
     ).rows[0];
-    if (!item) throw new JobError("This dish no longer exists.", 404);
+    if (!item) throw new JobError("This item no longer exists.", 404);
     const claimed = await db.execute({
       sql: `UPDATE ai_image_jobs SET status = 'approved', decided_by = ?, decided_at = datetime('now'), updated_at = datetime('now'),
               previous_image_url = ?, previous_is_illustrative = ?

@@ -168,7 +168,7 @@ type Parsed<T> = { ok: true; value: T } | { ok: false; error: string };
 export function parseVariantsInput(value: unknown): Parsed<DishVariant[]> {
   if (value === null || value === undefined || value === "") return { ok: true, value: [] };
   if (!Array.isArray(value)) return { ok: false, error: "Options must be a list" };
-  if (value.length > MAX_VARIANTS) return { ok: false, error: `A dish can have at most ${MAX_VARIANTS} options` };
+  if (value.length > MAX_VARIANTS) return { ok: false, error: `An item can have at most ${MAX_VARIANTS} options` };
 
   const drafts: Array<Omit<DishVariant, "id"> & { id: string | null }> = [];
   for (const [index, raw] of value.entries()) {

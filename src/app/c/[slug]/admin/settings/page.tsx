@@ -112,14 +112,14 @@ const copyEn = {
     contact: "Contact",
     pricing: "Pricing & orders",
     features: "Features",
-    ai: "AI waiter",
+    ai: "AI assistant",
   } as Record<SettingsTab, string>,
   sectionNames: {
     branding: "Branding",
     contact: "Contact details",
     pricing: "Pricing and orders",
     features: "Features and button labels",
-    ai: "AI waiter settings",
+    ai: "AI assistant settings",
   } as Record<SaveSection, string>,
   saved: (section: string) => `${section} saved.`,
   saveFailed: "Couldn't save your changes. Please try again.",
@@ -144,7 +144,7 @@ const copyEn = {
   cover: "Cover photo",
   brandColour: "Brand colour",
   brandColourBody:
-    "Your menu uses one colour: this one. It fills the selected category, buttons and highlights. We adjust it automatically so text stays readable in light and dark mode.",
+    "Your page uses one colour: this one. It fills the selected category, buttons and highlights. We adjust it automatically so text stays readable in light and dark mode.",
   mainBrandColour: "Main brand colour",
   buttonSample: "Button sample",
   saveBranding: "Save branding",
@@ -153,7 +153,7 @@ const copyEn = {
   light: "Light",
   dark: "Dark",
   previewLanguage: "Preview language",
-  previewCaption: "Your name, logo, cover and brand colour, including unsaved changes. Categories and dishes are samples.",
+  previewCaption: "Your name, logo, cover and brand colour, including unsaved changes. Categories and items are samples.",
 
   // Contact
   contactDetails: "Contact details",
@@ -198,25 +198,25 @@ const copyEn = {
   // Features
   features: "Features",
   whatsappOrdering: "WhatsApp orders",
-  whatsappOrderingBody: "Let guests send their order on WhatsApp",
+  whatsappOrderingBody: "Let customers send their order on WhatsApp",
   bookings: "Table bookings",
   bookingsBody: "Let customers ask for a table. Requests appear on the Orders page.",
-  aiWaiter: "AI waiter",
-  aiWaiterBody: "Let the AI waiter answer guests' questions about the menu",
+  aiWaiter: "AI assistant",
+  aiWaiterBody: "Let the AI assistant answer customers' questions about your items",
   buttonLabels: "Button labels",
-  menuButton: "Menu button on your About page",
+  menuButton: "Button to your items, on the About page",
   saveFeatures: "Save features and labels",
 
   // AI waiter
-  aiPersonality: "AI waiter personality",
+  aiPersonality: "AI assistant personality",
   aiName: "Name",
   aiNamePlaceholder: "e.g. Sarah",
   aiTone: "Tone and style",
-  aiTonePlaceholder: "e.g. You are a charming waiter in a fine restaurant. You are formal and know a lot about wine.",
+  aiTonePlaceholder: "e.g. You are warm and brief, you know everything we sell, and you suggest one thing to try.",
   status: "Status",
-  aiOn: "Your AI waiter is on and answering guests.",
-  aiOff: "The AI waiter is off. Turn it on in the Features tab.",
-  saveAi: "Save AI waiter",
+  aiOn: "Your AI assistant is on and answering customers.",
+  aiOff: "The AI assistant is off. Turn it on in the Features tab.",
+  saveAi: "Save AI assistant",
 };
 const copyAr: typeof copyEn = {
   sectionsLabel: "أقسام الإعدادات",
@@ -225,14 +225,14 @@ const copyAr: typeof copyEn = {
     contact: "التواصل",
     pricing: "الأسعار والطلبات",
     features: "الميزات",
-    ai: "النادل الذكي",
+    ai: "المساعد الذكي",
   },
   sectionNames: {
     branding: "الهوية",
     contact: "معلومات التواصل",
     pricing: "الأسعار والطلبات",
     features: "الميزات ونصوص الأزرار",
-    ai: "إعدادات النادل الذكي",
+    ai: "إعدادات المساعد الذكي",
   },
   saved: (section) => `تم حفظ ${section}.`,
   saveFailed: "تعذّر حفظ التعديلات. يُرجى المحاولة مرة أخرى.",
@@ -256,7 +256,7 @@ const copyAr: typeof copyEn = {
   cover: "صورة الغلاف",
   brandColour: "لون الهوية",
   brandColourBody:
-    "تستخدم قائمتك لوناً واحداً هو هذا اللون. يظهر في القسم المختار والأزرار والعناصر البارزة. نعدّله تلقائياً ليبقى النص واضحاً في الوضعين الفاتح والداكن.",
+    "تستخدم صفحتك لوناً واحداً هو هذا اللون. يظهر في القسم المختار والأزرار والعناصر البارزة. نعدّله تلقائياً ليبقى النص واضحاً في الوضعين الفاتح والداكن.",
   mainBrandColour: "لون الهوية الأساسي",
   buttonSample: "مثال على زر",
   saveBranding: "حفظ الهوية",
@@ -265,7 +265,7 @@ const copyAr: typeof copyEn = {
   light: "فاتح",
   dark: "داكن",
   previewLanguage: "لغة المعاينة",
-  previewCaption: "اسمك وشعارك وصورة الغلاف ولون الهوية، مع التعديلات غير المحفوظة. الأقسام والأطباق للمعاينة فقط.",
+  previewCaption: "اسمك وشعارك وصورة الغلاف ولون الهوية، مع التعديلات غير المحفوظة. الأقسام والأصناف للمعاينة فقط.",
 
   contactDetails: "معلومات التواصل",
   phone: "رقم الهاتف",
@@ -310,21 +310,21 @@ const copyAr: typeof copyEn = {
   whatsappOrderingBody: "اسمح للزبائن بإرسال طلبهم عبر واتساب",
   bookings: "حجز الطاولات",
   bookingsBody: "اسمح للزبائن بطلب حجز طاولة. تظهر الطلبات في صفحة الطلبات.",
-  aiWaiter: "النادل الذكي",
-  aiWaiterBody: "دع النادل الذكي يجيب عن أسئلة الزبائن حول القائمة",
+  aiWaiter: "المساعد الذكي",
+  aiWaiterBody: "دع المساعد الذكي يجيب عن أسئلة الزبائن حول أصنافك",
   buttonLabels: "نصوص الأزرار",
-  menuButton: "زر القائمة في صفحة من نحن",
+  menuButton: "زر عرض الأصناف في صفحة من نحن",
   saveFeatures: "حفظ الميزات ونصوص الأزرار",
 
-  aiPersonality: "شخصية النادل الذكي",
+  aiPersonality: "شخصية المساعد الذكي",
   aiName: "الاسم",
   aiNamePlaceholder: "مثال: سارة",
   aiTone: "الأسلوب وطريقة الكلام",
-  aiTonePlaceholder: "مثال: أنت نادل لطيف في مطعم راقٍ، تتكلم بلباقة وتعرف الكثير عن النبيذ.",
+  aiTonePlaceholder: "مثال: أنت لطيف ومختصر، تعرف كل ما نبيعه، وتقترح شيئاً واحداً للتجربة.",
   status: "الحالة",
-  aiOn: "النادل الذكي مفعّل ويجيب على الزبائن.",
-  aiOff: "النادل الذكي متوقف. فعّله من تبويب الميزات.",
-  saveAi: "حفظ إعدادات النادل الذكي",
+  aiOn: "المساعد الذكي مفعّل ويجيب على الزبائن.",
+  aiOff: "المساعد الذكي متوقف. فعّله من تبويب الميزات.",
+  saveAi: "حفظ إعدادات المساعد الذكي",
 };
 
 /** Save button at the bottom of each tab (outside the page so it keeps focus across renders) */
@@ -731,7 +731,7 @@ function SettingsPageContent() {
                             value={settings.catalog.name_ar || ""}
                             onChange={(e) => updateSettings("catalog", "name_ar", e.target.value)}
                             className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-bold text-sm focus:outline-none focus:border-ui-primary text-start"
-                            placeholder="مثال: مطعم متبل"
+                            placeholder="مثال: متبل"
                           />
                         </div>
                       </div>

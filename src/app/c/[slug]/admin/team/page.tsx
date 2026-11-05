@@ -22,7 +22,7 @@ interface Member {
 const en = {
   roles: {
     owner: { label: "Owner", description: "Everything, including settings, billing and the team." },
-    editor: { label: "Editor", description: "Dishes, categories, hours, FAQs and publishing. Not settings, billing or the team." },
+    editor: { label: "Editor", description: "Items, categories, hours, FAQs and publishing. Not settings, billing or the team." },
     viewer: { label: "Viewer", description: "Can look at everything but can't change anything." },
   } as Record<Role, { label: string; description: string }>,
   loadError: "Could not load your team. Check your connection and reload.",
@@ -63,7 +63,7 @@ const en = {
 const ar: typeof en = {
   roles: {
     owner: { label: "صاحب الحساب", description: "كل شيء، بما في ذلك الإعدادات والباقة والفريق." },
-    editor: { label: "محرّر", description: "الأطباق والأقسام وساعات العمل والأسئلة الشائعة والنشر. دون الإعدادات والباقة والفريق." },
+    editor: { label: "محرّر", description: "الأصناف والأقسام وساعات العمل والأسئلة الشائعة والنشر. دون الإعدادات والباقة والفريق." },
     viewer: { label: "مشاهد", description: "يرى كل شيء لكن لا يستطيع تغيير أي شيء." },
   },
   loadError: "تعذّر تحميل فريقك. تحقّق من اتصالك ثم أعد تحميل الصفحة.",

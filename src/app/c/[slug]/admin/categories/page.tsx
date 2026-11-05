@@ -10,6 +10,7 @@ import {
 } from "../_components/CatalogAdminSidebar";
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
 import { formatNumber, pickName, plural, useAdminLang, useCopy } from "../_lib/i18n";
+import { countNoun, useModule } from "../_lib/module";
 import {
   Plus,
   Edit2,
@@ -41,23 +42,22 @@ const en = {
   limitReached: (max: number) =>
     `You've reached your plan's limit of ${plural("en", max, { one: "# category", other: "# categories" })}. Upgrade in Plan & billing to add more.`,
   orderFailed: "Couldn't save the new order. Please try again.",
-  deleteConfirm: (name: string) => `Delete “${name}”? All dishes in this category will be deleted too. This can't be undone.`,
-  deleteConfirmUnnamed: "Delete this category? All dishes in this category will be deleted too. This can't be undone.",
+  deleteConfirm: (name: string) => `Delete “${name}”? All items in this category will be deleted too. This can't be undone.`,
+  deleteConfirmUnnamed: "Delete this category? All items in this category will be deleted too. This can't be undone.",
   uploadFailed: "Couldn't upload the photo. Please try again.",
   deleteFailed: "Couldn't delete this category. Please try again.",
   saveFailed: "Couldn't save this category. Please try again.",
   nameRequired: "Enter the category name in Arabic or English.",
   empty: "You haven't added any categories yet",
   addFirst: "Add your first category",
-  orderNote: "Guests see categories in this order.",
+  orderNote: "Customers see categories in this order.",
   done: "Done",
   changeOrder: "Change order",
   moveUp: (name: string) => `Move ${name} up`,
   moveDown: (name: string) => `Move ${name} down`,
-  orderHint: "Saved as you go. Guests see the new order after you publish.",
+  orderHint: "Saved as you go. Customers see the new order after you publish.",
   edit: (name: string) => `Edit ${name}`,
   delete: (name: string) => `Delete ${name}`,
-  dishCount: (n: number) => plural("en", n, { one: "# dish", other: "# dishes" }),
   editCategory: "Edit category",
   newCategory: "Add a category",
   close: "Close",
@@ -78,15 +78,15 @@ const ar: typeof en = {
   addCategory: "إضافة قسم",
   limitReached: (max) => `وصلت إلى الحد الأقصى للأقسام في باقتك (${formatNumber(max, "ar")}). رقِّ باقتك من «الباقة والدفع» لإضافة المزيد.`,
   orderFailed: "تعذّر حفظ الترتيب الجديد. حاول مرة أخرى.",
-  deleteConfirm: (name) => `حذف «${name}»؟ ستُحذف معه كل أطباق هذا القسم، ولا يمكن التراجع عن ذلك.`,
-  deleteConfirmUnnamed: "حذف هذا القسم؟ ستُحذف معه كل أطباق هذا القسم، ولا يمكن التراجع عن ذلك.",
+  deleteConfirm: (name) => `حذف «${name}»؟ ستُحذف معه كل أصناف هذا القسم، ولا يمكن التراجع عن ذلك.`,
+  deleteConfirmUnnamed: "حذف هذا القسم؟ ستُحذف معه كل أصناف هذا القسم، ولا يمكن التراجع عن ذلك.",
   uploadFailed: "تعذّر رفع الصورة. حاول مرة أخرى.",
   deleteFailed: "تعذّر حذف هذا القسم. حاول مرة أخرى.",
   saveFailed: "تعذّر حفظ هذا القسم. حاول مرة أخرى.",
   nameRequired: "أدخل اسم القسم بالعربية أو بالإنجليزية.",
   empty: "لم تضف أي قسم بعد",
   addFirst: "أضف قسمك الأول",
-  orderNote: "يرى الضيوف الأقسام بهذا الترتيب.",
+  orderNote: "يرى الزبائن الأقسام بهذا الترتيب.",
   done: "تم",
   changeOrder: "تغيير الترتيب",
   moveUp: (name) => `نقل ${name} للأعلى`,
@@ -94,7 +94,6 @@ const ar: typeof en = {
   orderHint: "يُحفظ الترتيب تلقائياً، ويظهر للضيوف بعد النشر.",
   edit: (name) => `تعديل ${name}`,
   delete: (name) => `حذف ${name}`,
-  dishCount: (n) => plural("ar", n, { zero: "لا أطباق", one: "طبق واحد", two: "طبقان", few: "# أطباق", many: "# طبقاً", other: "# طبق" }),
   editCategory: "تعديل القسم",
   newCategory: "إضافة قسم",
   close: "إغلاق",
@@ -117,6 +116,7 @@ function CategoriesPageContent() {
   const isViewer = user?.role === 'viewer';
   const t = useCopy({ en, ar });
   const lang = useAdminLang();
+  const { module } = useModule();
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -471,7 +471,7 @@ function CategoriesPageContent() {
                         <bdi>{pickName(category, lang)}</bdi>
                       </h3>
                       <p className="text-xs font-semibold text-ui-muted mt-2">
-                        {t.dishCount(category.item_count || 0)}
+                        {countNoun(module, lang, Number(category.item_count) || 0)}
                       </p>
                     </div>
                     <div className="w-1.5 h-1.5 rounded-full bg-ui-primary opacity-40 group-hover:opacity-100 transition-opacity" />

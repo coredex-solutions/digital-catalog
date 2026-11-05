@@ -5,6 +5,7 @@ import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminS
 import { CatalogAdminHeader, CatalogAdminContent } from "../_components/CatalogAdminSidebar";
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
 import { useAdminLang, useCopy, useFormat, plural, type AdminLang } from "../_lib/i18n";
+import { useModule } from "../_lib/module";
 import { AlertTriangle, Check, Clock, Loader2, Mail, MessageCircle } from "lucide-react";
 import { getAllPlans, getPlanConfig, parseExpiry } from "@/lib/plans";
 import { SALES_EMAIL, SALES_WHATSAPP } from "@/lib/contact";
@@ -30,12 +31,11 @@ const en = {
         ({ trial: "Free trial", yearly: "Yearly plan", forever: "Lifetime plan", custom_years: "Multi-year plan" } as Record<string, string>)[id] ??
         `${brandName(id)} plan`,
     yourPlan: "Your plan",
-    endedExpired: (date: string) => `Ended on ${date}. Guests can't open your menu until you renew.`,
-    endedGrace: (ended: string, offline: string) => `Ended on ${ended}. Your menu stays online until ${offline}.`,
+    endedExpired: (date: string) => `Ended on ${date}. Customers can't open your page until you renew.`,
+    endedGrace: (ended: string, offline: string) => `Ended on ${ended}. Your page stays online until ${offline}.`,
     noEndDate: "Active, with no end date.",
     activeUntil: (date: string, days: number, lang: AdminLang) =>
         `Active until ${date} (${days === 0 ? "today" : days === 1 ? "tomorrow" : plural(lang, days, { one: "in # day", other: "in # days" })}).`,
-    dishes: "Dishes",
     categories: "Categories",
     upTo: (n: string) => `Up to ${n}`,
     aiCredits: "AI photo credits used this month",
@@ -51,7 +51,7 @@ const en = {
     whatsappText: (slug: string) => `Hello Coredex, I have a question about the plan for ${slug}.`,
     plans: "Plans",
     pricesNote: "Prices are per year, in US dollars.",
-    ownerOnly: "Only the restaurant owner can request a plan.",
+    ownerOnly: "Only the account owner can request a plan.",
     currentPlan: "Your current plan",
     aYear: "a year",
     requestRenewal: "Request renewal",
@@ -70,8 +70,8 @@ const ar: typeof en = {
         ({ trial: "تجربة مجانية", yearly: "الباقة السنوية", forever: "باقة مدى الحياة", custom_years: "باقة متعددة السنوات" } as Record<string, string>)[id] ??
         `باقة ${brandName(id)}`,
     yourPlan: "باقتك",
-    endedExpired: (date) => `انتهت في ${date}. لا يستطيع الزبائن فتح قائمتك حتى تجدّد باقتك.`,
-    endedGrace: (ended, offline) => `انتهت في ${ended}. تبقى قائمتك متاحة حتى ${offline}.`,
+    endedExpired: (date) => `انتهت في ${date}. لا يستطيع الزبائن فتح صفحتك حتى تجدّد باقتك.`,
+    endedGrace: (ended, offline) => `انتهت في ${ended}. تبقى صفحتك متاحة حتى ${offline}.`,
     noEndDate: "فعّالة، بلا تاريخ انتهاء.",
     activeUntil: (date, days, lang) =>
         `فعّالة حتى ${date} (${
@@ -81,7 +81,6 @@ const ar: typeof en = {
                   ? "تنتهي غداً"
                   : plural(lang, days, { one: "بعد يوم واحد", two: "بعد يومين", few: "بعد # أيام", many: "بعد # يوماً", other: "بعد # يوم" })
         }).`,
-    dishes: "الأطباق",
     categories: "الأقسام",
     upTo: (n) => `حتى ${n}`,
     aiCredits: "رصيد صور الذكاء الاصطناعي المستخدم هذا الشهر",
@@ -94,7 +93,7 @@ const ar: typeof en = {
     questions: "لديك أسئلة عن باقتك؟",
     whatsappUs: "راسلنا على واتساب",
     newTab: "(تُفتح في نافذة جديدة)",
-    whatsappText: (slug) => `مرحباً Coredex، لدي سؤال عن باقة قائمتي ${slug}.`,
+    whatsappText: (slug) => `مرحباً Coredex، لدي سؤال عن باقة صفحتي ${slug}.`,
     plans: "الباقات",
     pricesNote: "الأسعار سنوية وبالدولار الأمريكي.",
     ownerOnly: "صاحب الحساب وحده يستطيع طلب باقة.",
@@ -139,6 +138,7 @@ export default function BillingPage() {
 
 function BillingPageContent() {
     const { features, slug, user, fetchWithAuth } = useCatalogAdmin();
+    const { v } = useModule();
     const lang = useAdminLang();
     const t = useCopy({ en, ar });
     const f = useFormat();
@@ -235,7 +235,7 @@ function BillingPageContent() {
 
                         <dl className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <div className="rounded-control border border-ui-line bg-ui-bg p-4">
-                                <dt className="text-sm text-ui-muted">{t.dishes}</dt>
+                                <dt className="text-sm text-ui-muted">{v.items}</dt>
                                 <dd className="mt-1 text-lg font-semibold tabular-nums">{t.upTo(limit(features?.max_items))}</dd>
                             </div>
                             <div className="rounded-control border border-ui-line bg-ui-bg p-4">

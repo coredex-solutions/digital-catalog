@@ -80,7 +80,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const form = await request.formData().catch(() => null);
   const files = (form?.getAll("files") ?? []).filter((f): f is File => f instanceof File && f.size > 0);
-  if (files.length === 0) return NextResponse.json({ error: "Choose a photo or PDF of your menu" }, { status: 400 });
+  if (files.length === 0) return NextResponse.json({ error: "Choose a photo or PDF of your menu or price list" }, { status: 400 });
   const total = files.reduce((sum, f) => sum + f.size, 0);
   if (files.length > IMPORT_LIMITS.files || total > IMPORT_LIMITS.totalBytes || files.some((f) => f.size > IMPORT_LIMITS.fileBytes)) {
     return NextResponse.json({ error: "These files are too large. Use up to 5 photos or one PDF, 9 MB in total." }, { status: 413 });
@@ -108,13 +108,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       data = JSON.parse(result.response.text());
     } catch (error) {
       console.error("Menu read failed:", error);
-      return NextResponse.json({ error: "We couldn't read this menu. Try again with a clearer photo, or use a spreadsheet." }, { status: 502 });
+      return NextResponse.json({ error: "We couldn't read this list. Try again with a clearer photo, or use a spreadsheet." }, { status: 502 });
     }
   }
 
   // Same cleaning the dashboard applies, only to check that something usable came back
   if (categoriesFromExtraction(data, "USD").length === 0) {
-    return NextResponse.json({ error: "We couldn't find any dishes in these files. Try a clearer photo, or use a spreadsheet." }, { status: 422 });
+    return NextResponse.json({ error: "We couldn't find any items in these files. Try a clearer photo, or use a spreadsheet." }, { status: 422 });
   }
   return NextResponse.json({ menu: data });
 }

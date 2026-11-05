@@ -29,7 +29,7 @@ const en = {
   saved: "Questions saved.",
   saveFailed: "Couldn't save the questions. Please try again.",
   emptyTitle: "No questions yet",
-  emptyBody: "Add common questions and their answers to help your guests in the chat.",
+  emptyBody: "Add common questions and their answers to help your customers in the chat.",
   addFirst: "Add your first question",
   arabic: "Arabic",
   english: "English",

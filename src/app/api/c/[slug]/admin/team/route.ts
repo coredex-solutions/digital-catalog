@@ -62,7 +62,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const db = getDb();
   const count = await db.execute({ sql: "SELECT COUNT(*) AS n FROM catalog_admins WHERE catalog_id = ?", args: [catalog.id] });
   if (Number(count.rows[0]?.n ?? 0) >= MAX_MEMBERS) {
-    return NextResponse.json({ error: `A menu can have up to ${MAX_MEMBERS} team members` }, { status: 400 });
+    return NextResponse.json({ error: `A page can have up to ${MAX_MEMBERS} team members` }, { status: 400 });
   }
 
   const password = temporaryPassword();

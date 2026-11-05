@@ -49,7 +49,7 @@ const en = {
   date: "Date",
   views: "Views",
   visitors: "Visitors",
-  noData: "No data yet for this period. Visits will show here once guests open your menu.",
+  noData: "No data yet for this period. Visits will show here once customers open your page.",
   loading: "Loading analytics…",
   loadFailed: "Couldn't load your analytics. Please try again.",
 };
@@ -70,7 +70,7 @@ const ar: typeof en = {
   date: "التاريخ",
   views: "المشاهدات",
   visitors: "الزوار",
-  noData: "لا توجد بيانات بعد لهذه الفترة. ستظهر الزيارات هنا عندما يفتح الزبائن قائمتك.",
+  noData: "لا توجد بيانات بعد لهذه الفترة. ستظهر الزيارات هنا عندما يفتح الزبائن صفحتك.",
   loading: "جارٍ تحميل الإحصاءات…",
   loadFailed: "تعذّر تحميل الإحصاءات. يُرجى المحاولة مرة أخرى.",
 };

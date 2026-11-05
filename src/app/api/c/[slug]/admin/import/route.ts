@@ -75,11 +75,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const n = dishes.length + 1;
       const name_en = text(dish.name_en, IMPORT_LIMITS.name);
       const name_ar = text(dish.name_ar, IMPORT_LIMITS.name);
-      if (!name_en && !name_ar) return NextResponse.json({ error: `Dish ${n} needs a name in Arabic or English` }, { status: 400 });
+      if (!name_en && !name_ar) return NextResponse.json({ error: `Item ${n} needs a name in Arabic or English` }, { status: 400 });
       const variants = parseVariantsInput(dish.options ?? null);
-      if (!variants.ok) return NextResponse.json({ error: `Dish ${n}: ${variants.error}` }, { status: 400 });
+      if (!variants.ok) return NextResponse.json({ error: `Item ${n}: ${variants.error}` }, { status: 400 });
       const price = lowestVariantPrice(variants.value) ?? parseItemPrice(dish.price);
-      if (price === null) return NextResponse.json({ error: `Dish ${n} needs a price of 0 or more` }, { status: 400 });
+      if (price === null) return NextResponse.json({ error: `Item ${n} needs a price of 0 or more` }, { status: 400 });
       const currency = parseItemCurrency(dish.currency ?? "USD");
       if (!currency) return NextResponse.json({ error: "Currency must be USD or LBP" }, { status: 400 });
       dishes.push({
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         variants: variants.value.length ? variantsToDb(variants.value) : null,
       });
       if (dishes.length > IMPORT_LIMITS.dishes) {
-        return NextResponse.json({ error: `At most ${IMPORT_LIMITS.dishes} dishes can be imported at once` }, { status: 400 });
+        return NextResponse.json({ error: `At most ${IMPORT_LIMITS.dishes} items can be imported at once` }, { status: 400 });
       }
     }
   }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const maxCategories = Number(row.max_categories ?? 0) || PLAN_CONFIG.essential.limits.max_categories;
   if (Number(row.items ?? 0) + dishes.length > maxItems) {
     return NextResponse.json(
-      { error: `This import would go over your plan's limit of ${maxItems} dishes. You have ${Number(row.items ?? 0)} and are adding ${dishes.length}.` },
+      { error: `This import would go over your plan's limit of ${maxItems} items. You have ${Number(row.items ?? 0)} and are adding ${dishes.length}.` },
       { status: 403 }
     );
   }

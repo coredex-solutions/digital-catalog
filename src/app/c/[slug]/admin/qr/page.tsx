@@ -9,6 +9,8 @@ import {
 } from "../_components/CatalogAdminSidebar";
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
 import { useAdminLang, useCopy } from "../_lib/i18n";
+import { useModule } from "../_lib/module";
+import type { ModuleId } from "@/lib/modules/registry";
 import { translateApiMessage } from "../_lib/api-errors";
 import QRCode from "qrcode";
 import { checkQrColors } from "@/lib/qr/contrast";
@@ -387,11 +389,56 @@ const DEFAULT_CUSTOMIZATION: TemplateCustomization = {
   letterSpacing: "wide",
 };
 
+/** Printed words for each kind of business: card titles, the short label and the scan instruction */
+type PrintWords = {
+  heading: string;
+  title: { ar: string; en: string };
+  short: { ar: string; en: string };
+  point: { ar: string; en: string };
+  instruction: { ar: string; en: string };
+};
+const MENU_WORDS: PrintWords = {
+  heading: "قائمة الطعام",
+  title: { ar: "القائمة الرقمية", en: "Digital Menu" },
+  short: { ar: "القائمة", en: "Menu" },
+  point: { ar: "وجّه كاميرا هاتفك نحو الرمز لتصفّح القائمة", en: "Point your camera at the code to see the menu" },
+  instruction: { ar: "امسح الرمز لعرض القائمة", en: "Scan to see the menu" },
+};
+const PRINT_WORDS: Record<ModuleId, PrintWords> = {
+  restaurant: MENU_WORDS,
+  cafe: { ...MENU_WORDS, heading: "القائمة" },
+  shop: {
+    heading: "منتجاتنا",
+    title: { ar: "تسوّق أونلاين", en: "Shop online" },
+    short: { ar: "المتجر", en: "Shop" },
+    point: { ar: "وجّه كاميرا هاتفك نحو الرمز لتصفّح المنتجات", en: "Point your camera at the code to see our products" },
+    instruction: { ar: "امسح الرمز لتصفّح المنتجات", en: "Scan to see our products" },
+  },
+  services: {
+    heading: "خدماتنا",
+    title: { ar: "خدماتنا", en: "Our services" },
+    short: { ar: "الخدمات", en: "Services" },
+    point: { ar: "وجّه كاميرا هاتفك نحو الرمز لعرض الخدمات وطلب موعد", en: "Point your camera at the code to see our services and request a time" },
+    instruction: { ar: "امسح الرمز لعرض الخدمات", en: "Scan to see our services" },
+  },
+};
+/** Food-only card styles, hidden for shops and services */
+const FOOD_ONLY_TEMPLATES = new Set(["retro-diner"]);
+
+/** Tells the page (which draws the shell itself) the catalog's kind of business */
+function ReportModule({ onModule }: { onModule: (id: ModuleId) => void }) {
+  const { module } = useModule();
+  useEffect(() => {
+    onModule(module.id);
+  }, [module.id, onModule]);
+  return null;
+}
+
 const PRINT_TEMPLATES = [
   {
     id: "table-tent",
     name: "Table Tent",
-    description: "A-frame style card for tables",
+    description: "A-frame card for tables and counters",
     icon: "🏕️",
     category: "table",
   },
@@ -476,7 +523,7 @@ const PRINT_TEMPLATES = [
 
 const en = {
   loading: "Loading…",
-  printReady: "Print-ready table cards",
+  printReady: "Print-ready cards",
   introBefore: "For printing, use ",
   introAfter:
     ": plain black codes with a safe margin scan most reliably. If you use colours or a logo below, test the printed code with several phones first.",
@@ -486,7 +533,7 @@ const en = {
   failedStatus: (status: number) => `Something went wrong (error ${status}). Please try again.`,
   networkError: "Couldn't reach the server. Check your connection and try again.",
   tryAgain: "Try again",
-  qrAlt: "QR code for your menu",
+  qrAlt: "QR code for your page",
   downloadPng: "Download PNG",
   downloadSvg: "Download SVG",
   customizeQr: "Customise the QR code",
@@ -536,9 +583,9 @@ const en = {
   showShopName: "Show business name",
   customShopNameAria: "Business name on the design",
   customShopNamePlaceholder: "Business name (optional)",
-  customShopNameHint: "Leave empty to use your menu's name, or type another name (for example in Arabic).",
+  customShopNameHint: "Leave empty to use your page's name, or type another name (for example in Arabic).",
   showArabicText: "Show Arabic text",
-  showArabicTextHint: "Guests in Lebanon read both. Keep it on unless your guests don't read Arabic.",
+  showArabicTextHint: "Customers in Lebanon read both. Keep it on unless your customers don't read Arabic.",
   backgroundPattern: "Background pattern",
   patternFor: (template: string) => `(for ${template})`,
   patternNames: {} as Record<string, string>,
@@ -619,7 +666,7 @@ const en = {
 };
 const ar: typeof en = {
   loading: "جارٍ التحميل…",
-  printReady: "بطاقات طاولات جاهزة للطباعة",
+  printReady: "بطاقات جاهزة للطباعة",
   introBefore: "للطباعة استخدم ",
   introAfter:
     ": الرموز السوداء البسيطة مع هامش آمن تُمسح بسهولة أكبر. إذا استخدمت الألوان أو الشعار أدناه، جرّب الرمز المطبوع بعدة هواتف أولاً.",
@@ -629,7 +676,7 @@ const ar: typeof en = {
   failedStatus: (status) => `حدث خطأ (رمز ${status}). يُرجى المحاولة مرة أخرى.`,
   networkError: "تعذّر الاتصال بالخادم. تحقّق من الاتصال وحاول مجدداً.",
   tryAgain: "حاول مجدداً",
-  qrAlt: "رمز QR لقائمتك",
+  qrAlt: "رمز QR لصفحتك",
   downloadPng: "تنزيل PNG",
   downloadSvg: "تنزيل SVG",
   customizeQr: "تخصيص رمز QR",
@@ -679,7 +726,7 @@ const ar: typeof en = {
   showShopName: "إظهار اسم المحل",
   customShopNameAria: "اسم المحل على التصميم",
   customShopNamePlaceholder: "اسم المحل (اختياري)",
-  customShopNameHint: "اتركه فارغاً لاستخدام اسم قائمتك، أو اكتب اسماً آخر (مثلاً بالعربية).",
+  customShopNameHint: "اتركه فارغاً لاستخدام اسم صفحتك، أو اكتب اسماً آخر (مثلاً بالعربية).",
   showArabicText: "إظهار النص العربي",
   showArabicTextHint: "يقرأ الزبائن في لبنان اللغتين. أبقِه ظاهراً إلا إذا كان زبائنك لا يقرؤون العربية.",
   backgroundPattern: "نقشة الخلفية",
@@ -802,6 +849,20 @@ export default function QRCodePage() {
   const [customization, setCustomization] = useState<TemplateCustomization>(
     DEFAULT_CUSTOMIZATION
   );
+  const [moduleId, setModuleId] = useState<ModuleId>("restaurant");
+  const words = PRINT_WORDS[moduleId];
+  const foodBusiness = moduleId === "restaurant" || moduleId === "cafe";
+  // Swap in the business's printed words, unless the owner already typed their own
+  const onModule = useCallback((id: ModuleId) => {
+    setModuleId(id);
+    const next = PRINT_WORDS[id];
+    setCustomization((prev) => ({
+      ...prev,
+      arabicText: prev.arabicText === DEFAULT_CUSTOMIZATION.arabicText ? next.heading : prev.arabicText,
+      arabicInstruction: prev.arabicInstruction === DEFAULT_CUSTOMIZATION.arabicInstruction ? next.instruction.ar : prev.arabicInstruction,
+      englishText: prev.englishText === DEFAULT_CUSTOMIZATION.englishText ? next.instruction.en : prev.englishText,
+    }));
+  }, []);
 
   // QR customization
   const [qrSize, setQrSize] = useState(512);
@@ -937,6 +998,9 @@ export default function QRCodePage() {
     if (catalog) {
       setCustomization({
         ...DEFAULT_CUSTOMIZATION,
+        arabicText: words.heading,
+        arabicInstruction: words.instruction.ar,
+        englishText: words.instruction.en,
         primaryColor: catalog.color_primary,
         secondaryColor: catalog.color_secondary,
         accentColor: catalog.color_accent,
@@ -1082,6 +1146,7 @@ export default function QRCodePage() {
 
   return (
     <CatalogAdminShell>
+      <ReportModule onModule={onModule} />
       {/* Google Fonts for all presets - using style tag for reliable loading */}
       <style
         dangerouslySetInnerHTML={{
@@ -1907,7 +1972,7 @@ export default function QRCodePage() {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              {PRINT_TEMPLATES.map((template) => (
+              {PRINT_TEMPLATES.filter((template) => foodBusiness || !FOOD_ONLY_TEMPLATES.has(template.id)).map((template) => (
                 <button
                   key={template.id}
                   onClick={() => setSelectedTemplate(template.id)}
@@ -2071,6 +2136,7 @@ export default function QRCodePage() {
                     catalogUrl={catalogUrl}
                     catalog={catalog}
                     customization={customization}
+                    words={words}
                   />
                 </div>
               </div>
@@ -2094,6 +2160,7 @@ export default function QRCodePage() {
               catalogUrl={catalogUrl}
               catalog={catalog}
               customization={customization}
+              words={words}
             />
           </div>
         )}
@@ -2136,12 +2203,14 @@ function PrintTemplatePreview({
   catalogUrl,
   catalog,
   customization,
+  words,
 }: {
   template: string;
   qrDataUrl: string;
   catalogUrl: string;
   catalog: CatalogInfo;
   customization: TemplateCustomization;
+  words: PrintWords;
 }) {
   const t = useCopy({ en, ar });
   const shortUrl = catalogUrl.replace(/^https?:\/\//, "");
@@ -2981,7 +3050,7 @@ function PrintTemplatePreview({
                   className="text-xs"
                   style={{ color: accentColor, fontFamily: fonts.body }}
                 >
-                  {sideBySide("القائمة الرقمية", "Digital Menu")}
+                  {sideBySide(words.title.ar, words.title.en)}
                 </span>
               </div>
             </div>
@@ -3287,7 +3356,7 @@ function PrintTemplatePreview({
                   className="text-xs mb-2"
                   style={{ color: accentColor, fontFamily: fonts.body }}
                 >
-                  {sideBySide("القائمة الرقمية", "Digital Menu")}
+                  {sideBySide(words.title.ar, words.title.en)}
                 </p>
                 <div className="flex justify-end items-center gap-2">
                   <div className="flex gap-0.5">
@@ -3627,7 +3696,7 @@ function PrintTemplatePreview({
                     className="text-xs"
                     style={{ color: accentColor, fontFamily: fonts.body }}
                   >
-                    {sideBySide("القائمة الرقمية", "Digital Menu")}
+                    {sideBySide(words.title.ar, words.title.en)}
                   </span>
                   <div
                     className="w-12 h-px"
@@ -3761,7 +3830,7 @@ function PrintTemplatePreview({
                   {instruction}
                 </p>
                 <p className="text-sm mt-3" style={{ color: textSecondary }}>
-                  {twoLines("وجّه كاميرا هاتفك نحو الرمز لتصفّح القائمة", "Point your camera at the code to see the menu")}
+                  {twoLines(words.point.ar, words.point.en)}
                 </p>
               </div>
             </div>
@@ -4433,7 +4502,7 @@ function PrintTemplatePreview({
                 className="text-xs px-4"
                 style={{ color: accentColor, background: backgroundColor }}
               >
-                ✧ {sideBySide("القائمة", "Menu")} ✧
+                ✧ {sideBySide(words.short.ar, words.short.en)} ✧
               </p>
             </div>
 
@@ -5158,7 +5227,7 @@ function PrintTemplatePreview({
                   fontFamily: fonts.body,
                 }}
               >
-                {sideBySide("القائمة", "Menu")}
+                {sideBySide(words.short.ar, words.short.en)}
               </p>
 
               <p

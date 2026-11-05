@@ -8,6 +8,7 @@ import { CatalogAdminShell, useCatalogAdmin } from "../../_components/CatalogAdm
 import { CatalogAdminContent, CatalogAdminHeader } from "../../_components/CatalogAdminSidebar";
 import { qrPrintedKey } from "../../_components/SetupChecklist";
 import { useAdminLang, useCopy, plural, type AdminLang } from "../../_lib/i18n";
+import { useModule } from "../../_lib/module";
 
 type Layout = "cards" | "poster";
 const MAX_TABLES = 200;
@@ -18,7 +19,7 @@ const en = {
   options: "Options",
   layout: "Layout",
   layouts: {
-    cards: { label: "Table cards", hint: "4 per A4 sheet" },
+    cards: { label: "Cards", hint: "4 per A4 sheet" },
     poster: { label: "Poster", hint: "1 per A4 sheet" },
   } as Record<Layout, { label: string; hint: string }>,
   numberTables: "Number the tables",
@@ -43,7 +44,7 @@ const ar: typeof en = {
   options: "الخيارات",
   layout: "التنسيق",
   layouts: {
-    cards: { label: "بطاقات الطاولات", hint: "4 في كل ورقة A4" },
+    cards: { label: "بطاقات", hint: "4 في كل ورقة A4" },
     poster: { label: "ملصق", hint: "1 في كل ورقة A4" },
   },
   numberTables: "ترقيم الطاولات",
@@ -81,7 +82,10 @@ function QrPrintContent() {
   const t = useCopy({ en, ar });
   const lang = useAdminLang();
   const [layout, setLayout] = useState<Layout>("cards");
-  const [withTables, setWithTables] = useState(false);
+  const [tablesChosen, setWithTables] = useState(false);
+  // Numbered table cards belong to the "tables" add-on
+  const tablesOn = useModule().has("tables");
+  const withTables = tablesOn && tablesChosen;
   const [from, setFrom] = useState("1");
   const [to, setTo] = useState("12");
   const [names, setNames] = useState<{ en: string; ar: string }>({ en: "", ar: "" });
@@ -214,6 +218,7 @@ function QrPrintContent() {
               </div>
             </fieldset>
 
+            {tablesOn && (
             <div>
               <label className="flex min-h-11 cursor-pointer items-center gap-3">
                 <input type="checkbox" checked={withTables} onChange={(e) => setWithTables(e.target.checked)} className="h-5 w-5" />
@@ -234,6 +239,7 @@ function QrPrintContent() {
                 </div>
               )}
             </div>
+            )}
 
             <button
               type="button"

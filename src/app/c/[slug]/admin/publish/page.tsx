@@ -6,6 +6,7 @@ import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminS
 import { CatalogAdminContent, CatalogAdminHeader } from "../_components/CatalogAdminSidebar";
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
 import { useAdminLang, useCopy, useFormat, plural, formatNumber, pickName, type AdminLang } from "../_lib/i18n";
+import { countNoun, useModule } from "../_lib/module";
 
 interface Change {
   kind: "added" | "removed" | "changed";
@@ -38,18 +39,18 @@ const en = {
   loading: "Loading…",
   loadError: "Could not load the publishing status. Check your connection and reload.",
   previewError: "Could not open the preview. Please try again.",
-  published: (v: number) => `Published. Guests now see version ${v}.`,
+  published: (v: number) => `Published. Customers now see version ${v}.`,
   publishError: "Could not publish. Please try again.",
   restored: (from: number, to: number) => `Version ${from} restored and published as version ${to}.`,
   restoreError: "Could not restore this version.",
-  liveTitle: "Your menu is live as you edit",
+  liveTitle: "Your page is live as you edit",
   liveBody:
-    "This menu was created before drafts existed, so changes appear immediately. Publish once to switch to drafts: after that, guests only see changes when you publish them.",
+    "This page was created before drafts existed, so changes appear immediately. Publish once to switch to drafts: after that, customers only see changes when you publish them.",
   unpublished: (n: number, lang: AdminLang) => plural(lang, n, { one: "# unpublished change", other: "# unpublished changes" }),
-  guestsStillSee: (v: number | string) => `Guests still see version ${v}. Preview your changes, then publish.`,
+  guestsStillSee: (v: number | string) => `Customers still see version ${v}. Preview your changes, then publish.`,
   badge: { added: "New", removed: "Removed", changed: "Edited" } as Record<Change["kind"], string>,
   allPublished: "Everything is published",
-  guestsSee: (v: number | string, when: string) => `Guests see version ${v}, published ${when}.`,
+  guestsSee: (v: number | string, when: string) => `Customers see version ${v}, published ${when}.`,
   instantNote: "Sold-out switches and the exchange rate change immediately; they don’t need publishing.",
   noteLabel: "Note (optional)",
   notePlaceholder: "e.g. Summer prices",
@@ -61,17 +62,16 @@ const en = {
   // Note the server writes when a version is restored (publishing.ts: "Restored version N")
   restoredNote: (v: string) => `Restored version ${v}`,
   live: "Live",
-  dishes: (n: number, lang: AdminLang) => plural(lang, n, { one: "# dish", other: "# dishes" }),
   restore: "Restore",
   restoreTitle: (v: number) => `Restore version ${v}?`,
   restoreBody: (v: number) =>
-    `Your dishes and categories go back to how they were in version ${v}, and guests see it right away. Unpublished changes are replaced. Today’s sold-out switches are kept. You can restore the current version again later from History.`,
+    `Your items and categories go back to how they were in version ${v}, and customers see it right away. Unpublished changes are replaced. Today’s sold-out switches are kept. You can restore the current version again later from History.`,
   cancel: "Cancel",
 
   // The change list
   noName: "(no name)",
-  added: (type: Change["type"], name: ReactNode): ReactNode => <>{type === "category" ? "Category" : "Dish"} added: {name}</>,
-  removed: (type: Change["type"], name: ReactNode): ReactNode => <>{type === "category" ? "Category" : "Dish"} removed: {name}</>,
+  added: (type: Change["type"], name: ReactNode): ReactNode => <>{type === "category" ? "Category" : "Item"} added: {name}</>,
+  removed: (type: Change["type"], name: ReactNode): ReactNode => <>{type === "category" ? "Category" : "Item"} removed: {name}</>,
   changed: (name: ReactNode, parts: string[]): ReactNode => <>{name}: {parts.join(", ")}</>,
   price: (from: string, to: string) => `price ${from} → ${to}`,
   shownAgain: "shown again",
@@ -103,7 +103,7 @@ const ar: typeof en = {
   restoreError: "تعذّرت استعادة هذه النسخة.",
   liveTitle: "تظهر تعديلاتك للزبائن مباشرةً",
   liveBody:
-    "أُنشئت هذه القائمة قبل إضافة المسودات، لذلك تظهر التعديلات فوراً. انشر مرة واحدة للانتقال إلى المسودات: بعدها لا يرى الزبائن التعديلات إلا عندما تنشرها.",
+    "أُنشئت هذه الصفحة قبل إضافة المسودات، لذلك تظهر التعديلات فوراً. انشر مرة واحدة للانتقال إلى المسودات: بعدها لا يرى الزبائن التعديلات إلا عندما تنشرها.",
   unpublished: (n, lang) =>
     plural(lang, n, {
       one: "تعديل واحد غير منشور",
@@ -126,17 +126,15 @@ const ar: typeof en = {
   version: (v) => `النسخة ${v}`,
   restoredNote: (v) => `استعادة النسخة ${v}`,
   live: "الحالية",
-  dishes: (n, lang) =>
-    plural(lang, n, { zero: "لا أطباق", one: "طبق واحد", two: "طبقان", few: "# أطباق", many: "# طبقاً", other: "# طبق" }),
   restore: "استعادة",
   restoreTitle: (v) => `استعادة النسخة ${v}؟`,
   restoreBody: (v) =>
-    `تعود أطباقك وأقسامك إلى ما كانت عليه في النسخة ${v}، ويراها الزبائن فوراً. تُستبدل التعديلات غير المنشورة، وتبقى حالات «نفدت الكمية» لليوم كما هي. يمكنك لاحقاً استعادة النسخة الحالية من سجل النسخ.`,
+    `تعود أصنافك وأقسامك إلى ما كانت عليه في النسخة ${v}، ويراها الزبائن فوراً. تُستبدل التعديلات غير المنشورة، وتبقى حالات «نفدت الكمية» لليوم كما هي. يمكنك لاحقاً استعادة النسخة الحالية من سجل النسخ.`,
   cancel: "إلغاء",
 
   noName: "(بلا اسم)",
-  added: (type, name) => <>{type === "category" ? "أُضيف قسم" : "أُضيف طبق"}: {name}</>,
-  removed: (type, name) => <>{type === "category" ? "حُذف قسم" : "حُذف طبق"}: {name}</>,
+  added: (type, name) => <>{type === "category" ? "أُضيف قسم" : "أُضيف صنف"}: {name}</>,
+  removed: (type, name) => <>{type === "category" ? "حُذف قسم" : "حُذف صنف"}: {name}</>,
   changed: (name, parts) => <>{name}: {parts.join("، ")}</>,
   price: (from, to) => `السعر من ${from} إلى ${to}`,
   shownAgain: "عاد ظاهراً للزبائن",
@@ -185,6 +183,7 @@ function PublishPageContent() {
   const { slug, fetchWithAuth, user } = useCatalogAdmin();
   const lang = useAdminLang();
   const t = useCopy({ en, ar });
+  const { module } = useModule();
   const f = useFormat();
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(true);
@@ -390,7 +389,7 @@ function PublishPageContent() {
                               {isCurrent && <span className="ms-2 rounded bg-ui-subtle px-1.5 text-xs font-semibold text-ui-success">{t.live}</span>}
                             </p>
                             <p className="text-sm text-ui-muted">
-                              {formatWhen(version.published_at)} · {t.dishes(version.item_count, lang)}
+                              {formatWhen(version.published_at)} · {countNoun(module, lang, Number(version.item_count) || 0)}
                               {version.published_by ? <> · <bdi>{version.published_by}</bdi></> : null}
                             </p>
                             {version.note && (

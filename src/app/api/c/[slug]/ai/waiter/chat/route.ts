@@ -41,11 +41,11 @@ export async function POST(
       return NextResponse.json({ error: "Catalog not found" }, { status: 404 });
     }
     if (!catalog.aiWaiterEnabled || !catalog.subscriptionLive) {
-      return NextResponse.json({ error: "The AI waiter is not available for this menu" }, { status: 403 });
+      return NextResponse.json({ error: "The AI assistant is not available for this page" }, { status: 403 });
     }
 
     if (!GOOGLE_API_KEY) {
-      return NextResponse.json({ error: "The AI waiter is not configured on this server" }, { status: 503 });
+      return NextResponse.json({ error: "The AI assistant is not configured on this server" }, { status: 503 });
     }
 
     const formData = await request.formData();

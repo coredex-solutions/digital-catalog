@@ -6,6 +6,29 @@ import { CatalogAdminHeader, CatalogAdminContent } from "../_components/CatalogA
 import { Save, Loader2, FileText, Search, Globe, Sparkles, CheckCircle2, AlertCircle, RefreshCw, Target, ArrowRight, ArrowLeft, X, Building2 } from "lucide-react";
 import { useAdminLang, useCopy, useFormat, type AdminLang } from "../_lib/i18n";
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
+import { useModule } from "../_lib/module";
+import type { ModuleId } from "@/lib/modules/registry";
+
+/** Search examples in each kind of business's own terms */
+type SeoExamples = { keywords: string; name: string; type: string; keyword: string; specialty: string; unique: string };
+const SEO_EXAMPLES: Record<ModuleId, Record<AdminLang, SeoExamples>> = {
+  restaurant: {
+    en: { keywords: "restaurant beirut, lebanese food, manakish…", name: "e.g. Al Sham Restaurant", type: "e.g. Lebanese restaurant", keyword: "e.g. halal restaurant hamra", specialty: "e.g. grills, Italian pizza", unique: "e.g. family recipes, sea view, open late" },
+    ar: { keywords: "مطعم بيروت، أكل لبناني، مناقيش…", name: "مثال: مطعم الشام", type: "مثال: مطعم لبناني", keyword: "مثال: مطعم حلال الحمرا", specialty: "مثال: المشاوي، البيتزا الإيطالية", unique: "مثال: وصفات عائلية، إطلالة على البحر، مفتوح حتى وقت متأخر" },
+  },
+  cafe: {
+    en: { keywords: "coffee achrafieh, croissants, birthday cakes…", name: "e.g. Nour Bakery", type: "e.g. Bakery and coffee shop", keyword: "e.g. custom cakes beirut", specialty: "e.g. cakes to order, specialty coffee", unique: "e.g. baked every morning, garden seating" },
+    ar: { keywords: "قهوة الأشرفية، كرواسان، قوالب عيد ميلاد…", name: "مثال: فرن نور", type: "مثال: فرن ومقهى", keyword: "مثال: قوالب حسب الطلب بيروت", specialty: "مثال: قوالب حسب الطلب، قهوة مختصة", unique: "مثال: خَبز كل صباح، جلسة في الحديقة" },
+  },
+  shop: {
+    en: { keywords: "clothes hamra, cotton t-shirts, delivery lebanon…", name: "e.g. Cedar & Co.", type: "e.g. Clothing store", keyword: "e.g. linen shirts beirut", specialty: "e.g. cotton basics, bags", unique: "e.g. made in Lebanon, free exchange" },
+    ar: { keywords: "ألبسة الحمرا، تيشيرتات قطن، توصيل لبنان…", name: "مثال: سيدر أند كو", type: "مثال: محل ألبسة", keyword: "مثال: قمصان كتان بيروت", specialty: "مثال: ملابس قطنية أساسية، حقائب", unique: "مثال: صناعة لبنانية، تبديل مجاني" },
+  },
+  services: {
+    en: { keywords: "hair salon jounieh, colour, manicure…", name: "e.g. Studio Lea", type: "e.g. Hair and beauty salon", keyword: "e.g. bridal make-up jounieh", specialty: "e.g. colour, bridal hair", unique: "e.g. home visits, open on Sundays" },
+    ar: { keywords: "صالون جونية، صبغة، مانيكور…", name: "مثال: ستوديو ليا", type: "مثال: صالون شعر وتجميل", keyword: "مثال: مكياج عرائس جونية", specialty: "مثال: الصبغة، تسريحات العرائس", unique: "مثال: زيارات منزلية، مفتوح يوم الأحد" },
+  },
+};
 
 type ContentLang = "en" | "ar";
 
@@ -21,8 +44,8 @@ const en = {
   langTab: { ar: "العربية", en: "English" } as Record<ContentLang, string>,
   langName: { ar: "Arabic", en: "English" } as Record<ContentLang, string>,
   aboutTitle: (language: string) => `About text in ${language}`,
-  aboutHint: "Tell guests about your place.",
-  aboutPlaceholder: "Tell guests about your place, what makes it special and why they should come…",
+  aboutHint: "Tell customers about your place.",
+  aboutPlaceholder: "Tell customers about your place, what makes it special and why they should come…",
   writeWithAI: "Write with AI",
   improve: "Improve",
   improveTooShort: "Write a few sentences first, or use \"Write with AI\".",
@@ -30,7 +53,7 @@ const en = {
   improved: "Text improved. Review it, then save.",
   improveFailed: "Couldn't improve the text. Please try again.",
   seoTitle: (language: string) => `Search engine details in ${language}`,
-  seoIntro: "What Google and other search engines show for your menu.",
+  seoIntro: "What Google and other search engines show for your page.",
   generating: "Writing…",
   seoMenu: "Write for",
   currentOnly: (language: string) => `${language} only`,
@@ -46,7 +69,6 @@ const en = {
   descriptionPlaceholder: "Describe your place in about 150 to 160 characters…",
   keywords: "Keywords",
   keywordsHint: "Separate them with commas. The same keywords are used for both languages.",
-  keywordsPlaceholder: "restaurant beirut, lebanese food, manakish…",
   googlePreview: "How it may look on Google",
   previewTitleFallback: "Page title",
   previewDescriptionFallback: "No description yet",
@@ -56,9 +78,7 @@ const en = {
   close: "Close",
   tellUs: "Tell us about your place",
   businessName: "Name",
-  businessNamePlaceholder: "e.g. Al Sham Restaurant",
   businessType: "Type of place",
-  businessTypePlaceholder: "e.g. Lebanese restaurant",
   city: "City",
   required: "Required",
   cityRequired: "Please enter your city.",
@@ -66,15 +86,12 @@ const en = {
   neighborhood: "Area (optional)",
   neighborhoodPlaceholder: "e.g. Hamra, Achrafieh",
   specialty: "What you're known for (optional)",
-  specialtyPlaceholder: "e.g. grills, Italian pizza",
   uniqueFeature: "What makes you different? (optional)",
-  uniqueFeaturePlaceholder: "e.g. family recipes, sea view, open late",
   findingKeywords: "Finding keywords for you…",
   pickKeywords: "Pick the words you want to be found for on Google",
   selected: (n: string) => `Selected: ${n}`,
   removeKeyword: (kw: string) => `Remove ${kw}`,
   addKeyword: "Add your own keyword",
-  addKeywordPlaceholder: "e.g. halal restaurant hamra",
   add: "Add",
   fallbackKeywords: (type: string, city: string) => [`best ${type} in ${city}`, `${type} near me`],
   writingTitle: "Writing your text",
@@ -110,7 +127,7 @@ const ar: typeof en = {
   improved: "تم تحسين النص. راجعه ثم احفظ.",
   improveFailed: "تعذّر تحسين النص. يُرجى المحاولة مرة أخرى.",
   seoTitle: (language) => `تفاصيل محركات البحث باللغة ${language}`,
-  seoIntro: "ما يظهر لقائمتك على Google ومحركات البحث الأخرى.",
+  seoIntro: "ما يظهر لصفحتك على Google ومحركات البحث الأخرى.",
   generating: "جارٍ الكتابة…",
   seoMenu: "اكتب باللغة",
   currentOnly: (language) => `${language} فقط`,
@@ -126,7 +143,6 @@ const ar: typeof en = {
   descriptionPlaceholder: "صِف مكانك في 150 إلى 160 حرفاً تقريباً…",
   keywords: "الكلمات المفتاحية",
   keywordsHint: "افصل بينها بفواصل. تُستخدم الكلمات نفسها للغتين.",
-  keywordsPlaceholder: "مطعم بيروت، أكل لبناني، مناقيش…",
   googlePreview: "كيف قد تظهر على Google",
   previewTitleFallback: "عنوان الصفحة",
   previewDescriptionFallback: "لا يوجد وصف بعد",
@@ -135,9 +151,7 @@ const ar: typeof en = {
   close: "إغلاق",
   tellUs: "أخبرنا عن مكانك",
   businessName: "الاسم",
-  businessNamePlaceholder: "مثال: مطعم الشام",
   businessType: "نوع المكان",
-  businessTypePlaceholder: "مثال: مطعم لبناني",
   city: "المدينة",
   required: "مطلوب",
   cityRequired: "يُرجى إدخال مدينتك.",
@@ -145,15 +159,12 @@ const ar: typeof en = {
   neighborhood: "المنطقة (اختياري)",
   neighborhoodPlaceholder: "مثال: الحمرا، الأشرفية",
   specialty: "بماذا تشتهرون؟ (اختياري)",
-  specialtyPlaceholder: "مثال: المشاوي، البيتزا الإيطالية",
   uniqueFeature: "ما الذي يميّزكم؟ (اختياري)",
-  uniqueFeaturePlaceholder: "مثال: وصفات عائلية، إطلالة على البحر، مفتوح حتى وقت متأخر",
   findingKeywords: "نبحث لك عن كلمات مفتاحية…",
   pickKeywords: "اختر الكلمات التي تريد أن يجدك الناس بها على Google",
   selected: (n) => `المحدد: ${n}`,
   removeKeyword: (kw) => `إزالة ${kw}`,
   addKeyword: "أضف كلمة مفتاحية من عندك",
-  addKeywordPlaceholder: "مثال: مطعم حلال الحمرا",
   add: "إضافة",
   fallbackKeywords: (type, city) => [`أفضل ${type} في ${city}`, `${type} قريب مني`],
   writingTitle: "جارٍ كتابة النص",
@@ -236,10 +247,12 @@ function GooglePreview({ data, langSuffix, activeLang, slug }: {
 }
 
 function AboutSEOPageContent() {
+  const { module } = useModule();
   const { slug, user, fetchWithAuth } = useCatalogAdmin();
   const isViewer = user?.role === 'viewer';
   const t = useCopy({ en, ar });
   const uiLang: AdminLang = useAdminLang();
+  const seo = SEO_EXAMPLES[module.id][uiLang];
   const f = useFormat();
 
   const [data, setData] = useState<AboutSEOData | null>(null);
@@ -811,7 +824,7 @@ function AboutSEOPageContent() {
                         dir="auto"
                         aria-describedby="seo-keywords-hint"
                         className="w-full px-4 py-3 bg-ui-bg border border-ui-input rounded-lg text-ui-ink focus:outline-none focus:border-ui-primary"
-                        placeholder={t.keywordsPlaceholder}
+                        placeholder={seo.keywords}
                       />
                       <p id="seo-keywords-hint" className="text-xs text-ui-muted mt-1.5">{t.keywordsHint}</p>
                     </div>
@@ -871,11 +884,11 @@ function AboutSEOPageContent() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label htmlFor="wiz-name" className="text-xs text-ui-muted mb-1.5 block">{t.businessName}</label>
-                            <input id="wiz-name" type="text" dir="auto" value={businessDetails.name} onChange={(e) => setBusinessDetails({ ...businessDetails, name: e.target.value })} className={inputClass} placeholder={t.businessNamePlaceholder} />
+                            <input id="wiz-name" type="text" dir="auto" value={businessDetails.name} onChange={(e) => setBusinessDetails({ ...businessDetails, name: e.target.value })} className={inputClass} placeholder={seo.name} />
                           </div>
                           <div>
                             <label htmlFor="wiz-type" className="text-xs text-ui-muted mb-1.5 block">{t.businessType}</label>
-                            <input id="wiz-type" type="text" dir="auto" value={businessDetails.type} onChange={(e) => setBusinessDetails({ ...businessDetails, type: e.target.value })} className={inputClass} placeholder={t.businessTypePlaceholder} />
+                            <input id="wiz-type" type="text" dir="auto" value={businessDetails.type} onChange={(e) => setBusinessDetails({ ...businessDetails, type: e.target.value })} className={inputClass} placeholder={seo.type} />
                           </div>
                         </div>
 
@@ -895,12 +908,12 @@ function AboutSEOPageContent() {
 
                         <div>
                           <label htmlFor="wiz-specialty" className="text-xs text-ui-muted mb-1.5 block">{t.specialty}</label>
-                          <input id="wiz-specialty" type="text" dir="auto" value={businessDetails.specialty} onChange={(e) => setBusinessDetails({ ...businessDetails, specialty: e.target.value })} className={inputClass} placeholder={t.specialtyPlaceholder} />
+                          <input id="wiz-specialty" type="text" dir="auto" value={businessDetails.specialty} onChange={(e) => setBusinessDetails({ ...businessDetails, specialty: e.target.value })} className={inputClass} placeholder={seo.specialty} />
                         </div>
 
                         <div>
                           <label htmlFor="wiz-unique" className="text-xs text-ui-muted mb-1.5 block">{t.uniqueFeature}</label>
-                          <input id="wiz-unique" type="text" dir="auto" value={businessDetails.uniqueFeature} onChange={(e) => setBusinessDetails({ ...businessDetails, uniqueFeature: e.target.value })} className={inputClass} placeholder={t.uniqueFeaturePlaceholder} />
+                          <input id="wiz-unique" type="text" dir="auto" value={businessDetails.uniqueFeature} onChange={(e) => setBusinessDetails({ ...businessDetails, uniqueFeature: e.target.value })} className={inputClass} placeholder={seo.unique} />
                         </div>
                       </div>
                     )}
@@ -962,7 +975,7 @@ function AboutSEOPageContent() {
                                   onChange={(e) => setCustomKeyword(e.target.value)}
                                   onKeyDown={(e) => e.key === "Enter" && addCustomKeyword()}
                                   className="flex-1 px-4 py-2.5 bg-ui-subtle border border-ui-input rounded-lg text-ui-ink text-sm focus:outline-none focus:border-ui-primary text-start"
-                                  placeholder={t.addKeywordPlaceholder}
+                                  placeholder={seo.keyword}
                                 />
                                 <button onClick={addCustomKeyword} className="px-4 py-2.5 bg-ui-subtle text-ui-ink rounded-lg text-sm font-medium hover:bg-ui-subtle">{t.add}</button>
                               </div>
