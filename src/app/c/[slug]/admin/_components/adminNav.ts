@@ -14,6 +14,7 @@ import {
   Rocket,
   Users,
   Inbox,
+  Contact,
   type LucideIcon,
 } from "lucide-react";
 import type { AdminLang } from "../_lib/i18n";
@@ -22,6 +23,7 @@ import { MODULES, type ModuleDefinition } from "@/lib/modules/registry";
 export type AdminNavKey =
   | "dashboard"
   | "orders"
+  | "customers"
   | "categories"
   | "items"
   | "about"
@@ -59,6 +61,7 @@ export const ADMIN_NAV_LABELS: Record<AdminLang, NavLabels> = {
   en: {
     dashboard: "Dashboard",
     orders: "Orders",
+    customers: "Customers",
     publish: "Preview & publish",
     categories: "Categories",
     items: "Dishes",
@@ -79,6 +82,7 @@ export const ADMIN_NAV_LABELS: Record<AdminLang, NavLabels> = {
   ar: {
     dashboard: "لوحة التحكم",
     orders: "الطلبات",
+    customers: "الزبائن",
     publish: "المعاينة والنشر",
     categories: "الأقسام",
     items: "الأطباق",
@@ -129,6 +133,7 @@ export function getAdminNavItems(
   return [
     { key: "dashboard", href: basePath, label: l.dashboard, shortLabel: l.home, icon: LayoutDashboard, exact: true },
     { key: "orders", href: `${basePath}/orders`, label: l.orders, icon: Inbox, badgeKey: "newOrders" },
+    { key: "customers", href: `${basePath}/customers`, label: l.customers, icon: Contact },
     { key: "publish", href: `${basePath}/publish`, label: l.publish, icon: Rocket },
     { key: "categories", href: `${basePath}/categories`, label: l.categories, icon: FolderKanban },
     { key: "items", href: `${basePath}/items`, label: l.items, shortLabel: l.menu, icon: Package },

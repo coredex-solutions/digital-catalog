@@ -6,6 +6,8 @@ export interface SentOrder {
   message: string;
   /** wa.me link, or null when the business has no WhatsApp number */
   whatsapp: string | null;
+  /** The customer's order status page (path) */
+  statusUrl: string | null;
 }
 
 export type SendResult =
@@ -28,7 +30,15 @@ export async function sendOrder(slug: string, body: Record<string, unknown>): Pr
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok && typeof data.number === "number") {
-      return { ok: true, order: { number: data.number, message: String(data.message || ""), whatsapp: data.whatsapp || null } };
+      return {
+        ok: true,
+        order: {
+          number: data.number,
+          message: String(data.message || ""),
+          whatsapp: data.whatsapp || null,
+          statusUrl: typeof data.statusUrl === "string" && data.statusUrl.startsWith("/c/") ? data.statusUrl : null,
+        },
+      };
     }
     return { ok: false, code: typeof data.code === "string" ? data.code : res.status === 429 ? "rate_limited" : "failed", field: data.field };
   } catch {

@@ -2,6 +2,7 @@
 // 20261105_modules.sql). Each write is one database batch, which runs as a transaction: an order
 // and the stock it takes are saved together or not at all.
 
+import { randomBytes } from "node:crypto";
 import { v4 as uuidv4 } from "uuid";
 import type { InStatement, ResultSet } from "@libsql/client";
 import { getDb } from "../db/client";
@@ -37,6 +38,15 @@ export interface SavedOrder {
   total_usd: number | null;
   note: string | null;
   lang: string | null;
+  /** Delivery fee for the chosen area (included in the total), in delivery_currency */
+  delivery_fee: number | null;
+  delivery_currency: string | null;
+  /** cash, card, whish or omt; null for bookings, dine-in and older orders */
+  payment_method: string | null;
+  /** When the team marked it paid; null = not yet */
+  paid_at: string | null;
+  /** Key of the customer's status page; null for orders from before it existed */
+  public_token: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -70,6 +80,11 @@ function toOrder(row: Record<string, unknown>): SavedOrder {
     total_usd: num(row.total_usd),
     note: str(row.note),
     lang: str(row.lang),
+    delivery_fee: num(row.delivery_fee),
+    delivery_currency: str(row.delivery_currency),
+    payment_method: str(row.payment_method),
+    paid_at: str(row.paid_at),
+    public_token: str(row.public_token),
     created_at: String(row.created_at ?? ""),
     updated_at: String(row.updated_at ?? ""),
   };
@@ -77,6 +92,41 @@ function toOrder(row: Record<string, unknown>): SavedOrder {
 
 const rowsOf = (result: ResultSet) =>
   result.rows.map((row) => Object.fromEntries(result.columns.map((column) => [column, row[column]])));
+
+/** Random key for an order's status page: 144 bits, so it can't be guessed */
+export function newPublicToken(): string {
+  return randomBytes(18).toString("base64url");
+}
+
+export const PUBLIC_TOKEN = /^[A-Za-z0-9_-]{24}$/;
+
+/** An order by its status-page key, for the customer's status page */
+export async function findByPublicToken(catalogId: string, token: string): Promise<SavedOrder | null> {
+  if (!PUBLIC_TOKEN.test(token)) return null;
+  const result = await getDb().execute({
+    sql: "SELECT * FROM orders WHERE catalog_id = ? AND public_token = ?",
+    args: [catalogId, token],
+  });
+  const row = rowsOf(result)[0];
+  return row ? toOrder(row) : null;
+}
+
+export async function getOrder(catalogId: string, orderId: string): Promise<SavedOrder | null> {
+  const result = await getDb().execute({ sql: "SELECT * FROM orders WHERE id = ? AND catalog_id = ?", args: [orderId, catalogId] });
+  const row = rowsOf(result)[0];
+  return row ? toOrder(row) : null;
+}
+
+/** Mark an order paid (now) or not paid */
+export async function setOrderPaid(catalogId: string, orderId: string, paid: boolean): Promise<SavedOrder | null> {
+  const result = await getDb().execute({
+    sql: `UPDATE orders SET paid_at = ${paid ? "COALESCE(paid_at, datetime('now'))" : "NULL"}, updated_at = datetime('now')
+          WHERE id = ? AND catalog_id = ? RETURNING *`,
+    args: [orderId, catalogId],
+  });
+  const row = rowsOf(result)[0];
+  return row ? toOrder(row) : null;
+}
 
 export type CreateResult =
   | { ok: true; order: SavedOrder; repeated: boolean }
@@ -123,10 +173,11 @@ export async function createOrder(
     sql: `INSERT INTO orders (
             id, catalog_id, number, kind, status, order_type, customer_name, customer_phone,
             table_label, address, area, requested_for, party_size, lines, price_config, total_usd,
-            note, lang, source, stock_reserved, client_key, created_at, updated_at
+            note, lang, source, stock_reserved, client_key, delivery_fee, delivery_currency,
+            payment_method, public_token, created_at, updated_at
           ) VALUES (
             ?, ?, (SELECT COALESCE(MAX(number), 0) + 1 FROM orders WHERE catalog_id = ?), ?, 'new', ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
           ) RETURNING *`,
     args: [
       id,
@@ -149,6 +200,10 @@ export async function createOrder(
       source,
       reserve.size > 0 ? 1 : 0,
       order.clientKey,
+      order.deliveryFee,
+      order.deliveryCurrency,
+      order.paymentMethod,
+      newPublicToken(),
     ],
   });
 
@@ -179,15 +234,23 @@ const TAB_STATUSES: Record<OrderTab, OrderStatus[]> = {
 /** Orders for the dashboard, newest first (the "new" and "active" tabs show the oldest first) */
 export async function listOrders(
   catalogId: string,
-  options: { tab: OrderTab; kind?: "order" | "booking" | "request" | null; limit?: number; before?: string | null }
+  options: {
+    tab: OrderTab;
+    kind?: "order" | "booking" | "request" | null;
+    /** Only orders in the tab with a payment method that aren't marked paid (never cancelled ones) */
+    unpaid?: boolean;
+    limit?: number;
+    before?: string | null;
+  }
 ): Promise<SavedOrder[]> {
-  const statuses = TAB_STATUSES[options.tab];
+  const statuses = TAB_STATUSES[options.tab].filter((s) => !options.unpaid || s !== "cancelled");
   const args: (string | number)[] = [catalogId, ...statuses];
   let sql = `SELECT * FROM orders WHERE catalog_id = ? AND status IN (${statuses.map(() => "?").join(", ")})`;
   if (options.kind) {
     sql += " AND kind = ?";
     args.push(options.kind);
   }
+  if (options.unpaid) sql += " AND payment_method IS NOT NULL AND paid_at IS NULL";
   const oldestFirst = options.tab !== "done";
   if (options.before && !oldestFirst) {
     sql += " AND created_at < ?";

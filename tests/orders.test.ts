@@ -8,6 +8,8 @@ import { canMoveTo } from "@/lib/orders/store";
 import { isItemAvailable } from "@/lib/orders/context";
 import { buildOrderMessage } from "@/app/c/[slug]/_lib/whatsapp";
 import type { PriceConfig } from "@/lib/catalog/price";
+import { EMPTY_DELIVERY } from "@/lib/orders/delivery";
+import { DEFAULT_PAYMENT } from "@/lib/orders/payment";
 
 const config: PriceConfig = { primary: "USD", lbpRate: 89500, rateUpdatedAt: null, showDual: true };
 
@@ -39,6 +41,8 @@ function ctx(overrides: Partial<OrderContext> = {}): OrderContext {
     bookingEnabled: true,
     trackStock: true,
     priceConfig: config,
+    delivery: EMPTY_DELIVERY,
+    payment: DEFAULT_PAYMENT,
     today: "2026-11-05",
     ...overrides,
   };

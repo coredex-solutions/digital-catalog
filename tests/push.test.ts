@@ -63,6 +63,11 @@ const order: SavedOrder = {
   total_usd: 22,
   note: null,
   lang: "en",
+  delivery_fee: null,
+  delivery_currency: null,
+  payment_method: null,
+  paid_at: null,
+  public_token: null,
   created_at: "2026-11-05 10:00:00",
   updated_at: "2026-11-05 10:00:00",
 };

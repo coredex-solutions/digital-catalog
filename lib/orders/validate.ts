@@ -7,6 +7,8 @@ import { ADDRESS_ORDER_TYPES, type ModuleDefinition, type OrderType } from "../m
 import { resolveOrderTypes } from "../modules/resolve";
 import { readVariants } from "../catalog/dish-info";
 import type { PriceConfig } from "../catalog/price";
+import { feeLine, quoteDelivery, zoneName, type DeliveryConfig } from "./delivery";
+import { PAY_AT_TABLE, type PaymentConfig, type PaymentMethod } from "./payment";
 
 export type OrderKind = "order" | "booking";
 
@@ -33,6 +35,10 @@ export interface OrderContext {
   /** Stock add-on on: tracked items can't be ordered beyond what is left */
   trackStock: boolean;
   priceConfig: PriceConfig;
+  /** Delivery areas and fees (no areas = free-text area, no fee) */
+  delivery: DeliveryConfig;
+  /** How customers can pay */
+  payment: PaymentConfig;
   /** Today in Beirut, YYYY-MM-DD (passed in so tests are stable) */
   today: string;
 }
@@ -66,6 +72,12 @@ export interface ValidOrder {
   note: string | null;
   lang: "ar" | "en";
   lines: OrderLineSnapshot[];
+  /** Delivery fee worked out here from the chosen area (never sent by the page); null = none */
+  deliveryFee: number | null;
+  deliveryCurrency: string | null;
+  /** How the customer will pay; null for bookings and dine-in */
+  paymentMethod: PaymentMethod | null;
+  /** Items plus delivery, in USD */
   totalUsd: number | null;
   clientKey: string | null;
 }
@@ -83,6 +95,7 @@ export type OrderErrorCode =
   | "stock_changed"
   | "option_required"
   | "order_type"
+  | "below_minimum"
   | "required";
 
 export type OrderValidation =
@@ -127,7 +140,7 @@ export function beirutToday(now = new Date()): string {
 }
 
 /** Total in USD for reports; null when an LBP line can't be converted (no rate) or another currency is used */
-export function totalInUsd(lines: Pick<OrderLineSnapshot, "price" | "currency" | "quantity">[], config: PriceConfig): number | null {
+export function totalInUsd(lines: { price: number; currency?: string | null; quantity: number }[], config: PriceConfig): number | null {
   let total = 0;
   for (const line of lines) {
     const amount = line.price * line.quantity;
@@ -177,6 +190,9 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
         note,
         lang,
         lines: [],
+        deliveryFee: null,
+        deliveryCurrency: null,
+        paymentMethod: null,
         totalUsd: null,
         clientKey,
       },
@@ -193,8 +209,21 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
   if (orderType === "dine_in" && !table) return fail("required", "Table number is required", "table");
   const needsAddress = ADDRESS_ORDER_TYPES.includes(orderType);
   const address = needsAddress ? text(input.address, 200) : "";
-  const area = needsAddress ? text(input.area, 80) : "";
+  let area = needsAddress ? text(input.area, 80) : "";
   if (needsAddress && !address) return fail("required", "Address is required", "address");
+  // Delivery with areas set up: the customer picks one of them (its fee is added below)
+  const zoned = orderType === "delivery" && ctx.delivery.zones.length > 0;
+  if (zoned && !ctx.delivery.zones.some((zone) => zone.id === input.zoneId)) {
+    return fail("required", "Choose your area", "area");
+  }
+
+  // Payment: one of the owner's methods; asked only when there's a choice, never at the table
+  let paymentMethod: PaymentMethod | null = null;
+  if (!PAY_AT_TABLE.includes(orderType)) {
+    const methods = ctx.payment.methods;
+    paymentMethod = methods.find((method) => method === input.paymentMethod) ?? (methods.length === 1 ? methods[0] : null);
+    if (!paymentMethod) return fail("required", "Choose how you'll pay", "payment");
+  }
 
   let requestedFor: string | null = null;
   if (ctx.module.schedule !== "none") {
@@ -254,6 +283,16 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
     }
   }
 
+  let deliveryFee: number | null = null;
+  let deliveryCurrency: string | null = null;
+  if (zoned) {
+    const quote = quoteDelivery(ctx.delivery, String(input.zoneId), lines, ctx.priceConfig.lbpRate)!;
+    if (quote.belowMinimum) return fail("below_minimum", "The order is under the minimum for this area", "area");
+    area = zoneName(quote.zone, lang);
+    deliveryFee = quote.fee;
+    deliveryCurrency = quote.currency;
+  }
+
   return {
     ok: true,
     order: {
@@ -269,7 +308,10 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
       note,
       lang,
       lines,
-      totalUsd: totalInUsd(lines, ctx.priceConfig),
+      deliveryFee,
+      deliveryCurrency,
+      paymentMethod,
+      totalUsd: totalInUsd([...lines, ...feeLine(deliveryFee, deliveryCurrency)], ctx.priceConfig),
       clientKey,
     },
   };

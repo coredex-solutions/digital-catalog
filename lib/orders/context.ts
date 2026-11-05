@@ -4,6 +4,8 @@ import { getPriceConfig } from "../catalog/price";
 import { getModule, resolveAddons } from "../modules/resolve";
 import type { getFullCatalogData } from "../catalog/queries";
 import { beirutToday, type OrderContext, type OrderableItem } from "./validate";
+import { parseDeliveryConfig } from "./delivery";
+import { parsePaymentConfig } from "./payment";
 
 type CatalogData = NonNullable<Awaited<ReturnType<typeof getFullCatalogData>>>;
 
@@ -33,14 +35,17 @@ export function buildOrderContext(data: CatalogData): OrderContext {
       variants: row.variants,
     };
   });
+  const settings = data.settings as unknown as Record<string, unknown> | null;
   return {
     module: def,
     items,
-    orderTypesSetting: (data.settings as unknown as Record<string, unknown> | null)?.order_types as string | null ?? null,
+    orderTypesSetting: (settings?.order_types as string | null) ?? null,
     orderingEnabled: on(data.settings?.whatsapp_order_enabled, 1),
     bookingEnabled: on(data.settings?.booking_enabled, 1),
     trackStock,
     priceConfig: getPriceConfig(data.settings as Parameters<typeof getPriceConfig>[0]),
+    delivery: parseDeliveryConfig(settings?.delivery_config),
+    payment: parsePaymentConfig(settings?.payment_config),
     today: beirutToday(),
   };
 }

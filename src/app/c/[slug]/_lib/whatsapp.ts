@@ -7,6 +7,7 @@ import { getDictionary, localized } from "./i18n";
 import { variantName } from "@/lib/catalog/dish-info";
 import { MODULES, ADDRESS_ORDER_TYPES, type ModuleId, type OrderType } from "@/lib/modules/registry";
 import { resolveOrderTypes } from "@/lib/modules/resolve";
+import { feeLine } from "@/lib/orders/delivery";
 
 export type { OrderType };
 
@@ -51,6 +52,13 @@ export interface OrderDetails {
   when?: string;
   /** Set once the order is saved: "Order #12" */
   orderNumber?: number;
+  /** Delivery fee for the chosen area (0 = free), in deliveryCurrency */
+  deliveryFee?: number | null;
+  deliveryCurrency?: string | null;
+  /** cash, card, whish or omt */
+  paymentMethod?: string | null;
+  /** The customer's order status page */
+  statusUrl?: string | null;
 }
 
 /** "2026-11-05 14:30" → "2026-11-05 · 14:30" (Western digits, as Lebanese menus write them) */
@@ -90,16 +98,46 @@ export function buildOrderMessage(
     if (line.note) out.push(`   ${t.msgNote}: ${line.note}`);
   }
 
-  const total = formatTotal(lines, priceConfig, lang);
+  if (details.deliveryFee != null && details.orderType === "delivery") {
+    const fee = details.deliveryFee > 0 ? formatPrice(details.deliveryFee, details.deliveryCurrency, priceConfig, lang).primary : t.freeDelivery;
+    out.push(`• ${t.msgDelivery} — ${fee}`);
+  }
+
+  const total = formatTotal([...lines, ...feeLine(details.deliveryFee, details.deliveryCurrency)], priceConfig, lang);
   out.push("");
   out.push(`*${t.msgTotal}:* ${total.primary}${total.secondary ? ` (${total.secondary})` : ""}`);
+  if (details.paymentMethod) out.push(`*${t.msgPayment}:* ${t.payMethods[details.paymentMethod] ?? details.paymentMethod}`);
 
   if (details.notes) {
     out.push("");
     out.push(`*${t.msgNotes}:* ${details.notes}`);
   }
+  if (details.statusUrl) {
+    out.push("");
+    out.push(`${t.msgTrack}: ${details.statusUrl}`);
+  }
 
   return out.join("\n");
+}
+
+/** Which customer-facing step a status is: "ready" reads as "on its way" for deliveries */
+export function customerStep(status: string, orderType: string | null): string {
+  if (status !== "ready") return status;
+  if (orderType === "delivery" || orderType === "home_visit") return "onTheWay";
+  if (orderType === "pickup" || orderType === "takeaway") return "readyPickup";
+  return "ready";
+}
+
+/** The WhatsApp message the team sends the customer after changing an order's status */
+export function buildCustomerUpdate(
+  order: { number: number; status: string; order_type: string | null; lang: string | null },
+  businessName: string,
+  module: ModuleId,
+  statusUrl: string | null
+): string {
+  const t = getDictionary(order.lang === "ar" ? "ar" : "en", module);
+  const line = (t.custUpdate[customerStep(order.status, order.order_type)] ?? t.custUpdate.new)(order.number, businessName);
+  return statusUrl ? `${line}\n${t.custTrack(statusUrl)}` : line;
 }
 
 export interface ReservationDetails {

@@ -2,16 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
-import { Bell, BellOff, CalendarClock, Check, ChefHat, MapPin, MessageCircle, Phone, Users, X, Inbox, Loader2, RefreshCw, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { Bell, BellOff, CalendarClock, Check, ChefHat, MapPin, MessageCircle, Phone, Printer, Users, Wallet, X, Inbox, Loader2, RefreshCw, RotateCcw } from "lucide-react";
 import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import { CatalogAdminContent, CatalogAdminHeader } from "../_components/CatalogAdminSidebar";
 import { adminNavLabels } from "../_components/adminNav";
 import { useAdminLang, useCopy, useFormat, plural, type AdminLang } from "../_lib/i18n";
 import { useModule } from "../_lib/module";
 import { getDictionary } from "../../_lib/i18n";
-import { whatsappLink } from "../../_lib/whatsapp";
+import { buildCustomerUpdate, whatsappLink } from "../../_lib/whatsapp";
 import { formatPrice, formatTotal, getPriceConfig } from "@/lib/catalog/price";
 import { variantName } from "@/lib/catalog/dish-info";
+import { feeLine } from "@/lib/orders/delivery";
+import { isTransfer } from "@/lib/orders/payment";
 import type { SavedOrder, OrderStatus } from "@/lib/orders/store";
 
 type Tab = "new" | "active" | "done";
@@ -66,6 +69,20 @@ const en = {
   alertsDisabled: "Alerts are off on this device.",
   alertsWorking: "Turning on alerts for this device…",
   alertsPushFailed: "Sound is on while this page is open, but notifications couldn't be set up. Check your connection, then turn alerts off and on again.",
+  delivery: "Delivery",
+  free: "Free",
+  payment: "Payment",
+  payMethods: { cash: "Cash", card: "Card", whish: "Whish", omt: "OMT" } as Record<string, string>,
+  paid: "Paid",
+  notPaid: "Not paid",
+  markPaid: "Mark paid",
+  markUnpaid: "Mark not paid",
+  paidDone: (number: number) => `#${number} marked paid`,
+  unpaidDone: (number: number) => `#${number} marked not paid`,
+  unpaidOnly: "Unpaid only",
+  emptyUnpaid: "No unpaid orders.",
+  print: "Print",
+  tellCustomer: "Tell the customer",
 };
 const ar: typeof en = {
   tabs: { new: "جديدة", active: "قيد التنفيذ", done: "منتهية" },
@@ -110,6 +127,20 @@ const ar: typeof en = {
   alertsDisabled: "التنبيهات متوقفة على هذا الجهاز.",
   alertsWorking: "جارٍ تفعيل التنبيهات على هذا الجهاز…",
   alertsPushFailed: "الصوت مفعّل عندما تكون هذه الصفحة مفتوحة، لكن تعذّر تفعيل الإشعارات. تحقق من الاتصال، ثم أوقف التنبيهات وفعّلها من جديد.",
+  delivery: "التوصيل",
+  free: "مجاني",
+  payment: "الدفع",
+  payMethods: { cash: "نقداً", card: "بطاقة", whish: "Whish", omt: "OMT" },
+  paid: "مدفوع",
+  notPaid: "غير مدفوع",
+  markPaid: "تم الدفع",
+  markUnpaid: "لم يُدفع",
+  paidDone: (number) => `الطلب #${number} مدفوع`,
+  unpaidDone: (number) => `الطلب #${number} غير مدفوع`,
+  unpaidOnly: "غير المدفوعة فقط",
+  emptyUnpaid: "لا طلبات غير مدفوعة.",
+  print: "طباعة",
+  tellCustomer: "أخبر الزبون",
 };
 
 /** How long the Undo bar stays after a change */
@@ -133,7 +164,19 @@ function statusClass(status: OrderStatus) {
   }
 }
 
-function OrderCard({ order, onStatus, busy }: { order: SavedOrder; onStatus: (status: OrderStatus) => void; busy: boolean }) {
+function OrderCard({
+  order,
+  onStatus,
+  onPaid,
+  busy,
+  printHref,
+}: {
+  order: SavedOrder;
+  onStatus: (status: OrderStatus) => void;
+  onPaid: (paid: boolean) => void;
+  busy: boolean;
+  printHref: string;
+}) {
   const t = useCopy({ en, ar });
   const lang = useAdminLang();
   const f = useFormat();
@@ -142,7 +185,8 @@ function OrderCard({ order, onStatus, busy }: { order: SavedOrder; onStatus: (st
   const [askCancel, setAskCancel] = useState(false);
 
   const config = order.price_config ?? getPriceConfig(null);
-  const total = order.lines.length > 0 ? formatTotal(order.lines, config, lang) : null;
+  const total = order.lines.length > 0 ? formatTotal([...order.lines, ...feeLine(order.delivery_fee, order.delivery_currency)], config, lang) : null;
+  const paid = Boolean(order.paid_at);
   const typeLabel = order.order_type ? (words as unknown as Record<string, string>)[order.order_type] : null;
   const holdsStock = order.lines.some((line) => line.reserved > 0);
   const canReady = order.kind === "order";
@@ -157,7 +201,18 @@ function OrderCard({ order, onStatus, busy }: { order: SavedOrder; onStatus: (st
           </p>
           <p className="text-sm text-ui-muted">{f.dateTime(utc(order.created_at))}</p>
         </div>
-        <span className={clsx("rounded-full px-2.5 py-1 text-xs font-semibold", statusClass(order.status))}>{t.status[order.status]}</span>
+        <div className="flex items-center gap-2">
+          {order.lines.length > 0 && (
+            <Link
+              href={printHref}
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-control border border-ui-line px-3 text-sm font-medium hover:bg-ui-subtle"
+            >
+              <Printer className="h-4 w-4" aria-hidden />
+              {t.print}
+            </Link>
+          )}
+          <span className={clsx("rounded-full px-2.5 py-1 text-xs font-semibold", statusClass(order.status))}>{t.status[order.status]}</span>
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -226,6 +281,14 @@ function OrderCard({ order, onStatus, busy }: { order: SavedOrder; onStatus: (st
                 {line.note && <p className="text-ui-muted">{t.note}: {line.note}</p>}
               </li>
             ))}
+            {order.order_type === "delivery" && order.delivery_fee != null && (
+              <li className="flex justify-between gap-3 text-ui-muted">
+                <span>{t.delivery}</span>
+                <span className="shrink-0 tabular-nums">
+                  {order.delivery_fee > 0 ? formatPrice(order.delivery_fee, order.delivery_currency, config, lang).primary : t.free}
+                </span>
+              </li>
+            )}
           </ul>
           {total && (
             <p className="mt-2 flex justify-between border-t border-ui-line pt-2 font-semibold">
@@ -236,6 +299,33 @@ function OrderCard({ order, onStatus, busy }: { order: SavedOrder; onStatus: (st
                 {total.secondary && <span className="font-normal text-ui-muted">{total.secondary}</span>}
               </span>
             </p>
+          )}
+        </div>
+      )}
+
+      {order.payment_method && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+          <Wallet className="h-4 w-4 text-ui-muted" aria-hidden />
+          <span>
+            {t.payment}: <strong>{t.payMethods[order.payment_method] ?? order.payment_method}</strong>
+          </span>
+          <span
+            className={clsx(
+              "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+              paid ? "bg-ui-bg text-ui-success border border-ui-line" : isTransfer(order.payment_method) ? "bg-ui-accent text-ui-accent-fg" : "bg-ui-bg text-ui-muted border border-ui-line"
+            )}
+          >
+            {paid ? t.paid : t.notPaid}
+          </span>
+          {order.status !== "cancelled" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => onPaid(!paid)}
+              className="inline-flex min-h-9 items-center rounded-control border border-ui-line px-3 text-sm font-medium hover:bg-ui-subtle disabled:opacity-60"
+            >
+              {paid ? t.markUnpaid : t.markPaid}
+            </button>
           )}
         </div>
       )}
@@ -335,17 +425,24 @@ function OrderCard({ order, onStatus, busy }: { order: SavedOrder; onStatus: (st
 function OrdersView() {
   const t = useCopy({ en, ar });
   const lang = useAdminLang();
-  const { slug, fetchWithAuth, refreshNewOrders, newOrders, alertsOn, setAlertsOn } = useCatalogAdmin();
+  const { slug, catalog, fetchWithAuth, refreshNewOrders, newOrders, alertsOn, setAlertsOn } = useCatalogAdmin();
   const { module } = useModule();
   const [tab, setTab] = useState<Tab>("new");
   const [kind, setKind] = useState<KindFilter>("all");
+  const [unpaid, setUnpaid] = useState(false);
   const [orders, setOrders] = useState<SavedOrder[]>([]);
   const [counts, setCounts] = useState({ new: 0, active: 0 });
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
-  const [notice, setNotice] = useState<{ text: string; undo?: { order: SavedOrder; from: OrderStatus }; busy?: boolean } | null>(null);
+  const [notice, setNotice] = useState<{
+    text: string;
+    undo?: { order: SavedOrder; from: OrderStatus };
+    /** WhatsApp link with a ready message telling the customer about the change */
+    tell?: string;
+    busy?: boolean;
+  } | null>(null);
   const request = useRef(0);
 
   // The bar hides by itself after a few seconds
@@ -353,7 +450,8 @@ function OrdersView() {
     // A message for work in progress stays until the result replaces it
     if (!notice || notice.busy) return;
     // Longer messages stay long enough to read
-    const timer = setTimeout(() => setNotice(null), notice.undo ? UNDO_MS : Math.max(UNDO_MS, notice.text.length * 75));
+    // With "Tell the customer" it stays longer, so there's time to decide
+    const timer = setTimeout(() => setNotice(null), notice.tell ? UNDO_MS * 2 : notice.undo ? UNDO_MS : Math.max(UNDO_MS, notice.text.length * 75));
     return () => clearTimeout(timer);
   }, [notice]);
 
@@ -363,6 +461,7 @@ function OrdersView() {
       if (!options.quiet) setLoading(true);
       const params = new URLSearchParams({ tab });
       if (kind !== "all") params.set("kind", kind);
+      if (unpaid) params.set("unpaid", "1");
       if (options.before) params.set("before", options.before);
       try {
         const res = await fetchWithAuth(`/api/c/${slug}/admin/orders/?${params}`);
@@ -371,7 +470,7 @@ function OrdersView() {
         if (id !== request.current) return;
         setOrders((prev) => (options.before ? [...prev, ...data.orders] : data.orders));
         setCounts(data.counts);
-        setHasMore(tab === "done" && data.orders.length === 50);
+        setHasMore(tab === "done" && !unpaid && data.orders.length === 50);
         setFailed(false);
       } catch {
         if (id === request.current && !options.quiet) setFailed(true);
@@ -379,7 +478,7 @@ function OrdersView() {
         if (id === request.current) setLoading(false);
       }
     },
-    [fetchWithAuth, slug, tab, kind]
+    [fetchWithAuth, slug, tab, kind, unpaid]
   );
 
   useEffect(() => {
@@ -397,6 +496,32 @@ function OrdersView() {
     }
   }, [newOrders, tab, load]);
 
+  /** WhatsApp to the customer with a ready message about the order's status, in their language */
+  const tellLink = (order: SavedOrder) => {
+    const statusUrl = order.public_token ? `${window.location.origin}/c/${slug}/order/${order.public_token}/` : null;
+    return whatsappLink(order.customer_phone, buildCustomerUpdate(order, catalog?.name || slug, module.id, statusUrl));
+  };
+
+  /** Mark an order paid or not paid */
+  const changePaid = async (order: SavedOrder, paid: boolean) => {
+    setBusyId(order.id);
+    setNotice(null);
+    try {
+      const res = await fetchWithAuth(`/api/c/${slug}/admin/orders/${order.id}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paid }),
+      });
+      if (!res.ok) throw new Error();
+      setNotice({ text: paid ? t.paidDone(order.number) : t.unpaidDone(order.number) });
+      await load({ quiet: true });
+    } catch {
+      setNotice({ text: t.changeFailed });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   /** Change an order's status. Each change offers Undo, which moves it back (and isn't undoable itself). */
   const changeStatus = async (order: SavedOrder, status: OrderStatus, isUndo = false) => {
     setBusyId(order.id);
@@ -408,10 +533,16 @@ function OrdersView() {
         body: JSON.stringify({ status }),
       });
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const updated: SavedOrder = data.order ?? { ...order, status };
         setNotice(
           isUndo
             ? { text: t.undone(order.number) }
-            : { text: t.moved(order.number, t.status[status]), undo: { order: { ...order, status }, from: order.status } }
+            : {
+                text: t.moved(order.number, t.status[status]),
+                undo: { order: updated, from: order.status },
+                tell: status === "new" ? undefined : tellLink(updated),
+              }
         );
         await load({ quiet: true });
         refreshNewOrders();
@@ -428,7 +559,7 @@ function OrdersView() {
   };
 
   const tabs: Tab[] = ["new", "active", "done"];
-  const empty = tab === "new" ? t.emptyNew : tab === "active" ? t.emptyActive : t.emptyDone;
+  const empty = unpaid ? t.emptyUnpaid : tab === "new" ? t.emptyNew : tab === "active" ? t.emptyActive : t.emptyDone;
 
   return (
     <>
@@ -497,9 +628,9 @@ function OrdersView() {
             })}
           </div>
 
-          {module.tableBooking && (
-            <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label={t.filterLabel}>
-              {(["all", "order", "booking"] as KindFilter[]).map((key) => (
+          <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label={t.filterLabel}>
+            {module.tableBooking &&
+              (["all", "order", "booking"] as KindFilter[]).map((key) => (
                 <button
                   key={key}
                   type="button"
@@ -513,8 +644,19 @@ function OrdersView() {
                   {t.filters[key]}
                 </button>
               ))}
-            </div>
-          )}
+            <button
+              type="button"
+              aria-pressed={unpaid}
+              onClick={() => setUnpaid((on) => !on)}
+              className={clsx(
+                "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium",
+                unpaid ? "border-ui-primary bg-ui-subtle text-ui-heading" : "border-ui-line text-ui-muted hover:text-ui-ink"
+              )}
+            >
+              <Wallet className="h-4 w-4" aria-hidden />
+              {t.unpaidOnly}
+            </button>
+          </div>
 
           <div className="mt-4 space-y-3" role="tabpanel" aria-busy={loading}>
             {loading && orders.length === 0 ? (
@@ -533,7 +675,14 @@ function OrdersView() {
               </div>
             ) : (
               orders.map((order) => (
-                <OrderCard key={order.id} order={order} busy={busyId === order.id} onStatus={(status) => changeStatus(order, status)} />
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  busy={busyId === order.id}
+                  onStatus={(status) => changeStatus(order, status)}
+                  onPaid={(paid) => changePaid(order, paid)}
+                  printHref={`/c/${slug}/admin/orders/${order.id}/print/`}
+                />
               ))
             )}
             {hasMore && (
@@ -556,8 +705,20 @@ function OrdersView() {
         aria-live="polite"
       >
         {notice && (
-          <div className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-panel bg-ui-ink px-4 py-2 text-sm text-ui-bg shadow-lg">
-            <span className="min-w-0 flex-1 py-2">{notice.text}</span>
+          <div className="pointer-events-auto flex w-full max-w-md flex-wrap items-center gap-x-3 rounded-panel bg-ui-ink px-4 py-2 text-sm text-ui-bg shadow-lg">
+            {/* The text keeps a readable width; the buttons move to a second line when needed */}
+            <span className="min-w-[9rem] flex-1 py-2">{notice.text}</span>
+            {notice.tell && (
+              <a
+                href={notice.tell}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-control px-2 font-semibold underline-offset-2 hover:underline"
+              >
+                <MessageCircle className="h-4 w-4" aria-hidden />
+                {t.tellCustomer}
+              </a>
+            )}
             {notice.undo && (
               <button
                 type="button"

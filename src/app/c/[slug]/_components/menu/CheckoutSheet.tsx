@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, MessageCircle } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
@@ -9,6 +10,9 @@ import { localized } from "../../_lib/i18n";
 import { buildOrderMessage, whatsappLink, type OrderType } from "../../_lib/whatsapp";
 import { newClientKey, sendOrder, type SentOrder } from "../../_lib/send-order";
 import { ADDRESS_ORDER_TYPES } from "@/lib/modules/registry";
+import { formatPrice, formatTotal } from "@/lib/catalog/price";
+import { feeLine, parseDeliveryConfig, quoteDelivery, zoneName } from "@/lib/orders/delivery";
+import { PAY_AT_TABLE, parsePaymentConfig, type PaymentMethod } from "@/lib/orders/payment";
 import { Price } from "./Price";
 import { Sheet } from "./Sheet";
 import { cn } from "@/utils/helpers";
@@ -21,6 +25,9 @@ interface Details {
   phone: string;
   address: string;
   area: string;
+  /** Chosen delivery area, when the business has set areas up */
+  zoneId: string;
+  payment: string;
 }
 
 type FieldName = keyof Details | "table" | "when" | "orderType";
@@ -101,7 +108,7 @@ export function CheckoutSheet() {
   const open = activeSheet === "checkout";
   const businessName = localized(catalog, "name", lang) || catalog.name;
 
-  const [details, setDetails] = useState<Details>({ name: "", phone: "", address: "", area: "" });
+  const [details, setDetails] = useState<Details>({ name: "", phone: "", address: "", area: "", zoneId: "", payment: "" });
   const [when, setWhen] = useState({ date: "", time: "" });
   const [notes, setNotes] = useState("");
   const [errors, setErrors] = useState<Partial<Record<FieldName, string>>>({});
@@ -132,6 +139,30 @@ export function CheckoutSheet() {
 
   const deliveryNote = localized(settings || {}, "delivery_note", lang);
   const needsAddress = ADDRESS_ORDER_TYPES.includes(orderType);
+  const settingsRow = settings as unknown as Record<string, unknown> | null;
+  const delivery = useMemo(() => parseDeliveryConfig(settingsRow?.delivery_config), [settingsRow?.delivery_config]);
+  const payment = useMemo(() => parsePaymentConfig(settingsRow?.payment_config), [settingsRow?.payment_config]);
+
+  // Delivery areas: the customer picks one and its fee is added (the server works it out again)
+  const zoned = orderType === "delivery" && delivery.zones.length > 0;
+  const quote = zoned ? quoteDelivery(delivery, details.zoneId, cart, priceConfig.lbpRate) : null;
+  const fee = quote ? quote.fee : null;
+  const money = (amount: number) => formatPrice(amount, delivery.currency, priceConfig, lang).primary;
+  const total = quote ? formatTotal([...cart, ...feeLine(quote.fee, quote.currency)], priceConfig, lang) : cartTotal;
+
+  // Payment: asked only when the business offers more than one way, and never at the table
+  const askPayment = payment.methods.length > 1 && !PAY_AT_TABLE.includes(orderType);
+  const paymentMethod: PaymentMethod | null = PAY_AT_TABLE.includes(orderType)
+    ? null
+    : (payment.methods.find((m) => m === details.payment) ?? (payment.methods.length === 1 ? payment.methods[0] : null));
+  const paymentHint = (method: PaymentMethod) =>
+    method === "whish"
+      ? t.payWhishHint(payment.whish_phone)
+      : method === "omt"
+        ? t.payOmtHint([payment.omt_name, payment.omt_phone].filter(Boolean).join(" · "))
+        : method === "card"
+          ? t.payCardHint
+          : t.payCashHint;
   // Cafés: optional pre-order time (not for eating in). Services: required appointment time.
   const askWhen = module.schedule === "required" || (module.schedule === "optional" && orderType !== "dine_in");
   const whenRequired = module.schedule === "required";
@@ -144,12 +175,15 @@ export function CheckoutSheet() {
         orderType,
         table: table.trim(),
         address: details.address.trim(),
-        area: details.area.trim(),
+        area: quote ? zoneName(quote.zone, lang) : details.area.trim(),
         name: details.name.trim(),
         phone: details.phone.trim(),
         notes: notes.trim(),
         when: askWhen && when.date && when.time ? `${when.date} ${when.time}` : undefined,
         orderNumber,
+        deliveryFee: fee,
+        deliveryCurrency: quote?.currency,
+        paymentMethod,
       },
       priceConfig,
       lang,
@@ -169,6 +203,9 @@ export function CheckoutSheet() {
     if (details.phone.replace(/\D/g, "").length < 7) next.phone = t.required;
     if (orderType === "dine_in" && !table.trim()) next.table = t.required;
     if (needsAddress && !details.address.trim()) next.address = t.required;
+    if (zoned && !quote) next.area = t.chooseArea;
+    if (quote?.belowMinimum && quote.zone.min_order) next.area = t.belowMinimum(money(quote.zone.min_order));
+    if (askPayment && !paymentMethod) next.payment = t.required;
     if (askWhen && (whenRequired || when.date || when.time) && !(when.date && when.time)) next.when = t.required;
     setErrors(next);
     if (Object.keys(next).length > 0) return;
@@ -190,6 +227,8 @@ export function CheckoutSheet() {
       table: table.trim(),
       address: details.address.trim(),
       area: details.area.trim(),
+      zoneId: zoned ? details.zoneId : undefined,
+      paymentMethod: paymentMethod ?? undefined,
       date: askWhen ? when.date : "",
       time: askWhen ? when.time : "",
       note: notes.trim(),
@@ -209,8 +248,14 @@ export function CheckoutSheet() {
       router.refresh();
       return;
     }
+    if (result.code === "below_minimum" && quote?.zone.min_order) {
+      setErrors({ area: t.belowMinimum(money(quote.zone.min_order)) });
+      return;
+    }
     if (result.field) {
-      setErrors({ [result.field]: t.required } as typeof errors);
+      // The business may have changed its areas since the page loaded
+      setErrors({ [result.field]: result.field === "area" ? t.chooseArea : t.required } as typeof errors);
+      if (result.field === "area") router.refresh();
       return;
     }
     setFailure(t.saveFailed);
@@ -242,6 +287,15 @@ export function CheckoutSheet() {
           >
             {saved.whatsapp ? t.handoffDone : t.done}
           </button>
+          {saved.statusUrl && (
+            <Link
+              href={saved.statusUrl}
+              onClick={() => clearCart()}
+              className="flex min-h-11 items-center justify-center px-4 text-sm font-semibold text-brand-ink underline underline-offset-4"
+            >
+              {t.trackOrder}
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -262,9 +316,21 @@ export function CheckoutSheet() {
             )}
           </div>
         )}
+        {quote && (
+          <dl className="mb-2 space-y-1 text-sm">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-menu-muted">{t.itemsSubtotal}</dt>
+              <dd><Price value={cartTotal} /></dd>
+            </div>
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-menu-muted">{t.deliveryFee}</dt>
+              <dd className="font-semibold">{quote.fee > 0 ? <Price amount={quote.fee} currency={quote.currency} /> : t.freeDelivery}</dd>
+            </div>
+          </dl>
+        )}
         <div className="mb-3 flex items-baseline justify-between gap-3">
           <span className="text-menu-muted">{t.subtotal}</span>
-          <Price value={cartTotal} className="text-lg" />
+          <Price value={total} className="text-lg" />
         </div>
         <button
           type="button"
@@ -350,17 +416,58 @@ export function CheckoutSheet() {
                 />
               )}
             </Field>
-            <Field label={t.area}>
-              {(props) => (
-                <input
-                  {...props}
-                  value={details.area}
-                  onChange={(event) => update("area", event.target.value.slice(0, 80))}
-                  placeholder={t.areaPlaceholder}
-                  className={inputClass}
-                />
-              )}
-            </Field>
+            {zoned ? (
+              <Field
+                label={t.area}
+                error={errors.area}
+                hint={
+                  quote
+                    ? [
+                        quote.fee > 0 ? `${t.deliveryFee}: ${money(quote.fee)}` : `${t.deliveryFee}: ${t.freeDelivery}`,
+                        quote.zone.eta_minutes ? t.areaEta(quote.zone.eta_minutes) : "",
+                        quote.belowMinimum && quote.zone.min_order ? t.belowMinimum(money(quote.zone.min_order)) : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
+                    : delivery.free_over
+                      ? t.freeOverHint(money(delivery.free_over))
+                      : undefined
+                }
+              >
+                {(props) => (
+                  <select
+                    {...props}
+                    value={quote ? details.zoneId : ""}
+                    onChange={(event) => {
+                      update("zoneId", event.target.value);
+                      setErrors((prev) => ({ ...prev, area: undefined }));
+                    }}
+                    className={cn(inputClass, "appearance-auto")}
+                  >
+                    <option value="" disabled>
+                      {t.chooseArea}
+                    </option>
+                    {delivery.zones.map((zone) => (
+                      <option key={zone.id} value={zone.id}>
+                        {zoneName(zone, lang)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </Field>
+            ) : (
+              <Field label={t.area}>
+                {(props) => (
+                  <input
+                    {...props}
+                    value={details.area}
+                    onChange={(event) => update("area", event.target.value.slice(0, 80))}
+                    placeholder={t.areaPlaceholder}
+                    className={inputClass}
+                  />
+                )}
+              </Field>
+            )}
             {orderType === "delivery" && deliveryNote && (
               <p className="rounded-2xl bg-brand-soft px-4 py-3 text-sm leading-relaxed">{deliveryNote}</p>
             )}
@@ -423,6 +530,46 @@ export function CheckoutSheet() {
             />
           )}
         </Field>
+
+        {askPayment && (
+          <fieldset aria-describedby={errors.payment ? "payment-error" : undefined}>
+            <legend className="text-sm font-semibold">{t.payment}</legend>
+            <div className="mt-1.5 space-y-2">
+              {payment.methods.map((method) => (
+                <label
+                  key={method}
+                  className={cn(
+                    "flex min-h-12 cursor-pointer items-start gap-3 rounded-control border px-4 py-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-[var(--brand-ink)]",
+                    paymentMethod === method ? "border-brand-ink bg-brand-soft" : "border-menu-input-border bg-menu-surface"
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value={method}
+                    checked={paymentMethod === method}
+                    onChange={() => {
+                      update("payment", method);
+                      setErrors((prev) => ({ ...prev, payment: undefined }));
+                    }}
+                    className="mt-1 h-4 w-4 shrink-0 accent-[var(--brand-ink)]"
+                  />
+                  <span className="min-w-0">
+                    <span className="block font-semibold">{t.payMethods[method]}</span>
+                    <span className="block text-sm text-menu-muted">
+                      <bdi>{paymentHint(method)}</bdi>
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            {errors.payment && (
+              <p id="payment-error" className="mt-1 text-sm text-menu-danger">
+                {errors.payment}
+              </p>
+            )}
+          </fieldset>
+        )}
 
         <Field label={t.notes}>
           {(props) => (

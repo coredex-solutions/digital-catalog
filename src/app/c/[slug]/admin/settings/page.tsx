@@ -10,6 +10,9 @@ import {
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
 import { useModule } from "../_lib/module";
 import { AddonsCard } from "./_components/AddonsCard";
+import { DeliveryAreasEditor, type DeliveryAreasDraft } from "./_components/DeliveryAreasEditor";
+import { PaymentMethodsEditor } from "./_components/PaymentMethodsEditor";
+import type { PaymentConfig } from "@/lib/orders/payment";
 import type { OrderType } from "@/lib/modules/registry";
 import { useAdminLang, useCopy, useFormat } from "../_lib/i18n";
 import { translateApiMessage } from "../_lib/api-errors";
@@ -93,6 +96,8 @@ interface Settings {
     order_types: string;
     delivery_note_ar: string;
     delivery_note_en: string;
+    delivery_config: DeliveryAreasDraft;
+    payment_config: PaymentConfig;
   };
 }
 
@@ -556,6 +561,9 @@ function SettingsPageContent() {
       });
 
       if (res.ok) {
+        // Delivery areas and payment come back cleaned (new areas get their ids)
+        const result = await res.json().catch(() => null);
+        if (result?.ordering) setSettings((prev) => (prev ? { ...prev, ordering: { ...prev.ordering, ...result.ordering } } : prev));
         setMessage({ type: "success", text: t.saved(t.sectionNames[section]) });
         setTimeout(() => setMessage(null), 3000);
       } else {
@@ -574,7 +582,7 @@ function SettingsPageContent() {
   const updateSettings = (
     section: keyof Settings,
     field: string,
-    value: string | boolean
+    value: string | boolean | DeliveryAreasDraft | PaymentConfig
   ) => {
     if (!settings) return;
     setSettings({
@@ -1124,6 +1132,20 @@ function SettingsPageContent() {
                           />
                         </div>
                       </div>
+                    )}
+
+                    {settings.ordering.order_types.split(",").includes("delivery") && settings.ordering.delivery_config && (
+                      <DeliveryAreasEditor
+                        value={settings.ordering.delivery_config}
+                        onChange={(next) => updateSettings("ordering", "delivery_config", next)}
+                      />
+                    )}
+
+                    {settings.ordering.payment_config && (
+                      <PaymentMethodsEditor
+                        value={settings.ordering.payment_config}
+                        onChange={(next) => updateSettings("ordering", "payment_config", next)}
+                      />
                     )}
 
                     <div className="pt-8 border-t border-ui-line">

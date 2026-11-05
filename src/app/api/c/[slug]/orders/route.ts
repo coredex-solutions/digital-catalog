@@ -9,9 +9,15 @@ import { localized } from "@/app/c/[slug]/_lib/i18n";
 import { buildOrderMessage, buildReservationMessage, whatsappLink, type OrderType } from "@/app/c/[slug]/_lib/whatsapp";
 import type { ModuleId } from "@/lib/modules/registry";
 import { notifyNewOrder } from "@/lib/push";
+import { getSiteUrl } from "@/lib/utils/base-url";
+
+/** The customer's status page for an order (path only; null for orders saved before it existed) */
+function statusPath(slug: string, order: SavedOrder): string | null {
+  return order.public_token ? `/c/${slug}/order/${order.public_token}/` : null;
+}
 
 /** The WhatsApp text for a saved order, in the language the customer ordered in */
-function messageFor(order: SavedOrder, businessName: string, moduleId: ModuleId): string {
+function messageFor(order: SavedOrder, businessName: string, moduleId: ModuleId, statusUrl: string | null): string {
   const lang = order.lang === "ar" ? "ar" : "en";
   if (order.kind === "booking") {
     return buildReservationMessage(
@@ -50,6 +56,10 @@ function messageFor(order: SavedOrder, businessName: string, moduleId: ModuleId)
       notes: order.note ?? undefined,
       when: order.requested_for ?? undefined,
       orderNumber: order.number,
+      deliveryFee: order.delivery_fee,
+      deliveryCurrency: order.delivery_currency,
+      paymentMethod: order.payment_method,
+      statusUrl,
     },
     order.price_config ?? getPriceConfig(null),
     lang,
@@ -81,9 +91,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const context = buildOrderContext(data);
   const businessName = (lang: "ar" | "en") => localized(data.catalog, "name", lang) || data.catalog.name;
   const reply = (order: SavedOrder, status: number) => {
-    const message = messageFor(order, businessName(order.lang === "ar" ? "ar" : "en"), context.module.id);
+    const path = statusPath(slug, order);
+    const message = messageFor(order, businessName(order.lang === "ar" ? "ar" : "en"), context.module.id, path ? `${getSiteUrl()}${path}` : null);
     const whatsapp = data.contact?.phone_whatsapp ? whatsappLink(data.contact.phone_whatsapp, message) : null;
-    return NextResponse.json({ number: order.number, kind: order.kind, message, whatsapp }, { status });
+    return NextResponse.json({ number: order.number, kind: order.kind, message, whatsapp, statusUrl: path }, { status });
   };
 
   // A retry of an order that was already saved (lost answer, double tap): answer with that order
@@ -98,7 +109,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const result = validateOrder(body, context);
   if (!result.ok) {
-    const status = result.code === "stock_changed" || result.code === "item_unavailable" ? 409 : result.code === "closed" ? 403 : 400;
+    const status =
+      result.code === "stock_changed" || result.code === "item_unavailable" ? 409 : result.code === "closed" ? 403 : result.code === "below_minimum" ? 422 : 400;
     return NextResponse.json({ error: result.message, code: result.code, field: result.field }, { status });
   }
 
