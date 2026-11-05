@@ -51,6 +51,10 @@ const EXACT: Record<string, string> = {
   "Choose a room": "اختر غرفة.",
   "Name is required": "الاسم مطلوب.",
   "Choose the number of guests": "اختر عدد الضيوف.",
+  // Marketing settings
+  "The Meta Pixel ID is a number of 8 to 20 digits": "رقم Meta Pixel يتكوّن من 8 إلى 20 رقماً.",
+  "The Google Analytics ID starts with G-, for example G-AB12CD34EF": "معرّف Google Analytics يبدأ بـ G-، مثلاً G-AB12CD34EF.",
+  "The review link must be a full link starting with https://": "رابط التقييم يجب أن يكون رابطاً كاملاً يبدأ بـ https://",
   "This room is already booked on some of these nights": "هذه الغرفة محجوزة في بعض هذه الليالي.",
   "These rooms were booked by another stay on these dates": "حُجزت هذه الغرف لإقامة أخرى في هذه التواريخ.",
   "Only places booked by the night have a calendar": "التقويم متاح فقط للأماكن التي تُحجز بالليلة.",

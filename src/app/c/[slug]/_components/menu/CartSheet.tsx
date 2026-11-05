@@ -11,9 +11,11 @@ import { Sheet } from "./Sheet";
 import { nightsBetween } from "@/lib/orders/stays";
 import { stayDate } from "../../_lib/whatsapp";
 import { CalendarDays } from "lucide-react";
+import { totalInUsd } from "@/lib/orders/validate";
+import { trackCheckout } from "../../_lib/tracking";
 
 export function CartSheet() {
-  const { activeSheet, closeSheet, openSheet, cart, cartTotal, cartItemCount, updateLineQuantity, clearCart, lang, t, module, stay, openDates } = useCatalog();
+  const { activeSheet, closeSheet, openSheet, cart, cartTotal, cartItemCount, updateLineQuantity, clearCart, lang, t, module, stay, openDates, priceConfig } = useCatalog();
   const nights = module.nights && stay ? nightsBetween(stay.checkIn, stay.checkOut) : 0;
   const open = activeSheet === "cart";
 
@@ -26,7 +28,10 @@ export function CartSheet() {
         </div>
         <button
           type="button"
-          onClick={() => openSheet("checkout")}
+          onClick={() => {
+            trackCheckout(totalInUsd(cart, priceConfig), cartItemCount);
+            openSheet("checkout");
+          }}
           className="mt-3 flex min-h-12 w-full items-center justify-center rounded-control bg-brand px-4 font-semibold text-brand-fg transition-transform active:scale-[0.99]"
         >
           {t.checkout}

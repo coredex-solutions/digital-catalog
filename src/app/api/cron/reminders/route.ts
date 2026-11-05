@@ -7,8 +7,8 @@ import { getPlanForSubscriptionType, getSubscriptionState, parseExpiry } from "@
 import { getBaseUrl } from "@/lib/utils/base-url";
 
 const DAY = 24 * 60 * 60 * 1000;
-// How early the "ending soon" email goes out: trials are only 2 days long
-const NOTICE_DAYS = { trial: 1, paid: 7 };
+// How early the "ending soon" email goes out (trials last 14 days)
+const NOTICE_DAYS = { trial: 3, paid: 7 };
 
 const formatDate = (date: Date) =>
   new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Beirut" }).format(date);

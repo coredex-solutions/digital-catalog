@@ -102,7 +102,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const path = statusPath(slug, order);
     const message = messageFor(order, businessName(order.lang === "ar" ? "ar" : "en"), context.module.id, path ? `${getSiteUrl()}${path}` : null);
     const whatsapp = data.contact?.phone_whatsapp ? whatsappLink(data.contact.phone_whatsapp, message) : null;
-    return NextResponse.json({ number: order.number, kind: order.kind, message, whatsapp, statusUrl: path }, { status });
+    // totalUsd: for the business's own ad tracking (Meta Pixel, Google Analytics) on the page
+    return NextResponse.json({ number: order.number, kind: order.kind, message, whatsapp, statusUrl: path, totalUsd: order.total_usd }, { status });
   };
 
   // A retry of an order that was already saved (lost answer, double tap): answer with that order

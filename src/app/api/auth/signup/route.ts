@@ -108,7 +108,7 @@ async function handler(request: NextRequest) {
               VALUES (?, ?, ?, ?, ?, datetime('now'))`,
                 args: [adminId, catalogId, normalizedEmail, hashedPassword, name],
             },
-            // C. Create Trial Subscription (Free for 2 days)
+            // C. Create Trial Subscription (free for the trial length in lib/plans.ts)
             {
                 sql: `INSERT INTO catalog_subscriptions (
                 id, catalog_id, subscription_type, starts_at, expires_at,

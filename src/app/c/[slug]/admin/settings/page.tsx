@@ -35,6 +35,7 @@ import {
   Layout,
   Globe,
   Banknote,
+  Megaphone,
 } from "lucide-react";
 import {
   compressImage,
@@ -103,14 +104,20 @@ interface Settings {
     booking_config: BookingTimesDraft;
     stay_config?: StayRulesDraft;
   };
+  // Meta Pixel, Google Analytics and the review link (lib/marketing.ts)
+  marketing?: {
+    meta_pixel_id: string;
+    ga_id: string;
+    review_url: string;
+  };
 }
 
 /** Part of the settings, as sent when one section is saved */
 type SettingsUpdate = { [K in keyof Settings]?: Partial<NonNullable<Settings[K]>> };
 
-type SettingsTab = "appearance" | "contact" | "pricing" | "features" | "ai";
+type SettingsTab = "appearance" | "contact" | "pricing" | "features" | "ai" | "marketing";
 /** Each tab saves its own part of the settings */
-type SaveSection = "branding" | "contact" | "pricing" | "features" | "ai";
+type SaveSection = "branding" | "contact" | "pricing" | "features" | "ai" | "marketing";
 type UploadField = "logo_url" | "hero_image_url";
 
 
@@ -122,6 +129,7 @@ const copyEn = {
     pricing: "Pricing & orders",
     features: "Features",
     ai: "AI assistant",
+    marketing: "Marketing",
   } as Record<SettingsTab, string>,
   sectionNames: {
     branding: "Branding",
@@ -129,6 +137,7 @@ const copyEn = {
     pricing: "Pricing and orders",
     features: "Features and button labels",
     ai: "AI assistant settings",
+    marketing: "Marketing",
   } as Record<SaveSection, string>,
   saved: (section: string) => `${section} saved.`,
   saveFailed: "Couldn't save your changes. Please try again.",
@@ -227,6 +236,20 @@ const copyEn = {
   aiOn: "Your AI assistant is on and answering customers.",
   aiOff: "The AI assistant is off. Turn it on in the Features tab.",
   saveAi: "Save AI assistant",
+
+  // Marketing
+  adsHeading: "Ads and visitor statistics",
+  adsBody: "Running ads on Instagram or Facebook? Add your Meta Pixel so Meta can see which ads bring orders. Google Analytics shows where your visitors come from. Both are optional.",
+  pixelId: "Meta Pixel ID",
+  pixelHint: "Numbers only. In Meta Events Manager, open Data sources and copy the ID.",
+  gaId: "Google Analytics ID",
+  gaHint: "Starts with G-. In Google Analytics, open Admin, then Data streams.",
+  adsEvents: "Your page tells them about: visits, items added to the basket, checkouts started, and orders or bookings sent with their total. Never names or phone numbers.",
+  reviewsHeading: "Reviews",
+  reviewsBody: "Once you mark an order done, the customer sees this link on their order page, and it's added to the \"Tell the customer\" WhatsApp message.",
+  reviewUrl: "Review link",
+  reviewHint: "For Google: in your Google Business Profile, choose \"Ask for reviews\" and copy the link. A Facebook or TripAdvisor link works too.",
+  saveMarketing: "Save marketing",
 };
 const copyAr: typeof copyEn = {
   sectionsLabel: "أقسام الإعدادات",
@@ -236,6 +259,7 @@ const copyAr: typeof copyEn = {
     pricing: "الأسعار والطلبات",
     features: "الميزات",
     ai: "المساعد الذكي",
+    marketing: "التسويق",
   },
   sectionNames: {
     branding: "الهوية",
@@ -243,6 +267,7 @@ const copyAr: typeof copyEn = {
     pricing: "الأسعار والطلبات",
     features: "الميزات ونصوص الأزرار",
     ai: "إعدادات المساعد الذكي",
+    marketing: "التسويق",
   },
   saved: (section) => `تم حفظ ${section}.`,
   saveFailed: "تعذّر حفظ التعديلات. يُرجى المحاولة مرة أخرى.",
@@ -336,6 +361,19 @@ const copyAr: typeof copyEn = {
   aiOn: "المساعد الذكي مفعّل ويجيب على الزبائن.",
   aiOff: "المساعد الذكي متوقف. فعّله من تبويب الميزات.",
   saveAi: "حفظ إعدادات المساعد الذكي",
+
+  adsHeading: "الإعلانات وإحصاءات الزوار",
+  adsBody: "تنشر إعلانات على إنستغرام أو فيسبوك؟ أضف Meta Pixel لتعرف Meta أيّ إعلان يجلب الطلبات. ويُظهر Google Analytics من أين يأتي زوارك. كلاهما اختياري.",
+  pixelId: "معرّف Meta Pixel",
+  pixelHint: "أرقام فقط. افتح مصادر البيانات في Meta Events Manager وانسخ المعرّف.",
+  gaId: "معرّف Google Analytics",
+  gaHint: "يبدأ بـ G-. افتح المشرف ثم مصادر البيانات في Google Analytics.",
+  adsEvents: "تُخبرهم صفحتك بالزيارات، والأصناف المضافة إلى السلة، وبدء الطلب، والطلبات أو الحجوزات المرسلة مع مجموعها. ولا تُرسل أبداً الأسماء أو أرقام الهواتف.",
+  reviewsHeading: "التقييمات",
+  reviewsBody: "عندما تحدّد الطلب كمنتهٍ، يرى الزبون هذا الرابط في صفحة طلبه، ويُضاف إلى رسالة واتساب «أخبر الزبون».",
+  reviewUrl: "رابط التقييم",
+  reviewHint: "لـ Google: من ملفك التجاري على Google اختر «طلب مراجعات» وانسخ الرابط. ويصلح أيضاً رابط فيسبوك أو TripAdvisor.",
+  saveMarketing: "حفظ التسويق",
 };
 
 /** Save button at the bottom of each tab (outside the page so it keeps focus across renders) */
@@ -570,6 +608,7 @@ function SettingsPageContent() {
         // Delivery areas and payment come back cleaned (new areas get their ids)
         const result = await res.json().catch(() => null);
         if (result?.ordering) setSettings((prev) => (prev ? { ...prev, ordering: { ...prev.ordering, ...result.ordering } } : prev));
+        if (result?.marketing) setSettings((prev) => (prev ? { ...prev, marketing: result.marketing } : prev));
         setMessage({ type: "success", text: t.saved(t.sectionNames[section]) });
         setTimeout(() => setMessage(null), 3000);
       } else {
@@ -655,6 +694,7 @@ function SettingsPageContent() {
     { id: "pricing", icon: Banknote },
     { id: "features", icon: ToggleRight },
     { id: "ai", icon: Brain },
+    { id: "marketing", icon: Megaphone },
   ];
 
   const parseRateDate = (value: string) => new Date(value.replace(" ", "T") + "Z");
@@ -1314,6 +1354,91 @@ function SettingsPageContent() {
                               ai_waiter_name: settings.features.ai_waiter_name,
                               ai_waiter_persona: settings.features.ai_waiter_persona,
                             },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Marketing: Meta Pixel, Google Analytics and the review link */}
+              {activeTab === "marketing" && (
+                <div className="space-y-8">
+                  <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-8">
+                    <div>
+                      <h3 className="text-sm font-semibold text-ui-heading">{t.adsHeading}</h3>
+                      <p className="mt-2 text-sm text-ui-muted leading-relaxed">{t.adsBody}</p>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-8">
+                      <div className="space-y-3">
+                        <label htmlFor="marketing-pixel" className="text-xs font-semibold text-ui-muted ms-2 block">{t.pixelId}</label>
+                        <input
+                          id="marketing-pixel"
+                          type="text"
+                          dir="ltr"
+                          inputMode={"numeric"}
+                          autoComplete="off"
+                          spellCheck={false}
+                          aria-describedby="marketing-pixel-hint"
+                          value={settings.marketing?.meta_pixel_id || ""}
+                          onChange={(e) => updateSettings("marketing", "meta_pixel_id", e.target.value)}
+                          className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all font-mono text-sm text-start"
+                          placeholder="123456789012345"
+                        />
+                        <p id="marketing-pixel-hint" className="text-xs text-ui-muted ms-2">{t.pixelHint}</p>
+                      </div>
+                      <div className="space-y-3">
+                        <label htmlFor="marketing-ga" className="text-xs font-semibold text-ui-muted ms-2 block">{t.gaId}</label>
+                        <input
+                          id="marketing-ga"
+                          type="text"
+                          dir="ltr"
+                          inputMode={"text"}
+                          autoComplete="off"
+                          spellCheck={false}
+                          aria-describedby="marketing-ga-hint"
+                          value={settings.marketing?.ga_id || ""}
+                          onChange={(e) => updateSettings("marketing", "ga_id", e.target.value)}
+                          className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all font-mono text-sm text-start"
+                          placeholder="G-AB12CD34EF"
+                        />
+                        <p id="marketing-ga-hint" className="text-xs text-ui-muted ms-2">{t.gaHint}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-ui-muted leading-relaxed">{t.adsEvents}</p>
+                  </div>
+
+                  <div className="glass-card p-5 sm:p-8 lg:p-10 space-y-8">
+                    <div>
+                      <h3 className="text-sm font-semibold text-ui-heading">{t.reviewsHeading}</h3>
+                      <p className="mt-2 text-sm text-ui-muted leading-relaxed">{t.reviewsBody}</p>
+                    </div>
+                      <div className="space-y-3">
+                        <label htmlFor="marketing-review" className="text-xs font-semibold text-ui-muted ms-2 block">{t.reviewUrl}</label>
+                        <input
+                          id="marketing-review"
+                          type="url"
+                          dir="ltr"
+                          inputMode={"url"}
+                          autoComplete="off"
+                          spellCheck={false}
+                          aria-describedby="marketing-review-hint"
+                          value={settings.marketing?.review_url || ""}
+                          onChange={(e) => updateSettings("marketing", "review_url", e.target.value)}
+                          className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary transition-all font-mono text-sm text-start"
+                          placeholder="https://g.page/r/…/review"
+                        />
+                        <p id="marketing-review-hint" className="text-xs text-ui-muted ms-2">{t.reviewHint}</p>
+                      </div>
+
+                    <div className="mt-8 pt-8 border-t border-ui-line">
+                      <SectionSaveButton
+                        {...saveProps("marketing")}
+                        label={t.saveMarketing}
+                        onClick={() =>
+                          handleSaveSection("marketing", {
+                            marketing: settings.marketing ?? { meta_pixel_id: "", ga_id: "", review_url: "" },
                           })
                         }
                       />

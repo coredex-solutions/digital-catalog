@@ -4,6 +4,7 @@ import { getCatalogBySlug, getCatalogSettings } from "@/lib/catalog/queries";
 import { countFor, finishedOrdersByPhone, isRewardOrder, parseLoyaltyConfig } from "@/lib/orders/loyalty";
 import { countOrders, listOrders, type OrderTab } from "@/lib/orders/store";
 import { beirutNow } from "@/lib/orders/slots";
+import { parseMarketingConfig } from "@/lib/marketing";
 
 const TABS: OrderTab[] = ["new", "active", "done"];
 const KINDS = ["order", "booking", "request"] as const;
@@ -30,7 +31,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     countOrders(catalog.id),
   ]);
   // Loyalty card: which of these orders earn the reward (the customer's Nth finished order)
-  const loyalty = parseLoyaltyConfig((await getCatalogSettings(catalog.id) as unknown as Record<string, unknown> | null)?.loyalty_config);
+  const settings = (await getCatalogSettings(catalog.id)) as unknown as Record<string, unknown> | null;
+  const loyalty = parseLoyaltyConfig(settings?.loyalty_config);
+  // For the "Tell the customer" message once an order is done
+  const reviewUrl = parseMarketingConfig(settings?.marketing_config).review_url || null;
   let rewards: { reward_en: string; reward_ar: string; due: string[] } | null = null;
   if (loyalty.enabled && orders.some((o) => o.kind !== "booking")) {
     const finished = await finishedOrdersByPhone(catalog.id);
@@ -42,5 +46,5 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         .map((o) => o.id),
     };
   }
-  return NextResponse.json({ orders, counts, rewards });
+  return NextResponse.json({ orders, counts, rewards, reviewUrl });
 }

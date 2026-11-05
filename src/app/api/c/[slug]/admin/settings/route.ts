@@ -14,6 +14,7 @@ import { parseDeliveryConfig } from "@/lib/orders/delivery";
 import { parsePaymentConfig } from "@/lib/orders/payment";
 import { parseBookingConfig } from "@/lib/orders/slots";
 import { parseStayConfig } from "@/lib/orders/stays";
+import { invalidMarketingFields, parseMarketingConfig } from "@/lib/marketing";
 
 // Column names are interpolated into the UPDATE statements below, so only these
 // known columns (the same ones GET returns) may ever be written. Only settings the
@@ -38,7 +39,16 @@ const SETTINGS_FIELDS = new Set([
   "currency_primary", "lbp_exchange_rate", "show_dual_currency",
   // ordering
   "order_types", "delivery_note_ar", "delivery_note_en", "delivery_config", "payment_config", "booking_config", "stay_config",
+  // marketing (Meta Pixel, Google Analytics, review link)
+  "marketing_config",
 ]);
+
+/** Messages for marketing fields that were filled in but can't be used */
+const MARKETING_ERRORS = {
+  meta_pixel_id: "The Meta Pixel ID is a number of 8 to 20 digits",
+  ga_id: "The Google Analytics ID starts with G-, for example G-AB12CD34EF",
+  review_url: "The review link must be a full link starting with https://",
+} as const;
 
 
 /** Menus are offered in Arabic and English only; anything else (e.g. a legacy "fr") is dropped */
@@ -175,6 +185,7 @@ export async function GET(
       booking_config: parseBookingConfig((settings as unknown as Record<string, unknown> | null)?.booking_config),
       stay_config: parseStayConfig((settings as unknown as Record<string, unknown> | null)?.stay_config),
     },
+    marketing: parseMarketingConfig((settings as unknown as Record<string, unknown> | null)?.marketing_config),
     about: {
       about_content_en: settings?.about_content_en,
       about_content_ar: settings?.about_content_ar,
@@ -209,7 +220,17 @@ export async function PUT(
 
   try {
     const body = await request.json();
-    const { catalog: catalogData, appearance, features, cta, contact, seo, about, pricing, ordering } = body;
+    const { catalog: catalogData, appearance, features, cta, contact, seo, about, pricing, ordering, marketing } = body;
+
+    // Marketing: refuse a pixel ID, analytics ID or link that can't work, rather than quietly dropping it
+    let marketingConfig: string | undefined;
+    if (marketing && typeof marketing === "object") {
+      const invalid = invalidMarketingFields(marketing);
+      if (invalid.length > 0) {
+        return NextResponse.json({ error: MARKETING_ERRORS[invalid[0]], field: invalid[0] }, { status: 422 });
+      }
+      marketingConfig = JSON.stringify(parseMarketingConfig(marketing));
+    }
 
     const db = getDb();
 
@@ -269,6 +290,7 @@ export async function PUT(
       ...(seo || {}),
       ...(about || {}),
       ...pricingAndOrdering,
+      ...(marketingConfig !== undefined ? { marketing_config: marketingConfig } : {}),
     };
 
     // Values are JSON body values, passed to the database as they are
@@ -329,7 +351,11 @@ export async function PUT(
     if (pricingAndOrdering.payment_config !== undefined) saved.payment_config = parsePaymentConfig(pricingAndOrdering.payment_config);
     if (pricingAndOrdering.booking_config !== undefined) saved.booking_config = parseBookingConfig(pricingAndOrdering.booking_config);
     if (pricingAndOrdering.stay_config !== undefined) saved.stay_config = parseStayConfig(pricingAndOrdering.stay_config);
-    return NextResponse.json({ success: true, ...(Object.keys(saved).length > 0 ? { ordering: saved } : {}) });
+    return NextResponse.json({
+      success: true,
+      ...(Object.keys(saved).length > 0 ? { ordering: saved } : {}),
+      ...(marketingConfig !== undefined ? { marketing: parseMarketingConfig(marketingConfig) } : {}),
+    });
   } catch (error) {
     console.error("Update settings error:", error);
     return NextResponse.json(

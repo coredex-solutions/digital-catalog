@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, CircleX, MessageCircle } from "lucide-react";
+import { ArrowLeft, Check, CircleX, MessageCircle, Star } from "lucide-react";
 import { useCatalog } from "../../../_providers/CatalogProvider";
 import { localized } from "../../../_lib/i18n";
 import { customerStep, stayDate, whatsappLink } from "../../../_lib/whatsapp";
@@ -17,6 +17,7 @@ import { parseBookingConfig } from "@/lib/orders/slots";
 import { discountLine } from "@/lib/orders/coupons";
 import { parseLoyaltyConfig, rewardText } from "@/lib/orders/loyalty";
 import { depositInstructions } from "../../../_components/menu/CheckoutSheet";
+import { parseMarketingConfig } from "@/lib/marketing";
 import { cn } from "@/utils/helpers";
 
 export interface PublicOrder {
@@ -72,6 +73,8 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
   const loyaltyConfig = parseLoyaltyConfig((settings as unknown as Record<string, unknown> | null)?.loyalty_config);
   const reward = rewardText(loyaltyConfig, lang);
   const payment = parsePaymentConfig((settings as unknown as Record<string, unknown> | null)?.payment_config);
+  // The business's review link, offered once the order is done
+  const reviewUrl = order.status === "completed" ? parseMarketingConfig((settings as unknown as Record<string, unknown> | null)?.marketing_config).review_url : "";
 
   // The steps the customer follows; "ready" reads as "on its way" for deliveries
   const steps = order.kind === "order" ? ["new", "confirmed", "ready", "completed"] : ["new", "confirmed", "completed"];
@@ -335,6 +338,24 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
                 ? t.loyaltyNext(reward)
                 : t.loyaltyEvery(order.loyalty.every, reward)}
           </p>
+        </section>
+      )}
+
+      {reviewUrl && (
+        <section className="mt-4 rounded-[20px] border border-brand-ink bg-brand-soft p-5" aria-labelledby="review-title">
+          <h2 id="review-title" className="flex items-center gap-2 font-semibold">
+            <Star className="h-5 w-5 text-brand-ink" aria-hidden />
+            {t.reviewTitle}
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed">{t.reviewBody(businessName)}</p>
+          <a
+            href={reviewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 flex min-h-12 items-center justify-center gap-2 rounded-control border border-brand-ink bg-menu-surface px-4 font-semibold text-brand-ink"
+          >
+            {t.reviewButton}
+          </a>
         </section>
       )}
 

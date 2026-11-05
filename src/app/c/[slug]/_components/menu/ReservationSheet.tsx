@@ -7,6 +7,7 @@ import { trackEvent } from "../AnalyticsTracker";
 import { localized } from "../../_lib/i18n";
 import { buildReservationMessage, whatsappLink } from "../../_lib/whatsapp";
 import { newClientKey, sendOrder, type SentOrder } from "../../_lib/send-order";
+import { trackSent } from "../../_lib/tracking";
 import { depositInstructions, Field, inputClass, SavedNotice, todayInBeirut } from "./CheckoutSheet";
 import { SlotPicker } from "./SlotPicker";
 import { parseBookingConfig } from "@/lib/orders/slots";
@@ -92,6 +93,7 @@ export function ReservationSheet() {
 
     if (result.ok) {
       setSaved(result.order);
+      trackSent(result.order.kind, `${catalog.slug}-${result.order.number}`, null);
       if (result.order.whatsapp) openWhatsApp(result.order.whatsapp);
       return;
     }

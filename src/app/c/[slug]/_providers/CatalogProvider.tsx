@@ -27,6 +27,8 @@ import type { AllergenCode, DietaryCode, DishVariant } from "@/lib/catalog/dish-
 import type { AddonId, ModuleDefinition } from "@/lib/modules/registry";
 import { moduleFor } from "@/lib/modules/resolve";
 import { parseStayConfig, stayLinePrice, stayNights, type StayConfig } from "@/lib/orders/stays";
+import { totalInUsd } from "@/lib/orders/validate";
+import { trackAddToCart } from "../_lib/tracking";
 
 // Menu item interface
 export interface MenuItem {
@@ -418,8 +420,13 @@ export function CatalogProvider({
         },
       ];
     });
+    if (added) {
+      // The business's own ad tracking, if they've set it up
+      const price = priceForStay(item, variant ? variant.price : item.price, module.nights ? selection : null);
+      trackAddToCart({ id: item.id, name: item.name_en || item.name_ar }, totalInUsd([{ price, currency: item.currency, quantity: amount }], priceConfig), amount);
+    }
     return added;
-  }, [module.nights, priceForStay]);
+  }, [module.nights, priceForStay, priceConfig]);
 
   const updateLineQuantity = useCallback((lineKey: string, quantity: number) => {
     const next = clampQuantity(quantity);

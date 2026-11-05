@@ -17,7 +17,7 @@ const en = {
     eyebrow: "For restaurants, cafés, shops, services and guesthouses",
     title: "Your menu, store or services page, in Arabic and English",
     body: "Customers open it from a QR code or a link to order or book, with no app to install. Prices show in dollars and Lebanese pounds, and every order is saved in your dashboard and sent to your WhatsApp.",
-    primary: "Start a 2-day free trial",
+    primary: "Start a 14-day free trial",
     secondary: "Open the live demo",
     note: "No card needed. The demos are real pages you can try.",
     noteNoDemo: "No card needed.",
@@ -109,7 +109,7 @@ const en = {
   },
   cta: {
     title: "Put your business online this week",
-    body: "Start the 2-day free trial, add your items and share your link or QR code. We can help you get set up on WhatsApp.",
+    body: "Start the 14-day free trial, add your items and share your link or QR code. We can help you get set up on WhatsApp.",
     primary: "Start free trial",
     secondary: "Talk to us on WhatsApp",
   },
@@ -151,7 +151,7 @@ const en = {
   },
   pricing: {
     title: "Simple yearly plans",
-    body: "Every plan starts with a 2-day free trial. To upgrade, request a plan from your dashboard and our team activates it.",
+    body: "Every plan starts with a 14-day free trial. When you are ready, choose a plan in your dashboard and pay by Whish or OMT.",
     perYear: "/ year",
     choose: "Start free trial",
     popular: "Most complete for one business",
@@ -222,7 +222,7 @@ const ar: SiteCopy = {
     eyebrow: "للمطاعم والمقاهي والمتاجر والخدمات وبيوت الضيافة",
     title: "قائمتك أو متجرك أو صفحة خدماتك، بالعربية والإنجليزية",
     body: "يفتحها زبائنك من رمز QR أو رابط ليطلبوا أو يحجزوا، من دون أي تطبيق. الأسعار بالدولار والليرة، وكل طلب يُحفظ في لوحة التحكم ويصلك على واتساب.",
-    primary: "ابدأ تجربة مجانية ليومين",
+    primary: "ابدأ تجربة مجانية لمدة 14 يوماً",
     secondary: "افتح التجربة الحيّة",
     note: "لا حاجة لبطاقة دفع. التجارب صفحات حقيقية يمكنك استخدامها.",
     noteNoDemo: "لا حاجة لبطاقة دفع.",
@@ -314,7 +314,7 @@ const ar: SiteCopy = {
   },
   cta: {
     title: "ضع نشاطك على الإنترنت هذا الأسبوع",
-    body: "ابدأ التجربة المجانية ليومين، أضف أصنافك وشارك رابطك أو رمز QR. يمكننا مساعدتك في الإعداد عبر واتساب.",
+    body: "ابدأ التجربة المجانية لمدة 14 يوماً، أضف أصنافك وشارك رابطك أو رمز QR. يمكننا مساعدتك في الإعداد عبر واتساب.",
     primary: "ابدأ التجربة المجانية",
     secondary: "تواصل معنا على واتساب",
   },
@@ -356,7 +356,7 @@ const ar: SiteCopy = {
   },
   pricing: {
     title: "باقات سنوية بسيطة",
-    body: "كل باقة تبدأ بتجربة مجانية ليومين. للترقية، اطلب الباقة من لوحة التحكم ويفعّلها فريقنا.",
+    body: "كل باقة تبدأ بتجربة مجانية لمدة 14 يوماً. وعندما تكون جاهزاً، اختر باقتك من لوحة التحكم وادفع عبر Whish أو OMT.",
     perYear: "/ سنوياً",
     choose: "ابدأ التجربة المجانية",
     popular: "الأكمل لنشاط واحد",

@@ -94,6 +94,10 @@ VAPID_PRIVATE_KEY=...
 # Sales WhatsApp on the home page: country code + number, digits only
 NEXT_PUBLIC_SALES_WHATSAPP=961XXXXXXXX
 
+# Where owners pay for their plan, shown on the billing page (optional)
+NEXT_PUBLIC_BILLING_WHISH=961XXXXXXXX
+NEXT_PUBLIC_BILLING_OMT="Your Name · 961 XX XXX XXX"
+
 # AI features (menu wizard, AI waiter, voice): add the keys you use
 GOOGLE_API_KEY=...
 GROQ_API_KEY=...

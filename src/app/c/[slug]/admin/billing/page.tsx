@@ -6,9 +6,9 @@ import { CatalogAdminHeader, CatalogAdminContent } from "../_components/CatalogA
 import { ADMIN_NAV_LABELS } from "../_components/adminNav";
 import { useAdminLang, useCopy, useFormat, plural, type AdminLang } from "../_lib/i18n";
 import { useModule } from "../_lib/module";
-import { AlertTriangle, Check, Clock, Loader2, Mail, MessageCircle } from "lucide-react";
+import { AlertTriangle, Check, Clock, Copy, Loader2, Mail, MessageCircle } from "lucide-react";
 import { getAllPlans, getPlanConfig, parseExpiry } from "@/lib/plans";
-import { SALES_EMAIL, SALES_WHATSAPP } from "@/lib/contact";
+import { BILLING_OMT, BILLING_TRANSFERS, BILLING_WHISH, SALES_EMAIL, SALES_WHATSAPP } from "@/lib/contact";
 
 // Plans, prices and limits come from lib/plans.ts so this page always matches what approval applies
 const PLANS = getAllPlans();
@@ -45,6 +45,17 @@ const en = {
     weWillContact: "We'll contact you to arrange payment. Your plan changes as soon as payment is confirmed.",
     howPayingWorks: "How paying works",
     steps: ["Choose a plan below.", "We contact you to arrange payment.", "Your plan starts once payment is confirmed."],
+    transferSteps: ["Choose a plan below.", "Send the amount by Whish or OMT.", "Send us the receipt on WhatsApp. Your plan starts once we confirm it."],
+    payTitle: (amount: string) => `Pay ${amount}`,
+    payBody: "Send the amount by Whish or OMT, then send us the receipt. Your plan starts once we confirm the payment, usually the same day.",
+    whish: "Whish",
+    omt: "OMT",
+    reference: "Note on the transfer",
+    copy: "Copy",
+    copyLabel: (what: string) => `Copy ${what}`,
+    copied: "Copied",
+    sendReceipt: "Send the receipt on WhatsApp",
+    receiptText: (plan: string, amount: string, slug: string) => `Hello Coredex, I paid ${amount} for the ${plan} for my page ${slug}. Here is the receipt:`,
     questions: "Questions about your plan?",
     whatsappUs: "WhatsApp us",
     newTab: "(opens in a new tab)",
@@ -59,6 +70,7 @@ const en = {
     oneAtATime: "You can request another plan once the current request is handled.",
     yourRequests: "Your requests",
     requestSent: (plan: string) => `Request sent for the ${plan}. We'll contact you to arrange payment.`,
+    requestSentPay: (plan: string) => `Request sent for the ${plan}. The payment details are above.`,
     sendFailed: "Couldn't send the request. Please try again.",
     sendFailedShort: "Couldn't send the request.",
     status: { pending: "Waiting for payment", approved: "Approved", rejected: "Closed" } as Record<string, string>,
@@ -90,6 +102,17 @@ const ar: typeof en = {
     weWillContact: "سنتواصل معك لترتيب الدفع. تتغيّر باقتك فور تأكيد الدفع.",
     howPayingWorks: "كيف يتم الدفع",
     steps: ["اختر باقة من الباقات أدناه.", "نتواصل معك لترتيب الدفع.", "تبدأ باقتك فور تأكيد الدفع."],
+    transferSteps: ["اختر باقة من الباقات أدناه.", "حوّل المبلغ عبر Whish أو OMT.", "أرسل لنا الإيصال على واتساب. تبدأ باقتك فور تأكيده."],
+    payTitle: (amount) => `ادفع ${amount}`,
+    payBody: "حوّل المبلغ عبر Whish أو OMT، ثم أرسل لنا الإيصال. تبدأ باقتك فور تأكيد الدفع، عادةً في اليوم نفسه.",
+    whish: "Whish",
+    omt: "OMT",
+    reference: "ملاحظة على التحويل",
+    copy: "نسخ",
+    copyLabel: (what) => `نسخ ${what}`,
+    copied: "تم النسخ",
+    sendReceipt: "أرسل الإيصال على واتساب",
+    receiptText: (plan, amount, slug) => `مرحباً Coredex، دفعت ${amount} مقابل ${plan} لصفحتي ${slug}. هذا الإيصال:`,
     questions: "لديك أسئلة عن باقتك؟",
     whatsappUs: "راسلنا على واتساب",
     newTab: "(تُفتح في نافذة جديدة)",
@@ -104,6 +127,7 @@ const ar: typeof en = {
     oneAtATime: "يمكنك طلب باقة أخرى بعد معالجة الطلب الحالي.",
     yourRequests: "طلباتك",
     requestSent: (plan) => `تم إرسال طلب ${plan}. سنتواصل معك لترتيب الدفع.`,
+    requestSentPay: (plan) => `تم إرسال طلب ${plan}. تفاصيل الدفع في الأعلى.`,
     sendFailed: "تعذّر إرسال الطلب. حاول مرة أخرى.",
     sendFailedShort: "تعذّر إرسال الطلب.",
     status: { pending: "بانتظار الدفع", approved: "تمت الموافقة", rejected: "مغلق" },
@@ -121,6 +145,72 @@ const ar: typeof en = {
         "100 AI photo enhancements/mo": "100 تحسين صور بالذكاء الاصطناعي شهرياً",
     },
 };
+
+/** Whish/OMT details for the plan just requested, with copy buttons and the receipt link */
+function PayDetails({ amount, plan, slug }: { amount: string; plan: string; slug: string }) {
+    const t = useCopy({ en, ar });
+    const [copied, setCopied] = useState<string | null>(null);
+    const copy = (key: string, value: string) => {
+        navigator.clipboard
+            ?.writeText(value)
+            .then(() => {
+                setCopied(key);
+                setTimeout(() => setCopied((current) => (current === key ? null : current)), 2000);
+            })
+            .catch(() => {
+                // Copying isn't available; the value is on screen to type
+            });
+    };
+    const rows = [
+        BILLING_WHISH ? { key: "whish", label: t.whish, value: `+${BILLING_WHISH}`, copyValue: BILLING_WHISH } : null,
+        BILLING_OMT ? { key: "omt", label: t.omt, value: BILLING_OMT, copyValue: BILLING_OMT } : null,
+        { key: "reference", label: t.reference, value: slug, copyValue: slug },
+    ].filter((row): row is { key: string; label: string; value: string; copyValue: string } => row !== null);
+    const receipt = `https://wa.me/${SALES_WHATSAPP}?text=${encodeURIComponent(t.receiptText(plan, amount, slug))}`;
+
+    return (
+        <div className="mt-4 rounded-control border border-ui-line bg-ui-bg p-4">
+            <p className="text-lg font-semibold tabular-nums">
+                <bdi>{t.payTitle(amount)}</bdi>
+            </p>
+            <p className="mt-1 text-sm text-ui-muted">{t.payBody}</p>
+            <dl className="mt-4 space-y-2">
+                {rows.map((row) => (
+                    <div key={row.key} className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                            <dt className="text-xs text-ui-muted">{row.label}</dt>
+                            {/* Wraps rather than cutting off: the number must be readable in full */}
+                            <dd className="font-semibold [overflow-wrap:anywhere]">
+                                <bdi dir="ltr">{row.value}</bdi>
+                            </dd>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => copy(row.key, row.copyValue)}
+                            aria-label={copied === row.key ? t.copied : t.copyLabel(row.label)}
+                            title={copied === row.key ? t.copied : t.copy}
+                            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control border transition-colors ${
+                                copied === row.key ? "border-ui-success text-ui-success" : "border-ui-line text-ui-primary hover:bg-ui-subtle"
+                            }`}
+                        >
+                            {copied === row.key ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+                        </button>
+                    </div>
+                ))}
+            </dl>
+            <a
+                href={receipt}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 flex min-h-12 items-center justify-center gap-2 rounded-control bg-ui-primary px-4 font-semibold text-ui-primary-fg hover:bg-ui-primary-hover"
+            >
+                <MessageCircle className="h-5 w-5" aria-hidden />
+                {t.sendReceipt}
+                <span className="sr-only">{t.newTab}</span>
+            </a>
+        </div>
+    );
+}
 
 const STATUS_CLASS: Record<string, string> = {
     pending: "text-ui-warning",
@@ -188,7 +278,7 @@ function BillingPageContent() {
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.error || t.sendFailed);
-            setMessage({ kind: "done", text: t.requestSent(t.planTitle(planId)) });
+            setMessage({ kind: "done", text: (BILLING_TRANSFERS ? t.requestSentPay : t.requestSent)(t.planTitle(planId)) });
             fetchRequests();
         } catch (error) {
             setMessage({ kind: "error", text: error instanceof Error && error.message ? error.message : t.sendFailedShort });
@@ -262,13 +352,21 @@ function BillingPageContent() {
                                 <p className="mt-3 text-ui-ink">
                                     {t.youAskedFor(t.planTitle(pendingRequest.plan_name), formatDate(pendingRequest.created_at))}
                                 </p>
-                                <p className="mt-2 text-ui-muted">{t.weWillContact}</p>
+                                {BILLING_TRANSFERS ? (
+                                    <PayDetails
+                                        amount={`$${f.number(getPlanConfig(pendingRequest.plan_name)?.price ?? 0)}`}
+                                        plan={t.planTitle(pendingRequest.plan_name)}
+                                        slug={slug}
+                                    />
+                                ) : (
+                                    <p className="mt-2 text-ui-muted">{t.weWillContact}</p>
+                                )}
                             </>
                         ) : (
                             <>
                                 <h2 id="payment-steps" className="text-lg font-semibold">{t.howPayingWorks}</h2>
                                 <ol className="mt-3 list-decimal space-y-2 ps-5 text-ui-ink">
-                                    {t.steps.map((step) => (
+                                    {(BILLING_TRANSFERS ? t.transferSteps : t.steps).map((step) => (
                                         <li key={step}>{step}</li>
                                     ))}
                                 </ol>

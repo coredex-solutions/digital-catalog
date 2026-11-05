@@ -57,8 +57,8 @@ export default function TermsPage() {
 
       <h2>Plans and trial</h2>
       <ul>
-        <li>New accounts start with a free 2-day trial.</li>
-        <li>Plans are paid yearly, at the prices shown on our website when you subscribe. Payment is arranged directly with us.</li>
+        <li>New accounts start with a free 14-day trial.</li>
+        <li>Plans are paid yearly, at the prices shown on our website when you subscribe, by Whish, OMT or another way agreed with us. Your plan starts once we confirm the payment.</li>
         <li>Each plan has limits, for example on the number of items and categories, and some features are only in higher plans.</li>
         <li>When a trial or plan ends, your page stays online for 7 more days so you can renew. After that, the page stops being shown to customers, new orders can&apos;t be sent, and editing is paused until you renew. Your content and past orders are kept.</li>
       </ul>

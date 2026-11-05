@@ -7,14 +7,14 @@
 import type { SubscriptionType } from './db/types';
 
 export const PLAN_CONFIG = {
-    // The free trial every signup starts on: Essential limits for 2 days
+    // The free trial every signup starts on: Essential limits for 14 days
     trial: {
         id: 'trial',
         name: 'Free Trial',
         price: 0,
         currency: 'USD',
         period: 'trial',
-        durationDays: 2,
+        durationDays: 14,
         limits: {
             max_items: 200,
             max_categories: 20,

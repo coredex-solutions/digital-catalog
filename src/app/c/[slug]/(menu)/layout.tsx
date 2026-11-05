@@ -13,6 +13,8 @@ import { getModule, moduleInfo, schemaTypeFor } from '@/lib/modules/resolve';
 import { isItemAvailable } from '@/lib/orders/context';
 import { hasUsableCoupons } from '@/lib/orders/coupons-store';
 import { beirutToday } from '@/lib/orders/validate';
+import { parseMarketingConfig } from '@/lib/marketing';
+import { MarketingTags } from '../_components/MarketingTags';
 
 // Generate metadata for SEO
 export async function generateMetadata({
@@ -308,6 +310,8 @@ export default async function CatalogLayout({
       )}
       {children}
       {menuData.settings?.ai_waiter_enabled && <AIWaiterBubble />}
+      {/* The owner's Meta Pixel and Google Analytics; not while they preview unpublished changes */}
+      {!preview && <MarketingTags config={parseMarketingConfig((settings as unknown as Record<string, unknown> | null)?.marketing_config)} />}
     </CatalogProvider>
   );
 }

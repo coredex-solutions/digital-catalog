@@ -9,6 +9,7 @@ import { trackEvent } from "../AnalyticsTracker";
 import { localized } from "../../_lib/i18n";
 import { buildOrderMessage, whatsappLink, type OrderType } from "../../_lib/whatsapp";
 import { newClientKey, sendOrder, type SentOrder } from "../../_lib/send-order";
+import { trackSent } from "../../_lib/tracking";
 import { ADDRESS_ORDER_TYPES } from "@/lib/modules/registry";
 import { formatPrice, formatTotal } from "@/lib/catalog/price";
 import { feeLine, parseDeliveryConfig, quoteDelivery, zoneName } from "@/lib/orders/delivery";
@@ -338,6 +339,7 @@ export function CheckoutSheet() {
 
     if (result.ok) {
       setSaved(result.order);
+      trackSent(result.order.kind, `${catalog.slug}-${result.order.number}`, result.order.totalUsd);
       if (result.order.whatsapp) openWhatsApp(result.order.whatsapp);
       return;
     }

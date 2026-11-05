@@ -168,10 +168,13 @@ export function buildCustomerUpdate(
   order: { number: number; status: string; order_type: string | null; lang: string | null },
   businessName: string,
   module: ModuleId,
-  statusUrl: string | null
+  statusUrl: string | null,
+  /** The business's review link, asked for once the order is done */
+  reviewUrl: string | null = null
 ): string {
   const t = getDictionary(order.lang === "ar" ? "ar" : "en", module);
   const line = (t.custUpdate[customerStep(order.status, order.order_type)] ?? t.custUpdate.new)(order.number, businessName);
+  if (order.status === "completed" && reviewUrl) return `${line}\n${t.custReview(reviewUrl)}`;
   return statusUrl ? `${line}\n${t.custTrack(statusUrl)}` : line;
 }
 

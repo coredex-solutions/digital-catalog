@@ -8,6 +8,9 @@ export interface SentOrder {
   whatsapp: string | null;
   /** The customer's order status page (path) */
   statusUrl: string | null;
+  kind: "order" | "booking" | "request";
+  /** The total in US dollars as the server worked it out (null when it can't be converted) */
+  totalUsd: number | null;
 }
 
 export type SendResult =
@@ -37,6 +40,8 @@ export async function sendOrder(slug: string, body: Record<string, unknown>): Pr
           message: String(data.message || ""),
           whatsapp: data.whatsapp || null,
           statusUrl: typeof data.statusUrl === "string" && data.statusUrl.startsWith("/c/") ? data.statusUrl : null,
+          kind: data.kind === "booking" || data.kind === "request" ? data.kind : "order",
+          totalUsd: typeof data.totalUsd === "number" && Number.isFinite(data.totalUsd) ? data.totalUsd : null,
         },
       };
     }

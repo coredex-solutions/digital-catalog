@@ -524,6 +524,8 @@ function OrdersView() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [rewards, setRewards] = useState<{ reward_en: string; reward_ar: string; due: string[] } | null>(null);
+  // The business's review link (Settings → Marketing), added to the message when an order is done
+  const [reviewUrl, setReviewUrl] = useState<string | null>(null);
   const [notice, setNotice] = useState<{
     text: string;
     undo?: { order: SavedOrder; from: OrderStatus };
@@ -559,6 +561,7 @@ function OrdersView() {
         if (id !== request.current) return;
         setOrders((prev) => (options.before ? [...prev, ...data.orders] : data.orders));
         setCounts(data.counts);
+        setReviewUrl(typeof data.reviewUrl === "string" ? data.reviewUrl : null);
         setRewards((prev) => (options.before && prev && data.rewards ? { ...data.rewards, due: [...prev.due, ...data.rewards.due] } : data.rewards ?? null));
         setHasMore(tab === "done" && !unpaid && !upcoming && data.orders.length === 50);
         setFailed(false);
@@ -599,7 +602,7 @@ function OrdersView() {
 
   const tellLink = (order: SavedOrder) => {
     const statusUrl = order.public_token ? `${window.location.origin}/c/${slug}/order/${order.public_token}/` : null;
-    return whatsappLink(order.customer_phone, buildCustomerUpdate(order, catalog?.name || slug, module.id, statusUrl));
+    return whatsappLink(order.customer_phone, buildCustomerUpdate(order, catalog?.name || slug, module.id, statusUrl, reviewUrl));
   };
 
   /** Mark an order paid or not paid */

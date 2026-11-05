@@ -217,6 +217,11 @@ const en = {
   custPayWhish: (amount: string, phone: string) => `To pay by Whish, send ${amount} to ${phone}.`,
   custPayOmt: (amount: string, to: string) => `To pay by OMT, send ${amount} to ${to}.`,
   custTrack: (url: string) => `Follow your order: ${url}`,
+  // The business's review link, once an order is done
+  reviewTitle: "How was it?",
+  reviewBody: (business: string) => `A short review helps ${business} and others deciding where to go.`,
+  reviewButton: "Leave a review",
+  custReview: (url: string) => `How was it? We'd love a short review: ${url}`,
   // Set booking times
   pickDay: "Choose a day",
   pickTime: "Choose a time",
@@ -499,6 +504,10 @@ const ar: Dictionary = {
   custPayWhish: (amount: string, phone: string) => `للدفع عبر Whish، حوّل ${amount} إلى ${phone}.`,
   custPayOmt: (amount: string, to: string) => `للدفع عبر OMT، حوّل ${amount} إلى ${to}.`,
   custTrack: (url: string) => `تابع طلبك: ${url}`,
+  reviewTitle: "كيف كانت تجربتك؟",
+  reviewBody: (business: string) => `تقييم قصير يساعد ${business} ويساعد غيرك على الاختيار.`,
+  reviewButton: "اترك تقييماً",
+  custReview: (url: string) => `كيف كانت تجربتك؟ يسعدنا أن تترك لنا تقييماً قصيراً: ${url}`,
   pickDay: "اختر اليوم",
   pickTime: "اختر الوقت",
   slotsToday: "اليوم",
