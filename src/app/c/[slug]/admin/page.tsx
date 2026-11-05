@@ -32,7 +32,7 @@ function makeEn(module: ModuleDefinition) {
     categoriesSub: `Sections of your ${page}`,
     dishes: Many,
     dishesSub: `${Many} on your ${page}`,
-    orders: module.id === "services" ? "Requests (30 days)" : "Orders (30 days)",
+    orders: module.id === "services" ? "Requests (30 days)" : module.nights ? "Bookings (30 days)" : "Orders (30 days)",
     ordersSub: (waiting: number, bookings: number, lang: AdminLang) =>
       [
         waiting > 0 ? plural(lang, waiting, { one: "# waiting", other: "# waiting" }) : "",
@@ -47,7 +47,7 @@ function makeEn(module: ModuleDefinition) {
     manageCategoriesDesc: `Organise and reorder the sections of your ${page}.`,
     manageDishes: `Manage ${n.many}`,
     manageDishesDesc: `Add, edit or remove ${n.many}.`,
-    manageOrders: module.id === "services" ? "Requests" : "Orders",
+    manageOrders: module.id === "services" ? "Requests" : module.nights ? "Bookings" : "Orders",
     manageOrdersDesc: "Confirm, complete or cancel what customers send.",
     settings: "Settings",
     settingsDesc: "Update your branding, colours and features.",
@@ -70,7 +70,7 @@ function makeAr(module: ModuleDefinition): ReturnType<typeof makeEn> {
     categoriesSub: `أقسام ${page}`,
     dishes: `ال${n.plural}`,
     dishesSub: `ال${n.plural} في ${page}`,
-    orders: module.id === "services" ? "الطلبات (30 يوماً)" : "الطلبات (30 يوماً)",
+    orders: module.nights ? "الحجوزات (30 يوماً)" : "الطلبات (30 يوماً)",
     ordersSub: (waiting, bookings, lang) =>
       [
         waiting > 0 ? plural(lang, waiting, { one: "طلب واحد بانتظارك", two: "طلبان بانتظارك", few: "# طلبات بانتظارك", many: "# طلباً بانتظارك", other: "# طلب بانتظارك" }) : "",
@@ -86,7 +86,7 @@ function makeAr(module: ModuleDefinition): ReturnType<typeof makeEn> {
     manageCategoriesDesc: `نظّم أقسام ${page} وغيّر ترتيبها.`,
     manageDishes: `إدارة ال${n.plural}`,
     manageDishesDesc: `أضف ${n.plural}ك أو عدّلها أو احذفها.`,
-    manageOrders: "الطلبات",
+    manageOrders: module.nights ? "الحجوزات" : "الطلبات",
     manageOrdersDesc: "أكّد ما يرسله الزبائن أو أنهِه أو ألغِه.",
     settings: "الإعدادات",
     settingsDesc: "حدّث هويتك وألوانك وميزاتك.",

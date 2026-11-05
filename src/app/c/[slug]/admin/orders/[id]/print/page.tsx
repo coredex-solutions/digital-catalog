@@ -26,6 +26,8 @@ const en = {
   table: "Table",
   when: "For",
   guests: "Guests",
+  checkIn: "Check-in",
+  checkOut: "Check-out",
   note: "Note",
   delivery: "Delivery",
   discount: "Discount",
@@ -47,6 +49,8 @@ const ar: typeof en = {
   table: "الطاولة",
   when: "الموعد",
   guests: "عدد الأشخاص",
+  checkIn: "الوصول",
+  checkOut: "المغادرة",
   note: "ملاحظة",
   delivery: "التوصيل",
   discount: "الخصم",
@@ -82,7 +86,13 @@ function Ticket({ order, businessName }: { order: SavedOrder; businessName: stri
       <p dir="ltr" className="tk-small" style={{ textAlign: lang === "ar" ? "right" : "left" }}>{order.customer_phone}</p>
       {order.table_label && <p className="tk-strong">{t.table}: {order.table_label}</p>}
       {order.address && <p>{order.address}{order.area ? ` · ${order.area}` : ""}</p>}
-      {order.requested_for && <p className="tk-strong">{t.when}: <span dir="ltr">{order.requested_for}</span></p>}
+      {order.requested_for && order.check_out && (
+        <>
+          <p className="tk-strong">{t.checkIn}: <span dir="ltr">{order.requested_for}</span></p>
+          <p className="tk-strong">{t.checkOut}: <span dir="ltr">{order.check_out}</span></p>
+        </>
+      )}
+      {order.requested_for && !order.check_out && <p className="tk-strong">{t.when}: <span dir="ltr">{order.requested_for}</span></p>}
       {order.party_size != null && <p>{t.guests}: {order.party_size}</p>}
       {order.lines.length > 0 && (
         <>

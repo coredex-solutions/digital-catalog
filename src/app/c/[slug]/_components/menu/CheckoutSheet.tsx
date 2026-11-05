@@ -18,6 +18,9 @@ import type { PriceConfig } from "@/lib/catalog/price";
 import type { Dictionary } from "../../_lib/i18n";
 import { SlotPicker } from "./SlotPicker";
 import { couponDiscount, discountLine, normalizeCode, type CouponTerms } from "@/lib/orders/coupons";
+import { nightsBetween, stayDeposit } from "@/lib/orders/stays";
+import { stayDate } from "../../_lib/whatsapp";
+import { CalendarDays } from "lucide-react";
 import { Price } from "./Price";
 import { Sheet } from "./Sheet";
 import { cn } from "@/utils/helpers";
@@ -121,7 +124,12 @@ export function CheckoutSheet() {
     table,
     setTable,
     clearCart,
+    stay,
+    stayRules,
+    openDates,
+    refreshStayAvailability,
   } = useCatalog();
+  const stayNightsCount = module.nights && stay ? nightsBetween(stay.checkIn, stay.checkOut) : 0;
   const open = activeSheet === "checkout";
   const businessName = localized(catalog, "name", lang) || catalog.name;
 
@@ -223,6 +231,25 @@ export function CheckoutSheet() {
   const [slotsKey, setSlotsKey] = useState(0);
   const depositText = useSlots ? depositInstructions(booking, payment, priceConfig, lang, t) : null;
 
+  // Stays: a deposit as a part of the total, when every room is priced in the same currency
+  const stayDepositText = (() => {
+    if (!module.nights || !stayRules.deposit_percent || cart.length === 0) return null;
+    const currency = (cart[0].currency || "USD").toUpperCase();
+    if (cart.some((line) => (line.currency || "USD").toUpperCase() !== currency)) return null;
+    const off = discount && discount.currency.toUpperCase() === currency ? discount.amount : 0;
+    const amount = stayDeposit(stayRules, cart.reduce((sum, line) => sum + line.price * line.quantity, 0) - off, currency);
+    if (amount === null) return null;
+    const money = formatPrice(amount, currency, priceConfig, lang).primary;
+    const how = payment.whish_phone
+      ? t.custDepositWhish(money, payment.whish_phone)
+      : payment.omt_phone
+        ? t.custDepositOmt(money, [payment.omt_name, payment.omt_phone].filter(Boolean).join(" · "))
+        : "";
+    return [t.stayDepositNote(stayRules.deposit_percent, money), how].filter(Boolean).join(" ");
+  })();
+  // Stays: every guest needs a bed (rooms without a limit count as enough)
+  const beds = cart.reduce((sum, line) => (sum === Infinity || !line.max_guests ? Infinity : sum + line.max_guests * line.quantity), 0);
+
   const localMessage = (orderNumber?: number) =>
     buildOrderMessage(
       cart,
@@ -243,6 +270,7 @@ export function CheckoutSheet() {
         discountCurrency: discount?.currency,
         couponCode: discount?.code,
         paymentMethod,
+        ...(module.nights && stay ? { when: `${stay.checkIn} ${stayRules.check_in}`, checkOut: stay.checkOut, guests: stay.guests } : {}),
       },
       priceConfig,
       lang,
@@ -268,6 +296,16 @@ export function CheckoutSheet() {
     if (askWhen && (whenRequired || when.date || when.time) && !(when.date && when.time)) next.when = t.required;
     setErrors(next);
     if (Object.keys(next).length > 0) return;
+    if (module.nights) {
+      if (!stay) {
+        openDates();
+        return;
+      }
+      if (stay.guests > beds) {
+        setFailure(t.tooManyGuests(beds));
+        return;
+      }
+    }
 
     try {
       localStorage.setItem(DETAILS_KEY, JSON.stringify(details));
@@ -291,6 +329,7 @@ export function CheckoutSheet() {
       couponCode: discount ? discount.code : undefined,
       date: askWhen ? when.date : "",
       time: askWhen ? when.time : "",
+      ...(module.nights && stay ? { checkIn: stay.checkIn, checkOut: stay.checkOut, guests: stay.guests } : {}),
       note: notes.trim(),
       lang,
       clientKey,
@@ -311,6 +350,20 @@ export function CheckoutSheet() {
     if (result.code === "coupon") {
       // The code ran out or changed since it was applied
       setCoupon((prev) => ({ ...prev, open: true, applied: null, error: t.couponProblems[result.detail ?? "invalid"] ?? t.couponProblems.invalid }));
+      return;
+    }
+    if (result.code === "stay_unavailable") {
+      // Someone else just booked one of the nights: load what's free again
+      setFailure(t.stayTaken);
+      refreshStayAvailability();
+      return;
+    }
+    if (result.code === "stay_dates") {
+      setFailure(t.stayProblems[result.detail ?? "invalid"] ?? t.stayProblems.invalid);
+      return;
+    }
+    if (result.code === "too_many_guests") {
+      setFailure(t.tooManyGuests(result.limit ?? beds));
       return;
     }
     if (result.code === "slot_unavailable") {
@@ -469,6 +522,34 @@ export function CheckoutSheet() {
               ))}
             </div>
           </fieldset>
+        )}
+
+        {module.nights && stay && stayNightsCount > 0 && (
+          <div>
+            <p className="text-sm font-semibold">{t.stayLabel}</p>
+            <div className="mt-1.5 flex items-start gap-3 rounded-control border border-menu-input-border px-4 py-3">
+              <CalendarDays className="mt-0.5 h-5 w-5 shrink-0 text-brand-ink" aria-hidden />
+              <div className="min-w-0 flex-1 text-sm">
+                <p className="font-semibold">
+                  {stayDate(stay.checkIn, lang)} {lang === "ar" ? "←" : "→"} {stayDate(stay.checkOut, lang)}
+                </p>
+                <p className="text-menu-muted">
+                  {t.nightsCount(stayNightsCount)} · {t.guestsCount(stay.guests)}
+                </p>
+                <p className="text-menu-muted">
+                  {t.checkInFrom(stayRules.check_in)} · {t.checkOutBy(stayRules.check_out)}
+                </p>
+              </div>
+              <button type="button" onClick={() => openDates()} className="min-h-11 shrink-0 px-1 text-sm font-semibold text-brand-ink underline underline-offset-4">
+                {t.changeDates}
+              </button>
+            </div>
+            {stayDepositText && (
+              <p className="mt-3 rounded-2xl bg-brand-soft px-4 py-3 text-sm leading-relaxed">
+                <bdi>{stayDepositText}</bdi>
+              </p>
+            )}
+          </div>
         )}
 
         {orderType === "dine_in" && (

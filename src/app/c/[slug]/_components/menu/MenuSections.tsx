@@ -6,6 +6,7 @@ import { localized } from "../../_lib/i18n";
 import { sectionId } from "./CategoryNav";
 import { ItemRow } from "./ItemRow";
 import { ItemCard } from "./ItemCard";
+import { UnitCard } from "./UnitCard";
 
 /** Categories that actually have dishes, in the owner's order, with their dishes */
 export function useMenuSections(categories: MenuCategory[], items: MenuItem[]) {
@@ -38,7 +39,13 @@ export function MenuSections({ sections }: { sections: ReturnType<typeof useMenu
             <h2 id={headingId} className="text-[1.375rem] font-semibold leading-tight">
               {localized(category, "name", lang)}
             </h2>
-            {grid ? (
+            {module.nights ? (
+              <div className="mt-3 space-y-4">
+                {items.map((item) => (
+                  <UnitCard key={item.id} item={item} priority={rendered++ < 2} />
+                ))}
+              </div>
+            ) : grid ? (
               <div className="mt-3 grid grid-cols-2 gap-3">
                 {items.map((item) => (
                   <ItemCard key={item.id} item={item} priority={rendered++ < 4} />

@@ -49,6 +49,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const result = await setOrderStatus(catalog.id, id, status);
   if (!result.ok) {
     if (result.code === "not_found") return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    if (result.code === "dates_taken") {
+      return NextResponse.json({ error: "These rooms were booked by another stay on these dates", code: "dates_taken" }, { status: 409 });
+    }
     if (result.code === "out_of_stock") {
       return NextResponse.json({ error: "Not enough stock left to reopen this order", code: "out_of_stock" }, { status: 409 });
     }

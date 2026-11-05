@@ -2,7 +2,7 @@
 // signup, and that decides the words it uses, how its page looks, how customers order and which
 // add-ons it can switch on. Every screen reads from here instead of assuming a restaurant.
 
-export const MODULE_IDS = ["restaurant", "cafe", "shop", "services"] as const;
+export const MODULE_IDS = ["restaurant", "cafe", "shop", "services", "stays"] as const;
 export type ModuleId = (typeof MODULE_IDS)[number];
 
 /**
@@ -13,7 +13,7 @@ export const ADDON_IDS = ["options", "dietary", "tables", "stock"] as const;
 export type AddonId = (typeof ADDON_IDS)[number];
 
 /** How a customer receives an order or service. Ids are stored in catalog_settings.order_types */
-export const ORDER_TYPES = ["dine_in", "takeaway", "delivery", "pickup", "at_location", "home_visit"] as const;
+export const ORDER_TYPES = ["dine_in", "takeaway", "delivery", "pickup", "at_location", "home_visit", "stay"] as const;
 export type OrderType = (typeof ORDER_TYPES)[number];
 
 /** Order types that need the customer's address */
@@ -54,7 +54,7 @@ export interface ItemNouns {
 export interface ModuleDefinition {
   id: ModuleId;
   /** lucide-react icon name */
-  icon: "UtensilsCrossed" | "Coffee" | "ShoppingBag" | "Sparkles";
+  icon: "UtensilsCrossed" | "Coffee" | "ShoppingBag" | "Sparkles" | "BedDouble";
   label: Text;
   /** One line under the label at signup */
   tagline: Text;
@@ -74,8 +74,10 @@ export interface ModuleDefinition {
   itemLayout: "list" | "grid";
   /** Separate table reservation sheet (restaurants and cafés only) */
   tableBooking: boolean;
-  /** Item editor fields beyond name/description/price/photo */
-  itemFields: { duration: boolean; sku: boolean; compareAtPrice: boolean };
+  /** Item editor fields beyond name/description/price/photo (stay: rooms, guests, weekend price) */
+  itemFields: { duration: boolean; sku: boolean; compareAtPrice: boolean; stay: boolean };
+  /** Booked by the night: guests pick check-in and check-out dates and see which rooms are free */
+  nights: boolean;
   defaultAddons: readonly AddonId[];
   allowedAddons: readonly AddonId[];
   schemaType: string;
@@ -108,7 +110,8 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     schedule: "none",
     itemLayout: "list",
     tableBooking: true,
-    itemFields: { duration: false, sku: false, compareAtPrice: false },
+    itemFields: { duration: false, sku: false, compareAtPrice: false, stay: false },
+    nights: false,
     defaultAddons: ["options", "dietary", "tables"],
     allowedAddons: ["options", "dietary", "tables", "stock"],
     schemaType: "Restaurant",
@@ -141,7 +144,8 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     schedule: "optional",
     itemLayout: "grid",
     tableBooking: true,
-    itemFields: { duration: false, sku: false, compareAtPrice: false },
+    itemFields: { duration: false, sku: false, compareAtPrice: false, stay: false },
+    nights: false,
     defaultAddons: ["options", "dietary"],
     allowedAddons: ["options", "dietary", "tables", "stock"],
     schemaType: "CafeOrCoffeeShop",
@@ -176,7 +180,8 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     schedule: "none",
     itemLayout: "grid",
     tableBooking: false,
-    itemFields: { duration: false, sku: true, compareAtPrice: true },
+    itemFields: { duration: false, sku: true, compareAtPrice: true, stay: false },
+    nights: false,
     defaultAddons: ["options", "stock"],
     allowedAddons: ["options", "stock", "dietary"],
     schemaType: "Store",
@@ -189,7 +194,7 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     id: "services",
     icon: "Sparkles",
     label: { en: "Services", ar: "خدمات" },
-    tagline: { en: "Service list and appointment requests", ar: "لائحة خدمات وطلبات مواعيد" },
+    tagline: { en: "Service list and appointment booking", ar: "لائحة خدمات وحجز مواعيد" },
     subTypes: [
       { id: "salon", label: { en: "Salon / barber", ar: "صالون / حلاق" }, schemaType: "HairSalon" },
       { id: "beauty", label: { en: "Beauty / spa / nails", ar: "تجميل / سبا / أظافر" }, schemaType: "BeautySalon" },
@@ -212,13 +217,49 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     schedule: "required",
     itemLayout: "list",
     tableBooking: false,
-    itemFields: { duration: true, sku: false, compareAtPrice: false },
+    itemFields: { duration: true, sku: false, compareAtPrice: false, stay: false },
+    nights: false,
     defaultAddons: ["options"],
     allowedAddons: ["options"],
     schemaType: "LocalBusiness",
     assistant: {
       title: { en: "AI receptionist", ar: "موظف الاستقبال الذكي" },
       focus: "services, how long they take, prices and booking an appointment",
+    },
+  },
+  stays: {
+    id: "stays",
+    icon: "BedDouble",
+    label: { en: "Guesthouse & Chalets", ar: "بيت ضيافة وشاليهات" },
+    tagline: { en: "Rooms and chalets booked by the night", ar: "غرف وشاليهات تُحجز بالليلة" },
+    subTypes: [
+      { id: "guesthouse", label: { en: "Guesthouse / B&B", ar: "بيت ضيافة" }, schemaType: "BedAndBreakfast" },
+      { id: "chalet", label: { en: "Chalets / resort", ar: "شاليهات / منتجع" }, schemaType: "Resort" },
+      { id: "hotel", label: { en: "Hotel", ar: "فندق" }, schemaType: "Hotel" },
+      { id: "apartments", label: { en: "Furnished apartments", ar: "شقق مفروشة" }, schemaType: "LodgingBusiness" },
+      { id: "camping", label: { en: "Camping / eco-lodge", ar: "تخييم / نُزل بيئي" }, schemaType: "Campground" },
+    ],
+    vocab: {
+      en: { item: "Room", items: "Rooms", catalog: "Rooms", business: "place" },
+      ar: { item: "غرفة", items: "الغرف", catalog: "الغرف", business: "المكان" },
+    },
+    nouns: {
+      en: { one: "room", many: "rooms" },
+      ar: { one: "غرفة", acc: "غرفة", two: "غرفتان", plural: "غرف", feminine: true },
+    },
+    orderTypes: ["stay"],
+    defaultOrderTypes: ["stay"],
+    schedule: "none",
+    itemLayout: "list",
+    tableBooking: false,
+    itemFields: { duration: false, sku: false, compareAtPrice: false, stay: true },
+    nights: true,
+    defaultAddons: ["options"],
+    allowedAddons: ["options"],
+    schemaType: "LodgingBusiness",
+    assistant: {
+      title: { en: "AI concierge", ar: "موظف الاستقبال الذكي" },
+      focus: "rooms and chalets, how many guests each sleeps, prices per night, dates and what is included",
     },
   },
 };

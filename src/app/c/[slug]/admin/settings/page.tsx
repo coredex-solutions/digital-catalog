@@ -13,6 +13,7 @@ import { AddonsCard } from "./_components/AddonsCard";
 import { DeliveryAreasEditor, type DeliveryAreasDraft } from "./_components/DeliveryAreasEditor";
 import { PaymentMethodsEditor } from "./_components/PaymentMethodsEditor";
 import { BookingTimesEditor, type BookingTimesDraft } from "./_components/BookingTimesEditor";
+import { StayRulesEditor, type StayRulesDraft } from "./_components/StayRulesEditor";
 import type { PaymentConfig } from "@/lib/orders/payment";
 import type { OrderType } from "@/lib/modules/registry";
 import { useAdminLang, useCopy, useFormat } from "../_lib/i18n";
@@ -100,6 +101,7 @@ interface Settings {
     delivery_config: DeliveryAreasDraft;
     payment_config: PaymentConfig;
     booking_config: BookingTimesDraft;
+    stay_config?: StayRulesDraft;
   };
 }
 
@@ -197,6 +199,7 @@ const copyEn = {
     pickup: { label: "Pickup", hint: "Customers collect their order from the shop" },
     at_location: { label: "At the shop", hint: "Customers come to you for the service" },
     home_visit: { label: "Home visit", hint: "You go to the customer; they enter an address" },
+    stay: { label: "Booked by the night", hint: "Guests pick check-in and check-out dates and see which rooms are free" },
   } as Record<OrderType, { label: string; hint: string }>,
   deliveryNoteEn: "Delivery note in English",
   deliveryNoteAr: "Delivery note in Arabic",
@@ -307,6 +310,7 @@ const copyAr: typeof copyEn = {
     pickup: { label: "استلام من المحل", hint: "يستلم الزبائن طلبهم من المتجر" },
     at_location: { label: "في المحل", hint: "يأتي الزبائن إليك للخدمة" },
     home_visit: { label: "زيارة منزلية", hint: "تذهب أنت إلى الزبون، ويُدخل عنوانه" },
+    stay: { label: "حجز بالليلة", hint: "يختار الضيوف تاريخ الوصول والمغادرة ويرون الغرف المتاحة" },
   },
   deliveryNoteEn: "ملاحظة التوصيل بالإنجليزية",
   deliveryNoteAr: "ملاحظة التوصيل بالعربية",
@@ -584,7 +588,7 @@ function SettingsPageContent() {
   const updateSettings = (
     section: keyof Settings,
     field: string,
-    value: string | boolean | DeliveryAreasDraft | PaymentConfig | BookingTimesDraft
+    value: string | boolean | DeliveryAreasDraft | PaymentConfig | BookingTimesDraft | StayRulesDraft
   ) => {
     if (!settings) return;
     setSettings({
@@ -1148,6 +1152,13 @@ function SettingsPageContent() {
                         value={settings.ordering.booking_config}
                         forServices={module.schedule === "required"}
                         onChange={(next) => updateSettings("ordering", "booking_config", next)}
+                      />
+                    )}
+
+                    {module.nights && settings.ordering.stay_config && (
+                      <StayRulesEditor
+                        value={settings.ordering.stay_config}
+                        onChange={(next) => updateSettings("ordering", "stay_config", next)}
                       />
                     )}
 

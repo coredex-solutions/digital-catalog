@@ -153,6 +153,7 @@ export default async function CatalogLayout({
   const themeStyle = buildMenuTheme(settings?.color_primary);
   const modules = moduleInfo(catalog);
   const trackStock = modules.addons.includes('stock');
+  const nights = getModule(catalog).nights;
   // Older databases without the coupons table simply show no code field
   const hasCoupons = await hasUsableCoupons(catalog.id, beirutToday()).catch(() => false);
 
@@ -256,6 +257,14 @@ export default async function CatalogLayout({
       stock_qty: stock,
       compare_at_price: row.compare_at_price != null && Number(row.compare_at_price) > Number(i.price) ? Number(row.compare_at_price) : null,
       duration_minutes: row.duration_minutes != null && Number(row.duration_minutes) > 0 ? Number(row.duration_minutes) : null,
+      // Stays only: how many of this room (at least 1), guests it sleeps, and the Friday/Saturday price
+      ...(nights
+        ? {
+            unit_count: row.unit_count != null && Number(row.unit_count) > 0 ? Number(row.unit_count) : 1,
+            max_guests: row.max_guests != null && Number(row.max_guests) > 0 ? Number(row.max_guests) : null,
+            weekend_price: row.weekend_price != null && Number(row.weekend_price) > 0 ? Number(row.weekend_price) : null,
+          }
+        : {}),
       };
     }),
     faqs: faqs.map((f) => ({

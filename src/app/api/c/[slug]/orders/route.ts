@@ -3,7 +3,8 @@ import { getFullCatalogData } from "@/lib/catalog/queries";
 import { checkRateLimit, getClientIdentifier, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 import { validateOrder } from "@/lib/orders/validate";
 import { buildOrderContext } from "@/lib/orders/context";
-import { createOrder, findByClientKey, type SavedOrder } from "@/lib/orders/store";
+import { createOrder, findByClientKey, stayBookings, type SavedOrder } from "@/lib/orders/store";
+import { bookedByNight, isRealDate } from "@/lib/orders/stays";
 import { getPriceConfig } from "@/lib/catalog/price";
 import { localized } from "@/app/c/[slug]/_lib/i18n";
 import { buildOrderMessage, buildReservationMessage, whatsappLink, type OrderType } from "@/app/c/[slug]/_lib/whatsapp";
@@ -64,6 +65,8 @@ function messageFor(order: SavedOrder, businessName: string, moduleId: ModuleId,
       discount: order.discount,
       discountCurrency: order.discount_currency,
       couponCode: order.coupon_code,
+      checkOut: order.check_out,
+      guests: order.check_out ? order.party_size : null,
       statusUrl,
     },
     order.price_config ?? getPriceConfig(null),
@@ -116,11 +119,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const code = normalizeCode(body.couponCode);
   if (code) context.coupon = await findCouponByCode(data.catalog.id, code);
 
+  // Stays: rooms already taken on the asked nights (saving checks again)
+  if (context.module.nights && isRealDate(body.checkIn) && isRealDate(body.checkOut) && body.checkIn < body.checkOut) {
+    context.stayBooked = bookedByNight(await stayBookings(data.catalog.id, body.checkIn, body.checkOut), body.checkIn, body.checkOut);
+  }
+
   const result = validateOrder(body, context);
   if (!result.ok) {
     const status =
-      result.code === "stock_changed" || result.code === "item_unavailable" || result.code === "slot_unavailable" ? 409 : result.code === "closed" ? 403 : result.code === "below_minimum" || result.code === "coupon" ? 422 : 400;
-    return NextResponse.json({ error: result.message, code: result.code, field: result.field, detail: result.detail }, { status });
+      result.code === "stock_changed" || result.code === "item_unavailable" || result.code === "slot_unavailable" || result.code === "stay_unavailable"
+        ? 409
+        : result.code === "closed"
+          ? 403
+          : result.code === "below_minimum" || result.code === "coupon" || result.code === "stay_dates" || result.code === "too_many_guests"
+            ? 422
+            : 400;
+    return NextResponse.json({ error: result.message, code: result.code, field: result.field, detail: result.detail, limit: result.limit }, { status });
   }
 
   // Per phone number too, so one person can't flood a business from many addresses
@@ -132,6 +146,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!saved.ok) {
     if (saved.code === "coupon_used_up") {
       return NextResponse.json({ error: "This code can't be used", code: "coupon", field: "coupon", detail: "used_up" }, { status: 409 });
+    }
+    if (saved.code === "slot_taken" && result.order.checkOut) {
+      return NextResponse.json({ error: "These dates were just booked", code: "stay_unavailable", field: "dates" }, { status: 409 });
     }
     if (saved.code === "slot_taken") {
       return NextResponse.json({ error: "This time was just booked", code: "slot_unavailable", field: "when" }, { status: 409 });

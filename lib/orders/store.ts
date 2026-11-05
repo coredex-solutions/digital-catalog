@@ -8,6 +8,7 @@ import type { InStatement, ResultSet } from "@libsql/client";
 import { getDb } from "../db/client";
 import type { PriceConfig } from "../catalog/price";
 import { stockToReserve, type OrderLineSnapshot, type ValidOrder } from "./validate";
+import type { StayBooking } from "./stays";
 
 export const ORDER_STATUSES = ["new", "confirmed", "ready", "completed", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -53,6 +54,8 @@ export interface SavedOrder {
   discount: number | null;
   discount_currency: string | null;
   coupon_code: string | null;
+  /** Stays: the day guests leave (check-in is the date in requested_for, guests in party_size) */
+  check_out: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -95,6 +98,7 @@ function toOrder(row: Record<string, unknown>): SavedOrder {
     discount: num(row.discount),
     discount_currency: str(row.discount_currency),
     coupon_code: str(row.coupon_code),
+    check_out: str(row.check_out),
     created_at: String(row.created_at ?? ""),
     updated_at: String(row.updated_at ?? ""),
   };
@@ -164,6 +168,22 @@ export async function takenBookings(catalogId: string, kind: "booking" | "reques
   }));
 }
 
+/** Stays that overlap the nights from `from` to `to` (not cancelled), for working out free rooms */
+export async function stayBookings(catalogId: string, from: string, to: string): Promise<(StayBooking & { id: string })[]> {
+  const result = await getDb().execute({
+    sql: `SELECT id, requested_for, check_out, lines FROM orders
+          WHERE catalog_id = ? AND check_out IS NOT NULL AND status != 'cancelled'
+            AND check_out > ? AND substr(requested_for, 1, 10) < ?`,
+    args: [catalogId, from, to],
+  });
+  return result.rows.map((row) => ({
+    id: String(row.id),
+    check_in: String(row.requested_for ?? "").slice(0, 10),
+    check_out: String(row.check_out),
+    lines: parseJson<{ item_id: string; quantity: number }[]>(row.lines, []).map((line) => ({ item_id: String(line.item_id), quantity: Number(line.quantity) || 0 })),
+  }));
+}
+
 /**
  * Save a validated order and take its stock. A repeated request (same client key) returns the
  * first order. Fails with stock_changed when an item no longer has enough left.
@@ -172,7 +192,9 @@ export async function createOrder(
   catalogId: string,
   order: ValidOrder,
   priceConfig: PriceConfig,
-  source: "page" | "ai" = "page"
+  source: "page" | "ai" | "admin" = "page",
+  /** Bookings the team adds themselves start confirmed */
+  status: "new" | "confirmed" = "new"
 ): Promise<CreateResult> {
   if (order.clientKey) {
     const existing = await findByClientKey(catalogId, order.clientKey);
@@ -195,6 +217,22 @@ export async function createOrder(
           args: [catalogId, order.kind, order.requestedFor, order.durationMinutes, order.durationMinutes, order.requestedFor, order.capacity],
         }
       : { sql: "1", args: [] };
+  // Stays: for each room asked, the rooms already taken on any of its nights plus this booking
+  // must fit in what the item has, checked inside the INSERT so the last room can't go twice
+  const stayChecks =
+    order.checkOut && order.requestedFor && order.units
+      ? order.units.map((unit) => ({
+          sql: `(SELECT COALESCE(SUM(CAST(json_extract(j.value, '$.quantity') AS INTEGER)), 0)
+                 FROM orders o, json_each(o.lines) j
+                 WHERE o.catalog_id = ? AND o.check_out IS NOT NULL AND o.status != 'cancelled'
+                   AND substr(o.requested_for, 1, 10) < ? AND o.check_out > ?
+                   AND json_extract(j.value, '$.item_id') = ?) + ? <= ?`,
+          args: [catalogId, order.checkOut!, order.requestedFor!.slice(0, 10), unit.itemId, unit.quantity, unit.count],
+        }))
+      : [];
+  const stay = stayChecks.length
+    ? { sql: stayChecks.map((check) => check.sql).join(" AND "), args: stayChecks.flatMap((check) => check.args) }
+    : { sql: "1", args: [] };
   // A coupon must still have uses left when the order is saved
   const coupon = order.couponId
     ? {
@@ -210,17 +248,18 @@ export async function createOrder(
             table_label, address, area, requested_for, party_size, lines, price_config, total_usd,
             note, lang, source, stock_reserved, client_key, delivery_fee, delivery_currency,
             payment_method, public_token, duration_minutes, discount, discount_currency, coupon_code,
-            created_at, updated_at
+            check_out, created_at, updated_at
           ) SELECT
-            ?, ?, (SELECT COALESCE(MAX(number), 0) + 1 FROM orders WHERE catalog_id = ?), ?, 'new', ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
-          WHERE ${slot.sql} AND ${coupon.sql}
+            ?, ?, (SELECT COALESCE(MAX(number), 0) + 1 FROM orders WHERE catalog_id = ?), ?, ?, ?, ?, ?,
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
+          WHERE ${slot.sql} AND ${coupon.sql} AND ${stay.sql}
           RETURNING *`,
     args: [
       id,
       catalogId,
       catalogId,
       order.kind,
+      status,
       order.orderType,
       order.name,
       order.phone,
@@ -245,8 +284,10 @@ export async function createOrder(
       order.discount,
       order.discountCurrency,
       order.couponCode,
+      order.checkOut,
       ...slot.args,
       ...coupon.args,
+      ...stay.args,
     ],
   });
   if (order.couponId) {
@@ -367,13 +408,29 @@ export async function countOrders(catalogId: string) {
 
 export type StatusResult =
   | { ok: true; order: SavedOrder }
-  | { ok: false; code: "not_found" | "invalid_status" | "out_of_stock" };
+  | { ok: false; code: "not_found" | "invalid_status" | "out_of_stock" | "dates_taken" };
 
 /**
  * Move an order to a new status, in one transaction. Cancelling gives its stock back, once: the
  * stock statements only run while the order still holds stock. Reopening a cancelled order takes
  * the same stock again, and fails with out_of_stock (changing nothing) if there isn't enough left.
  */
+/** SQL that is true while each room of a stay is free on its nights, not counting the stay itself */
+function stayRoomChecks(catalogId: string, orderId: string, checkIn: string, checkOut: string, lines: { item_id: string; quantity: number }[]) {
+  const perItem = new Map<string, number>();
+  for (const line of lines) perItem.set(line.item_id, (perItem.get(line.item_id) || 0) + line.quantity);
+  const parts = [...perItem].map(([itemId, quantity]) => ({
+    sql: `(SELECT COALESCE(SUM(CAST(json_extract(j.value, '$.quantity') AS INTEGER)), 0)
+           FROM orders o, json_each(o.lines) j
+           WHERE o.catalog_id = ? AND o.id != ? AND o.check_out IS NOT NULL AND o.status != 'cancelled'
+             AND substr(o.requested_for, 1, 10) < ? AND o.check_out > ?
+             AND json_extract(j.value, '$.item_id') = ?) + ?
+          <= COALESCE((SELECT MAX(unit_count, 1) FROM menu_items WHERE id = ? AND catalog_id = ?), 1)`,
+    args: [catalogId, orderId, checkOut, checkIn, itemId, quantity, itemId, catalogId],
+  }));
+  return parts.length ? { sql: parts.map((p) => p.sql).join(" AND "), args: parts.flatMap((p) => p.args) } : { sql: "1", args: [] };
+}
+
 export async function setOrderStatus(catalogId: string, orderId: string, status: OrderStatus): Promise<StatusResult> {
   const db = getDb();
   const current = await db.execute({ sql: "SELECT * FROM orders WHERE id = ? AND catalog_id = ?", args: [orderId, catalogId] });
@@ -407,11 +464,17 @@ export async function setOrderStatus(catalogId: string, orderId: string, status:
     });
   }
   const stockColumn = giveBack ? ", stock_reserved = 0" : takeAgain ? ", stock_reserved = 1" : "";
+  // Reopening a cancelled stay: its rooms must still be free on its nights (other stays may
+  // have taken them since)
+  const reopenStay = order.status === "cancelled" && order.check_out && order.requested_for;
+  const roomsFree = reopenStay
+    ? stayRoomChecks(catalogId, orderId, order.requested_for!.slice(0, 10), order.check_out!, order.lines)
+    : { sql: "1", args: [] };
   statements.push({
     // Guarded by the status read above, so two people changing it at once can't skip a step
     sql: `UPDATE orders SET status = ?, updated_at = datetime('now')${stockColumn}
-          WHERE id = ? AND catalog_id = ? AND status = ? RETURNING *`,
-    args: [status, orderId, catalogId, order.status],
+          WHERE id = ? AND catalog_id = ? AND status = ? AND ${roomsFree.sql} RETURNING *`,
+    args: [status, orderId, catalogId, order.status, ...roomsFree.args],
   });
   let results: ResultSet[];
   try {
@@ -421,6 +484,10 @@ export async function setOrderStatus(catalogId: string, orderId: string, status:
     throw error;
   }
   const updated = rowsOf(results[results.length - 1])[0];
+  if (!updated && reopenStay) {
+    const again = await db.execute({ sql: "SELECT status FROM orders WHERE id = ? AND catalog_id = ?", args: [orderId, catalogId] });
+    if (String(again.rows[0]?.status) === "cancelled") return { ok: false, code: "dates_taken" };
+  }
   if (!updated) {
     // Someone else changed it first; report what it is now
     const again = await db.execute({ sql: "SELECT * FROM orders WHERE id = ? AND catalog_id = ?", args: [orderId, catalogId] });

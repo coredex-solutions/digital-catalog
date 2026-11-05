@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Check, Coffee, Loader2, MailCheck, ShoppingBag, Sparkles, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, BedDouble, Check, Coffee, Loader2, MailCheck, ShoppingBag, Sparkles, UtensilsCrossed } from "lucide-react";
 import { MODULES, MODULE_IDS, type ModuleId } from "@/lib/modules/registry";
 import type { SiteLang } from "../../_landing/copy";
 import { CATALOG_THEMES, DEFAULT_THEME_ID } from "@/config/themes";
@@ -15,7 +15,7 @@ import { Card, ErrorNote, Field, PasswordInput, SubmitButton, inputClass } from 
 type Step = "details" | "code" | "restaurant" | "colours";
 
 const STEP_NUMBER: Record<Step, number> = { details: 1, code: 1, restaurant: 2, colours: 3 };
-const MODULE_ICONS = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles };
+const MODULE_ICONS = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles, BedDouble };
 // Same rule as /api/auth/signup
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const validSlug = (slug: string) => slug.length >= 3 && slug.length <= 50 && SLUG_REGEX.test(slug);

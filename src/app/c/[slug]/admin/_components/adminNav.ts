@@ -16,6 +16,7 @@ import {
   Inbox,
   Contact,
   TicketPercent,
+  CalendarDays,
   type LucideIcon,
 } from "lucide-react";
 import type { AdminLang } from "../_lib/i18n";
@@ -24,6 +25,7 @@ import { MODULES, type ModuleDefinition } from "@/lib/modules/registry";
 export type AdminNavKey =
   | "dashboard"
   | "orders"
+  | "calendar"
   | "customers"
   | "offers"
   | "categories"
@@ -63,6 +65,7 @@ export const ADMIN_NAV_LABELS: Record<AdminLang, NavLabels> = {
   en: {
     dashboard: "Dashboard",
     orders: "Orders",
+    calendar: "Calendar",
     customers: "Customers",
     offers: "Offers",
     publish: "Preview & publish",
@@ -85,6 +88,7 @@ export const ADMIN_NAV_LABELS: Record<AdminLang, NavLabels> = {
   ar: {
     dashboard: "لوحة التحكم",
     orders: "الطلبات",
+    calendar: "التقويم",
     customers: "الزبائن",
     offers: "العروض",
     publish: "المعاينة والنشر",
@@ -118,7 +122,7 @@ export function adminNavLabels(lang: AdminLang, module: ModuleDefinition = MODUL
     items: v.items,
     menu: module.id === "restaurant" || module.id === "cafe" ? base.menu : v.items,
     "ai-waiter": module.assistant.title[lang],
-    orders: module.id === "services" ? (lang === "ar" ? "الطلبات" : "Requests") : base.orders,
+    orders: module.id === "services" ? (lang === "ar" ? "الطلبات" : "Requests") : module.nights ? (lang === "ar" ? "الحجوزات" : "Bookings") : base.orders,
   };
 }
 
@@ -137,6 +141,8 @@ export function getAdminNavItems(
   return [
     { key: "dashboard", href: basePath, label: l.dashboard, shortLabel: l.home, icon: LayoutDashboard, exact: true },
     { key: "orders", href: `${basePath}/orders`, label: l.orders, icon: Inbox, badgeKey: "newOrders" },
+    // Stays: which rooms are taken on which nights, and bookings that came by phone
+    ...(module.nights ? [{ key: "calendar" as const, href: `${basePath}/calendar`, label: l.calendar, icon: CalendarDays }] : []),
     { key: "customers", href: `${basePath}/customers`, label: l.customers, icon: Contact },
     { key: "offers", href: `${basePath}/offers`, label: l.offers, icon: TicketPercent },
     { key: "publish", href: `${basePath}/publish`, label: l.publish, icon: Rocket },

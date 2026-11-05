@@ -40,7 +40,7 @@ function ActionChip({ icon, label, href, onClick }: { icon: ReactNode; label: st
  * restaurant identity, language and currency, quick actions, then a search field.
  */
 export function MenuHeader() {
-  const { catalog, settings, contact, lang, t, openSheet, bookingEnabled } = useCatalog();
+  const { catalog, settings, contact, lang, t, openSheet, bookingEnabled, module } = useCatalog();
 
   const name = localized(catalog, "name", lang) || catalog.name;
   const city = contact ? localized(contact, "city", lang) : "";
@@ -85,7 +85,8 @@ export function MenuHeader() {
 
         <h1 className="mt-2 text-[1.5rem] font-semibold leading-tight">{name}</h1>
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
-          <OpenStatusBadge />
+          {/* Stays show check-in and check-out times instead of opening hours */}
+          {!module.nights && <OpenStatusBadge />}
           {city && (
             <span className="inline-flex items-center gap-1.5 text-sm text-menu-muted">
               <MapPin className="h-4 w-4" aria-hidden />

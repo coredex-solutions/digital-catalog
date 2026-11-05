@@ -8,9 +8,13 @@ import { variantName } from "@/lib/catalog/dish-info";
 import { Price } from "./Price";
 import { QuantityStepper } from "./QuantityStepper";
 import { Sheet } from "./Sheet";
+import { nightsBetween } from "@/lib/orders/stays";
+import { stayDate } from "../../_lib/whatsapp";
+import { CalendarDays } from "lucide-react";
 
 export function CartSheet() {
-  const { activeSheet, closeSheet, openSheet, cart, cartTotal, cartItemCount, updateLineQuantity, clearCart, lang, t } = useCatalog();
+  const { activeSheet, closeSheet, openSheet, cart, cartTotal, cartItemCount, updateLineQuantity, clearCart, lang, t, module, stay, openDates } = useCatalog();
+  const nights = module.nights && stay ? nightsBetween(stay.checkIn, stay.checkOut) : 0;
   const open = activeSheet === "cart";
 
   const footer =
@@ -48,6 +52,24 @@ export function CartSheet() {
         </div>
       ) : (
         <>
+          {stay && nights > 0 && (
+            <button
+              type="button"
+              onClick={() => openDates()}
+              className="mb-2 flex w-full items-center gap-3 rounded-control bg-menu-raised px-4 py-3 text-start"
+            >
+              <CalendarDays className="h-5 w-5 shrink-0 text-brand-ink" aria-hidden />
+              <span className="min-w-0 flex-1 text-sm">
+                <span className="block font-semibold">
+                  {stayDate(stay.checkIn, lang)} {lang === "ar" ? "←" : "→"} {stayDate(stay.checkOut, lang)}
+                </span>
+                <span className="block text-menu-muted">
+                  {t.nightsCount(nights)} · {t.guestsCount(stay.guests)}
+                </span>
+              </span>
+              <span className="text-sm font-semibold text-brand-ink underline underline-offset-4">{t.changeDates}</span>
+            </button>
+          )}
           <ul className="divide-y divide-[var(--menu-line)]">
             {cart.map((line) => (
               <li key={line.key} className="flex gap-3 py-4">
@@ -60,6 +82,7 @@ export function CartSheet() {
                   <p className="font-semibold leading-snug">{localized(line, "name", lang)}</p>
                   {line.variant && <p className="mt-0.5 text-sm font-medium">{variantName(line.variant, lang)}</p>}
                   {line.note && <p className="mt-0.5 text-sm text-menu-muted">{line.note}</p>}
+                  {nights > 0 && <p className="mt-0.5 text-sm text-menu-muted">{t.forNights(t.nightsCount(nights))}</p>}
                   <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                     <Price amount={line.price * line.quantity} currency={line.currency} className="text-sm" />
                     <QuantityStepper

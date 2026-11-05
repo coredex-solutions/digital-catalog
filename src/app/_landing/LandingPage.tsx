@@ -6,10 +6,12 @@ import {
   ArrowUpRight,
   BarChart3,
   Ban,
+  BedDouble,
   CalendarCheck,
   Banknote,
   CakeSlice,
   Car,
+  TreePalm,
   Check,
   ChefHat,
   Clock,
@@ -17,6 +19,8 @@ import {
   Croissant,
   Dumbbell,
   Gift,
+  Hotel,
+  House,
   IceCreamCone,
   Languages,
   Mail,
@@ -28,6 +32,7 @@ import {
   QrCode,
   Sandwich,
   ScanLine,
+  Tent,
   Scissors,
   Search,
   Shirt,
@@ -48,7 +53,7 @@ import {
 import { MODULES, MODULE_IDS, type ModuleId } from "@/lib/modules/registry";
 
 /** Demo pages per module (scripts/seed-demo.ts and seed-demo-modules.ts); shown only when they exist */
-const MODULE_DEMO_SLUGS: Record<ModuleId, string> = { restaurant: "demo", cafe: "demo-cafe", shop: "demo-shop", services: "demo-services" };
+const MODULE_DEMO_SLUGS: Record<ModuleId, string> = { restaurant: "demo", cafe: "demo-cafe", shop: "demo-shop", services: "demo-services", stays: "demo-stays" };
 import {
   DEMO_PATH,
   SALES_EMAIL,
@@ -127,6 +132,11 @@ const SUB_TYPE_ICONS: Record<string, typeof Store> = {
   fitness: Dumbbell,
   repair: Wrench,
   car_care: Car,
+  guesthouse: House,
+  chalet: TreePalm,
+  hotel: Hotel,
+  apartments: BedDouble,
+  camping: Tent,
 };
 
 function SectionIntro({ eyebrow, title, body, center }: { eyebrow?: string; title: string; body?: string; center?: boolean }) {
@@ -139,12 +149,12 @@ function SectionIntro({ eyebrow, title, body, center }: { eyebrow?: string; titl
   );
 }
 
-const MODULE_ICONS = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles };
+const MODULE_ICONS = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles, BedDouble };
 
 /** The four built-in modules, each with what it does and a signup link that preselects it */
 function ModuleCards({ lang, t, demos }: { lang: SiteLang; t: ReturnType<typeof getSiteCopy>; demos: Partial<Record<ModuleId, string>> }) {
   return (
-    <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {MODULE_IDS.map((id, index) => {
         const definition = MODULES[id];
         const Icon = MODULE_ICONS[definition.icon];

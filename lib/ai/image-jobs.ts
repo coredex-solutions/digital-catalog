@@ -357,6 +357,12 @@ Do not change the product's shape, size, colour, material, pattern, label, packa
 Do not complete or extend anything cut off at the edges of the frame; keep the original framing.
 No filters, no added text, no watermark. Return only the edited photo.`;
   }
+  if (moduleId === "stays") {
+    return `Edit this photo of a real room, chalet or view at a guesthouse. Guests will book from it, so it must show what they will get.
+Improve only the lighting, white balance, sharpness and exposure: ${styleFor(style, false)}.
+Do not add, remove, enlarge or change furniture, beds, windows, walls, the view, pools or anything in the scene, and do not make the space look bigger. Keep the original framing.
+No filters, no added text, no watermark. Return only the edited photo.`;
+  }
   if (moduleId === "services") {
     return `Edit this photo taken by a local business to show one of its services. Customers will see it next to the service.
 Improve only the lighting, white balance, sharpness and background: ${styleFor(style, false)}.
@@ -377,6 +383,10 @@ function illustratePrompt(style: ImageStyle, item: Row, moduleId: ModuleId): str
     return `Create a realistic, catalogue-style product photograph of "${name}"${description}.
 Lighting and background: ${styleFor(style, false)}. The product centred with space around it, nothing else in the frame.
 No text, no logos or brand names, no watermark, no people, no hands.`;
+  }
+  if (moduleId === "stays") {
+    return `Create a calm, realistic photograph-style image of a guest room or chalet described as "${name}"${description}, at a small guesthouse in Lebanon.
+Lighting: ${styleFor(style, false)}. Natural interior, no people, no text, no logos, no watermark.`;
   }
   if (moduleId === "services") {
     return `Create a calm, realistic photograph-style image that represents the service "${name}"${description}, as offered by a local business in Lebanon.

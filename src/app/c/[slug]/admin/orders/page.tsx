@@ -16,6 +16,7 @@ import { variantName } from "@/lib/catalog/dish-info";
 import { feeLine } from "@/lib/orders/delivery";
 import { discountLine } from "@/lib/orders/coupons";
 import { isTransfer } from "@/lib/orders/payment";
+import { nightsBetween } from "@/lib/orders/stays";
 import { beirutNow, parseBookingConfig } from "@/lib/orders/slots";
 import type { SavedOrder, OrderStatus } from "@/lib/orders/store";
 
@@ -34,6 +35,10 @@ const en = {
     cancelled: "Cancelled",
   } as Record<OrderStatus, string>,
   kind: { order: "Order", booking: "Table booking", request: "Request" },
+  stayKind: "Stay",
+  checkIn: "Check-in",
+  checkOut: "Check-out",
+  nights: (n: number, lang: AdminLang) => plural(lang, n, { one: "1 night", other: "# nights" }),
   confirm: "Confirm",
   ready: "Mark ready",
   complete: "Mark done",
@@ -98,6 +103,10 @@ const ar: typeof en = {
   filterLabel: "عرض",
   status: { new: "جديد", confirmed: "مؤكَّد", ready: "جاهز", completed: "منتهٍ", cancelled: "ملغى" },
   kind: { order: "طلب", booking: "حجز طاولة", request: "طلب موعد" },
+  stayKind: "إقامة",
+  checkIn: "الوصول",
+  checkOut: "المغادرة",
+  nights: (n, lang) => plural(lang, n, { one: "ليلة واحدة", two: "ليلتان", few: "# ليالٍ", many: "# ليلة", other: "# ليلة" }),
   confirm: "تأكيد",
   ready: "جاهز",
   complete: "تم",
@@ -210,7 +219,8 @@ function OrderCard({
   const config = order.price_config ?? getPriceConfig(null);
   const total = order.lines.length > 0 ? formatTotal([...order.lines, ...feeLine(order.delivery_fee, order.delivery_currency), ...discountLine(order.discount, order.discount_currency)], config, lang) : null;
   const paid = Boolean(order.paid_at);
-  const typeLabel = order.order_type ? (words as unknown as Record<string, string>)[order.order_type] : null;
+  const typeLabel = order.order_type && !order.check_out ? (words as unknown as Record<string, string>)[order.order_type] : null;
+  const stayDay = (date: string) => f.date(`${date}T12:00:00Z`, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
   const holdsStock = order.lines.some((line) => line.reserved > 0);
   const canReady = order.kind === "order";
 
@@ -219,7 +229,7 @@ function OrderCard({
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-lg font-semibold text-ui-heading">
-            #{order.number} · <span className="text-base">{t.kind[order.kind]}</span>
+            #{order.number} · <span className="text-base">{order.check_out ? t.stayKind : t.kind[order.kind]}</span>
             {typeLabel && <span className="text-base font-medium text-ui-muted"> · {typeLabel}</span>}
           </p>
           <p className="text-sm text-ui-muted">{f.dateTime(utc(order.created_at))}</p>
@@ -274,7 +284,16 @@ function OrderCard({
             </span>
           </li>
         )}
-        {order.requested_for && (
+        {order.requested_for && order.check_out && (
+          <li className="flex items-start gap-2">
+            <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-ui-muted" aria-hidden />
+            <span>
+              {t.checkIn}: <strong>{stayDay(order.requested_for.slice(0, 10))}</strong> · {t.checkOut}: <strong>{stayDay(order.check_out)}</strong>
+              <span className="text-ui-muted"> · {t.nights(nightsBetween(order.requested_for.slice(0, 10), order.check_out), lang)}</span>
+            </span>
+          </li>
+        )}
+        {order.requested_for && !order.check_out && (
           <li className="flex items-center gap-2">
             <CalendarClock className="h-4 w-4 text-ui-muted" aria-hidden />
             {t.when}: <strong dir="ltr">{order.requested_for}</strong>

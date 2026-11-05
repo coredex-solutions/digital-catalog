@@ -1,7 +1,9 @@
-// Item fields for shops and services (migration 20261105_modules): stock, SKU, old price and
-// service duration. All optional; null or "" clears a field.
+// Item fields for shops, services and stays (migrations 20261105_modules, 20261109_stays): stock,
+// SKU, old price, service duration, and for rooms: how many, guests and weekend price. All
+// optional; null or "" clears a field.
 
 import { parseItemPrice } from "./price";
+import { MAX_GUESTS, MAX_UNITS } from "../orders/stays";
 
 export const MAX_STOCK = 1_000_000;
 export const MAX_SKU = 40;
@@ -14,6 +16,9 @@ export interface ItemExtras {
   sku?: string | null;
   compare_at_price?: number | null;
   duration_minutes?: number | null;
+  unit_count?: number | null;
+  max_guests?: number | null;
+  weekend_price?: number | null;
 }
 
 type Parsed = { ok: true; value: ItemExtras } | { ok: false; error: string };
@@ -59,6 +64,34 @@ export function parseItemExtras(body: Record<string, unknown>): Parsed {
         return { ok: false, error: "Duration must be between 5 minutes and 24 hours" };
       }
       value.duration_minutes = n;
+    }
+  }
+
+  // Stays: identical rooms or chalets, most guests in one, and the Friday/Saturday price
+  if (body.unit_count !== undefined) {
+    if (empty(body.unit_count)) value.unit_count = null;
+    else {
+      const n = wholeNumber(body.unit_count);
+      if (n === null || n < 1 || n > MAX_UNITS) return { ok: false, error: "The number of rooms must be between 1 and 50" };
+      value.unit_count = n;
+    }
+  }
+
+  if (body.max_guests !== undefined) {
+    if (empty(body.max_guests)) value.max_guests = null;
+    else {
+      const n = wholeNumber(body.max_guests);
+      if (n === null || n < 1 || n > MAX_GUESTS) return { ok: false, error: "Guests must be between 1 and 50" };
+      value.max_guests = n;
+    }
+  }
+
+  if (body.weekend_price !== undefined) {
+    if (empty(body.weekend_price)) value.weekend_price = null;
+    else {
+      const price = parseItemPrice(body.weekend_price);
+      if (price === null) return { ok: false, error: "The weekend price must be a number of 0 or more" };
+      value.weekend_price = price;
     }
   }
 

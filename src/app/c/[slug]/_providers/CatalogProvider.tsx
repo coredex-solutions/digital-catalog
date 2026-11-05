@@ -26,6 +26,7 @@ import { parseOrderTypes, type OrderType } from "../_lib/whatsapp";
 import type { AllergenCode, DietaryCode, DishVariant } from "@/lib/catalog/dish-info";
 import type { AddonId, ModuleDefinition } from "@/lib/modules/registry";
 import { moduleFor } from "@/lib/modules/resolve";
+import { parseStayConfig, stayLinePrice, stayNights, type StayConfig } from "@/lib/orders/stays";
 
 // Menu item interface
 export interface MenuItem {
@@ -54,6 +55,27 @@ export interface MenuItem {
   compare_at_price?: number | null;
   /** How long a service takes */
   duration_minutes?: number | null;
+  /** Stays: identical rooms or chalets (null = 1), guests one sleeps, Friday/Saturday price */
+  unit_count?: number | null;
+  max_guests?: number | null;
+  weekend_price?: number | null;
+}
+
+/** Stays: the dates and guests the visitor chose */
+export interface StaySelection {
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+}
+
+/** Stays: rooms per item and rooms taken per night, from /api/c/[slug]/stays */
+export interface StayAvailability {
+  today: string;
+  /** Nights after this aren't loaded (beyond what can be booked) */
+  last: string;
+  rules: StayConfig;
+  units: Record<string, number>;
+  booked: Record<string, Record<string, number>>;
 }
 
 // Cart item interface. The same dish with a different option or special request is kept as a
@@ -64,6 +86,8 @@ export interface CartItem extends MenuItem {
   note?: string;
   /** The chosen option; `price` is then that option's price */
   variant?: DishVariant;
+  /** Stays: price per night of the item or option; `price` is then the whole stay */
+  nightly?: number;
 }
 
 /** Most of one line a diner can order (matches the quantity stepper) */
@@ -89,10 +113,18 @@ function clampQuantity(quantity: number): number {
   return Math.min(MAX_LINE_QUANTITY, Math.max(0, Math.floor(Number(quantity) || 0)));
 }
 
+/** Most of an item that can be in one order: the stock left, or a stay's number of rooms */
+function limitOf(item: Pick<MenuItem, "stock_qty" | "unit_count">): number | null {
+  if (item.stock_qty !== null && item.stock_qty !== undefined) return item.stock_qty;
+  if (item.unit_count != null) return Math.max(1, item.unit_count);
+  return null;
+}
+
 /** Most of an item a customer can still add: what stock is left minus what is already in the order */
-export function remainingFor(item: Pick<MenuItem, "id" | "stock_qty">, cart: CartItem[]): number {
-  if (item.stock_qty === null || item.stock_qty === undefined) return MAX_LINE_QUANTITY;
-  return Math.max(0, item.stock_qty - cartQuantityOf(cart, item.id));
+export function remainingFor(item: Pick<MenuItem, "id" | "stock_qty" | "unit_count">, cart: CartItem[]): number {
+  const limit = limitOf(item);
+  if (limit === null) return MAX_LINE_QUANTITY;
+  return Math.max(0, limit - cartQuantityOf(cart, item.id));
 }
 
 /** How many of a dish are in the order, across all its lines */
@@ -125,7 +157,7 @@ export interface MenuBranch {
   map_url: string | null;
 }
 
-export type MenuSheet = "item" | "cart" | "checkout" | "search" | "info" | "reservation";
+export type MenuSheet = "item" | "cart" | "checkout" | "search" | "info" | "reservation" | "dates";
 
 export interface MenuData extends CatalogUIData {
   menuItems: MenuItem[];
@@ -169,6 +201,21 @@ interface CatalogContextType {
   setOrderType: (type: OrderType) => void;
   table: string;
   setTable: (table: string) => void;
+
+  // Stays (booked by the night)
+  /** Check-in and check-out times, shortest stay and deposit */
+  stayRules: StayConfig;
+  stay: StaySelection | null;
+  /** Choose dates (the basket is repriced for them) or clear them (the basket is emptied) */
+  setStay: (stay: StaySelection | null) => void;
+  /** Which nights are taken; null while loading or when the place isn't booked by the night */
+  stayAvailability: StayAvailability | null;
+  /** True until the taken nights have loaded (false again if loading failed: the server still checks) */
+  stayLoading: boolean;
+  refreshStayAvailability: () => void;
+  /** Open the date picker, optionally for one room (it is booked once dates are chosen) */
+  openDates: (item?: MenuItem | null) => void;
+  datesFor: MenuItem | null;
 
   // Cart
   cart: CartItem[];
@@ -241,6 +288,10 @@ export function CatalogProvider({
   const [activeSheet, setActiveSheet] = useState<MenuSheet | null>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [table, setTableState] = useState("");
+  const [stay, setStayState] = useState<StaySelection | null>(null);
+  const [stayAvailability, setStayAvailability] = useState<StayAvailability | null>(null);
+  const [stayLoadFailed, setStayLoadFailed] = useState(false);
+  const [datesFor, setDatesFor] = useState<MenuItem | null>(null);
 
   const { module, addons } = useMemo(() => moduleFor(catalog), [catalog]);
   const t = getDictionary(lang, module.id);
@@ -256,12 +307,75 @@ export function CatalogProvider({
   // Storage key unique to this catalog (same key as before, so existing carts survive)
   const storagePrefix = `catalog_${catalog.slug}_`;
 
+  // ---- Stays ----
+  const settingsRow = settings as unknown as Record<string, unknown> | null;
+  const stayRules = useMemo(() => parseStayConfig(settingsRow?.stay_config), [settingsRow?.stay_config]);
+  const itemsById = useMemo(() => new Map(menuItems.map((item) => [item.id, item])), [menuItems]);
+  const stayRef = useRef<StaySelection | null>(null);
+  useEffect(() => {
+    stayRef.current = stay;
+  }, [stay]);
+
+  /** A line's price for the chosen stay (the price per night times the nights, weekends included) */
+  const priceForStay = useCallback(
+    (item: MenuItem, nightly: number, selection: StaySelection | null) =>
+      selection ? stayLinePrice(item, nightly, stayNights(selection.checkIn, selection.checkOut)) : nightly,
+    []
+  );
+
+  const setStay = useCallback(
+    (next: StaySelection | null) => {
+      stayRef.current = next;
+      setStayState(next);
+      try {
+        if (next) localStorage.setItem(`${storagePrefix}stay`, JSON.stringify(next));
+        else localStorage.removeItem(`${storagePrefix}stay`);
+      } catch {
+        // Storage unavailable; the dates still live in state
+      }
+      // New dates reprice the rooms already chosen; no dates means nothing can be booked
+      setCart((prev) =>
+        next
+          ? prev.map((line) => {
+              const item = itemsById.get(line.id);
+              return item ? { ...line, price: priceForStay(item, line.nightly ?? line.price, next) } : line;
+            })
+          : []
+      );
+    },
+    [storagePrefix, itemsById, priceForStay]
+  );
+
+  const refreshStayAvailability = useCallback(() => {
+    if (!module.nights) return;
+    const load = (attempt: number) =>
+      fetch(`/api/c/${catalog.slug}/stays/`, { cache: "no-store" })
+        .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+        .then((data) => {
+          if (data?.state === "open") setStayAvailability({ today: data.today, last: data.last, rules: data.rules, units: data.units || {}, booked: data.booked || {} });
+          else setStayLoadFailed(true);
+        })
+        .catch(() => {
+          // Try once more; after that the page still works and the server checks the dates when booking
+          if (attempt === 0) setTimeout(() => load(1), 2000);
+          else setStayLoadFailed(true);
+        });
+    load(0);
+  }, [module.nights, catalog.slug]);
+
+  useEffect(() => {
+    refreshStayAvailability();
+  }, [refreshStayAvailability]);
+
   // ---- Cart ----
   const cartItemCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
   const cartTotal = useMemo(() => formatTotal(cart, priceConfig, lang), [cart, priceConfig, lang]);
 
   const addToCart = useCallback((item: MenuItem, quantity: number = 1, note?: string, variantId?: string) => {
     if (item.is_available === false) return false;
+    // Stays: rooms are only booked for chosen dates
+    const selection = stayRef.current;
+    if (module.nights && !selection) return false;
     const amount = clampQuantity(quantity);
     if (amount <= 0) return false;
     const variant = needsVariant(item) ? item.variants!.find((v) => v.id === variantId) : undefined;
@@ -290,10 +404,13 @@ export function CatalogProvider({
           category_id: item.category_id,
           name_ar: item.name_ar,
           name_en: item.name_en,
-          price: variant ? variant.price : item.price,
+          price: priceForStay(item, variant ? variant.price : item.price, module.nights ? selection : null),
+          nightly: module.nights ? (variant ? variant.price : item.price) : undefined,
           currency: item.currency,
           image_url: item.image_url,
           stock_qty: item.stock_qty,
+          unit_count: item.unit_count,
+          max_guests: item.max_guests,
           duration_minutes: item.duration_minutes,
           quantity: take,
           note: normalized || undefined,
@@ -302,7 +419,7 @@ export function CatalogProvider({
       ];
     });
     return added;
-  }, []);
+  }, [module.nights, priceForStay]);
 
   const updateLineQuantity = useCallback((lineKey: string, quantity: number) => {
     const next = clampQuantity(quantity);
@@ -312,7 +429,8 @@ export function CatalogProvider({
         if (line.key !== lineKey) return line;
         // Room = stock left once the item's other lines are counted
         const others = prev.filter((l) => l.id === line.id && l.key !== lineKey).reduce((sum, l) => sum + l.quantity, 0);
-        const cap = line.stock_qty == null ? next : Math.max(1, line.stock_qty - others);
+        const limit = limitOf(line);
+        const cap = limit === null ? next : Math.max(1, limit - others);
         return { ...line, quantity: Math.min(next, cap) };
       });
     });
@@ -394,6 +512,14 @@ export function CatalogProvider({
     [openSheet]
   );
   const setIsCartOpen = useCallback((open: boolean) => (open ? openSheet("cart") : closeSheet()), [openSheet, closeSheet]);
+  const openDates = useCallback(
+    (item?: MenuItem | null) => {
+      setDatesFor(item ?? null);
+      refreshStayAvailability();
+      openSheet("dates");
+    },
+    [openSheet, refreshStayAvailability]
+  );
 
   // ---- Language & theme ----
   const setLanguage = useCallback(
@@ -428,6 +554,22 @@ export function CatalogProvider({
 
   // ---- Restore state & read QR parameters on mount ----
   useEffect(() => {
+    // Stays: the saved dates, unless check-in has passed (then the saved rooms go too)
+    let savedStay: StaySelection | null = null;
+    if (module.nights) {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(`${storagePrefix}stay`) || "null");
+        const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Beirut" }).format(new Date());
+        if (parsed && typeof parsed.checkIn === "string" && typeof parsed.checkOut === "string" && parsed.checkIn >= today && parsed.checkOut > parsed.checkIn) {
+          savedStay = { checkIn: parsed.checkIn, checkOut: parsed.checkOut, guests: Math.min(Math.max(Math.floor(Number(parsed.guests) || 1), 1), 50) };
+          stayRef.current = savedStay;
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- saved dates are only readable on the client
+          setStayState(savedStay);
+        }
+      } catch {
+        // Nothing saved
+      }
+    }
     try {
       const savedCart = localStorage.getItem(`${storagePrefix}cart`);
       if (savedCart) {
@@ -449,23 +591,29 @@ export function CatalogProvider({
           if (needsVariant(item) && !variant) continue;
           const key = cartLineKey(item.id, note, variant?.id);
           const existing = restored.get(key);
+          // Stays: rooms only come back with their dates, repriced for them
+          if (module.nights && !savedStay) continue;
+          const nightly = variant ? variant.price : item.price;
           restored.set(key, {
             key,
             id: item.id,
             category_id: item.category_id,
             name_ar: item.name_ar,
             name_en: item.name_en,
-            price: variant ? variant.price : item.price,
+            price: priceForStay(item, nightly, module.nights ? savedStay : null),
+            nightly: module.nights ? nightly : undefined,
             currency: item.currency,
             image_url: item.image_url,
             stock_qty: item.stock_qty,
+            unit_count: item.unit_count,
+            max_guests: item.max_guests,
             duration_minutes: item.duration_minutes,
-            quantity: Math.min(clampQuantity((existing?.quantity || 0) + quantity), item.stock_qty ?? MAX_LINE_QUANTITY),
+            quantity: Math.min(clampQuantity((existing?.quantity || 0) + quantity), limitOf(item) ?? MAX_LINE_QUANTITY),
             note: note || undefined,
             variant,
           });
         }
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- the saved cart is only readable on the client; restoring it in render would break hydration
+        // The saved cart is only readable on the client; restoring it in render would break hydration
         setCart([...restored.values()]);
       }
     } catch {
@@ -539,6 +687,14 @@ export function CatalogProvider({
     setOrderType,
     table,
     setTable,
+    stayRules,
+    stay,
+    setStay,
+    stayAvailability,
+    stayLoading: module.nights && !stayAvailability && !stayLoadFailed,
+    refreshStayAvailability,
+    openDates,
+    datesFor,
     cart,
     addToCart,
     updateLineQuantity,

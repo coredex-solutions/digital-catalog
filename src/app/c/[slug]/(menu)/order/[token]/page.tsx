@@ -48,6 +48,7 @@ export default async function OrderStatusPage({ params }: { params: Promise<{ sl
     table_label: order.table_label,
     requested_for: order.requested_for,
     party_size: order.party_size,
+    check_out: order.check_out,
     lines: order.lines.map((line) => ({
       name_en: line.name_en,
       name_ar: line.name_ar,

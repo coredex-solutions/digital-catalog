@@ -14,7 +14,7 @@ const en = {
     "Your menu, store or services page, opened from a QR code or a link. Arabic and English, prices in dollars and Lebanese pounds, and every order saved and sent to your WhatsApp.",
   nav: { modules: "Who it's for", features: "Features", pricing: "Pricing", demo: "Live demo", faq: "Questions", start: "Start free trial", login: "Log in", language: "العربية" },
   hero: {
-    eyebrow: "For restaurants, cafés, shops and services",
+    eyebrow: "For restaurants, cafés, shops, services and guesthouses",
     title: "Your menu, store or services page, in Arabic and English",
     body: "Customers open it from a QR code or a link to order or book, with no app to install. Prices show in dollars and Lebanese pounds, and every order is saved in your dashboard and sent to your WhatsApp.",
     primary: "Start a 2-day free trial",
@@ -28,7 +28,7 @@ const en = {
     full: "Your business online, in Arabic and English, in dollars and pounds",
   },
   modules: {
-    eyebrow: "One platform, four kinds of business",
+    eyebrow: "One platform, five kinds of business",
     title: "Pick your business. Get a page made for it.",
     body: "Choose your type when you sign up. The words, the layout and how customers order follow it, and you can switch on extras later.",
     start: "Start free trial",
@@ -40,6 +40,7 @@ const en = {
       cafe: ["Photo grid of drinks, sweets and baked goods", "Pickup with a ready time, and pre-orders for a date", "Sizes and options, like milk or sugar"],
       shop: ["Product grid with sizes, colours and sale prices", "Stock that sells out by itself at zero", "Delivery areas, each with its own fee and minimum"],
       services: ["Services with prices and how long each takes", "Booking at your free times, with no double booking", "At your place or a home visit"],
+      stays: ["Rooms and chalets with photos, guests and price per night", "Guests pick dates and see what's free, with no double booking", "Weekend prices and a deposit by Whish or OMT"],
     } as Record<string, string[]>,
   },
   floats: {
@@ -181,7 +182,7 @@ const en = {
   faq: {
     title: "Questions",
     items: [
-      { q: "Which businesses is it for?", a: "Restaurants, cafés and bakeries, shops, and service businesses such as salons, clinics and repair shops. You choose your type when you sign up." },
+      { q: "Which businesses is it for?", a: "Restaurants, cafés and bakeries, shops, service businesses such as salons, clinics and repair shops, and guesthouses, chalets and small hotels. You choose your type when you sign up." },
       { q: "Do customers need to install an app?", a: "No. Your page opens in the phone's browser from the QR code or a short link." },
       { q: "Can I show prices in Lebanese pounds?", a: "Yes. Enter your rate and the page shows both currencies, rounded to the nearest 1,000 L.L. Change the rate whenever you need to." },
       { q: "How do customers pay?", a: "They choose from the ways you accept: cash, card, Whish or OMT. For Whish and OMT the page shows your number and the amount to send, and you mark the order paid. Card payment on the page itself isn't available yet." },
@@ -218,7 +219,7 @@ const ar: SiteCopy = {
     "قائمتك أو متجرك أو صفحة خدماتك، تُفتح من رمز QR أو رابط. بالعربية والإنجليزية، الأسعار بالدولار والليرة اللبنانية، وكل طلب محفوظ ويصلك على واتساب.",
   nav: { modules: "لمن هو", features: "المزايا", pricing: "الأسعار", demo: "تجربة حيّة", faq: "أسئلة", start: "ابدأ التجربة المجانية", login: "تسجيل الدخول", language: "English" },
   hero: {
-    eyebrow: "للمطاعم والمقاهي والمتاجر والخدمات",
+    eyebrow: "للمطاعم والمقاهي والمتاجر والخدمات وبيوت الضيافة",
     title: "قائمتك أو متجرك أو صفحة خدماتك، بالعربية والإنجليزية",
     body: "يفتحها زبائنك من رمز QR أو رابط ليطلبوا أو يحجزوا، من دون أي تطبيق. الأسعار بالدولار والليرة، وكل طلب يُحفظ في لوحة التحكم ويصلك على واتساب.",
     primary: "ابدأ تجربة مجانية ليومين",
@@ -232,7 +233,7 @@ const ar: SiteCopy = {
     full: "نشاطك على الإنترنت، بالعربية والإنجليزية، بالدولار والليرة",
   },
   modules: {
-    eyebrow: "منصة واحدة لأربعة أنواع من الأعمال",
+    eyebrow: "منصة واحدة لخمسة أنواع من الأعمال",
     title: "اختر نشاطك، واحصل على صفحة مصمّمة له.",
     body: "تختار نوع نشاطك عند التسجيل، فتتبعه الكلمات وشكل الصفحة وطريقة الطلب، ويمكنك إضافة ميزات لاحقاً.",
     start: "ابدأ التجربة المجانية",
@@ -244,6 +245,7 @@ const ar: SiteCopy = {
       cafe: ["شبكة صور للمشروبات والحلويات والمخبوزات", "استلام مع وقت التجهيز، وطلبات مسبقة لتاريخ محدد", "أحجام وخيارات، مثل نوع الحليب أو السكر"],
       shop: ["شبكة منتجات مع الأحجام والألوان وأسعار التخفيض", "مخزون ينفد تلقائياً عند الصفر", "مناطق توصيل، لكل منها رسمها وحدّها الأدنى"],
       services: ["خدمات مع الأسعار ومدة كل منها", "حجز في أوقاتك المتاحة، من دون حجز مزدوج", "في محلك أو زيارة منزلية"],
+      stays: ["غرف وشاليهات مع الصور وعدد الضيوف وسعر الليلة", "يختار الضيوف التواريخ ويرون المتاح، من دون حجز مزدوج", "أسعار لعطلة نهاية الأسبوع وعربون عبر Whish أو OMT"],
     },
   },
   floats: {
@@ -385,7 +387,7 @@ const ar: SiteCopy = {
   faq: {
     title: "أسئلة",
     items: [
-      { q: "لأي أنواع الأعمال؟", a: "المطاعم، والمقاهي والأفران، والمتاجر، وأعمال الخدمات مثل الصالونات والعيادات ومحلات التصليح. تختار نوع نشاطك عند التسجيل." },
+      { q: "لأي أنواع الأعمال؟", a: "المطاعم، والمقاهي والأفران، والمتاجر، وأعمال الخدمات مثل الصالونات والعيادات ومحلات التصليح، وبيوت الضيافة والشاليهات والفنادق الصغيرة. تختار نوع نشاطك عند التسجيل." },
       { q: "هل يحتاج الزبائن إلى تثبيت تطبيق؟", a: "لا. تفتح صفحتك في متصفح الهاتف من رمز QR أو رابط قصير." },
       { q: "هل يمكنني عرض الأسعار بالليرة اللبنانية؟", a: "نعم. أدخل سعر الصرف فتعرض الصفحة العملتين، مع تقريب الليرة إلى أقرب 1,000 ل.ل. ويمكنك تغيير السعر متى شئت." },
       { q: "كيف يدفع الزبائن؟", a: "يختارون من الطرق التي تقبلها: نقداً أو بطاقة أو Whish أو OMT. مع Whish وOMT تعرض الصفحة رقمك والمبلغ المطلوب تحويله، وأنت تسجّل الطلب كمدفوع. الدفع بالبطاقة على الصفحة نفسها غير متاح بعد." },

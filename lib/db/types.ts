@@ -279,6 +279,10 @@ export interface MenuItem {
   compare_at_price?: number | null;
   /** How long a service takes */
   duration_minutes?: number | null;
+  /** Stays: identical rooms or chalets (NULL = 1), most guests in one, Friday/Saturday price (migration 20261109) */
+  unit_count?: number | null;
+  max_guests?: number | null;
+  weekend_price?: number | null;
   created_at: string;
   updated_at: string;
 }

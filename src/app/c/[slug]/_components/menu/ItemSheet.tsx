@@ -11,9 +11,12 @@ import { localized } from "../../_lib/i18n";
 import { Price } from "./Price";
 import { QuantityStepper } from "./QuantityStepper";
 import { Sheet } from "./Sheet";
+import { freeFor } from "./StayDatesSheet";
+import { stayLinePrice, stayNights } from "@/lib/orders/stays";
+import { Users } from "lucide-react";
 
 export function ItemSheet() {
-  const { activeSheet, closeSheet, selectedItem: item, lang, t, addToCart, cart, orderingEnabled, priceConfig, addons } = useCatalog();
+  const { activeSheet, closeSheet, selectedItem: item, lang, t, addToCart, cart, orderingEnabled, priceConfig, addons, module, stay, stayAvailability, stayLoading, openDates } = useCatalog();
   const showDietary = addons.includes("dietary");
   const open = activeSheet === "item" && !!item;
   const inCart = item ? cartQuantityOf(cart, item.id) : 0;
@@ -44,13 +47,34 @@ export function ItemSheet() {
   const hasOptions = needsVariant(item);
   const variant = hasOptions ? item.variants!.find((v) => v.id === variantId) : undefined;
   const unitPrice = variant ? variant.price : item.price;
-  const lineTotal = formatPrice(unitPrice * quantity, item.currency, priceConfig, lang);
+  // Stays: the whole stay for the chosen dates, and how many of this room are free for them
+  const nights = module.nights && stay ? stayNights(stay.checkIn, stay.checkOut) : null;
+  const stayPrice = nights ? stayLinePrice(item, unitPrice, nights) : null;
+  const freeRooms = nights ? freeFor(stayAvailability, item.id, item.unit_count ?? 1, nights) : null;
+  const lineTotal = formatPrice((stayPrice ?? unitPrice) * quantity, item.currency, priceConfig, lang);
   const canAdd = !hasOptions || !!variant;
   const fromPrice = lowestVariantPrice(item.variants);
   // Never more than the stock left after what is already in the order
-  const room = remainingFor(item, cart);
+  const room = freeRooms === null ? remainingFor(item, cart) : Math.min(remainingFor(item, cart), Math.max(0, freeRooms - inCart));
 
-  const footer = orderingEnabled && !soldOut ? (
+  const footer = orderingEnabled && !soldOut && module.nights && !stay ? (
+    <button
+      type="button"
+      onClick={() => openDates(item)}
+      className="flex min-h-12 w-full items-center justify-center rounded-control bg-brand px-4 font-semibold text-brand-fg"
+    >
+      {t.chooseDates}
+    </button>
+  ) : orderingEnabled && !soldOut && nights && stayLoading && inCart === 0 ? (
+    <p className="flex min-h-12 items-center justify-center gap-1.5 text-menu-muted" role="status">
+      {t.checkingDates}
+    </p>
+  ) : orderingEnabled && !soldOut && freeRooms === 0 && inCart === 0 ? (
+    <p className="flex min-h-12 items-center justify-center gap-1.5 font-medium text-menu-warning">
+      <CircleSlash className="h-4 w-4" aria-hidden />
+      {t.notFree}
+    </p>
+  ) : orderingEnabled && !soldOut ? (
     <div className="flex items-center gap-3">
       <QuantityStepper value={Math.min(quantity, Math.max(room, 1))} onChange={setQuantity} size="lg" max={Math.max(room, 1)} />
       <button
@@ -88,6 +112,7 @@ export function ItemSheet() {
         {variant || fromPrice === null ? (
           <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
             <Price amount={unitPrice} currency={item.currency} className="text-lg" secondaryClassName="text-sm" />
+            {module.nights && <span className="text-sm text-menu-muted">/ {t.perNight}</span>}
             {!variant && <WasPrice item={item} />}
           </p>
         ) : (
@@ -98,6 +123,22 @@ export function ItemSheet() {
           </p>
         )}
         <ItemFacts item={item} className="mt-2 text-sm" />
+        {module.nights && item.max_guests && (
+          <p className="mt-2 inline-flex items-center gap-1.5 text-sm text-menu-muted">
+            <Users className="h-4 w-4" aria-hidden />
+            {t.sleeps(item.max_guests)}
+          </p>
+        )}
+        {module.nights && item.weekend_price && item.weekend_price !== item.price && (
+          <p className="mt-1 text-sm text-menu-muted">
+            <bdi>{t.weekendNights(formatPrice(item.weekend_price, item.currency, priceConfig, lang).primary)}</bdi>
+          </p>
+        )}
+        {nights && stayPrice !== null && freeRooms !== 0 && (
+          <p className="mt-2 text-sm font-semibold">
+            <bdi>{formatPrice(stayPrice, item.currency, priceConfig, lang).primary}</bdi> {t.forNights(t.nightsCount(nights.length))}
+          </p>
+        )}
         {showDietary && item.dietary && item.dietary.length > 0 && (
           <p className="mt-2 text-sm font-medium text-menu-muted">{item.dietary.map((code) => dietaryLabel(code, lang)).join(" · ")}</p>
         )}

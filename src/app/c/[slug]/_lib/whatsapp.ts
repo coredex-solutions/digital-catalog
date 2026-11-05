@@ -9,6 +9,7 @@ import { MODULES, ADDRESS_ORDER_TYPES, type ModuleId, type OrderType } from "@/l
 import { resolveOrderTypes } from "@/lib/modules/resolve";
 import { feeLine } from "@/lib/orders/delivery";
 import { discountLine } from "@/lib/orders/coupons";
+import { nightsBetween } from "@/lib/orders/stays";
 
 export type { OrderType };
 
@@ -64,6 +65,20 @@ export interface OrderDetails {
   discount?: number | null;
   discountCurrency?: string | null;
   couponCode?: string | null;
+  /** Stays: the day guests leave (YYYY-MM-DD); check-in is the date in `when` */
+  checkOut?: string | null;
+  /** Stays: how many guests */
+  guests?: number | null;
+}
+
+/** "Fri 12 Jun" / "الجمعة 12 حزيران": a stay's dates, with Western digits */
+export function stayDate(date: string, lang: Language, weekday: "short" | "long" = "short"): string {
+  return new Intl.DateTimeFormat(lang === "ar" ? "ar-LB-u-nu-latn" : "en-GB", {
+    weekday: lang === "ar" ? "long" : weekday,
+    day: "numeric",
+    month: lang === "ar" ? "long" : "short",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T12:00:00Z`));
 }
 
 /** "2026-11-05 14:30" → "2026-11-05 · 14:30" (Western digits, as Lebanese menus write them) */
@@ -84,13 +99,19 @@ export function buildOrderMessage(
   const number = details.orderNumber ? ` #${details.orderNumber}` : "";
   out.push(`*${t.msgNewOrder}${number} · ${details.restaurantName}*`);
   out.push("");
-  out.push(`*${t.msgOrderType}:* ${t[details.orderType]}`);
+  const stay = details.checkOut && details.when ? { checkIn: details.when.slice(0, 10), time: details.when.slice(11, 16), checkOut: details.checkOut } : null;
+  if (stay) {
+    const nights = nightsBetween(stay.checkIn, stay.checkOut);
+    out.push(`*${t.checkIn}:* ${stayDate(stay.checkIn, lang)}${stay.time ? ` · ${stay.time}` : ""}`);
+    out.push(`*${t.checkOut}:* ${stayDate(stay.checkOut, lang)}`);
+    out.push(`*${t.stay}:* ${t.nightsCount(nights)}${details.guests ? ` · ${t.guestsCount(details.guests)}` : ""}`);
+  } else out.push(`*${t.msgOrderType}:* ${t[details.orderType]}`);
   if (details.orderType === "dine_in" && details.table) out.push(`*${t.msgTable}:* ${details.table}`);
   if (ADDRESS_ORDER_TYPES.includes(details.orderType)) {
     if (details.address) out.push(`*${t.msgAddress}:* ${details.address}`);
     if (details.area) out.push(`*${t.msgArea}:* ${details.area}`);
   }
-  if (details.when) out.push(`*${t.msgWhen}:* ${formatWhen(details.when)}`);
+  if (details.when && !stay) out.push(`*${t.msgWhen}:* ${formatWhen(details.when)}`);
   out.push(`*${t.msgName}:* ${details.name}`);
   out.push(`*${t.msgPhone}:* ${details.phone}`);
   out.push("");

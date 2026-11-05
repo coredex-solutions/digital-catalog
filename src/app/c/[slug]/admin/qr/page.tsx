@@ -421,6 +421,13 @@ const PRINT_WORDS: Record<ModuleId, PrintWords> = {
     point: { ar: "وجّه كاميرا هاتفك نحو الرمز لعرض الخدمات وطلب موعد", en: "Point your camera at the code to see our services and request a time" },
     instruction: { ar: "امسح الرمز لعرض الخدمات", en: "Scan to see our services" },
   },
+  stays: {
+    heading: "احجز إقامتك",
+    title: { ar: "احجز إقامتك", en: "Book your stay" },
+    short: { ar: "الحجز", en: "Book" },
+    point: { ar: "وجّه كاميرا هاتفك نحو الرمز لعرض الغرف والتواريخ المتاحة", en: "Point your camera at the code to see our rooms and free dates" },
+    instruction: { ar: "امسح الرمز لحجز إقامتك", en: "Scan to book your stay" },
+  },
 };
 /** Food-only card styles, hidden for shops and services */
 const FOOD_ONLY_TEMPLATES = new Set(["retro-diner"]);

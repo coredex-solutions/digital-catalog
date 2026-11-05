@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, CircleX, MessageCircle } from "lucide-react";
 import { useCatalog } from "../../../_providers/CatalogProvider";
 import { localized } from "../../../_lib/i18n";
-import { customerStep, whatsappLink } from "../../../_lib/whatsapp";
+import { customerStep, stayDate, whatsappLink } from "../../../_lib/whatsapp";
+import { nightsBetween, stayDeposit } from "@/lib/orders/stays";
 import { LanguageToggle } from "../../../_components/menu/LanguageToggle";
 import { formatPrice, formatTotal, type PriceConfig } from "@/lib/catalog/price";
 import { variantName } from "@/lib/catalog/dish-info";
@@ -27,6 +28,8 @@ export interface PublicOrder {
   table_label: string | null;
   requested_for: string | null;
   party_size: number | null;
+  /** Stays: the day guests leave (check-in is the date in requested_for) */
+  check_out: string | null;
   lines: { name_en: string; name_ar: string; variant_en: string | null; variant_ar: string | null; price: number; currency: string; quantity: number }[];
   price_config: PriceConfig | null;
   delivery_fee: number | null;
@@ -46,7 +49,7 @@ const REFRESH_MS = 20_000;
 
 export function OrderStatusView({ order }: { order: PublicOrder }) {
   const router = useRouter();
-  const { catalog, contact, settings, lang, t, priceConfig } = useCatalog();
+  const { catalog, contact, settings, lang, t, priceConfig, stayRules } = useCatalog();
   const finished = order.status === "completed" || order.status === "cancelled";
 
   // Follow the order while it's open: refresh now and then, and when the customer comes back to the tab
@@ -81,10 +84,34 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
 
   // Bookings and appointments with a deposit: how to pay it, until the team marks it paid
   const booking = parseBookingConfig((settings as unknown as Record<string, unknown> | null)?.booking_config);
-  const depositText =
-    order.kind !== "order" && order.requested_for && order.status !== "cancelled" && booking.enabled
-      ? depositInstructions(booking, payment, config, lang, t)
+  const stayDepositAmount =
+    order.check_out && order.lines.length > 0 && order.lines.every((line) => line.currency === order.lines[0].currency)
+      ? stayDeposit(
+          stayRules,
+          order.lines.reduce((sum, line) => sum + line.price * line.quantity, 0) - (order.discount_currency === order.lines[0].currency ? order.discount ?? 0 : 0),
+          order.lines[0].currency
+        )
       : null;
+  const stayMoney = stayDepositAmount !== null ? formatPrice(stayDepositAmount, order.lines[0].currency, config, lang).primary : "";
+  const depositText =
+    order.status === "cancelled" || order.paid
+      ? null
+      : order.check_out
+        ? stayDepositAmount !== null
+          ? [
+              t.stayDepositNote(stayRules.deposit_percent, stayMoney),
+              payment.whish_phone
+                ? t.custDepositWhish(stayMoney, payment.whish_phone)
+                : payment.omt_phone
+                  ? t.custDepositOmt(stayMoney, [payment.omt_name, payment.omt_phone].filter(Boolean).join(" · "))
+                  : "",
+            ]
+              .filter(Boolean)
+              .join(" ")
+          : null
+        : order.kind !== "order" && order.requested_for && booking.enabled
+          ? depositInstructions(booking, payment, config, lang, t)
+          : null;
 
   const transferDue = isTransfer(order.payment_method) && !order.paid && order.status !== "cancelled" && total;
   const transferTo =
@@ -174,7 +201,25 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
       {(order.lines.length > 0 || order.area || order.table_label || order.requested_for) && (
         <section className="mt-4 rounded-[20px] bg-menu-surface p-5 shadow-menu-sm">
           <dl className="space-y-1 text-sm">
-            {order.order_type && (
+            {order.check_out && order.requested_for && (
+              <>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-menu-muted">{t.checkIn}</dt>
+                  <dd className="font-semibold">
+                    {stayDate(order.requested_for.slice(0, 10), lang)} · <bdi>{order.requested_for.slice(11, 16)}</bdi>
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-menu-muted">{t.checkOut}</dt>
+                  <dd className="font-semibold">{stayDate(order.check_out, lang)}</dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-menu-muted">{t.stay}</dt>
+                  <dd className="font-semibold">{t.nightsCount(nightsBetween(order.requested_for.slice(0, 10), order.check_out))}</dd>
+                </div>
+              </>
+            )}
+            {order.order_type && !order.check_out && (
               <div className="flex justify-between gap-3">
                 <dt className="text-menu-muted">{t.orderType}</dt>
                 <dd className="font-semibold">{(t as unknown as Record<string, string>)[order.order_type] ?? order.order_type}</dd>
@@ -192,7 +237,7 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
                 <dd className="font-semibold">{order.table_label}</dd>
               </div>
             )}
-            {order.requested_for && (
+            {order.requested_for && !order.check_out && (
               <div className="flex justify-between gap-3">
                 <dt className="text-menu-muted">{t.msgWhen}</dt>
                 <dd dir="ltr" className="font-semibold">{order.requested_for}</dd>
@@ -200,7 +245,7 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
             )}
             {order.party_size != null && (
               <div className="flex justify-between gap-3">
-                <dt className="text-menu-muted">{t.reserveGuests}</dt>
+                <dt className="text-menu-muted">{order.check_out ? t.guestsLabel : t.reserveGuests}</dt>
                 <dd className="font-semibold tabular-nums">{order.party_size}</dd>
               </div>
             )}

@@ -22,6 +22,7 @@ const SOURCES: Record<ModuleId, string> = {
   cafe: "café, bakery and sweets menus, copying the items",
   shop: "a shop's price lists or product catalogues, copying the products",
   services: "a business's price lists of services (salons, clinics, repair shops and similar), copying the services",
+  stays: "a guesthouse's, chalet's or hotel's room lists and rates, copying each room or chalet with its price per night",
 };
 
 const promptFor = (moduleId: ModuleId) => PROMPT.replace("restaurant and café menus and copy the dishes", SOURCES[moduleId]);

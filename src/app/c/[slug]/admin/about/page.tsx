@@ -28,6 +28,10 @@ const SEO_EXAMPLES: Record<ModuleId, Record<AdminLang, SeoExamples>> = {
     en: { keywords: "hair salon jounieh, colour, manicure…", name: "e.g. Studio Lea", type: "e.g. Hair and beauty salon", keyword: "e.g. bridal make-up jounieh", specialty: "e.g. colour, bridal hair", unique: "e.g. home visits, open on Sundays" },
     ar: { keywords: "صالون جونية، صبغة، مانيكور…", name: "مثال: ستوديو ليا", type: "مثال: صالون شعر وتجميل", keyword: "مثال: مكياج عرائس جونية", specialty: "مثال: الصبغة، تسريحات العرائس", unique: "مثال: زيارات منزلية، مفتوح يوم الأحد" },
   },
+  stays: {
+    en: { keywords: "guesthouse batroun, chalet with pool, weekend in the mountains…", name: "e.g. Beit Sama", type: "e.g. Guesthouse with sea view", keyword: "e.g. guesthouse batroun", specialty: "e.g. stone house, breakfast included", unique: "e.g. walking distance to the beach, family run" },
+    ar: { keywords: "بيت ضيافة البترون، شاليه مع مسبح، ويكند بالجبل…", name: "مثال: بيت سما", type: "مثال: بيت ضيافة مطل على البحر", keyword: "مثال: بيت ضيافة البترون", specialty: "مثال: بيت حجر قديم، فطور مشمول", unique: "مثال: قريب من البحر مشياً، إدارة عائلية" },
+  },
 };
 
 type ContentLang = "en" | "ar";

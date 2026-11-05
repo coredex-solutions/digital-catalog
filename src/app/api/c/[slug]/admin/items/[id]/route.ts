@@ -127,8 +127,11 @@ export async function PUT(
       "sku",
       "compare_at_price",
       "duration_minutes",
+      "unit_count",
+      "max_guests",
+      "weekend_price",
     ];
-    const VALIDATED = ["variants", "dietary", "allergens", "stock_qty", "sku", "compare_at_price", "duration_minutes"];
+    const VALIDATED = ["variants", "dietary", "allergens", "stock_qty", "sku", "compare_at_price", "duration_minutes", "unit_count", "max_guests", "weekend_price"];
 
     for (const field of fields) {
       // Already validated and converted; null clears them (allergens: null = not checked)

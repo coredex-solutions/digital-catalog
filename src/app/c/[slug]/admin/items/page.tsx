@@ -74,10 +74,14 @@ interface Item {
   sku?: string | null;
   compare_at_price?: number | null;
   duration_minutes?: number | null;
+  /** Stays (migration 20261109) */
+  unit_count?: number | null;
+  max_guests?: number | null;
+  weekend_price?: number | null;
 }
 
-/** The shop/service fields as typed in the form ("" = empty) */
-const EMPTY_EXTRAS = { stock_qty: "", sku: "", compare_at_price: "", duration_minutes: "" };
+/** The shop/service/room fields as typed in the form ("" = empty) */
+const EMPTY_EXTRAS = { stock_qty: "", sku: "", compare_at_price: "", duration_minutes: "", unit_count: "", max_guests: "", weekend_price: "" };
 const asText = (value: unknown) => (value === null || value === undefined ? "" : String(value));
 
 /** An option row being edited (price kept as typed text) */
@@ -171,6 +175,13 @@ function makeEn(n: ItemNouns["en"]) {
     compareAtHint: "Shown crossed out next to the price, for a sale. Must be higher than the price.",
     duration: "Duration (minutes)",
     durationHint: "How long it takes. Customers see it next to the price.",
+    pricePerNight: "Price per night",
+    weekendPrice: "Friday & Saturday night price",
+    weekendPriceHint: "Leave empty to charge the same every night.",
+    maxGuests: "Sleeps up to (guests)",
+    maxGuestsHint: "Guests can't book more people than the rooms they choose sleep.",
+    unitCount: "How many like this",
+    unitCountHint: "For identical rooms (e.g. 4 double rooms). Each can be booked for the same night.",
     stockLeft: (x: number) => `${formatNumber(x, "en")} left`,
     outOfStock: "Out of stock",
     cancel: "Cancel",
@@ -272,6 +283,13 @@ function makeAr(n: ItemNouns["ar"]): ReturnType<typeof makeEn> {
     compareAtHint: "يظهر مشطوباً بجانب السعر، للتخفيضات. يجب أن يكون أعلى من السعر.",
     duration: "المدة (بالدقائق)",
     durationHint: "كم تستغرق. يراها الزبائن بجانب السعر.",
+    pricePerNight: "سعر الليلة",
+    weekendPrice: "سعر ليلتي الجمعة والسبت",
+    weekendPriceHint: "اتركه فارغاً ليكون السعر نفسه كل ليلة.",
+    maxGuests: "تتّسع لـ (ضيوف)",
+    maxGuestsHint: "لا يمكن حجز عدد ضيوف أكبر مما تتّسع له الغرف المختارة.",
+    unitCount: "كم واحدة مثلها",
+    unitCountHint: "للغرف المتطابقة (مثلاً 4 غرف مزدوجة). يمكن حجز كل واحدة لنفس الليلة.",
     stockLeft: (x) => `بقي ${formatNumber(x, "ar")}`,
     outOfStock: "نفد المخزون",
     cancel: "إلغاء",
@@ -449,6 +467,9 @@ function ItemsPageContent() {
       sku: asText(item.sku),
       compare_at_price: asText(item.compare_at_price),
       duration_minutes: asText(item.duration_minutes),
+      unit_count: asText(item.unit_count),
+      max_guests: asText(item.max_guests),
+      weekend_price: asText(item.weekend_price),
     });
     setOptions((item.variants || []).map((v) => ({ id: v.id, name_en: v.name_en, name_ar: v.name_ar, price: String(v.price) })));
     setDietary(item.dietary || []);
@@ -493,6 +514,7 @@ function ItemsPageContent() {
       ...(module.itemFields.sku ? { sku: extras.sku } : {}),
       ...(module.itemFields.compareAtPrice ? { compare_at_price: extras.compare_at_price } : {}),
       ...(module.itemFields.duration ? { duration_minutes: extras.duration_minutes } : {}),
+      ...(module.itemFields.stay ? { unit_count: extras.unit_count, max_guests: extras.max_guests, weekend_price: extras.weekend_price } : {}),
     };
 
     try {
@@ -1031,7 +1053,7 @@ function ItemsPageContent() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="dish-price" className="text-xs font-semibold text-ui-muted block mb-2">{t.price}</label>
+                      <label htmlFor="dish-price" className="text-xs font-semibold text-ui-muted block mb-2">{module.itemFields.stay ? t.pricePerNight : t.price}</label>
                       <input id="dish-price" type="number" dir="ltr" step="0.01" value={formData.price} onChange={(e) => setFormData((p) => ({ ...p, price: e.target.value }))} className="w-full px-6 py-4 bg-ui-bg border border-ui-input rounded-control text-ui-ink font-semibold focus:outline-none focus:border-ui-primary shadow-inner" placeholder="0.00" required />
                     </div>
                     <div>
@@ -1043,6 +1065,14 @@ function ItemsPageContent() {
                       </select>
                     </div>
                   </div>
+
+                  {module.itemFields.stay && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <ExtraField id="item-weekend" label={t.weekendPrice} hint={t.weekendPriceHint} value={extras.weekend_price} step="0.01" onChange={(v) => setExtras((p) => ({ ...p, weekend_price: v }))} />
+                      <ExtraField id="item-guests" label={t.maxGuests} hint={t.maxGuestsHint} value={extras.max_guests} step="1" onChange={(v) => setExtras((p) => ({ ...p, max_guests: v }))} />
+                      <ExtraField id="item-units" label={t.unitCount} hint={t.unitCountHint} value={extras.unit_count} step="1" onChange={(v) => setExtras((p) => ({ ...p, unit_count: v }))} />
+                    </div>
+                  )}
 
                   {(showStock || module.itemFields.sku || module.itemFields.compareAtPrice || module.itemFields.duration) && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

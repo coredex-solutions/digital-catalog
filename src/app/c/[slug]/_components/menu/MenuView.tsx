@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Coffee, ShoppingBag, Sparkles, UtensilsCrossed } from "lucide-react";
+import { BedDouble, Coffee, ShoppingBag, Sparkles, UtensilsCrossed } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { CartBar } from "./CartBar";
 import { CartSheet } from "./CartSheet";
@@ -13,11 +13,13 @@ import { MenuHeader } from "./MenuHeader";
 import { MenuSections, useMenuSections } from "./MenuSections";
 import { ReservationSheet } from "./ReservationSheet";
 import { SearchSheet } from "./SearchSheet";
+import { StayBar } from "./StayBar";
+import { StayDatesSheet } from "./StayDatesSheet";
 
 /** The whole catalog on one page: header, sticky categories, items, order bar, sheets */
 export function MenuView() {
   const { categories, menuItems, t, bookingEnabled, cartItemCount, orderingEnabled, module } = useCatalog();
-  const EmptyIcon = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles }[module.icon];
+  const EmptyIcon = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles, BedDouble }[module.icon];
   const sections = useMenuSections(categories, menuItems);
 
   // Old per-category links redirect here with ?c=<id>; open the menu at that section
@@ -37,6 +39,7 @@ export function MenuView() {
       <MenuHeader />
 
       <main className={orderingEnabled && cartItemCount > 0 ? "pb-28" : "pb-12"}>
+        {module.nights && orderingEnabled && sections.length > 0 && <StayBar />}
         {sections.length > 0 ? (
           <>
             <CategoryNav categories={sections.map((section) => section.category)} />
@@ -62,6 +65,7 @@ export function MenuView() {
       <SearchSheet />
       <InfoSheet />
       {bookingEnabled && <ReservationSheet />}
+      {module.nights && <StayDatesSheet />}
     </>
   );
 }

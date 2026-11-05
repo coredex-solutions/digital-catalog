@@ -11,6 +11,7 @@ import { feeLine, quoteDelivery, zoneName, type DeliveryConfig } from "./deliver
 import { PAY_AT_TABLE, type PaymentConfig, type PaymentMethod } from "./payment";
 import { fitsSlot, requestMinutes, type BeirutNow, type BookingConfig, type HoursRow } from "./slots";
 import { couponDiscount, couponUsable, discountLine, normalizeCode, type Coupon, type CouponProblem } from "./coupons";
+import { checkStayDates, freeUnits, stayLinePrice, stayNights, unitsOf, MAX_GUESTS, type StayConfig, type StayDateProblem } from "./stays";
 
 export type OrderKind = "order" | "booking";
 
@@ -27,6 +28,12 @@ export interface OrderableItem {
   variants: unknown;
   /** Length of a service, for set appointment times; null = not set */
   duration_minutes?: number | null;
+  /** Stays: identical rooms or chalets this item is (null = 1) */
+  unit_count?: number | null;
+  /** Stays: most guests one of them sleeps (null = not limited) */
+  max_guests?: number | null;
+  /** Stays: price for Friday and Saturday nights (null = same as price) */
+  weekend_price?: number | null;
 }
 
 export interface OrderContext {
@@ -53,6 +60,13 @@ export interface OrderContext {
   coupon?: Coupon | null;
   /** Today in Beirut, YYYY-MM-DD (passed in so tests are stable) */
   today: string;
+  /** Stays: check-in and check-out times, shortest stay, closed nights and deposit */
+  stay?: StayConfig;
+  /**
+   * Stays: rooms already taken per item per night ({ itemId: { date: count } }), loaded by the
+   * caller for the asked dates. Saving checks again, so this only gives a clear early answer.
+   */
+  stayBooked?: Record<string, Record<string, number>>;
 }
 
 export interface OrderLineSnapshot {
@@ -101,6 +115,10 @@ export interface ValidOrder {
   couponId: string | null;
   couponCode: string | null;
   clientKey: string | null;
+  /** Stays: the day guests leave (YYYY-MM-DD); check-in is the date in requestedFor */
+  checkOut: string | null;
+  /** Stays: rooms asked per item and how many the item has, for the "still free" check when saving */
+  units: { itemId: string; quantity: number; count: number }[] | null;
 }
 
 /**
@@ -119,11 +137,14 @@ export type OrderErrorCode =
   | "below_minimum"
   | "slot_unavailable"
   | "coupon"
+  | "stay_dates"
+  | "stay_unavailable"
+  | "too_many_guests"
   | "required";
 
 export type OrderValidation =
   | { ok: true; order: ValidOrder }
-  | { ok: false; code: OrderErrorCode; field?: string; message: string; detail?: CouponProblem };
+  | { ok: false; code: OrderErrorCode; field?: string; message: string; detail?: CouponProblem | StayDateProblem; limit?: number };
 
 export const MAX_ORDER_LINES = 50;
 export const MAX_LINE_QUANTITY = 99;
@@ -228,6 +249,8 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
         couponId: null,
         couponCode: null,
         clientKey,
+        checkOut: null,
+        units: null,
       },
     };
   }
@@ -256,6 +279,20 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
     const methods = ctx.payment.methods;
     paymentMethod = methods.find((method) => method === input.paymentMethod) ?? (methods.length === 1 ? methods[0] : null);
     if (!paymentMethod) return fail("required", "Choose how you'll pay", "payment");
+  }
+
+  // Stays: check-in and check-out days, and how many guests
+  let stay: { checkIn: string; checkOut: string; nights: string[]; guests: number } | null = null;
+  if (ctx.module.nights) {
+    const config = ctx.stay;
+    if (!config) return fail("closed", "Booking is not available");
+    const problem = checkStayDates(config, input.checkIn, input.checkOut, ctx.today);
+    if (problem) return { ...fail("stay_dates", "Choose other dates", "dates"), detail: problem } as OrderValidation;
+    const guests = Math.floor(Number(input.guests));
+    if (!Number.isFinite(guests) || guests < 1 || guests > MAX_GUESTS) return fail("required", "Choose the number of guests", "guests");
+    const checkIn = String(input.checkIn);
+    const checkOut = String(input.checkOut);
+    stay = { checkIn, checkOut, nights: stayNights(checkIn, checkOut), guests };
   }
 
   let requestedFor: string | null = null;
@@ -290,6 +327,7 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
     }
 
     wantedPerItem.set(item.id, (wantedPerItem.get(item.id) || 0) + quantity);
+    const nightly = variant ? variant.price : item.price;
     lines.push({
       item_id: item.id,
       name_en: item.name_en || "",
@@ -297,7 +335,8 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
       variant_id: variant?.id ?? null,
       variant_en: variant?.name_en ?? null,
       variant_ar: variant?.name_ar ?? null,
-      price: variant ? variant.price : item.price,
+      // A stay is priced for all its nights (weekend nights at the weekend price)
+      price: stay ? stayLinePrice(item, nightly, stay.nights) : nightly,
       currency: (item.currency || "USD").toUpperCase(),
       quantity,
       note: longText(line.note, 200) || null,
@@ -314,6 +353,21 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
     for (const line of lines) {
       if (byId.get(line.item_id)!.stock_qty !== null) line.reserved = line.quantity;
     }
+  }
+
+  // Stays: enough rooms free on every night, and beds for every guest
+  let units: ValidOrder["units"] = null;
+  if (stay) {
+    units = [];
+    let beds = 0;
+    for (const [itemId, wanted] of wantedPerItem) {
+      const item = byId.get(itemId)!;
+      const count = unitsOf(item);
+      if (wanted > freeUnits(count, ctx.stayBooked?.[itemId], stay.nights)) return fail("stay_unavailable", "These dates are no longer free", "dates");
+      units.push({ itemId, quantity: wanted, count });
+      beds = beds === Infinity || !item.max_guests ? Infinity : beds + item.max_guests * wanted;
+    }
+    if (stay.guests > beds) return { ...fail("too_many_guests", "Too many guests for these rooms", "guests"), limit: beds } as OrderValidation;
   }
 
   // Appointments with set times: the time must be one of them (still free is checked when saving)
@@ -356,15 +410,15 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
   return {
     ok: true,
     order: {
-      kind: ctx.module.id === "services" ? "request" : "order",
+      kind: ctx.module.id === "services" || stay ? "request" : "order",
       orderType,
       name,
       phone,
       table: table || null,
       address: address || null,
       area: area || null,
-      requestedFor,
-      partySize: null,
+      requestedFor: stay ? `${stay.checkIn} ${ctx.stay!.check_in}` : requestedFor,
+      partySize: stay ? stay.guests : null,
       note,
       lang,
       lines,
@@ -379,6 +433,8 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
       couponId: discount !== null ? ctx.coupon!.id : null,
       couponCode: discount !== null ? code : null,
       clientKey,
+      checkOut: stay ? stay.checkOut : null,
+      units,
     },
   };
 }

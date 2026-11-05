@@ -44,6 +44,6 @@ export function countNoun(module: ModuleDefinition, lang: "en" | "ar", n: number
 
 /** The owner's page, as they'd say it: menu, store, page (and "your …" in Arabic) */
 export function pageWord(module: ModuleDefinition, lang: "en" | "ar"): string {
-  if (lang === "ar") return module.id === "shop" ? "متجرك" : module.id === "services" ? "صفحتك" : "قائمتك";
-  return module.id === "shop" ? "store" : module.id === "services" ? "page" : "menu";
+  if (lang === "ar") return module.id === "shop" ? "متجرك" : module.id === "services" || module.id === "stays" ? "صفحتك" : "قائمتك";
+  return module.id === "shop" ? "store" : module.id === "services" || module.id === "stays" ? "page" : "menu";
 }

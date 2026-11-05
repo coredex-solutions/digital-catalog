@@ -7,6 +7,9 @@ import { beirutToday, type OrderContext, type OrderableItem } from "./validate";
 import { parseDeliveryConfig } from "./delivery";
 import { parsePaymentConfig } from "./payment";
 import { beirutNow, parseBookingConfig } from "./slots";
+import { parseStayConfig } from "./stays";
+
+const positive = (value: unknown) => (value != null && Number(value) > 0 ? Number(value) : null);
 
 type CatalogData = NonNullable<Awaited<ReturnType<typeof getFullCatalogData>>>;
 
@@ -34,7 +37,10 @@ export function buildOrderContext(data: CatalogData): OrderContext {
       is_available: isItemAvailable(row, trackStock),
       stock_qty: trackStock ? stock : null,
       variants: row.variants,
-      duration_minutes: row.duration_minutes != null && Number(row.duration_minutes) > 0 ? Number(row.duration_minutes) : null,
+      duration_minutes: positive(row.duration_minutes),
+      unit_count: positive(row.unit_count),
+      max_guests: positive(row.max_guests),
+      weekend_price: positive(row.weekend_price),
     };
   });
   const settings = data.settings as unknown as Record<string, unknown> | null;
@@ -52,5 +58,6 @@ export function buildOrderContext(data: CatalogData): OrderContext {
     hours: data.operatingHours.map((h) => ({ day_name: h.day_name, open_hour: Number(h.open_hour), close_hour: Number(h.close_hour), is_closed: Number(h.is_closed) })),
     now: beirutNow(),
     today: beirutToday(),
+    stay: def.nights ? parseStayConfig(settings?.stay_config) : undefined,
   };
 }

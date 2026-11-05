@@ -61,7 +61,7 @@ function sampleFor(module: ModuleId, lang: PreviewLang) {
         { name: `${one} ${sampleWord} 2`, description: "يمكن ذكر التفاصيل المهمة للزبون في الوصف." },
         { name: `${one} ${sampleWord} 3`, description: "للمعاينة فقط." },
       ],
-      restaurant: module === "shop" ? "متجرك" : module === "cafe" ? "مقهاك" : "محلك",
+      restaurant: module === "shop" ? "متجرك" : module === "cafe" ? "مقهاك" : module === "stays" ? "مكانك" : "محلك",
     };
   }
   const one = def.nouns.en.one;
@@ -72,7 +72,7 @@ function sampleFor(module: ModuleId, lang: PreviewLang) {
       { name: `Sample ${one} 2`, description: "Details customers care about can go in the description." },
       { name: `Sample ${one} 3`, description: "Shown for preview only." },
     ],
-    restaurant: module === "shop" ? "Your shop" : module === "cafe" ? "Your café" : "Your business",
+    restaurant: module === "shop" ? "Your shop" : module === "cafe" ? "Your café" : module === "stays" ? "Your place" : "Your business",
   };
 }
 

@@ -1,11 +1,13 @@
-// Seeds demo pages for the café, shop and services modules, next to the restaurant demo
+// Seeds demo pages for the café, shop, services and stays modules, next to the restaurant demo
 // (scripts/seed-demo.ts, /c/demo):
 //   /c/demo-cafe      Café & Bakery
 //   /c/demo-shop      Shop (with stock and a sale price)
 //   /c/demo-services  Services (with durations and appointment requests)
-// Re-running replaces these three catalogs (and only them).
+//   /c/demo-stays     Guesthouse & Chalets (rooms by the night, weekend prices, a deposit)
+// Re-running replaces these catalogs (and only them).
 //
 //   npx tsx scripts/seed-demo-modules.ts
+//   DEMO_ONLY=demo-stays npx tsx scripts/seed-demo-modules.ts   (just one of them)
 //
 // Each admin password comes from DEMO_ADMIN_PASSWORD, or is generated and printed once.
 // No photos: the pages show a lettered tile instead, so there are no borrowed images to break.
@@ -33,12 +35,15 @@ type DemoItem = {
     id: string; cat: string; price: number; featured?: boolean;
     en: [string, string]; ar: [string, string];
     variants?: Variant[]; stock?: number; compareAt?: number; minutes?: number; sku?: string;
+    units?: number; guests?: number; weekend?: number;
 };
 type Demo = {
     slug: string; id: string; module: ModuleId; subType: string;
     name: { en: string; ar: string }; description: { en: string; ar: string };
     orderTypes: string; color: string; hours: [number, number]; closedDays?: string[];
     deliveryNote?: { en: string; ar: string };
+    /** Stays: catalog_settings.stay_config */
+    stayConfig?: Record<string, unknown>;
     categories: { id: string; en: string; ar: string }[];
     items: DemoItem[];
 };
@@ -116,6 +121,25 @@ const DEMOS: Demo[] = [
             { id: 'svc-facial', cat: 'svc-skin', price: 30, minutes: 60, en: ['Facial cleansing', 'Deep cleansing and a mask'], ar: ['تنظيف بشرة', 'تنظيف عميق وماسك'] },
         ],
     },
+    {
+        slug: 'demo-stays', id: 'demo-stays-001', module: 'stays', subType: 'guesthouse',
+        name: { en: 'Beit Sama', ar: 'بيت سما' },
+        description: { en: 'A stone guesthouse and sea chalets in Batroun. A Coredex demo stay.', ar: 'بيت ضيافة حجري وشاليهات على البحر في البترون. إقامة تجريبية من Coredex.' },
+        orderTypes: 'stay', color: '#1F6F78', hours: [0, 24],
+        stayConfig: { check_in: '14:00', check_out: '12:00', min_nights: 1, max_nights: 14, max_days: 365, deposit_percent: 30, blocked_dates: [] },
+        categories: [
+            { id: 'stay-rooms', en: 'Guesthouse rooms', ar: 'غرف بيت الضيافة' },
+            { id: 'stay-chalets', en: 'Sea chalets', ar: 'شاليهات البحر' },
+        ],
+        items: [
+            { id: 'stay-double', cat: 'stay-rooms', price: 90, weekend: 110, units: 3, guests: 2, featured: true,
+              en: ['Double room', 'Stone walls, a double bed and a garden view. Breakfast included.'], ar: ['غرفة مزدوجة', 'جدران حجرية وسرير مزدوج وإطلالة على الحديقة. الفطور مشمول.'] },
+            { id: 'stay-family', cat: 'stay-rooms', price: 130, weekend: 160, units: 1, guests: 4,
+              en: ['Family room', 'A double bed and two singles. Breakfast included.'], ar: ['غرفة عائلية', 'سرير مزدوج وسريران مفردان. الفطور مشمول.'] },
+            { id: 'stay-chalet', cat: 'stay-chalets', price: 180, weekend: 240, units: 2, guests: 5,
+              en: ['Sea-view chalet', 'Two bedrooms, a kitchen and a terrace over the sea.'], ar: ['شاليه مطل على البحر', 'غرفتا نوم ومطبخ وتراس فوق البحر.'] },
+        ],
+    },
 ];
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -186,15 +210,19 @@ async function seed(demo: Demo) {
             sql: `INSERT INTO menu_items (id, catalog_id, category_id, name_en, name_ar, name_fr,
                     description_en, description_ar, description_fr, price, currency,
                     display_order, is_active, is_featured, is_available, variants,
-                    stock_qty, sku, compare_at_price, duration_minutes, created_at)
-                  VALUES (?, ?, ?, ?, ?, '', ?, ?, '', ?, 'USD', ?, 1, ?, 1, ?, ?, ?, ?, ?, ?)`,
+                    stock_qty, sku, compare_at_price, duration_minutes, unit_count, max_guests, weekend_price, created_at)
+                  VALUES (?, ?, ?, ?, ?, '', ?, ?, '', ?, 'USD', ?, 1, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
                 rowId(item.id), demo.id, rowId(item.cat), item.en[0], item.ar[0], item.en[1], item.ar[1], item.price,
                 order, item.featured ? 1 : 0,
                 item.variants ? JSON.stringify(item.variants.map((v) => ({ id: v.id, name_en: v.en, name_ar: v.ar, price: v.price }))) : null,
-                item.stock ?? null, item.sku ?? null, item.compareAt ?? null, item.minutes ?? null, now,
+                item.stock ?? null, item.sku ?? null, item.compareAt ?? null, item.minutes ?? null,
+                item.units ?? null, item.guests ?? null, item.weekend ?? null, now,
             ],
         })),
+        ...(demo.stayConfig
+            ? [{ sql: 'UPDATE catalog_settings SET stay_config = ? WHERE catalog_id = ?', args: [JSON.stringify(demo.stayConfig), demo.id] }]
+            : []),
         ...DAYS.map((day) => ({
             sql: `INSERT INTO operating_hours (catalog_id, day_name, open_hour, close_hour, is_closed) VALUES (?, ?, ?, ?, ?)`,
             args: [demo.id, day, demo.hours[0], demo.hours[1], demo.closedDays?.includes(day) ? 1 : 0],
@@ -211,7 +239,8 @@ async function seed(demo: Demo) {
 }
 
 (async () => {
-    for (const demo of DEMOS) await seed(demo);
+    const only = process.env.DEMO_ONLY;
+    for (const demo of DEMOS.filter((d) => !only || d.slug === only)) await seed(demo);
 })().catch((error) => {
     console.error(error);
     process.exit(1);

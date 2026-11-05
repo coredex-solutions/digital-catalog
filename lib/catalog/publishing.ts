@@ -164,7 +164,7 @@ export async function getPublicMenu(catalogId: string, options: { preview?: bool
 const ITEM_FIELDS = [
   "name_en", "name_ar", "description_en", "description_ar", "price", "currency", "image_url",
   "category_id", "display_order", "is_active", "is_featured", "variants", "dietary", "allergens",
-  "sku", "compare_at_price", "duration_minutes",
+  "sku", "compare_at_price", "duration_minutes", "unit_count", "max_guests", "weekend_price",
 ] as const;
 const CATEGORY_FIELDS = ["name_en", "name_ar", "image_url", "display_order", "is_active"] as const;
 
