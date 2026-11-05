@@ -1,27 +1,43 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
-import Image from "next/image";
 import QRCode from "qrcode";
 import {
   ArrowUpRight,
   BarChart3,
   Ban,
   Banknote,
+  CakeSlice,
+  Car,
   Check,
+  ChefHat,
   Clock,
+  Coffee,
+  Croissant,
+  Dumbbell,
+  Gift,
+  IceCreamCone,
   Languages,
   Mail,
   MessageCircle,
   Palette,
   Pencil,
+  Pill,
   QrCode,
+  Sandwich,
   ScanLine,
+  Scissors,
   Search,
-  Sparkles,
-  Coffee,
+  Shirt,
   ShoppingBag,
+  ShoppingBasket,
+  Smartphone,
+  Sparkles,
+  Stethoscope,
+  Store,
   UtensilsCrossed,
+  Wine,
+  Wrench,
 } from "lucide-react";
 import { MODULES, MODULE_IDS, type ModuleId } from "@/lib/modules/registry";
 
@@ -40,8 +56,8 @@ import { RotatingWords } from "./RotatingWords";
 import { CurrencyDemo } from "./CurrencyDemo";
 import { LanguageDemo } from "./LanguageDemo";
 import { WhatsAppDemo } from "./WhatsAppDemo";
-import { HeroMenuDemo } from "./HeroMenuDemo";
-import { formatPrice } from "@/lib/catalog/price";
+import { HeroShowcase } from "./HeroShowcase";
+import { OrdersInboxDemo } from "./OrdersInboxDemo";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 
 /** Each language has its own address, so search engines can index both: / and /ar/ */
@@ -83,17 +99,29 @@ const primaryButton =
 const secondaryButton =
   "inline-flex min-h-12 items-center justify-center gap-2 rounded-control border border-ui-input bg-ui-surface px-5 font-semibold text-ui-ink transition-colors hover:bg-ui-subtle";
 
-// Sample prices on the page are formatted by the real menu code at $1 = 89,500 L.L.
-const PREVIEW_PRICES = { primary: "USD" as const, lbpRate: 89500, rateUpdatedAt: null, showDual: true };
-
-const MARQUEE_DISHES = [
-  { img: "/landing/hummus.png", key: "hummus", price: 4 },
-  { img: "/landing/kibbeh.png", key: "kibbeh", price: 6 },
-  { img: "/landing/baba-ganoush.png", key: "babaGanoush", price: 4.5 },
-  { img: "/landing/mansaf.png", key: "mansaf", price: 14 },
-] as const;
-
-const cardShadow = "shadow-[0_16px_32px_-16px_rgba(23,21,46,0.35)]";
+/** An icon for each kind of business in the registry, for the strip under the business cards */
+const SUB_TYPE_ICONS: Record<string, typeof Store> = {
+  restaurant: UtensilsCrossed,
+  fast_food: Sandwich,
+  bar: Wine,
+  catering: ChefHat,
+  cafe: Coffee,
+  bakery: Croissant,
+  pastry: CakeSlice,
+  juice: IceCreamCone,
+  retail: Store,
+  clothing: Shirt,
+  electronics: Smartphone,
+  grocery: ShoppingBasket,
+  pharmacy: Pill,
+  gifts: Gift,
+  salon: Scissors,
+  beauty: Sparkles,
+  clinic: Stethoscope,
+  fitness: Dumbbell,
+  repair: Wrench,
+  car_care: Car,
+};
 
 function SectionIntro({ eyebrow, title, body, center }: { eyebrow?: string; title: string; body?: string; center?: boolean }) {
   return (
@@ -116,11 +144,13 @@ function ModuleCards({ lang, t, demos }: { lang: SiteLang; t: ReturnType<typeof 
         const Icon = MODULE_ICONS[definition.icon];
         return (
           <Reveal as="li" key={id} delay={index * 90}>
-            <div className="flex h-full flex-col rounded-panel border border-ui-line bg-ui-surface p-5">
-              <span className="flex h-11 w-11 items-center justify-center rounded-control bg-ui-subtle text-ui-primary">
-                <Icon className="h-5 w-5" aria-hidden />
-              </span>
-              <h3 className="mt-4 text-lg font-semibold">{definition.label[lang]}</h3>
+            <div className="group flex h-full flex-col rounded-panel border border-ui-line bg-ui-surface p-5 transition-[border-color,box-shadow] duration-200 hover:border-ui-primary/40 hover:shadow-[0_16px_32px_-20px_rgba(64,40,201,0.35)]">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-ui-subtle text-ui-primary transition-colors duration-200 group-hover:bg-ui-primary group-hover:text-ui-primary-fg">
+                  <Icon className="h-5 w-5" aria-hidden />
+                </span>
+                <h3 className="text-lg font-semibold">{definition.label[lang]}</h3>
+              </div>
               <p className="mt-1 text-sm text-ui-muted">{definition.tagline[lang]}</p>
               <ul className="mt-4 space-y-2 text-sm">
                 {(t.modules.points[id] || []).map((point) => (
@@ -130,7 +160,16 @@ function ModuleCards({ lang, t, demos }: { lang: SiteLang; t: ReturnType<typeof 
                   </li>
                 ))}
               </ul>
-              <div className="mt-auto flex flex-wrap gap-x-4 pt-5">
+              <ul className="mb-5 mt-4 flex flex-wrap gap-1.5" aria-label={definition.label[lang]}>
+                {definition.subTypes
+                  .filter((sub) => SUB_TYPE_ICONS[sub.id])
+                  .map((sub) => (
+                    <li key={sub.id} className="rounded-full bg-ui-bg px-2.5 py-1 text-xs font-medium text-ui-muted">
+                      {sub.label[lang]}
+                    </li>
+                  ))}
+              </ul>
+              <div className="mt-auto flex flex-wrap gap-x-4 border-t border-ui-line pt-3">
                 <Link
                   href={`/signup/?type=${id}`}
                   aria-label={t.modules.startAs(definition.label[lang])}
@@ -149,6 +188,28 @@ function ModuleCards({ lang, t, demos }: { lang: SiteLang; t: ReturnType<typeof 
                   </a>
                 )}
               </div>
+            </div>
+          </Reveal>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Features as a light list (no boxes): icon, title and a line of text */
+function FeatureList({ items, icons }: { items: { title: string; body: string }[]; icons: typeof GUEST_ICONS }) {
+  return (
+    <ul className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((item, index) => {
+        const Icon = icons[index];
+        return (
+          <Reveal as="li" key={item.title} delay={(index % 3) * 90} className="flex gap-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ui-surface text-ui-primary ring-1 ring-ui-line">
+              <Icon className="h-5 w-5" aria-hidden />
+            </span>
+            <div>
+              <h3 className="font-semibold">{item.title}</h3>
+              <p className="mt-1 text-ui-muted">{item.body}</p>
             </div>
           </Reveal>
         );
@@ -178,95 +239,26 @@ function FeatureGrid({ items, icons }: { items: { title: string; body: string }[
   );
 }
 
-/** The real demo menu in a phone, with floating cards that illustrate what it does */
-function HeroVisual({ lang, t, demoQr }: { lang: SiteLang; t: ReturnType<typeof getSiteCopy>; demoQr: string | null }) {
-  const hummus = formatPrice(4, "USD", PREVIEW_PRICES, lang);
-  return (
-    <div className="site-pop relative mx-auto w-[300px] sm:w-[320px]" style={{ animationDelay: "150ms" }}>
-      <div className="absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(64,40,201,0.22),transparent)]" aria-hidden />
-      <figure id="demo" className="scroll-mt-24">
-        <div className="overflow-hidden rounded-[2.25rem] border-[10px] border-ui-ink bg-ui-surface shadow-[0_32px_64px_-24px_rgba(23,21,46,0.5)]">
-          {demoQr ? (
-            <iframe src={`${DEMO_PATH}?lang=${lang}`} title={t.preview.label} loading="lazy" className="block h-[580px] w-full" />
-          ) : (
-            // No demo catalog in this database yet: a working sample menu instead of a 404
-            <HeroMenuDemo lang={lang} />
-          )}
-        </div>
-        <figcaption className="mt-3 flex items-center justify-center gap-2 text-sm text-ui-muted">
-          <span>{demoQr ? t.preview.label : t.preview.sample}</span>
-          {demoQr && (
-            <>
-              <span aria-hidden>·</span>
-              <a href={DEMO_PATH} className="font-medium text-ui-primary underline-offset-4 hover:underline">
-                {t.preview.open}
-              </a>
-            </>
-          )}
-        </figcaption>
-      </figure>
-
-      {/* Floating illustrations (decorative; the same facts are in the text) */}
-      <div aria-hidden className="pointer-events-none">
-        <div className={`site-float absolute -start-28 top-14 hidden w-56 rounded-panel border border-ui-line bg-ui-surface p-3 sm:block lg:-start-36 ${cardShadow}`}>
-          <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#25D366] text-white">
-              <MessageCircle className="h-4 w-4" />
-            </span>
-            <span className="text-sm font-semibold">{t.floats.orderTitle}</span>
-          </div>
-          <p className="mt-2 text-sm text-ui-muted">{t.floats.orderBody}</p>
-        </div>
-
-        <div className={`site-float-slow absolute -end-24 top-[46%] hidden rounded-panel border border-ui-line bg-ui-surface px-4 py-3 sm:block lg:-end-32 ${cardShadow}`}>
-          <p className="text-sm font-semibold">{t.floats.priceLabel}</p>
-          <p className="mt-0.5 flex items-baseline gap-2">
-            <bdi className="text-lg font-semibold tabular-nums">{hummus.primary}</bdi>
-            <bdi className="text-sm tabular-nums text-ui-muted">{hummus.secondary}</bdi>
-          </p>
-        </div>
-
-        {demoQr && (
-        <div className={`site-float absolute -start-20 bottom-24 hidden rounded-panel border border-ui-line bg-ui-surface p-3 sm:block lg:-start-28 ${cardShadow}`} style={{ animationDelay: "-3s" }}>
-          <div className="relative h-24 w-24 overflow-hidden rounded-control">
-            <div className="h-full w-full [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: demoQr }} />
-            <span className="site-scan absolute inset-x-1 h-0.5 rounded-full bg-ui-primary shadow-[0_0_12px_2px_rgba(64,40,201,0.6)]" />
-          </div>
-          <p className="mt-2 text-center text-xs font-semibold">{t.floats.scan}</p>
-        </div>
-        )}
-
-        <div className="site-float-slow absolute -end-16 top-6 hidden rounded-full border border-ui-line bg-ui-surface px-3 py-1.5 text-sm font-semibold shadow-[0_12px_24px_-12px_rgba(23,21,46,0.35)] sm:block lg:-end-20">
-          {t.floats.lang}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Endless strip of sample dishes, priced like the real menu */
-function DishMarquee({ lang, t }: { lang: SiteLang; t: ReturnType<typeof getSiteCopy> }) {
-  const cards = MARQUEE_DISHES.map((dish) => ({ ...dish, name: t.dishes[dish.key], price: formatPrice(dish.price, "USD", PREVIEW_PRICES, lang) }));
-  const loop = [...cards, ...cards, ...cards, ...cards];
+/** Endless strip of the kinds of business the platform is made for (from the module registry) */
+function BusinessMarquee({ lang, t }: { lang: SiteLang; t: ReturnType<typeof getSiteCopy> }) {
+  const kinds = MODULE_IDS.flatMap((id) => MODULES[id].subTypes.filter((sub) => SUB_TYPE_ICONS[sub.id]));
+  const loop = [...kinds, ...kinds];
   return (
     <section aria-label={t.marquee.label} className="border-y border-ui-line bg-ui-surface py-8">
       <p className="mx-auto max-w-6xl px-4 text-sm font-medium text-ui-muted sm:px-6">{t.marquee.label}</p>
       <div className="site-marquee-wrap mt-4 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
-        <ul className="site-marquee flex w-max gap-4 px-2">
-          {loop.map((dish, i) => (
-            <li key={i} aria-hidden={i >= cards.length} className="flex w-72 shrink-0 items-center gap-3 rounded-panel border border-ui-line bg-ui-bg p-2.5">
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-control">
-                <Image src={dish.img} alt="" fill sizes="64px" className="object-cover" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate font-semibold">{dish.name}</p>
-                <p className="flex flex-wrap items-baseline gap-x-2">
-                  <bdi className="font-semibold tabular-nums">{dish.price.primary}</bdi>
-                  <bdi className="text-sm tabular-nums text-ui-muted">{dish.price.secondary}</bdi>
-                </p>
-              </div>
-            </li>
-          ))}
+        <ul className="site-marquee flex w-max gap-3 px-2">
+          {loop.map((kind, i) => {
+            const Icon = SUB_TYPE_ICONS[kind.id];
+            return (
+              <li key={i} aria-hidden={i >= kinds.length} className="flex shrink-0 items-center gap-2.5 rounded-full border border-ui-line bg-ui-bg py-2 pe-4 ps-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ui-subtle text-ui-primary">
+                  <Icon className="h-4 w-4" aria-hidden />
+                </span>
+                <span className="whitespace-nowrap text-sm font-semibold">{kind.label[lang]}</span>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </section>
@@ -371,7 +363,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
                 {hasDemo ? t.hero.note : t.hero.noteNoDemo}
               </p>
             </div>
-            <HeroVisual lang={lang} t={t} demoQr={demoQr} />
+            <HeroShowcase lang={lang} t={t.showcase} floats={t.floats} demos={moduleDemos} demoQr={demoQr} />
           </div>
         </section>
 
@@ -383,13 +375,13 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
           </div>
         </section>
 
-        <DishMarquee lang={lang} t={t} />
+        <BusinessMarquee lang={lang} t={t} />
 
         {/* Guests */}
         <section id="features" className="scroll-mt-20">
           <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
             <SectionIntro title={t.guests.title} />
-            <FeatureGrid items={t.guests.items} icons={GUEST_ICONS} />
+            <FeatureList items={t.guests.items} icons={GUEST_ICONS} />
           </div>
         </section>
 
@@ -415,13 +407,30 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
           </div>
         </section>
 
-        {/* Showcase: WhatsApp orders */}
+        {/* Showcase: saved orders, and the same order on WhatsApp */}
         <section className="border-t border-ui-line bg-ui-surface">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16">
-            <SectionIntro eyebrow={t.whatsappDemo.eyebrow} title={t.whatsappDemo.title} body={t.whatsappDemo.body} />
-            <Reveal delay={120}>
-              <WhatsAppDemo t={t.whatsappDemo} lang={lang} />
-            </Reveal>
+          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+            <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-end lg:gap-16">
+              <SectionIntro eyebrow={t.whatsappDemo.eyebrow} title={t.whatsappDemo.title} body={t.whatsappDemo.body} />
+              <Reveal as="ul" delay={80} className="space-y-3">
+                {t.whatsappDemo.points.map((point) => (
+                  <li key={point} className="flex gap-3">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ui-subtle text-ui-primary">
+                      <Check className="h-4 w-4" aria-hidden />
+                    </span>
+                    <span>{point}</span>
+                  </li>
+                ))}
+              </Reveal>
+            </div>
+            <div className="mt-12 grid gap-6 lg:grid-cols-2 lg:gap-8">
+              <Reveal delay={60}>
+                <OrdersInboxDemo t={t.whatsappDemo} lang={lang} />
+              </Reveal>
+              <Reveal delay={160}>
+                <WhatsAppDemo t={t.whatsappDemo} lang={lang} />
+              </Reveal>
+            </div>
           </div>
         </section>
 
@@ -545,47 +554,104 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
               </p>
             </div>
             <div aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-brand-gradient" />
-            {/* Dish photos fanned out on large screens */}
-            <div aria-hidden className="pointer-events-none absolute -end-6 top-1/2 hidden -translate-y-1/2 lg:block">
-              <div className="relative h-80 w-96">
-                {[
-                  { img: "/landing/mansaf.png", cls: "end-40 top-6 -rotate-6" },
-                  { img: "/landing/kibbeh.png", cls: "end-20 top-0 rotate-3" },
-                  { img: "/landing/hummus.png", cls: "end-2 top-10 rotate-12" },
-                ].map((photo, i) => (
-                  <div key={photo.img} className={`absolute h-56 w-40 ${photo.cls}`}>
-                    <div className="site-float relative h-full w-full overflow-hidden rounded-panel border-4 border-white/90 shadow-xl" style={{ animationDelay: `${-i * 2}s` }}>
-                      <Image src={photo.img} alt="" fill sizes="160px" className="object-cover" />
+            {/* The four kinds of business, as tiles, on large screens */}
+            <div aria-hidden className="pointer-events-none absolute end-12 top-1/2 hidden -translate-y-1/2 xl:block">
+              <div className="grid grid-cols-2 gap-4">
+                {MODULE_IDS.map((id, i) => {
+                  const Icon = MODULE_ICONS[MODULES[id].icon];
+                  return (
+                    <div
+                      key={id}
+                      className={`site-float flex w-40 flex-col gap-3 rounded-panel bg-ui-surface p-4 text-ui-ink shadow-xl ${i % 2 ? "translate-y-6 rotate-2" : "-rotate-2"}`}
+                      style={{ animationDelay: `${-i * 1.5}s` }}
+                    >
+                      <span className="flex h-10 w-10 items-center justify-center rounded-control bg-ui-subtle text-ui-primary">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span className="font-semibold">{MODULES[id].label[lang]}</span>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </Reveal>
         </section>
       </main>
 
-      <footer className="border-t border-ui-line">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-ui-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>{t.footer.rights}</p>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            {hasDemo && (
-              <a href={DEMO_PATH} className="hover:text-ui-ink">
-                {t.footer.demo}
+      <footer className="border-t border-ui-line bg-ui-surface">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div className="max-w-xs">
+            <Link href={LANDING_PATH[lang]} className="inline-flex items-center gap-2 font-semibold">
+              <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
+                <QrCode className="h-4 w-4" />
+              </span>
+              <span dir="ltr" className="text-ui-primary">Coredex</span>
+            </Link>
+            <p className="mt-3 text-sm text-ui-muted">{t.footer.tagline}</p>
+            <div className="mt-4 flex flex-col gap-2 text-sm">
+              <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 font-medium text-ui-ink hover:text-ui-primary">
+                <MessageCircle className="h-4 w-4" aria-hidden />
+                {t.cta.secondary}
               </a>
-            )}
-            <Link href="/signup" className="hover:text-ui-ink">
-              {t.footer.signup}
-            </Link>
-            <Link href="/login/" className="hover:text-ui-ink">
-              {t.footer.login}
-            </Link>
-            <Link href="/privacy/" className="hover:text-ui-ink">
-              {t.footer.privacy}
-            </Link>
-            <Link href="/terms/" className="hover:text-ui-ink">
-              {t.footer.terms}
-            </Link>
+              <a href={`mailto:${SALES_EMAIL}`} className="inline-flex items-center gap-2 font-medium text-ui-ink hover:text-ui-primary">
+                <Mail className="h-4 w-4" aria-hidden />
+                <bdi>{SALES_EMAIL}</bdi>
+              </a>
+            </div>
+          </div>
+          {[
+            {
+              title: t.footer.product,
+              links: [
+                { href: "#modules", label: t.nav.modules },
+                { href: "#features", label: t.nav.features },
+                { href: "#pricing", label: t.nav.pricing },
+                ...(hasDemo ? [{ href: DEMO_PATH, label: t.footer.demo }] : []),
+              ],
+            },
+            {
+              title: t.footer.account,
+              links: [
+                { href: "/signup", label: t.footer.signup },
+                { href: "/login/", label: t.footer.login },
+              ],
+            },
+            {
+              title: t.footer.help,
+              links: [
+                { href: "#faq", label: t.nav.faq },
+                { href: "/privacy/", label: t.footer.privacy },
+                { href: "/terms/", label: t.footer.terms },
+              ],
+            },
+          ].map((column) => (
+            <nav key={column.title} aria-label={column.title}>
+              <h2 className="text-sm font-semibold text-ui-heading">{column.title}</h2>
+              <ul className="mt-3 space-y-1">
+                {column.links.map((link) => (
+                  <li key={link.href}>
+                    {link.href.startsWith("/") ? (
+                      <Link href={link.href} className="inline-flex min-h-9 items-center text-sm text-ui-muted hover:text-ui-ink">
+                        {link.label}
+                      </Link>
+                    ) : (
+                      <a href={link.href} className="inline-flex min-h-9 items-center text-sm text-ui-muted hover:text-ui-ink">
+                        {link.label}
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+        </div>
+        <div className="border-t border-ui-line">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm text-ui-muted sm:px-6">
+            <p>{t.footer.rights}</p>
+            <a href={LANDING_PATH[lang === "ar" ? "en" : "ar"]} lang={lang === "ar" ? "en" : "ar"} className="inline-flex min-h-9 items-center gap-2 font-medium hover:text-ui-ink">
+              <Languages className="h-4 w-4" aria-hidden />
+              {t.nav.language}
+            </a>
           </div>
         </div>
       </footer>
