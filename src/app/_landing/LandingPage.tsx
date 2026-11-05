@@ -563,25 +563,27 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
               </p>
             </div>
             <div aria-hidden className="absolute inset-x-0 bottom-0 h-1.5 bg-brand-gradient" />
-            {/* The four kinds of business, as tiles, on large screens */}
-            <div aria-hidden className="pointer-events-none absolute end-12 top-1/2 hidden -translate-y-1/2 xl:block">
-              <div className="grid grid-cols-2 gap-4">
-                {MODULE_IDS.map((id, i) => {
-                  const Icon = MODULE_ICONS[MODULES[id].icon];
-                  return (
-                    <div
-                      key={id}
-                      className={`site-float flex w-40 flex-col gap-3 rounded-panel bg-ui-surface p-4 text-ui-ink shadow-xl ${i % 2 ? "translate-y-6 rotate-2" : "-rotate-2"}`}
-                      style={{ animationDelay: `${-i * 1.5}s` }}
-                    >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-control bg-ui-subtle text-ui-primary">
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <span className="font-semibold">{MODULES[id].label[lang]}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Every kind of business, as tiles, on large screens: one column of three beside one of two */}
+            <div aria-hidden className="pointer-events-none absolute end-10 top-1/2 hidden -translate-y-1/2 xl:flex xl:items-center xl:gap-4">
+              {[MODULE_IDS.filter((_, i) => i % 2 === 0), MODULE_IDS.filter((_, i) => i % 2 === 1)].map((column, c) => (
+                <div key={c} className="flex flex-col gap-4">
+                  {column.map((id, i) => {
+                    const Icon = MODULE_ICONS[MODULES[id].icon];
+                    return (
+                      <div
+                        key={id}
+                        className={`site-float flex items-center gap-3 whitespace-nowrap rounded-panel bg-ui-surface py-3 pe-5 ps-3 text-ui-ink shadow-xl ${(i + c) % 2 ? "rotate-2" : "-rotate-2"}`}
+                        style={{ animationDelay: `${-(i * 2 + c) * 1.5}s` }}
+                      >
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-control bg-ui-subtle text-ui-primary">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <span className="font-semibold">{MODULES[id].label[lang]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </Reveal>
         </section>
