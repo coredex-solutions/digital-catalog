@@ -12,6 +12,7 @@ import { getModule, resolveOrderTypes } from "@/lib/modules/resolve";
 import type { ModuleDefinition } from "@/lib/modules/registry";
 import { parseDeliveryConfig } from "@/lib/orders/delivery";
 import { parsePaymentConfig } from "@/lib/orders/payment";
+import { parseBookingConfig } from "@/lib/orders/slots";
 
 // Column names are interpolated into the UPDATE statements below, so only these
 // known columns (the same ones GET returns) may ever be written. Only settings the
@@ -35,7 +36,7 @@ const SETTINGS_FIELDS = new Set([
   // pricing
   "currency_primary", "lbp_exchange_rate", "show_dual_currency",
   // ordering
-  "order_types", "delivery_note_ar", "delivery_note_en", "delivery_config", "payment_config",
+  "order_types", "delivery_note_ar", "delivery_note_en", "delivery_config", "payment_config", "booking_config",
 ]);
 
 
@@ -81,6 +82,7 @@ function sanitizePricingAndOrdering(pricing: SettingsSection, ordering: Settings
     // Saved as cleaned JSON: areas need a name, amounts are numbers, Whish/OMT need a number
     if (ordering.delivery_config !== undefined) out.delivery_config = JSON.stringify(parseDeliveryConfig(ordering.delivery_config));
     if (ordering.payment_config !== undefined) out.payment_config = JSON.stringify(parsePaymentConfig(ordering.payment_config));
+    if (ordering.booking_config !== undefined) out.booking_config = JSON.stringify(parseBookingConfig(ordering.booking_config));
   }
   return out;
 }
@@ -168,6 +170,7 @@ export async function GET(
       delivery_note_en: settings?.delivery_note_en || "",
       delivery_config: parseDeliveryConfig((settings as unknown as Record<string, unknown> | null)?.delivery_config),
       payment_config: parsePaymentConfig((settings as unknown as Record<string, unknown> | null)?.payment_config),
+      booking_config: parseBookingConfig((settings as unknown as Record<string, unknown> | null)?.booking_config),
     },
     about: {
       about_content_en: settings?.about_content_en,
@@ -321,6 +324,7 @@ export async function PUT(
     const saved: Record<string, unknown> = {};
     if (pricingAndOrdering.delivery_config !== undefined) saved.delivery_config = parseDeliveryConfig(pricingAndOrdering.delivery_config);
     if (pricingAndOrdering.payment_config !== undefined) saved.payment_config = parsePaymentConfig(pricingAndOrdering.payment_config);
+    if (pricingAndOrdering.booking_config !== undefined) saved.booking_config = parseBookingConfig(pricingAndOrdering.booking_config);
     return NextResponse.json({ success: true, ...(Object.keys(saved).length > 0 ? { ordering: saved } : {}) });
   } catch (error) {
     console.error("Update settings error:", error);

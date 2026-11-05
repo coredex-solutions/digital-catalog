@@ -47,6 +47,8 @@ export interface SavedOrder {
   paid_at: string | null;
   /** Key of the customer's status page; null for orders from before it existed */
   public_token: string | null;
+  /** How long a booking or appointment lasts (set times only) */
+  duration_minutes: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -85,6 +87,7 @@ function toOrder(row: Record<string, unknown>): SavedOrder {
     payment_method: str(row.payment_method),
     paid_at: str(row.paid_at),
     public_token: str(row.public_token),
+    duration_minutes: num(row.duration_minutes),
     created_at: String(row.created_at ?? ""),
     updated_at: String(row.updated_at ?? ""),
   };
@@ -130,7 +133,7 @@ export async function setOrderPaid(catalogId: string, orderId: string, paid: boo
 
 export type CreateResult =
   | { ok: true; order: SavedOrder; repeated: boolean }
-  | { ok: false; code: "stock_changed" };
+  | { ok: false; code: "stock_changed" | "slot_taken" };
 
 export async function findByClientKey(catalogId: string, clientKey: string): Promise<SavedOrder | null> {
   const result = await getDb().execute({
@@ -139,6 +142,19 @@ export async function findByClientKey(catalogId: string, clientKey: string): Pro
   });
   const row = rowsOf(result)[0];
   return row ? toOrder(row) : null;
+}
+
+/** Bookings of a kind on a date (not cancelled), for working out the free times */
+export async function takenBookings(catalogId: string, kind: "booking" | "request", date: string, fallbackMinutes: number) {
+  const result = await getDb().execute({
+    sql: `SELECT requested_for, duration_minutes FROM orders
+          WHERE catalog_id = ? AND kind = ? AND status != 'cancelled' AND requested_for >= ? AND requested_for < ?`,
+    args: [catalogId, kind, `${date} 00:00`, `${date} 99:99`],
+  });
+  return result.rows.map((row) => ({
+    start: String(row.requested_for),
+    minutes: row.duration_minutes == null ? fallbackMinutes : Number(row.duration_minutes),
+  }));
 }
 
 /**
@@ -160,25 +176,31 @@ export async function createOrder(
   const reserve = stockToReserve(order.lines);
   const statements: InStatement[] = [];
 
-  // Taking stock first: the menu_items_stock_not_negative trigger aborts the whole batch
-  // (order included) if any item would go below zero
-  for (const [itemId, quantity] of reserve) {
-    statements.push({
-      sql: "UPDATE menu_items SET stock_qty = stock_qty - ? WHERE id = ? AND catalog_id = ? AND stock_qty IS NOT NULL",
-      args: [quantity, itemId, catalogId],
-    });
-  }
+  // Set booking times: the order is only inserted while fewer than `capacity` bookings of the
+  // same kind overlap its time, checked inside the INSERT so two customers can't take the last one
+  const slot =
+    order.capacity !== null && order.requestedFor && order.durationMinutes
+      ? {
+          sql: `(SELECT COUNT(*) FROM orders
+                 WHERE catalog_id = ? AND kind = ? AND status != 'cancelled' AND requested_for IS NOT NULL
+                   AND datetime(requested_for) < datetime(?, '+' || ? || ' minutes')
+                   AND datetime(requested_for, '+' || COALESCE(duration_minutes, ?) || ' minutes') > datetime(?)) < ?`,
+          args: [catalogId, order.kind, order.requestedFor, order.durationMinutes, order.durationMinutes, order.requestedFor, order.capacity],
+        }
+      : { sql: "1", args: [] };
+
   statements.push({
     // The number is taken inside the INSERT so two orders can't get the same one
     sql: `INSERT INTO orders (
             id, catalog_id, number, kind, status, order_type, customer_name, customer_phone,
             table_label, address, area, requested_for, party_size, lines, price_config, total_usd,
             note, lang, source, stock_reserved, client_key, delivery_fee, delivery_currency,
-            payment_method, public_token, created_at, updated_at
-          ) VALUES (
+            payment_method, public_token, duration_minutes, created_at, updated_at
+          ) SELECT
             ?, ?, (SELECT COALESCE(MAX(number), 0) + 1 FROM orders WHERE catalog_id = ?), ?, 'new', ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
-          ) RETURNING *`,
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
+          WHERE ${slot.sql}
+          RETURNING *`,
     args: [
       id,
       catalogId,
@@ -204,12 +226,24 @@ export async function createOrder(
       order.deliveryCurrency,
       order.paymentMethod,
       newPublicToken(),
+      order.durationMinutes,
+      ...slot.args,
     ],
   });
+  // Then its stock, only if the order was inserted. The menu_items_stock_not_negative trigger
+  // aborts the whole batch (order included) if any item would go below zero.
+  for (const [itemId, quantity] of reserve) {
+    statements.push({
+      sql: `UPDATE menu_items SET stock_qty = stock_qty - ?
+            WHERE id = ? AND catalog_id = ? AND stock_qty IS NOT NULL AND EXISTS (SELECT 1 FROM orders WHERE id = ?)`,
+      args: [quantity, itemId, catalogId, id],
+    });
+  }
 
   try {
     const results = await getDb().batch(statements, "write");
-    const row = rowsOf(results[results.length - 1])[0];
+    const row = rowsOf(results[0])[0];
+    if (!row) return { ok: false, code: "slot_taken" };
     return { ok: true, order: toOrder(row), repeated: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -239,10 +273,20 @@ export async function listOrders(
     kind?: "order" | "booking" | "request" | null;
     /** Only orders in the tab with a payment method that aren't marked paid (never cancelled ones) */
     unpaid?: boolean;
+    /** Bookings and appointments still to come, by their time (the tab is ignored) */
+    upcoming?: { from: string } | null;
     limit?: number;
     before?: string | null;
   }
 ): Promise<SavedOrder[]> {
+  if (options.upcoming) {
+    const result = await getDb().execute({
+      sql: `SELECT * FROM orders WHERE catalog_id = ? AND kind != 'order' AND status IN ('new', 'confirmed', 'ready')
+            AND requested_for >= ? ORDER BY requested_for ASC, number ASC LIMIT ?`,
+      args: [catalogId, options.upcoming.from, Math.min(Math.max(options.limit ?? 50, 1), 100)],
+    });
+    return rowsOf(result).map(toOrder);
+  }
   const statuses = TAB_STATUSES[options.tab].filter((s) => !options.unpaid || s !== "cancelled");
   const args: (string | number)[] = [catalogId, ...statuses];
   let sql = `SELECT * FROM orders WHERE catalog_id = ? AND status IN (${statuses.map(() => "?").join(", ")})`;

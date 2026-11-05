@@ -110,7 +110,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const result = validateOrder(body, context);
   if (!result.ok) {
     const status =
-      result.code === "stock_changed" || result.code === "item_unavailable" ? 409 : result.code === "closed" ? 403 : result.code === "below_minimum" ? 422 : 400;
+      result.code === "stock_changed" || result.code === "item_unavailable" || result.code === "slot_unavailable" ? 409 : result.code === "closed" ? 403 : result.code === "below_minimum" ? 422 : 400;
     return NextResponse.json({ error: result.message, code: result.code, field: result.field }, { status });
   }
 
@@ -121,6 +121,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const saved = await createOrder(data.catalog.id, result.order, context.priceConfig);
   if (!saved.ok) {
+    if (saved.code === "slot_taken") {
+      return NextResponse.json({ error: "This time was just booked", code: "slot_unavailable", field: "when" }, { status: 409 });
+    }
     return NextResponse.json({ error: "Not enough stock for an item", code: "stock_changed" }, { status: 409 });
   }
   // Notify the team's phones after answering the customer (only for a new order, not a retry)

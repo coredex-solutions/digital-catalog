@@ -12,6 +12,8 @@ import { formatPrice, formatTotal, type PriceConfig } from "@/lib/catalog/price"
 import { variantName } from "@/lib/catalog/dish-info";
 import { feeLine } from "@/lib/orders/delivery";
 import { isTransfer, parsePaymentConfig } from "@/lib/orders/payment";
+import { parseBookingConfig } from "@/lib/orders/slots";
+import { depositInstructions } from "../../../_components/menu/CheckoutSheet";
 import { cn } from "@/utils/helpers";
 
 export interface PublicOrder {
@@ -67,6 +69,13 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
     return t.statusSteps[step === "readyPickup" ? "ready" : step] ?? status;
   };
   const hint = t.statusHints[customerStep(order.status, order.order_type)] ?? t.statusHints.new;
+
+  // Bookings and appointments with a deposit: how to pay it, until the team marks it paid
+  const booking = parseBookingConfig((settings as unknown as Record<string, unknown> | null)?.booking_config);
+  const depositText =
+    order.kind !== "order" && order.requested_for && order.status !== "cancelled" && booking.enabled
+      ? depositInstructions(booking, payment, config, lang, t)
+      : null;
 
   const transferDue = isTransfer(order.payment_method) && !order.paid && order.status !== "cancelled" && total;
   const transferTo =
@@ -140,6 +149,15 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
             <bdi>
               {order.payment_method === "whish" ? t.custPayWhish(total.primary, transferTo) : t.custPayOmt(total.primary, transferTo)}
             </bdi>
+          </p>
+        </section>
+      )}
+
+      {depositText && (
+        <section className="mt-4 rounded-[20px] border border-brand-ink bg-brand-soft p-5">
+          <p className="flex items-start justify-between gap-3 text-sm leading-relaxed">
+            <bdi>{depositText}</bdi>
+            {order.paid && <span className="shrink-0 rounded-full bg-brand px-2.5 py-0.5 text-xs font-semibold text-brand-fg">{t.paid}</span>}
           </p>
         </section>
       )}

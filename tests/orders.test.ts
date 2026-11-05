@@ -9,6 +9,7 @@ import { isItemAvailable } from "@/lib/orders/context";
 import { buildOrderMessage } from "@/app/c/[slug]/_lib/whatsapp";
 import type { PriceConfig } from "@/lib/catalog/price";
 import { EMPTY_DELIVERY } from "@/lib/orders/delivery";
+import { DEFAULT_BOOKING } from "@/lib/orders/slots";
 import { DEFAULT_PAYMENT } from "@/lib/orders/payment";
 
 const config: PriceConfig = { primary: "USD", lbpRate: 89500, rateUpdatedAt: null, showDual: true };
@@ -44,6 +45,9 @@ function ctx(overrides: Partial<OrderContext> = {}): OrderContext {
     delivery: EMPTY_DELIVERY,
     payment: DEFAULT_PAYMENT,
     today: "2026-11-05",
+    booking: DEFAULT_BOOKING,
+    hours: [],
+    now: { date: "2026-11-05", minutes: 9 * 60 },
     ...overrides,
   };
 }

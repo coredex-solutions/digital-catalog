@@ -30,6 +30,8 @@ export const RATE_LIMITS = {
   // Customers sending orders and bookings from a catalog page (per address+catalog, per phone+catalog)
   order: { windowMs: 10 * 60 * 1000, maxRequests: 15, keyPrefix: 'order' },
   orderPerPhone: { windowMs: 10 * 60 * 1000, maxRequests: 8, keyPrefix: 'order-phone' },
+  // Free booking times, checked as customers flip through dates
+  slots: { windowMs: 5 * 60 * 1000, maxRequests: 120, keyPrefix: 'slots' },
 
   // Owner-side AI writing tools, counted per catalog rather than per IP
   aiGenerate: { windowMs: 60 * 60 * 1000, maxRequests: 30, keyPrefix: 'ai-generate' }, // 30 calls/hour

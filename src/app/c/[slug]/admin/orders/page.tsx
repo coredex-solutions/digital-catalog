@@ -10,11 +10,12 @@ import { adminNavLabels } from "../_components/adminNav";
 import { useAdminLang, useCopy, useFormat, plural, type AdminLang } from "../_lib/i18n";
 import { useModule } from "../_lib/module";
 import { getDictionary } from "../../_lib/i18n";
-import { buildCustomerUpdate, whatsappLink } from "../../_lib/whatsapp";
+import { buildCustomerUpdate, buildReminder, whatsappLink } from "../../_lib/whatsapp";
 import { formatPrice, formatTotal, getPriceConfig } from "@/lib/catalog/price";
 import { variantName } from "@/lib/catalog/dish-info";
 import { feeLine } from "@/lib/orders/delivery";
 import { isTransfer } from "@/lib/orders/payment";
+import { beirutNow, parseBookingConfig } from "@/lib/orders/slots";
 import type { SavedOrder, OrderStatus } from "@/lib/orders/store";
 
 type Tab = "new" | "active" | "done";
@@ -81,6 +82,10 @@ const en = {
   unpaidDone: (number: number) => `#${number} marked not paid`,
   unpaidOnly: "Unpaid only",
   emptyUnpaid: "No unpaid orders.",
+  upcoming: "Upcoming bookings",
+  emptyUpcoming: "No bookings coming up.",
+  sendReminder: "Send reminder",
+  deposit: "Deposit",
   print: "Print",
   tellCustomer: "Tell the customer",
 };
@@ -139,6 +144,10 @@ const ar: typeof en = {
   unpaidDone: (number) => `الطلب #${number} غير مدفوع`,
   unpaidOnly: "غير المدفوعة فقط",
   emptyUnpaid: "لا طلبات غير مدفوعة.",
+  upcoming: "الحجوزات القادمة",
+  emptyUpcoming: "لا حجوزات قادمة.",
+  sendReminder: "أرسل تذكيراً",
+  deposit: "العربون",
   print: "طباعة",
   tellCustomer: "أخبر الزبون",
 };
@@ -170,10 +179,16 @@ function OrderCard({
   onPaid,
   busy,
   printHref,
+  reminder,
+  depositOn,
 }: {
   order: SavedOrder;
   onStatus: (status: OrderStatus) => void;
   onPaid: (paid: boolean) => void;
+  /** WhatsApp reminder for a booking today or tomorrow */
+  reminder: string | null;
+  /** The business asks a deposit for bookings, so they can be marked paid */
+  depositOn: boolean;
   busy: boolean;
   printHref: string;
 }) {
@@ -303,11 +318,29 @@ function OrderCard({
         </div>
       )}
 
-      {order.payment_method && (
+      {reminder && order.status !== "cancelled" && order.status !== "completed" && (
+        <a
+          href={reminder}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex min-h-9 items-center gap-1.5 rounded-control border border-ui-line px-3 text-sm font-medium hover:bg-ui-subtle"
+        >
+          <Bell className="h-4 w-4" aria-hidden />
+          {t.sendReminder}
+        </a>
+      )}
+
+      {(order.payment_method || (depositOn && order.kind !== "order")) && (
         <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
           <Wallet className="h-4 w-4 text-ui-muted" aria-hidden />
           <span>
-            {t.payment}: <strong>{t.payMethods[order.payment_method] ?? order.payment_method}</strong>
+            {order.payment_method ? (
+              <>
+                {t.payment}: <strong>{t.payMethods[order.payment_method] ?? order.payment_method}</strong>
+              </>
+            ) : (
+              <strong>{t.deposit}</strong>
+            )}
           </span>
           <span
             className={clsx(
@@ -430,6 +463,20 @@ function OrdersView() {
   const [tab, setTab] = useState<Tab>("new");
   const [kind, setKind] = useState<KindFilter>("all");
   const [unpaid, setUnpaid] = useState(false);
+  const [upcoming, setUpcoming] = useState(false);
+  const usesBookings = module.tableBooking || module.schedule === "required";
+  // Whether bookings carry a deposit (to mark it paid); from Settings
+  const [depositOn, setDepositOn] = useState(false);
+  useEffect(() => {
+    if (!usesBookings) return;
+    fetchWithAuth(`/api/c/${slug}/admin/settings/`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const booking = parseBookingConfig(data?.ordering?.booking_config);
+        setDepositOn(booking.enabled && booking.deposit !== null);
+      })
+      .catch(() => {});
+  }, [fetchWithAuth, slug, usesBookings]);
   const [orders, setOrders] = useState<SavedOrder[]>([]);
   const [counts, setCounts] = useState({ new: 0, active: 0 });
   const [loading, setLoading] = useState(true);
@@ -462,6 +509,7 @@ function OrdersView() {
       const params = new URLSearchParams({ tab });
       if (kind !== "all") params.set("kind", kind);
       if (unpaid) params.set("unpaid", "1");
+      if (upcoming) params.set("upcoming", "1");
       if (options.before) params.set("before", options.before);
       try {
         const res = await fetchWithAuth(`/api/c/${slug}/admin/orders/?${params}`);
@@ -470,7 +518,7 @@ function OrdersView() {
         if (id !== request.current) return;
         setOrders((prev) => (options.before ? [...prev, ...data.orders] : data.orders));
         setCounts(data.counts);
-        setHasMore(tab === "done" && !unpaid && data.orders.length === 50);
+        setHasMore(tab === "done" && !unpaid && !upcoming && data.orders.length === 50);
         setFailed(false);
       } catch {
         if (id === request.current && !options.quiet) setFailed(true);
@@ -478,7 +526,7 @@ function OrdersView() {
         if (id === request.current) setLoading(false);
       }
     },
-    [fetchWithAuth, slug, tab, kind, unpaid]
+    [fetchWithAuth, slug, tab, kind, unpaid, upcoming]
   );
 
   useEffect(() => {
@@ -497,6 +545,16 @@ function OrdersView() {
   }, [newOrders, tab, load]);
 
   /** WhatsApp to the customer with a ready message about the order's status, in their language */
+  /** WhatsApp reminder for bookings and appointments today or tomorrow */
+  const today = beirutNow().date;
+  const tomorrow = new Date(Date.parse(`${today}T12:00:00Z`) + 86_400_000).toISOString().slice(0, 10);
+  const reminderLink = (order: SavedOrder) => {
+    const day = order.requested_for?.slice(0, 10);
+    if (order.kind === "order" || (day !== today && day !== tomorrow)) return null;
+    const text = buildReminder(order, catalog?.name || slug, module.id);
+    return text ? whatsappLink(order.customer_phone, text) : null;
+  };
+
   const tellLink = (order: SavedOrder) => {
     const statusUrl = order.public_token ? `${window.location.origin}/c/${slug}/order/${order.public_token}/` : null;
     return whatsappLink(order.customer_phone, buildCustomerUpdate(order, catalog?.name || slug, module.id, statusUrl));
@@ -559,7 +617,7 @@ function OrdersView() {
   };
 
   const tabs: Tab[] = ["new", "active", "done"];
-  const empty = unpaid ? t.emptyUnpaid : tab === "new" ? t.emptyNew : tab === "active" ? t.emptyActive : t.emptyDone;
+  const empty = upcoming ? t.emptyUpcoming : unpaid ? t.emptyUnpaid : tab === "new" ? t.emptyNew : tab === "active" ? t.emptyActive : t.emptyDone;
 
   return (
     <>
@@ -604,7 +662,7 @@ function OrdersView() {
       </CatalogAdminHeader>
       <CatalogAdminContent>
         <div className="mx-auto max-w-3xl">
-          <div role="tablist" className="grid grid-cols-3 gap-1 rounded-panel bg-ui-subtle p-1">
+          <div role="tablist" className={clsx("grid grid-cols-3 gap-1 rounded-panel bg-ui-subtle p-1", upcoming && "hidden")}>
             {tabs.map((key) => {
               const count = key === "new" ? counts.new : key === "active" ? counts.active : 0;
               return (
@@ -656,6 +714,20 @@ function OrdersView() {
               <Wallet className="h-4 w-4" aria-hidden />
               {t.unpaidOnly}
             </button>
+            {usesBookings && (
+              <button
+                type="button"
+                aria-pressed={upcoming}
+                onClick={() => setUpcoming((on) => !on)}
+                className={clsx(
+                  "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 text-sm font-medium",
+                  upcoming ? "border-ui-primary bg-ui-subtle text-ui-heading" : "border-ui-line text-ui-muted hover:text-ui-ink"
+                )}
+              >
+                <CalendarClock className="h-4 w-4" aria-hidden />
+                {t.upcoming}
+              </button>
+            )}
           </div>
 
           <div className="mt-4 space-y-3" role="tabpanel" aria-busy={loading}>
@@ -682,6 +754,8 @@ function OrdersView() {
                   onStatus={(status) => changeStatus(order, status)}
                   onPaid={(paid) => changePaid(order, paid)}
                   printHref={`/c/${slug}/admin/orders/${order.id}/print/`}
+                  reminder={reminderLink(order)}
+                  depositOn={depositOn}
                 />
               ))
             )}

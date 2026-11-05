@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Loader2, MessageCircle } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { trackEvent } from "../AnalyticsTracker";
 import { localized } from "../../_lib/i18n";
 import { buildReservationMessage, whatsappLink } from "../../_lib/whatsapp";
 import { newClientKey, sendOrder, type SentOrder } from "../../_lib/send-order";
-import { Field, inputClass, SavedNotice, todayInBeirut } from "./CheckoutSheet";
+import { depositInstructions, Field, inputClass, SavedNotice, todayInBeirut } from "./CheckoutSheet";
+import { SlotPicker } from "./SlotPicker";
+import { parseBookingConfig } from "@/lib/orders/slots";
+import { parsePaymentConfig } from "@/lib/orders/payment";
 import { QuantityStepper } from "./QuantityStepper";
 import { Sheet } from "./Sheet";
 
@@ -18,7 +21,12 @@ const DETAILS_KEY = "menu_diner_details";
  * then sent on WhatsApp when the business has a number.
  */
 export function ReservationSheet() {
-  const { activeSheet, closeSheet, catalog, contact, lang, t, module } = useCatalog();
+  const { activeSheet, closeSheet, catalog, contact, settings, priceConfig, lang, t, module } = useCatalog();
+  const settingsRow = settings as unknown as Record<string, unknown> | null;
+  const booking = useMemo(() => parseBookingConfig(settingsRow?.booking_config), [settingsRow?.booking_config]);
+  const payment = useMemo(() => parsePaymentConfig(settingsRow?.payment_config), [settingsRow?.payment_config]);
+  const depositText = booking.enabled ? depositInstructions(booking, payment, priceConfig, lang, t) : null;
+  const [slotsKey, setSlotsKey] = useState(0);
   const open = activeSheet === "reservation";
   const ar = lang === "ar";
   const businessName = localized(catalog, "name", lang) || catalog.name;
@@ -50,6 +58,7 @@ export function ReservationSheet() {
   }
 
   const update = (field: keyof typeof form, value: string) => setForm((prev) => ({ ...prev, [field]: value }));
+  const setWhen = useCallback((next: { date: string; time: string }) => setForm((prev) => ({ ...prev, ...next })), []);
 
   const openWhatsApp = (link: string) => {
     trackEvent(catalog.id, "booking_confirm");
@@ -84,6 +93,13 @@ export function ReservationSheet() {
     if (result.ok) {
       setSaved(result.order);
       if (result.order.whatsapp) openWhatsApp(result.order.whatsapp);
+      return;
+    }
+    if (result.code === "slot_unavailable") {
+      // Someone else just took the time: load the free times again
+      setErrors({ time: t.slotTaken });
+      setForm((prev) => ({ ...prev, time: "" }));
+      setSlotsKey((n) => n + 1);
       return;
     }
     if (result.field === "when") {
@@ -179,7 +195,14 @@ export function ReservationSheet() {
           submit();
         }}
       >
-        <div className="grid grid-cols-2 gap-3">
+        {booking.enabled && (
+          <div>
+            <SlotPicker config={booking} date={form.date} time={form.time} onChange={setWhen} error={errors.time || errors.date} refreshKey={slotsKey} />
+            {depositText && <p className="mt-3 rounded-2xl bg-brand-soft px-4 py-3 text-sm leading-relaxed"><bdi>{depositText}</bdi></p>}
+          </div>
+        )}
+
+        <div className={booking.enabled ? "hidden" : "grid grid-cols-2 gap-3"}>
           <Field label={t.reserveDate} error={errors.date}>
             {(props) => (
               <input

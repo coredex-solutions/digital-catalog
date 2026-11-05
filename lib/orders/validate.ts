@@ -9,6 +9,7 @@ import { readVariants } from "../catalog/dish-info";
 import type { PriceConfig } from "../catalog/price";
 import { feeLine, quoteDelivery, zoneName, type DeliveryConfig } from "./delivery";
 import { PAY_AT_TABLE, type PaymentConfig, type PaymentMethod } from "./payment";
+import { fitsSlot, requestMinutes, type BeirutNow, type BookingConfig, type HoursRow } from "./slots";
 
 export type OrderKind = "order" | "booking";
 
@@ -23,6 +24,8 @@ export interface OrderableItem {
   /** Units left; null = not tracked */
   stock_qty: number | null;
   variants: unknown;
+  /** Length of a service, for set appointment times; null = not set */
+  duration_minutes?: number | null;
 }
 
 export interface OrderContext {
@@ -39,6 +42,12 @@ export interface OrderContext {
   delivery: DeliveryConfig;
   /** How customers can pay */
   payment: PaymentConfig;
+  /** Set booking times (off = any date and time, as before) */
+  booking: BookingConfig;
+  /** Opening hours, which the set times come from */
+  hours: HoursRow[];
+  /** Now in Beirut (passed in so tests are stable) */
+  now: BeirutNow;
   /** Today in Beirut, YYYY-MM-DD (passed in so tests are stable) */
   today: string;
 }
@@ -79,6 +88,10 @@ export interface ValidOrder {
   paymentMethod: PaymentMethod | null;
   /** Items plus delivery, in USD */
   totalUsd: number | null;
+  /** How long a booking or appointment lasts (set times only); null otherwise */
+  durationMinutes: number | null;
+  /** Bookings allowed at the same time; when set, saving checks the time is still free */
+  capacity: number | null;
   clientKey: string | null;
 }
 
@@ -96,6 +109,7 @@ export type OrderErrorCode =
   | "option_required"
   | "order_type"
   | "below_minimum"
+  | "slot_unavailable"
   | "required";
 
 export type OrderValidation =
@@ -175,6 +189,10 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
     if (!Number.isFinite(partySize) || partySize < 1 || partySize > MAX_PARTY_SIZE) {
       return fail("required", "Choose the number of guests", "partySize");
     }
+    const slots = ctx.booking.enabled;
+    if (slots && !fitsSlot(ctx.booking, ctx.hours, when.value.slice(0, 10), when.value.slice(11), ctx.booking.table_minutes, ctx.now)) {
+      return fail("slot_unavailable", "This time can't be booked", "when");
+    }
     return {
       ok: true,
       order: {
@@ -194,6 +212,8 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
         deliveryCurrency: null,
         paymentMethod: null,
         totalUsd: null,
+        durationMinutes: slots ? ctx.booking.table_minutes : null,
+        capacity: slots ? ctx.booking.capacity : null,
         clientKey,
       },
     };
@@ -283,6 +303,19 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
     }
   }
 
+  // Appointments with set times: the time must be one of them (still free is checked when saving)
+  let durationMinutes: number | null = null;
+  const slotted = ctx.module.schedule === "required" && ctx.booking.enabled && requestedFor !== null;
+  if (slotted) {
+    durationMinutes = requestMinutes(
+      lines.map((line) => ({ duration_minutes: byId.get(line.item_id)?.duration_minutes ?? null, quantity: line.quantity })),
+      ctx.booking
+    );
+    if (!fitsSlot(ctx.booking, ctx.hours, requestedFor!.slice(0, 10), requestedFor!.slice(11), durationMinutes, ctx.now)) {
+      return fail("slot_unavailable", "This time can't be booked", "when");
+    }
+  }
+
   let deliveryFee: number | null = null;
   let deliveryCurrency: string | null = null;
   if (zoned) {
@@ -312,6 +345,8 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
       deliveryCurrency,
       paymentMethod,
       totalUsd: totalInUsd([...lines, ...feeLine(deliveryFee, deliveryCurrency)], ctx.priceConfig),
+      durationMinutes,
+      capacity: slotted ? ctx.booking.capacity : null,
       clientKey,
     },
   };

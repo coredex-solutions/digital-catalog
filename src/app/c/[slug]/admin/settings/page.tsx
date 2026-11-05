@@ -12,6 +12,7 @@ import { useModule } from "../_lib/module";
 import { AddonsCard } from "./_components/AddonsCard";
 import { DeliveryAreasEditor, type DeliveryAreasDraft } from "./_components/DeliveryAreasEditor";
 import { PaymentMethodsEditor } from "./_components/PaymentMethodsEditor";
+import { BookingTimesEditor, type BookingTimesDraft } from "./_components/BookingTimesEditor";
 import type { PaymentConfig } from "@/lib/orders/payment";
 import type { OrderType } from "@/lib/modules/registry";
 import { useAdminLang, useCopy, useFormat } from "../_lib/i18n";
@@ -98,6 +99,7 @@ interface Settings {
     delivery_note_en: string;
     delivery_config: DeliveryAreasDraft;
     payment_config: PaymentConfig;
+    booking_config: BookingTimesDraft;
   };
 }
 
@@ -582,7 +584,7 @@ function SettingsPageContent() {
   const updateSettings = (
     section: keyof Settings,
     field: string,
-    value: string | boolean | DeliveryAreasDraft | PaymentConfig
+    value: string | boolean | DeliveryAreasDraft | PaymentConfig | BookingTimesDraft
   ) => {
     if (!settings) return;
     setSettings({
@@ -1138,6 +1140,14 @@ function SettingsPageContent() {
                       <DeliveryAreasEditor
                         value={settings.ordering.delivery_config}
                         onChange={(next) => updateSettings("ordering", "delivery_config", next)}
+                      />
+                    )}
+
+                    {(module.tableBooking || module.schedule === "required") && settings.ordering.booking_config && (
+                      <BookingTimesEditor
+                        value={settings.ordering.booking_config}
+                        forServices={module.schedule === "required"}
+                        onChange={(next) => updateSettings("ordering", "booking_config", next)}
                       />
                     )}
 

@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { MODULES } from "@/lib/modules/registry";
 import { validateOrder, type OrderContext, type OrderableItem } from "@/lib/orders/validate";
 import { parseDeliveryConfig, quoteDelivery, totalIn, type DeliveryConfig } from "@/lib/orders/delivery";
+import { DEFAULT_BOOKING } from "@/lib/orders/slots";
 import { DEFAULT_PAYMENT, parsePaymentConfig } from "@/lib/orders/payment";
 import { buildCustomerUpdate, buildOrderMessage, customerStep } from "@/app/c/[slug]/_lib/whatsapp";
 import type { PriceConfig } from "@/lib/catalog/price";
@@ -37,6 +38,9 @@ function ctx(overrides: Partial<OrderContext> = {}): OrderContext {
     delivery,
     payment: parsePaymentConfig({ methods: ["cash", "whish"], whish_phone: "03 123 456" }),
     today: "2026-11-07",
+    booking: DEFAULT_BOOKING,
+    hours: [],
+    now: { date: "2026-11-07", minutes: 9 * 60 },
     ...overrides,
   };
 }

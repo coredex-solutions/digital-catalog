@@ -217,6 +217,20 @@ const en = {
   custPayWhish: (amount: string, phone: string) => `To pay by Whish, send ${amount} to ${phone}.`,
   custPayOmt: (amount: string, to: string) => `To pay by OMT, send ${amount} to ${to}.`,
   custTrack: (url: string) => `Follow your order: ${url}`,
+  // Set booking times
+  pickDay: "Choose a day",
+  pickTime: "Choose a time",
+  slotsToday: "Today",
+  slotsTomorrow: "Tomorrow",
+  slotsClosed: "Closed",
+  slotsLoading: "Finding free times…",
+  slotsNone: "No free times on this day. Try another day.",
+  slotsFailed: "Couldn't load the times. Check your connection.",
+  slotTaken: "That time was just booked. Please choose another.",
+  depositNote: (amount: string) => `A deposit of ${amount} confirms your booking.`,
+  custDepositWhish: (amount: string, phone: string) => `To confirm, send the ${amount} deposit on Whish to ${phone}.`,
+  custDepositOmt: (amount: string, to: string) => `To confirm, send the ${amount} deposit by OMT to ${to}.`,
+  custReminder: (business: string, date: string, time: string) => `Reminder: your booking at ${business} is on ${date} at ${time}. See you soon!`,
 };
 
 type Dictionary = typeof en;
@@ -417,6 +431,19 @@ const ar: Dictionary = {
   custPayWhish: (amount: string, phone: string) => `للدفع عبر Whish، حوّل ${amount} إلى ${phone}.`,
   custPayOmt: (amount: string, to: string) => `للدفع عبر OMT، حوّل ${amount} إلى ${to}.`,
   custTrack: (url: string) => `تابع طلبك: ${url}`,
+  pickDay: "اختر اليوم",
+  pickTime: "اختر الوقت",
+  slotsToday: "اليوم",
+  slotsTomorrow: "غداً",
+  slotsClosed: "مغلق",
+  slotsLoading: "جارٍ البحث عن الأوقات المتاحة…",
+  slotsNone: "لا أوقات متاحة في هذا اليوم. جرّب يوماً آخر.",
+  slotsFailed: "تعذّر تحميل الأوقات. تحقق من الاتصال.",
+  slotTaken: "حُجز هذا الوقت للتو. يرجى اختيار وقت آخر.",
+  depositNote: (amount: string) => `يُثبَّت حجزك بعربون قدره ${amount}.`,
+  custDepositWhish: (amount: string, phone: string) => `لتثبيت الحجز، حوّل العربون ${amount} عبر Whish إلى ${phone}.`,
+  custDepositOmt: (amount: string, to: string) => `لتثبيت الحجز، حوّل العربون ${amount} عبر OMT إلى ${to}.`,
+  custReminder: (business: string, date: string, time: string) => `تذكير: موعد حجزك لدى ${business} يوم ${date} الساعة ${time}. بانتظارك!`,
 };
 
 export type { Dictionary };
@@ -578,6 +605,7 @@ const MODULE_COPY: Record<Exclude<ModuleId, "restaurant">, Overrides> = {
         new: (n: number, business: string) => `We received your request #${n} at ${business}.`,
       },
       custTrack: (url: string) => `Follow your request: ${url}`,
+      custReminder: (business: string, date: string, time: string) => `Reminder: your appointment at ${business} is on ${date} at ${time}. See you soon!`,
       trackOrder: "Follow your request",
     },
     ar: {
@@ -640,6 +668,7 @@ const MODULE_COPY: Record<Exclude<ModuleId, "restaurant">, Overrides> = {
       },
       custTrack: (url: string) => `تابع طلبك: ${url}`,
       trackOrder: "تابع طلبك",
+      custReminder: (business: string, date: string, time: string) => `تذكير: موعدك لدى ${business} يوم ${date} الساعة ${time}. بانتظارك!`,
     },
   },
 };

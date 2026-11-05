@@ -140,6 +140,24 @@ export function buildCustomerUpdate(
   return statusUrl ? `${line}\n${t.custTrack(statusUrl)}` : line;
 }
 
+/** A reminder of a booking or appointment, in the customer's language: "Sat 8 Nov" at "14:30" */
+export function buildReminder(
+  order: { requested_for: string | null; lang: string | null },
+  businessName: string,
+  module: ModuleId
+): string | null {
+  if (!order.requested_for) return null;
+  const lang = order.lang === "ar" ? "ar" : "en";
+  const t = getDictionary(lang, module);
+  const date = new Intl.DateTimeFormat(lang === "ar" ? "ar-LB-u-nu-latn" : "en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${order.requested_for.slice(0, 10)}T12:00:00Z`));
+  return t.custReminder(businessName, date, order.requested_for.slice(11, 16));
+}
+
 export interface ReservationDetails {
   restaurantName: string;
   name: string;

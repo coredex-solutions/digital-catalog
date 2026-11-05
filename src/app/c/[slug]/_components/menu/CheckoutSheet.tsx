@@ -12,7 +12,11 @@ import { newClientKey, sendOrder, type SentOrder } from "../../_lib/send-order";
 import { ADDRESS_ORDER_TYPES } from "@/lib/modules/registry";
 import { formatPrice, formatTotal } from "@/lib/catalog/price";
 import { feeLine, parseDeliveryConfig, quoteDelivery, zoneName } from "@/lib/orders/delivery";
-import { PAY_AT_TABLE, parsePaymentConfig, type PaymentMethod } from "@/lib/orders/payment";
+import { PAY_AT_TABLE, parsePaymentConfig, type PaymentConfig, type PaymentMethod } from "@/lib/orders/payment";
+import { parseBookingConfig, requestMinutes, type BookingConfig } from "@/lib/orders/slots";
+import type { PriceConfig } from "@/lib/catalog/price";
+import type { Dictionary } from "../../_lib/i18n";
+import { SlotPicker } from "./SlotPicker";
 import { Price } from "./Price";
 import { Sheet } from "./Sheet";
 import { cn } from "@/utils/helpers";
@@ -68,6 +72,18 @@ export const inputClass =
 /** Today's date in Beirut as YYYY-MM-DD, for date pickers' minimum */
 export function todayInBeirut(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Beirut" }).format(new Date());
+}
+
+/** "A deposit of $10 confirms your booking. Send the total on Whish to …", or null without a deposit */
+export function depositInstructions(booking: BookingConfig, payment: PaymentConfig, priceConfig: PriceConfig, lang: "ar" | "en", t: Dictionary): string | null {
+  if (!booking.deposit) return null;
+  const amount = formatPrice(booking.deposit, booking.deposit_currency, priceConfig, lang).primary;
+  const how = payment.whish_phone
+    ? t.custDepositWhish(amount, payment.whish_phone)
+    : payment.omt_phone
+      ? t.custDepositOmt(amount, [payment.omt_name, payment.omt_phone].filter(Boolean).join(" · "))
+      : "";
+  return how || t.depositNote(amount);
 }
 
 /** Saved order shown after sending: the number, then WhatsApp (when the business has it) */
@@ -166,6 +182,12 @@ export function CheckoutSheet() {
   // Cafés: optional pre-order time (not for eating in). Services: required appointment time.
   const askWhen = module.schedule === "required" || (module.schedule === "optional" && orderType !== "dine_in");
   const whenRequired = module.schedule === "required";
+  // Appointments with set times: pick one of the free times instead of any date and time
+  const booking = useMemo(() => parseBookingConfig(settingsRow?.booking_config), [settingsRow?.booking_config]);
+  const useSlots = whenRequired && booking.enabled;
+  const appointmentMinutes = requestMinutes(cart, booking);
+  const [slotsKey, setSlotsKey] = useState(0);
+  const depositText = useSlots ? depositInstructions(booking, payment, priceConfig, lang, t) : null;
 
   const localMessage = (orderNumber?: number) =>
     buildOrderMessage(
@@ -246,6 +268,13 @@ export function CheckoutSheet() {
       setFailure(t.stockChanged);
       // Reload the items so sold-out and stock changes show
       router.refresh();
+      return;
+    }
+    if (result.code === "slot_unavailable") {
+      // Someone else just took the time: load the free times again
+      setErrors({ when: t.slotTaken });
+      setWhen((prev) => ({ ...prev, time: "" }));
+      setSlotsKey((n) => n + 1);
       return;
     }
     if (result.code === "below_minimum" && quote?.zone.min_order) {
@@ -474,7 +503,22 @@ export function CheckoutSheet() {
           </>
         )}
 
-        {askWhen && (
+        {useSlots && (
+          <div>
+            <SlotPicker
+              config={booking}
+              date={when.date}
+              time={when.time}
+              minutes={appointmentMinutes}
+              onChange={setWhen}
+              error={errors.when}
+              refreshKey={slotsKey}
+            />
+            {depositText && <p className="mt-3 rounded-2xl bg-brand-soft px-4 py-3 text-sm leading-relaxed"><bdi>{depositText}</bdi></p>}
+          </div>
+        )}
+
+        {askWhen && !useSlots && (
           <fieldset>
             <legend className="text-sm font-semibold">{whenRequired ? t.appointmentLabel : t.whenLabel}</legend>
             <div className="mt-1.5 grid grid-cols-2 gap-3">

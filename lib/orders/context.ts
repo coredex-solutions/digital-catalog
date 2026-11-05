@@ -6,6 +6,7 @@ import type { getFullCatalogData } from "../catalog/queries";
 import { beirutToday, type OrderContext, type OrderableItem } from "./validate";
 import { parseDeliveryConfig } from "./delivery";
 import { parsePaymentConfig } from "./payment";
+import { beirutNow, parseBookingConfig } from "./slots";
 
 type CatalogData = NonNullable<Awaited<ReturnType<typeof getFullCatalogData>>>;
 
@@ -33,6 +34,7 @@ export function buildOrderContext(data: CatalogData): OrderContext {
       is_available: isItemAvailable(row, trackStock),
       stock_qty: trackStock ? stock : null,
       variants: row.variants,
+      duration_minutes: row.duration_minutes != null && Number(row.duration_minutes) > 0 ? Number(row.duration_minutes) : null,
     };
   });
   const settings = data.settings as unknown as Record<string, unknown> | null;
@@ -46,6 +48,9 @@ export function buildOrderContext(data: CatalogData): OrderContext {
     priceConfig: getPriceConfig(data.settings as Parameters<typeof getPriceConfig>[0]),
     delivery: parseDeliveryConfig(settings?.delivery_config),
     payment: parsePaymentConfig(settings?.payment_config),
+    booking: parseBookingConfig(settings?.booking_config),
+    hours: data.operatingHours.map((h) => ({ day_name: h.day_name, open_hour: Number(h.open_hour), close_hour: Number(h.close_hour), is_closed: Number(h.is_closed) })),
+    now: beirutNow(),
     today: beirutToday(),
   };
 }
