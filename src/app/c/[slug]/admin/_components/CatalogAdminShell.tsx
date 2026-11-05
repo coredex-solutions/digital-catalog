@@ -14,7 +14,11 @@ import { useAdminLang, useCopy, useFormat, plural, type AdminLang } from "../_li
 import { translateApiMessage } from "../_lib/api-errors";
 import {
   askNotificationPermission,
+  disablePush,
+  enablePush,
   playChime,
+  pushStatus,
+  type PushState,
   readAlertsSetting,
   saveAlertsSetting,
   showOrderNotification,
@@ -118,7 +122,9 @@ interface AdminContextType {
   /** Chime and notification for new orders on this device (see _lib/order-alerts.ts) */
   alertsOn: boolean;
   /** Call from a tap: turning on asks for notification permission and plays the chime once */
-  setAlertsOn: (on: boolean) => Promise<{ notifications: boolean }>;
+  setAlertsOn: (on: boolean) => Promise<{ notifications: boolean; push: PushState }>;
+  /** Whether this device gets push notifications for new orders (works with the dashboard closed) */
+  pushState: PushState;
   /** Apply a saved change to the catalog (e.g. add-ons) without signing in again */
   updateCatalog: (patch: Partial<CatalogInfo>) => void;
 }
@@ -145,6 +151,9 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
   const [newOrders, setNewOrders] = useState(0);
   const [alertsOn, setAlertsState] = useState(() => typeof window !== "undefined" && readAlertsSetting(slug));
   const alertsRef = useRef(alertsOn);
+  const [pushState, setPushState] = useState<PushState>("off");
+  // With push on, the service worker shows the notification; the open page only chimes
+  const pushRef = useRef(false);
   // Newest order number seen; null until the first check, so opening the dashboard doesn't alert
   const latestSeen = useRef<number | null>(null);
   const catalogName = useRef("");
@@ -263,7 +272,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
       const latest = Number(data.latest) || 0;
       if (latestSeen.current !== null && latest > latestSeen.current && alertsRef.current) {
         playChime();
-        showOrderNotification(`${t.arrived[data.latestKind] || t.arrived.order} #${latest}`, catalogName.current, () =>
+        if (!pushRef.current) showOrderNotification(`${t.arrived[data.latestKind] || t.arrived.order} #${latest}`, catalogName.current, () =>
           router.push(`/c/${slug}/admin/orders/`)
         );
       }
@@ -278,13 +287,36 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
       alertsRef.current = on;
       setAlertsState(on);
       saveAlertsSetting(slug, on);
-      if (!on) return { notifications: false };
+      if (!on) {
+        pushRef.current = false;
+        setPushState("off");
+        await disablePush(slug, fetchWithAuth);
+        return { notifications: false, push: "off" as PushState };
+      }
       // Inside the tap: wake the sound and let the owner hear it once
       playChime();
-      return { notifications: await askNotificationPermission() };
+      const notifications = await askNotificationPermission();
+      const push = await enablePush(slug, fetchWithAuth, lang);
+      pushRef.current = push === "on";
+      setPushState(push);
+      return { notifications, push };
     },
-    [slug]
+    [slug, fetchWithAuth, lang]
   );
+
+  // Is this device already following new orders by push? (checked once per visit, no prompts)
+  useEffect(() => {
+    if (!authenticated || !alertsOn) return;
+    let cancelled = false;
+    pushStatus(slug, fetchWithAuth).then((state) => {
+      if (cancelled) return;
+      pushRef.current = state === "on";
+      setPushState(state);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authenticated, alertsOn, slug, fetchWithAuth]);
 
   // Browsers keep sound off until the page is tapped; wake it on the first tap of each visit
   useEffect(() => {
@@ -346,6 +378,7 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
           refreshNewOrders,
           alertsOn,
           setAlertsOn,
+          pushState,
           updateCatalog: (patch) => setCatalog((current) => (current ? { ...current, ...patch } : current)),
         }}
       >

@@ -12,12 +12,13 @@ const READ_METHODS = ['GET', 'HEAD', 'OPTIONS'];
  * Verifies the admin has access to the specified catalog.
  * Writes are refused once the catalog's subscription has expired, unless allowExpired is set
  * (e.g. for submitting an upgrade request); reads (GET) stay available.
- * Admins with the 'viewer' role (as stored now, not as in the token) can only read.
+ * Admins with the 'viewer' role (as stored now, not as in the token) can only read, unless
+ * allowViewer is set for a change that only concerns themselves (e.g. their own notifications).
  */
 export async function requireCatalogAdmin(
   request: NextRequest,
   catalogId?: string,
-  options: { allowExpired?: boolean; ownerOnly?: boolean } = {}
+  options: { allowExpired?: boolean; ownerOnly?: boolean; allowViewer?: boolean } = {}
 ): Promise<{ success: true; admin: CatalogAdminJWTPayload } | { success: false; response: NextResponse }> {
   // Get token from Authorization header
   const authHeader = request.headers.get('Authorization');
@@ -108,7 +109,7 @@ export async function requireCatalogAdmin(
 
   const isRead = READ_METHODS.includes(request.method);
 
-  if (admin.role === 'viewer' && !isRead) {
+  if (admin.role === 'viewer' && !isRead && !options.allowViewer) {
     return {
       success: false,
       response: NextResponse.json(

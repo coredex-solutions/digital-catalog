@@ -58,10 +58,14 @@ const en = {
   changeFailed: "Couldn't change the order. Check your connection.",
   alertsOff: "Alerts off",
   alertsOn: "Alerts on",
-  alertsHint: "Play a sound when an order arrives, while this page is open on this device",
+  alertsHint: "Get told about new orders on this device: a notification, and a sound while this page is open",
+  alertsPush: "Alerts are on. This device gets a notification for every new order, even when the dashboard is closed.",
+  alertsHomeScreen: "Sound is on while this page is open. For notifications when it's closed, add this page to your Home Screen (Share, then Add to Home Screen), open it from there and turn alerts on.",
   alertsEnabled: "Alerts are on. Keep this page open to hear new orders.",
   alertsNoNotify: "Sound is on. Notifications are blocked in this browser, so keep this tab in view.",
   alertsDisabled: "Alerts are off on this device.",
+  alertsWorking: "Turning on alerts for this device…",
+  alertsPushFailed: "Sound is on while this page is open, but notifications couldn't be set up. Check your connection, then turn alerts off and on again.",
 };
 const ar: typeof en = {
   tabs: { new: "جديدة", active: "قيد التنفيذ", done: "منتهية" },
@@ -98,10 +102,14 @@ const ar: typeof en = {
   changeFailed: "تعذّر تغيير الطلب. تحقق من الاتصال.",
   alertsOff: "التنبيهات متوقفة",
   alertsOn: "التنبيهات مفعّلة",
-  alertsHint: "تشغيل صوت عند وصول طلب، طالما هذه الصفحة مفتوحة على هذا الجهاز",
+  alertsHint: "أعلِمني بالطلبات الجديدة على هذا الجهاز: إشعار، وصوت عندما تكون هذه الصفحة مفتوحة",
+  alertsPush: "التنبيهات مفعّلة. يصل إلى هذا الجهاز إشعار مع كل طلب جديد، حتى عندما تكون لوحة التحكم مغلقة.",
+  alertsHomeScreen: "الصوت مفعّل عندما تكون هذه الصفحة مفتوحة. لتصلك الإشعارات وهي مغلقة، أضف هذه الصفحة إلى الشاشة الرئيسية (مشاركة، ثم إضافة إلى الشاشة الرئيسية)، وافتحها من هناك وفعّل التنبيهات.",
   alertsEnabled: "التنبيهات مفعّلة. أبقِ هذه الصفحة مفتوحة لتسمع الطلبات الجديدة.",
   alertsNoNotify: "الصوت مفعّل. الإشعارات محظورة في هذا المتصفح، لذا أبقِ هذه الصفحة ظاهرة.",
   alertsDisabled: "التنبيهات متوقفة على هذا الجهاز.",
+  alertsWorking: "جارٍ تفعيل التنبيهات على هذا الجهاز…",
+  alertsPushFailed: "الصوت مفعّل عندما تكون هذه الصفحة مفتوحة، لكن تعذّر تفعيل الإشعارات. تحقق من الاتصال، ثم أوقف التنبيهات وفعّلها من جديد.",
 };
 
 /** How long the Undo bar stays after a change */
@@ -337,13 +345,15 @@ function OrdersView() {
   const [failed, setFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
-  const [notice, setNotice] = useState<{ text: string; undo?: { order: SavedOrder; from: OrderStatus } } | null>(null);
+  const [notice, setNotice] = useState<{ text: string; undo?: { order: SavedOrder; from: OrderStatus }; busy?: boolean } | null>(null);
   const request = useRef(0);
 
   // The bar hides by itself after a few seconds
   useEffect(() => {
-    if (!notice) return;
-    const timer = setTimeout(() => setNotice(null), UNDO_MS);
+    // A message for work in progress stays until the result replaces it
+    if (!notice || notice.busy) return;
+    // Longer messages stay long enough to read
+    const timer = setTimeout(() => setNotice(null), notice.undo ? UNDO_MS : Math.max(UNDO_MS, notice.text.length * 75));
     return () => clearTimeout(timer);
   }, [notice]);
 
@@ -428,8 +438,21 @@ function OrdersView() {
           aria-pressed={alertsOn}
           title={t.alertsHint}
           onClick={async () => {
+            if (!alertsOn) setNotice({ text: t.alertsWorking, busy: true });
             const result = await setAlertsOn(!alertsOn);
-            setNotice({ text: alertsOn ? t.alertsDisabled : result.notifications ? t.alertsEnabled : t.alertsNoNotify });
+            setNotice({
+              text: alertsOn
+                ? t.alertsDisabled
+                : result.push === "on"
+                  ? t.alertsPush
+                  : result.push === "needs_home_screen"
+                    ? t.alertsHomeScreen
+                    : result.push === "failed" && result.notifications
+                      ? t.alertsPushFailed
+                      : result.notifications
+                      ? t.alertsEnabled
+                      : t.alertsNoNotify,
+            });
           }}
           className={clsx(
             "inline-flex min-h-11 items-center gap-2 rounded-control border px-4 text-sm font-semibold",

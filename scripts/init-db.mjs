@@ -28,6 +28,7 @@ const FILES = [
   "lib/db/migrations/20261019_ai_image_jobs.sql",
   "lib/db/migrations/20261020_menu_imports.sql",
   "lib/db/migrations/20261105_modules.sql",
+  "lib/db/migrations/20261106_push_subscriptions.sql",
 ];
 
 // Tables that were only ever created by one-off scripts or at runtime

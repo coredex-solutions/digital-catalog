@@ -52,6 +52,7 @@ export default function PrivacyPage() {
         <li><strong>Turso</strong> hosts the database.</li>
         <li><strong>Cloudflare R2</strong> stores uploaded images.</li>
         <li>Our <strong>email provider</strong> sends verification emails.</li>
+        <li>When an owner turns on order notifications, the browser&apos;s <strong>push service</strong> (Google, Apple, Mozilla or Microsoft, depending on the device) delivers them. The notification&apos;s content is encrypted for that device.</li>
         <li><strong>Google (Gemini and Cloud Text-to-Speech)</strong>, <strong>Groq</strong> and <strong>OpenAI</strong> provide AI features such as the AI assistant, its spoken replies, writing help and photo enhancement, only when those features are used. If spoken replies aren&apos;t set up, the customer&apos;s own phone reads them aloud.</li>
         <li>Our <strong>hosting provider</strong> runs the servers that serve the site.</li>
       </ul>

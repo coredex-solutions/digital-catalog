@@ -22,6 +22,11 @@ export async function generateMetadata({
   return {
     title: catalog ? `${(await resolveSiteLang()) === "ar" ? "لوحة التحكم" : "Dashboard"} | ${catalog.name}` : "Dashboard",
     robots: "noindex, nofollow",
+    // Installable dashboard (and the only way to get order notifications on iPhone)
+    manifest: `/api/c/${slug}/admin/manifest/`,
+    appleWebApp: { capable: true, title: catalog?.name ?? "Coredex", statusBarStyle: "default" },
+    // Setting icons here replaces the site icon for these pages, so list it again
+    icons: { icon: "/icon.svg", apple: "/icons/apple-touch-icon.png" },
   };
 }
 

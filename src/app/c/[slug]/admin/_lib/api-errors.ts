@@ -40,6 +40,8 @@ const EXACT: Record<string, string> = {
   "This page is not taking orders": "هذه الصفحة لا تستقبل طلبات حالياً.",
   "Not enough stock for an item": "الكمية المتوفرة من أحد الأصناف غير كافية.",
   "Not enough stock left to reopen this order": "لم يبقَ في المخزون ما يكفي لإعادة فتح هذا الطلب.",
+  "Notifications are not set up on this server": "الإشعارات غير مفعّلة على الخادم بعد.",
+  "This browser's notification details aren't valid": "تفاصيل الإشعارات في هذا المتصفح غير صالحة.",
   "Unknown order status": GENERIC,
   "This order can't be changed to that status": "لا يمكن نقل هذا الطلب إلى هذه الحالة. أعد تحميل الصفحة.",
   "Invalid request": GENERIC,

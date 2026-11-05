@@ -85,6 +85,12 @@ OPS_EMAIL=ops@example.com
 # Daily reminder emails (step 8). Generate with: openssl rand -hex 24
 CRON_SECRET=...
 
+# Phone notifications for new orders, even with the dashboard closed.
+# Generate once with: npx web-push generate-vapid-keys
+# Keep them the same across deploys: new keys mean every owner turns alerts on again.
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+
 # Sales WhatsApp on the home page: country code + number, digits only
 NEXT_PUBLIC_SALES_WHATSAPP=961XXXXXXXX
 

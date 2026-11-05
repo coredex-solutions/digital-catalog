@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getFullCatalogData } from "@/lib/catalog/queries";
 import { checkRateLimit, getClientIdentifier, rateLimitResponse, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 import { validateOrder } from "@/lib/orders/validate";
@@ -8,6 +8,7 @@ import { getPriceConfig } from "@/lib/catalog/price";
 import { localized } from "@/app/c/[slug]/_lib/i18n";
 import { buildOrderMessage, buildReservationMessage, whatsappLink, type OrderType } from "@/app/c/[slug]/_lib/whatsapp";
 import type { ModuleId } from "@/lib/modules/registry";
+import { notifyNewOrder } from "@/lib/push";
 
 /** The WhatsApp text for a saved order, in the language the customer ordered in */
 function messageFor(order: SavedOrder, businessName: string, moduleId: ModuleId): string {
@@ -109,6 +110,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const saved = await createOrder(data.catalog.id, result.order, context.priceConfig);
   if (!saved.ok) {
     return NextResponse.json({ error: "Not enough stock for an item", code: "stock_changed" }, { status: 409 });
+  }
+  // Notify the team's phones after answering the customer (only for a new order, not a retry)
+  if (!saved.repeated) {
+    const order = saved.order;
+    after(() => notifyNewOrder(data.catalog.id, slug, order));
   }
   return reply(saved.order, saved.repeated ? 200 : 201);
 }
