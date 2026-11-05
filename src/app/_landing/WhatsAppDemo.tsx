@@ -3,13 +3,8 @@
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { CheckCheck, Store } from "lucide-react";
 import { buildOrderMessage } from "../c/[slug]/_lib/whatsapp";
+import { SAMPLE_ORDERS, sampleDetails, type Business } from "./samples";
 import type { SiteCopy, SiteLang } from "./copy";
-
-const SAMPLE_LINES = [
-  { name_en: "Hummus", name_ar: "حمص", price: 4, currency: "USD", quantity: 2 },
-  { name_en: "Fattoush", name_ar: "فتوش", price: 5, currency: "USD", quantity: 1, note: "" },
-  { name_en: "Mixed grill", name_ar: "مشاوي مشكّلة", price: 14, currency: "USD", quantity: 1 },
-];
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
@@ -42,20 +37,22 @@ export function Formatted({ text }: { text: string }) {
 
 /**
  * A chat mock-up showing the order message exactly as the real menu builds it
- * (same buildOrderMessage, sample dishes, $1 = 89,500 L.L.). Types, then "arrives".
+ * (same buildOrderMessage, one sample order per kind of business, $1 = 89,500 L.L.). Types, then "arrives".
  */
-export function WhatsAppDemo({ t, lang }: { t: SiteCopy["whatsappDemo"]; lang: SiteLang }) {
+export function WhatsAppDemo({ t, lang, business }: { t: SiteCopy["whatsappDemo"]; lang: SiteLang; business: Business }) {
   const ref = useRef<HTMLDivElement>(null);
   const [animatedStage, setStage] = useState<"idle" | "typing" | "sent">("idle");
   // The server renders the idle chat; the client then shows the message at once when it won't animate
   const skipAnimation = useSyncExternalStore(subscribeReducedMotion, getSkipAnimation, () => false);
   const stage = skipAnimation ? "sent" : animatedStage;
 
+  const sample = SAMPLE_ORDERS[business];
   const message = buildOrderMessage(
-    SAMPLE_LINES,
-    { restaurantName: t.restaurant, orderType: "dine_in", table: "7", name: t.sampleName, phone: t.samplePhone },
+    sample.lines,
+    { ...sampleDetails(sample, lang), orderNumber: sample.number },
     { primary: "USD", lbpRate: 89500, rateUpdatedAt: null, showDual: true },
-    lang
+    lang,
+    business
   );
 
   useEffect(() => {
@@ -85,7 +82,7 @@ export function WhatsAppDemo({ t, lang }: { t: SiteCopy["whatsappDemo"]; lang: S
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15" aria-hidden>
           <Store className="h-5 w-5" />
         </span>
-        <span className="font-semibold">{t.chatName}</span>
+        <span className="font-semibold">{sample.business[lang]}</span>
       </div>
 
       {/* Conversation */}
@@ -98,7 +95,7 @@ export function WhatsAppDemo({ t, lang }: { t: SiteCopy["whatsappDemo"]; lang: S
           </div>
         )}
         {stage === "sent" && (
-          <div className="site-pop ms-auto max-w-[92%] rounded-panel rounded-se-[4px] bg-[#D9FDD3] px-3.5 py-2.5 text-[0.9375rem] leading-relaxed text-[#111B21] shadow-sm" dir={lang === "ar" ? "rtl" : "ltr"}>
+          <div key={business} className="site-pop ms-auto max-w-[92%] rounded-panel rounded-se-[4px] bg-[#D9FDD3] px-3.5 py-2.5 text-[0.9375rem] leading-relaxed text-[#111B21] shadow-sm" dir={lang === "ar" ? "rtl" : "ltr"}>
             <Formatted text={message} />
             <span className="mt-1 flex items-center justify-end gap-1 text-xs text-[#54656F]">
               <bdi>12:41</bdi>

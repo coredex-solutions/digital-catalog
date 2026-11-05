@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   BarChart3,
   Ban,
+  CalendarCheck,
   Banknote,
   CakeSlice,
   Car,
@@ -20,6 +21,7 @@ import {
   Languages,
   Mail,
   MessageCircle,
+  PackageCheck,
   Palette,
   Pencil,
   Pill,
@@ -35,7 +37,11 @@ import {
   Sparkles,
   Stethoscope,
   Store,
+  TicketPercent,
+  Truck,
+  Users,
   UtensilsCrossed,
+  Wallet,
   Wine,
   Wrench,
 } from "lucide-react";
@@ -55,9 +61,8 @@ import { Reveal } from "./Reveal";
 import { RotatingWords } from "./RotatingWords";
 import { CurrencyDemo } from "./CurrencyDemo";
 import { LanguageDemo } from "./LanguageDemo";
-import { WhatsAppDemo } from "./WhatsAppDemo";
 import { HeroShowcase } from "./HeroShowcase";
-import { OrdersInboxDemo } from "./OrdersInboxDemo";
+import { OrdersShowcase } from "./OrdersShowcase";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 
 /** Each language has its own address, so search engines can index both: / and /ar/ */
@@ -91,8 +96,9 @@ export function landingMetadata(lang: SiteLang): Metadata {
   };
 }
 
-const GUEST_ICONS = [ScanLine, Languages, Banknote, MessageCircle, Search, Clock];
-const OWNER_ICONS = [Pencil, Ban, Palette, QrCode, Sparkles, BarChart3];
+// One icon per item in copy.ts guests.items and owners.items, in the same order
+const GUEST_ICONS = [ScanLine, Languages, Banknote, MessageCircle, PackageCheck, Wallet, Search, Clock, TicketPercent];
+const OWNER_ICONS = [Pencil, Ban, Palette, QrCode, Sparkles, BarChart3, Truck, CalendarCheck, Users];
 
 const primaryButton =
   "inline-flex min-h-12 items-center justify-center gap-2 rounded-control bg-ui-primary px-5 font-semibold text-ui-primary-fg transition-colors hover:bg-ui-primary-hover";
@@ -402,7 +408,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
               <SectionIntro eyebrow={t.language.eyebrow} title={t.language.title} body={t.language.body} />
             </div>
             <Reveal delay={120} className="lg:order-1">
-              <LanguageDemo t={t.language} lang={lang} />
+              <LanguageDemo t={t.language} lang={lang} labels={t.showcase.tabs} />
             </Reveal>
           </div>
         </section>
@@ -423,14 +429,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
                 ))}
               </Reveal>
             </div>
-            <div className="mt-12 grid gap-6 lg:grid-cols-2 lg:gap-8">
-              <Reveal delay={60}>
-                <OrdersInboxDemo t={t.whatsappDemo} lang={lang} />
-              </Reveal>
-              <Reveal delay={160}>
-                <WhatsAppDemo t={t.whatsappDemo} lang={lang} />
-              </Reveal>
-            </div>
+            <OrdersShowcase t={t.whatsappDemo} lang={lang} labels={t.showcase.tabs} />
           </div>
         </section>
 

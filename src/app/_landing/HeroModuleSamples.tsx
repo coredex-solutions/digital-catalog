@@ -27,7 +27,7 @@ type SampleItem = {
 };
 type SampleId = "cafe" | "shop" | "services";
 
-const SAMPLES: Record<SampleId, {
+export const SAMPLES: Record<SampleId, {
   name: Text;
   city: Text;
   cover: string;
@@ -76,7 +76,7 @@ const SAMPLES: Record<SampleId, {
     city: { en: "Jounieh", ar: "جونية" },
     cover: unsplash("photo-1521590832167-7bcbfaa6381f", 600, 240),
     layout: "list",
-    info: { icon: CalendarClock, text: { en: "Request a time · At the studio or a home visit", ar: "اطلب موعداً · في الاستوديو أو زيارة منزلية" } },
+    info: { icon: CalendarClock, text: { en: "Book a free time · At the studio or a home visit", ar: "احجز وقتاً متاحاً · في الاستوديو أو زيارة منزلية" } },
     search: { en: "Search services", ar: "ابحث في الخدمات" },
     section: { en: "Hair & beauty", ar: "شعر وتجميل" },
     items: [
@@ -127,7 +127,7 @@ function normalize(text: string) {
   return text.toLowerCase().replace(/[ً-ْ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
 }
 
-function duration(minutes: number, lang: SiteLang) {
+export function duration(minutes: number, lang: SiteLang) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   if (lang === "ar") return [h ? (h === 1 ? "ساعة" : h === 2 ? "ساعتان" : `${h} ساعات`) : "", m ? `${m} دقيقة` : ""].filter(Boolean).join(" و");
