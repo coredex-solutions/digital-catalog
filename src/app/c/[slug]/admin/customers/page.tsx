@@ -23,6 +23,7 @@ const en = {
   orders: (n: number, lang: AdminLang) => plural(lang, n, { one: "1 order", other: "# orders" }),
   spent: "Spent",
   last: "Last order",
+  stamps: "Stamps",
   call: "Call",
   whatsapp: "WhatsApp",
   export: "Download CSV",
@@ -42,6 +43,7 @@ const ar: typeof en = {
   orders: (n, lang) => plural(lang, n, { one: "طلب واحد", two: "طلبان", few: "# طلبات", many: "# طلباً", other: "# طلب" }),
   spent: "الإنفاق",
   last: "آخر طلب",
+  stamps: "الأختام",
   call: "اتصال",
   whatsapp: "واتساب",
   export: "تنزيل ملف CSV",
@@ -69,6 +71,7 @@ function CustomersView() {
   const { module } = useModule();
   const { slug, fetchWithAuth } = useCatalogAdmin();
   const [customers, setCustomers] = useState<Customer[] | null>(null);
+  const [loyaltyEvery, setLoyaltyEvery] = useState<number | null>(null);
   const [failed, setFailed] = useState(false);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<Sort>("recent");
@@ -77,7 +80,11 @@ function CustomersView() {
     let cancelled = false;
     fetchWithAuth(`/api/c/${slug}/admin/customers/`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data) => !cancelled && setCustomers(data.customers))
+      .then((data) => {
+        if (cancelled) return;
+        setCustomers(data.customers);
+        setLoyaltyEvery(data.loyaltyEvery ?? null);
+      })
       .catch(() => !cancelled && setFailed(true));
     return () => {
       cancelled = true;
@@ -190,6 +197,14 @@ function CustomersView() {
                           <dt className="text-xs text-ui-muted">{t.spent}</dt>
                           <dd className="tabular-nums">{customer.spentUsd != null ? formatMoney(customer.spentUsd, "USD", lang) : "—"}</dd>
                         </div>
+                        {loyaltyEvery && (
+                          <div>
+                            <dt className="text-xs text-ui-muted">{t.stamps}</dt>
+                            <dd className="tabular-nums">
+                              {customer.finished % loyaltyEvery} / {loyaltyEvery}
+                            </dd>
+                          </div>
+                        )}
                         <div>
                           <dt className="text-xs text-ui-muted">{t.last}</dt>
                           <dd className="tabular-nums">{f.date(utc(customer.lastAt))}</dd>

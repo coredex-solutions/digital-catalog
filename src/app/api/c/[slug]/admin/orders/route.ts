@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireCatalogAdmin } from "@/lib/auth/catalog-admin-middleware";
-import { getCatalogBySlug } from "@/lib/catalog/queries";
+import { getCatalogBySlug, getCatalogSettings } from "@/lib/catalog/queries";
+import { countFor, finishedOrdersByPhone, isRewardOrder, parseLoyaltyConfig } from "@/lib/orders/loyalty";
 import { countOrders, listOrders, type OrderTab } from "@/lib/orders/store";
 import { beirutNow } from "@/lib/orders/slots";
 
@@ -28,5 +29,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     listOrders(catalog.id, { tab, kind, unpaid, upcoming, before, limit: 50 }),
     countOrders(catalog.id),
   ]);
-  return NextResponse.json({ orders, counts });
+  // Loyalty card: which of these orders earn the reward (the customer's Nth finished order)
+  const loyalty = parseLoyaltyConfig((await getCatalogSettings(catalog.id) as unknown as Record<string, unknown> | null)?.loyalty_config);
+  let rewards: { reward_en: string; reward_ar: string; due: string[] } | null = null;
+  if (loyalty.enabled && orders.some((o) => o.kind !== "booking")) {
+    const finished = await finishedOrdersByPhone(catalog.id);
+    rewards = {
+      reward_en: loyalty.reward_en,
+      reward_ar: loyalty.reward_ar,
+      due: orders
+        .filter((o) => o.kind !== "booking" && o.status !== "cancelled" && isRewardOrder(countFor(finished, o.customer_phone, o.created_at), loyalty.every))
+        .map((o) => o.id),
+    };
+  }
+  return NextResponse.json({ orders, counts, rewards });
 }

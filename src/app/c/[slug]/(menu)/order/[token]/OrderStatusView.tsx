@@ -13,6 +13,8 @@ import { variantName } from "@/lib/catalog/dish-info";
 import { feeLine } from "@/lib/orders/delivery";
 import { isTransfer, parsePaymentConfig } from "@/lib/orders/payment";
 import { parseBookingConfig } from "@/lib/orders/slots";
+import { discountLine } from "@/lib/orders/coupons";
+import { parseLoyaltyConfig, rewardText } from "@/lib/orders/loyalty";
 import { depositInstructions } from "../../../_components/menu/CheckoutSheet";
 import { cn } from "@/utils/helpers";
 
@@ -31,6 +33,11 @@ export interface PublicOrder {
   delivery_currency: string | null;
   payment_method: string | null;
   paid: boolean;
+  discount: number | null;
+  discount_currency: string | null;
+  coupon_code: string | null;
+  /** Stamps towards the next reward, when the business has a loyalty card */
+  loyalty: { stamps: number; nextIsReward: boolean; every: number; rewardOrder: boolean } | null;
   created_at: string;
 }
 
@@ -58,7 +65,9 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
 
   const businessName = localized(catalog, "name", lang) || catalog.name;
   const config = order.price_config ?? priceConfig;
-  const total = order.lines.length > 0 ? formatTotal([...order.lines, ...feeLine(order.delivery_fee, order.delivery_currency)], config, lang) : null;
+  const total = order.lines.length > 0 ? formatTotal([...order.lines, ...feeLine(order.delivery_fee, order.delivery_currency), ...discountLine(order.discount, order.discount_currency)], config, lang) : null;
+  const loyaltyConfig = parseLoyaltyConfig((settings as unknown as Record<string, unknown> | null)?.loyalty_config);
+  const reward = rewardText(loyaltyConfig, lang);
   const payment = parsePaymentConfig((settings as unknown as Record<string, unknown> | null)?.payment_config);
 
   // The steps the customer follows; "ready" reads as "on its way" for deliveries
@@ -208,6 +217,15 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
                   <bdi className="shrink-0 tabular-nums">{formatPrice(line.price * line.quantity, line.currency, config, lang).primary}</bdi>
                 </li>
               ))}
+              {order.discount != null && order.discount > 0 && (
+                <li className="flex justify-between gap-3 text-menu-muted">
+                  <span>
+                    {t.msgDiscount}
+                    {order.coupon_code && <bdi> ({order.coupon_code})</bdi>}
+                  </span>
+                  <bdi className="shrink-0 tabular-nums">−{formatPrice(order.discount, order.discount_currency, config, lang).primary}</bdi>
+                </li>
+              )}
               {order.order_type === "delivery" && order.delivery_fee != null && (
                 <li className="flex justify-between gap-3 text-menu-muted">
                   <span>{t.deliveryFee}</span>
@@ -242,6 +260,36 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
               )}
             </p>
           )}
+        </section>
+      )}
+
+      {order.loyalty && reward && (
+        <section className="mt-4 rounded-[20px] bg-menu-surface p-5 shadow-menu-sm" aria-labelledby="loyalty-title">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="loyalty-title" className="font-semibold">{t.loyaltyTitle}</h2>
+            <span className="text-sm text-menu-muted tabular-nums">{t.loyaltyStamps(order.loyalty.stamps, order.loyalty.every)}</span>
+          </div>
+          {/* One dot per order towards the reward */}
+          <div className="mt-3 flex flex-wrap gap-2" aria-hidden>
+            {Array.from({ length: order.loyalty.every }, (_, i) => (
+              <span
+                key={i}
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-full border-2",
+                  i < order.loyalty!.stamps ? "border-brand bg-brand text-brand-fg" : "border-menu-line"
+                )}
+              >
+                {i < order.loyalty!.stamps && <Check className="h-3.5 w-3.5" />}
+              </span>
+            ))}
+          </div>
+          <p className="mt-3 text-sm">
+            {order.loyalty.rewardOrder && order.status !== "cancelled"
+              ? t.loyaltyEarned(reward)
+              : order.loyalty.nextIsReward
+                ? t.loyaltyNext(reward)
+                : t.loyaltyEvery(order.loyalty.every, reward)}
+          </p>
         </section>
       )}
 

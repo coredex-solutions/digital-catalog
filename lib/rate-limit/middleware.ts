@@ -32,6 +32,8 @@ export const RATE_LIMITS = {
   orderPerPhone: { windowMs: 10 * 60 * 1000, maxRequests: 8, keyPrefix: 'order-phone' },
   // Free booking times, checked as customers flip through dates
   slots: { windowMs: 5 * 60 * 1000, maxRequests: 120, keyPrefix: 'slots' },
+  // Coupon codes typed at checkout (low, so codes can't be guessed)
+  couponCheck: { windowMs: 10 * 60 * 1000, maxRequests: 20, keyPrefix: 'coupon' },
 
   // Owner-side AI writing tools, counted per catalog rather than per IP
   aiGenerate: { windowMs: 60 * 60 * 1000, maxRequests: 30, keyPrefix: 'ai-generate' }, // 30 calls/hour

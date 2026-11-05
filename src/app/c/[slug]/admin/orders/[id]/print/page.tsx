@@ -12,6 +12,7 @@ import { getDictionary } from "../../../../_lib/i18n";
 import { formatPrice, formatTotal, getPriceConfig } from "@/lib/catalog/price";
 import { variantName } from "@/lib/catalog/dish-info";
 import { feeLine } from "@/lib/orders/delivery";
+import { discountLine } from "@/lib/orders/coupons";
 import type { SavedOrder } from "@/lib/orders/store";
 
 const en = {
@@ -27,6 +28,7 @@ const en = {
   guests: "Guests",
   note: "Note",
   delivery: "Delivery",
+  discount: "Discount",
   free: "Free",
   total: "Total",
   payment: "Payment",
@@ -47,6 +49,7 @@ const ar: typeof en = {
   guests: "عدد الأشخاص",
   note: "ملاحظة",
   delivery: "التوصيل",
+  discount: "الخصم",
   free: "مجاني",
   total: "المجموع",
   payment: "الدفع",
@@ -65,7 +68,7 @@ function Ticket({ order, businessName }: { order: SavedOrder; businessName: stri
   const { module } = useModule();
   const words = getDictionary(lang, module.id) as unknown as Record<string, string>;
   const config = order.price_config ?? getPriceConfig(null);
-  const total = order.lines.length > 0 ? formatTotal([...order.lines, ...feeLine(order.delivery_fee, order.delivery_currency)], config, lang) : null;
+  const total = order.lines.length > 0 ? formatTotal([...order.lines, ...feeLine(order.delivery_fee, order.delivery_currency), ...discountLine(order.discount, order.discount_currency)], config, lang) : null;
   const name = (line: SavedOrder["lines"][number]) => (lang === "ar" ? line.name_ar || line.name_en : line.name_en || line.name_ar) || "—";
 
   return (
@@ -96,6 +99,12 @@ function Ticket({ order, businessName }: { order: SavedOrder; businessName: stri
               {line.note && <p className="tk-note">» {line.note}</p>}
             </div>
           ))}
+          {order.discount != null && order.discount > 0 && (
+            <div className="tk-row">
+              <span>{t.discount}{order.coupon_code ? ` (${order.coupon_code})` : ""}</span>
+              <span>−{formatPrice(order.discount, order.discount_currency, config, lang).primary}</span>
+            </div>
+          )}
           {order.order_type === "delivery" && order.delivery_fee != null && (
             <div className="tk-row">
               <span>{t.delivery}</span>

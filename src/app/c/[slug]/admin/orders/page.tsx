@@ -14,6 +14,7 @@ import { buildCustomerUpdate, buildReminder, whatsappLink } from "../../_lib/wha
 import { formatPrice, formatTotal, getPriceConfig } from "@/lib/catalog/price";
 import { variantName } from "@/lib/catalog/dish-info";
 import { feeLine } from "@/lib/orders/delivery";
+import { discountLine } from "@/lib/orders/coupons";
 import { isTransfer } from "@/lib/orders/payment";
 import { beirutNow, parseBookingConfig } from "@/lib/orders/slots";
 import type { SavedOrder, OrderStatus } from "@/lib/orders/store";
@@ -86,6 +87,8 @@ const en = {
   emptyUpcoming: "No bookings coming up.",
   sendReminder: "Send reminder",
   deposit: "Deposit",
+  discount: "Discount",
+  rewardDue: (reward: string) => `Loyalty reward due: ${reward}`,
   print: "Print",
   tellCustomer: "Tell the customer",
 };
@@ -148,6 +151,8 @@ const ar: typeof en = {
   emptyUpcoming: "لا حجوزات قادمة.",
   sendReminder: "أرسل تذكيراً",
   deposit: "العربون",
+  discount: "الخصم",
+  rewardDue: (reward) => `مكافأة الولاء مستحقة: ${reward}`,
   print: "طباعة",
   tellCustomer: "أخبر الزبون",
 };
@@ -181,6 +186,7 @@ function OrderCard({
   printHref,
   reminder,
   depositOn,
+  reward,
 }: {
   order: SavedOrder;
   onStatus: (status: OrderStatus) => void;
@@ -189,6 +195,8 @@ function OrderCard({
   reminder: string | null;
   /** The business asks a deposit for bookings, so they can be marked paid */
   depositOn: boolean;
+  /** Loyalty reward this order earns (the customer's Nth order), in the owner's language */
+  reward: string | null;
   busy: boolean;
   printHref: string;
 }) {
@@ -200,7 +208,7 @@ function OrderCard({
   const [askCancel, setAskCancel] = useState(false);
 
   const config = order.price_config ?? getPriceConfig(null);
-  const total = order.lines.length > 0 ? formatTotal([...order.lines, ...feeLine(order.delivery_fee, order.delivery_currency)], config, lang) : null;
+  const total = order.lines.length > 0 ? formatTotal([...order.lines, ...feeLine(order.delivery_fee, order.delivery_currency), ...discountLine(order.discount, order.discount_currency)], config, lang) : null;
   const paid = Boolean(order.paid_at);
   const typeLabel = order.order_type ? (words as unknown as Record<string, string>)[order.order_type] : null;
   const holdsStock = order.lines.some((line) => line.reserved > 0);
@@ -296,6 +304,15 @@ function OrderCard({
                 {line.note && <p className="text-ui-muted">{t.note}: {line.note}</p>}
               </li>
             ))}
+            {order.discount != null && order.discount > 0 && (
+              <li className="flex justify-between gap-3 text-ui-muted">
+                <span>
+                  {t.discount}
+                  {order.coupon_code && <bdi> ({order.coupon_code})</bdi>}
+                </span>
+                <span className="shrink-0 tabular-nums">−{formatPrice(order.discount, order.discount_currency, config, lang).primary}</span>
+              </li>
+            )}
             {order.order_type === "delivery" && order.delivery_fee != null && (
               <li className="flex justify-between gap-3 text-ui-muted">
                 <span>{t.delivery}</span>
@@ -316,6 +333,10 @@ function OrderCard({
             </p>
           )}
         </div>
+      )}
+
+      {reward && (
+        <p className="mt-3 rounded-control bg-ui-accent px-3 py-2 text-sm font-semibold text-ui-accent-fg">{t.rewardDue(reward)}</p>
       )}
 
       {reminder && order.status !== "cancelled" && order.status !== "completed" && (
@@ -483,6 +504,7 @@ function OrdersView() {
   const [failed, setFailed] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  const [rewards, setRewards] = useState<{ reward_en: string; reward_ar: string; due: string[] } | null>(null);
   const [notice, setNotice] = useState<{
     text: string;
     undo?: { order: SavedOrder; from: OrderStatus };
@@ -518,6 +540,7 @@ function OrdersView() {
         if (id !== request.current) return;
         setOrders((prev) => (options.before ? [...prev, ...data.orders] : data.orders));
         setCounts(data.counts);
+        setRewards((prev) => (options.before && prev && data.rewards ? { ...data.rewards, due: [...prev.due, ...data.rewards.due] } : data.rewards ?? null));
         setHasMore(tab === "done" && !unpaid && !upcoming && data.orders.length === 50);
         setFailed(false);
       } catch {
@@ -756,6 +779,11 @@ function OrdersView() {
                   printHref={`/c/${slug}/admin/orders/${order.id}/print/`}
                   reminder={reminderLink(order)}
                   depositOn={depositOn}
+                  reward={
+                    rewards?.due.includes(order.id)
+                      ? (lang === "ar" ? rewards.reward_ar || rewards.reward_en : rewards.reward_en || rewards.reward_ar) || null
+                      : null
+                  }
                 />
               ))
             )}

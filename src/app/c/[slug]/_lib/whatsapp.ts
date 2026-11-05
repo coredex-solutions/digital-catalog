@@ -8,6 +8,7 @@ import { variantName } from "@/lib/catalog/dish-info";
 import { MODULES, ADDRESS_ORDER_TYPES, type ModuleId, type OrderType } from "@/lib/modules/registry";
 import { resolveOrderTypes } from "@/lib/modules/resolve";
 import { feeLine } from "@/lib/orders/delivery";
+import { discountLine } from "@/lib/orders/coupons";
 
 export type { OrderType };
 
@@ -59,6 +60,10 @@ export interface OrderDetails {
   paymentMethod?: string | null;
   /** The customer's order status page */
   statusUrl?: string | null;
+  /** Coupon discount on the items, in discountCurrency */
+  discount?: number | null;
+  discountCurrency?: string | null;
+  couponCode?: string | null;
 }
 
 /** "2026-11-05 14:30" → "2026-11-05 · 14:30" (Western digits, as Lebanese menus write them) */
@@ -103,7 +108,16 @@ export function buildOrderMessage(
     out.push(`• ${t.msgDelivery} — ${fee}`);
   }
 
-  const total = formatTotal([...lines, ...feeLine(details.deliveryFee, details.deliveryCurrency)], priceConfig, lang);
+  if (details.discount && details.discount > 0) {
+    const off = formatPrice(details.discount, details.discountCurrency, priceConfig, lang).primary;
+    out.push(`• ${t.msgDiscount}${details.couponCode ? ` (${details.couponCode})` : ""} — −${off}`);
+  }
+
+  const total = formatTotal(
+    [...lines, ...feeLine(details.deliveryFee, details.deliveryCurrency), ...discountLine(details.discount, details.discountCurrency)],
+    priceConfig,
+    lang
+  );
   out.push("");
   out.push(`*${t.msgTotal}:* ${total.primary}${total.secondary ? ` (${total.secondary})` : ""}`);
   if (details.paymentMethod) out.push(`*${t.msgPayment}:* ${t.payMethods[details.paymentMethod] ?? details.paymentMethod}`);

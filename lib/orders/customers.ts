@@ -13,6 +13,8 @@ export interface Customer {
   orders: number;
   /** Total of those orders in USD; null when none could be converted */
   spentUsd: number | null;
+  /** Finished orders and requests: the loyalty stamps */
+  finished: number;
   firstAt: string;
   lastAt: string;
 }
@@ -32,6 +34,7 @@ interface OrderRow {
   status: string;
   total_usd: number | null;
   created_at: string;
+  kind?: string;
 }
 
 /** Group order rows into customers, most recent first. Pure, for tests. */
@@ -50,12 +53,14 @@ export function groupCustomers(rows: OrderRow[]): Customer[] {
       name: row.customer_name,
       orders: 0,
       spentUsd: null,
+      finished: 0,
       firstAt: row.created_at,
       lastAt: row.created_at,
     };
     customer.phone = row.customer_phone;
     customer.name = row.customer_name || customer.name;
     customer.lastAt = row.created_at;
+    if (row.status === "completed" && row.kind !== "booking") customer.finished += 1;
     if (counted) {
       customer.orders += 1;
       if (row.total_usd != null) customer.spentUsd = Math.round(((customer.spentUsd ?? 0) + Number(row.total_usd)) * 100) / 100;
@@ -70,7 +75,7 @@ const MAX_ROWS = 20_000;
 
 export async function listCustomers(catalogId: string): Promise<Customer[]> {
   const result = await getDb().execute({
-    sql: `SELECT customer_name, customer_phone, status, total_usd, created_at FROM orders
+    sql: `SELECT customer_name, customer_phone, status, total_usd, created_at, kind FROM orders
           WHERE catalog_id = ? ORDER BY created_at DESC LIMIT ?`,
     args: [catalogId, MAX_ROWS],
   });
@@ -80,6 +85,7 @@ export async function listCustomers(catalogId: string): Promise<Customer[]> {
     status: String(row.status ?? ""),
     total_usd: row.total_usd == null ? null : Number(row.total_usd),
     created_at: String(row.created_at ?? ""),
+    kind: String(row.kind ?? "order"),
   }));
   return groupCustomers(rows);
 }

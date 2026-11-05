@@ -10,6 +10,7 @@ import type { PriceConfig } from "../catalog/price";
 import { feeLine, quoteDelivery, zoneName, type DeliveryConfig } from "./delivery";
 import { PAY_AT_TABLE, type PaymentConfig, type PaymentMethod } from "./payment";
 import { fitsSlot, requestMinutes, type BeirutNow, type BookingConfig, type HoursRow } from "./slots";
+import { couponDiscount, couponUsable, discountLine, normalizeCode, type Coupon, type CouponProblem } from "./coupons";
 
 export type OrderKind = "order" | "booking";
 
@@ -48,6 +49,8 @@ export interface OrderContext {
   hours: HoursRow[];
   /** Now in Beirut (passed in so tests are stable) */
   now: BeirutNow;
+  /** The coupon matching the code the customer typed (looked up by the caller); null = none found */
+  coupon?: Coupon | null;
   /** Today in Beirut, YYYY-MM-DD (passed in so tests are stable) */
   today: string;
 }
@@ -92,6 +95,11 @@ export interface ValidOrder {
   durationMinutes: number | null;
   /** Bookings allowed at the same time; when set, saving checks the time is still free */
   capacity: number | null;
+  /** Coupon discount on the items (worked out here), in discountCurrency */
+  discount: number | null;
+  discountCurrency: string | null;
+  couponId: string | null;
+  couponCode: string | null;
   clientKey: string | null;
 }
 
@@ -110,11 +118,12 @@ export type OrderErrorCode =
   | "order_type"
   | "below_minimum"
   | "slot_unavailable"
+  | "coupon"
   | "required";
 
 export type OrderValidation =
   | { ok: true; order: ValidOrder }
-  | { ok: false; code: OrderErrorCode; field?: string; message: string };
+  | { ok: false; code: OrderErrorCode; field?: string; message: string; detail?: CouponProblem };
 
 export const MAX_ORDER_LINES = 50;
 export const MAX_LINE_QUANTITY = 99;
@@ -214,6 +223,10 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
         totalUsd: null,
         durationMinutes: slots ? ctx.booking.table_minutes : null,
         capacity: slots ? ctx.booking.capacity : null,
+        discount: null,
+        discountCurrency: null,
+        couponId: null,
+        couponCode: null,
         clientKey,
       },
     };
@@ -316,6 +329,20 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
     }
   }
 
+  // Coupon: off the items only (the delivery fee and its minimum use the full items total)
+  let discount: number | null = null;
+  let discountCurrency: string | null = null;
+  const code = normalizeCode(input.couponCode);
+  if (code) {
+    const coupon = ctx.coupon && ctx.coupon.code === code ? ctx.coupon : null;
+    const problem = coupon ? couponUsable(coupon, ctx.today) : "invalid";
+    if (problem) return { ...fail("coupon", "This code can't be used", "coupon"), detail: problem } as OrderValidation;
+    const result = couponDiscount(coupon!, lines, ctx.priceConfig.lbpRate);
+    if (!result.ok) return { ...fail("coupon", "This code can't be used", "coupon"), detail: result.problem } as OrderValidation;
+    discount = result.discount;
+    discountCurrency = result.currency;
+  }
+
   let deliveryFee: number | null = null;
   let deliveryCurrency: string | null = null;
   if (zoned) {
@@ -344,9 +371,13 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
       deliveryFee,
       deliveryCurrency,
       paymentMethod,
-      totalUsd: totalInUsd([...lines, ...feeLine(deliveryFee, deliveryCurrency)], ctx.priceConfig),
+      totalUsd: totalInUsd([...lines, ...feeLine(deliveryFee, deliveryCurrency), ...discountLine(discount, discountCurrency)], ctx.priceConfig),
       durationMinutes,
       capacity: slotted ? ctx.booking.capacity : null,
+      discount,
+      discountCurrency,
+      couponId: discount !== null ? ctx.coupon!.id : null,
+      couponCode: discount !== null ? code : null,
       clientKey,
     },
   };

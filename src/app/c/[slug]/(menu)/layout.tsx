@@ -11,6 +11,8 @@ import { getDictionary, localized } from '../_lib/i18n';
 import { readDishInfo } from '@/lib/catalog/dish-info';
 import { getModule, moduleInfo, schemaTypeFor } from '@/lib/modules/resolve';
 import { isItemAvailable } from '@/lib/orders/context';
+import { hasUsableCoupons } from '@/lib/orders/coupons-store';
+import { beirutToday } from '@/lib/orders/validate';
 
 // Generate metadata for SEO
 export async function generateMetadata({
@@ -151,6 +153,8 @@ export default async function CatalogLayout({
   const themeStyle = buildMenuTheme(settings?.color_primary);
   const modules = moduleInfo(catalog);
   const trackStock = modules.addons.includes('stock');
+  // Older databases without the coupons table simply show no code field
+  const hasCoupons = await hasUsableCoupons(catalog.id, beirutToday()).catch(() => false);
 
   if (data.isExpired) {
     const isAr = lang === 'ar';
@@ -207,6 +211,7 @@ export default async function CatalogLayout({
     settings: settings ? {
       ...withoutFrench(settings),
       ai_waiter_enabled: Boolean(settings.ai_waiter_enabled),
+      has_coupons: hasCoupons,
     } : null,
     contact: contact ? withoutFrench(contact) : null,
     operatingHours: operatingHours.map((h) => ({

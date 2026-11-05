@@ -231,6 +231,31 @@ const en = {
   custDepositWhish: (amount: string, phone: string) => `To confirm, send the ${amount} deposit on Whish to ${phone}.`,
   custDepositOmt: (amount: string, to: string) => `To confirm, send the ${amount} deposit by OMT to ${to}.`,
   custReminder: (business: string, date: string, time: string) => `Reminder: your booking at ${business} is on ${date} at ${time}. See you soon!`,
+  // Coupon codes
+  msgDiscount: "Discount",
+  couponLink: "Have a discount code?",
+  couponLabel: "Discount code",
+  couponApply: "Apply",
+  couponRemove: "Remove",
+  couponApplied: (code: string) => `Code ${code}`,
+  couponProblems: {
+    invalid: "This code doesn't exist.",
+    inactive: "This code isn't active.",
+    not_started: "This code can't be used yet.",
+    expired: "This code has expired.",
+    used_up: "This code has been used up.",
+    below_minimum: "Your order is under this code's minimum.",
+  } as Record<string, string>,
+  couponMinimum: (amount: string) => `This code needs an order of ${amount} or more.`,
+  // Loyalty stamps
+  loyaltyTitle: "Loyalty card",
+  loyaltyStamps: (n: number, every: number) => `${n} of ${every} stamps`,
+  loyaltyEvery: (every: number, reward: string) => {
+    const suffix = every % 100 >= 11 && every % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[every % 10] ?? "th";
+    return `Every ${every}${suffix} order: ${reward}`;
+  },
+  loyaltyNext: (reward: string) => `Your next order earns: ${reward}`,
+  loyaltyEarned: (reward: string) => `This order earns: ${reward}`,
 };
 
 type Dictionary = typeof en;
@@ -444,6 +469,26 @@ const ar: Dictionary = {
   custDepositWhish: (amount: string, phone: string) => `لتثبيت الحجز، حوّل العربون ${amount} عبر Whish إلى ${phone}.`,
   custDepositOmt: (amount: string, to: string) => `لتثبيت الحجز، حوّل العربون ${amount} عبر OMT إلى ${to}.`,
   custReminder: (business: string, date: string, time: string) => `تذكير: موعد حجزك لدى ${business} يوم ${date} الساعة ${time}. بانتظارك!`,
+  msgDiscount: "الخصم",
+  couponLink: "لديك رمز خصم؟",
+  couponLabel: "رمز الخصم",
+  couponApply: "تطبيق",
+  couponRemove: "إزالة",
+  couponApplied: (code: string) => `الرمز ${code}`,
+  couponProblems: {
+    invalid: "هذا الرمز غير موجود.",
+    inactive: "هذا الرمز غير مفعّل.",
+    not_started: "لا يمكن استخدام هذا الرمز بعد.",
+    expired: "انتهت صلاحية هذا الرمز.",
+    used_up: "استُخدم هذا الرمز بالكامل.",
+    below_minimum: "طلبك أقل من الحد الأدنى لهذا الرمز.",
+  },
+  couponMinimum: (amount: string) => `يتطلب هذا الرمز طلباً بقيمة ${amount} أو أكثر.`,
+  loyaltyTitle: "بطاقة الولاء",
+  loyaltyStamps: (n: number, every: number) => `${n} من ${every}`,
+  loyaltyEvery: (every: number, reward: string) => `مع كل ${every === 2 ? "طلبين" : every <= 10 ? `${every} طلبات` : `${every} طلباً`}: ${reward}`,
+  loyaltyNext: (reward: string) => `طلبك القادم يمنحك: ${reward}`,
+  loyaltyEarned: (reward: string) => `هذا الطلب يمنحك: ${reward}`,
 };
 
 export type { Dictionary };

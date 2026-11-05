@@ -44,6 +44,8 @@ export interface CatalogContactData {
 // Catalog settings data for UI components
 export interface CatalogSettingsData {
   hero_image_url?: string | null;
+  /** The business has a coupon customers can use today (shows the code field at checkout) */
+  has_coupons?: boolean;
   bg_pattern_enabled?: boolean;
   bg_pattern_type?: string;
   color_primary?: string;

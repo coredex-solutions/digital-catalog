@@ -12,7 +12,7 @@ export interface SentOrder {
 
 export type SendResult =
   | { ok: true; order: SentOrder }
-  | { ok: false; code: string; field?: string };
+  | { ok: false; code: string; field?: string; detail?: string };
 
 /** A random key for one checkout, so retrying the same order never saves it twice */
 export function newClientKey(): string {
@@ -40,7 +40,7 @@ export async function sendOrder(slug: string, body: Record<string, unknown>): Pr
         },
       };
     }
-    return { ok: false, code: typeof data.code === "string" ? data.code : res.status === 429 ? "rate_limited" : "failed", field: data.field };
+    return { ok: false, code: typeof data.code === "string" ? data.code : res.status === 429 ? "rate_limited" : "failed", field: data.field, detail: typeof data.detail === "string" ? data.detail : undefined };
   } catch {
     return { ok: false, code: "network" };
   }

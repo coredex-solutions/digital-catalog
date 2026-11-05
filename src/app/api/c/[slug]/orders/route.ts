@@ -10,6 +10,8 @@ import { buildOrderMessage, buildReservationMessage, whatsappLink, type OrderTyp
 import type { ModuleId } from "@/lib/modules/registry";
 import { notifyNewOrder } from "@/lib/push";
 import { getSiteUrl } from "@/lib/utils/base-url";
+import { findCouponByCode } from "@/lib/orders/coupons-store";
+import { normalizeCode } from "@/lib/orders/coupons";
 
 /** The customer's status page for an order (path only; null for orders saved before it existed) */
 function statusPath(slug: string, order: SavedOrder): string | null {
@@ -59,6 +61,9 @@ function messageFor(order: SavedOrder, businessName: string, moduleId: ModuleId,
       deliveryFee: order.delivery_fee,
       deliveryCurrency: order.delivery_currency,
       paymentMethod: order.payment_method,
+      discount: order.discount,
+      discountCurrency: order.discount_currency,
+      couponCode: order.coupon_code,
       statusUrl,
     },
     order.price_config ?? getPriceConfig(null),
@@ -107,11 +112,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (data.isExpired) return NextResponse.json({ error: "This page is not taking orders", code: "closed" }, { status: 403 });
 
+  // A typed coupon code is looked up here; the rules are checked with the order
+  const code = normalizeCode(body.couponCode);
+  if (code) context.coupon = await findCouponByCode(data.catalog.id, code);
+
   const result = validateOrder(body, context);
   if (!result.ok) {
     const status =
-      result.code === "stock_changed" || result.code === "item_unavailable" || result.code === "slot_unavailable" ? 409 : result.code === "closed" ? 403 : result.code === "below_minimum" ? 422 : 400;
-    return NextResponse.json({ error: result.message, code: result.code, field: result.field }, { status });
+      result.code === "stock_changed" || result.code === "item_unavailable" || result.code === "slot_unavailable" ? 409 : result.code === "closed" ? 403 : result.code === "below_minimum" || result.code === "coupon" ? 422 : 400;
+    return NextResponse.json({ error: result.message, code: result.code, field: result.field, detail: result.detail }, { status });
   }
 
   // Per phone number too, so one person can't flood a business from many addresses
@@ -121,6 +130,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const saved = await createOrder(data.catalog.id, result.order, context.priceConfig);
   if (!saved.ok) {
+    if (saved.code === "coupon_used_up") {
+      return NextResponse.json({ error: "This code can't be used", code: "coupon", field: "coupon", detail: "used_up" }, { status: 409 });
+    }
     if (saved.code === "slot_taken") {
       return NextResponse.json({ error: "This time was just booked", code: "slot_unavailable", field: "when" }, { status: 409 });
     }

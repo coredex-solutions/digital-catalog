@@ -17,6 +17,7 @@ import { parseBookingConfig, requestMinutes, type BookingConfig } from "@/lib/or
 import type { PriceConfig } from "@/lib/catalog/price";
 import type { Dictionary } from "../../_lib/i18n";
 import { SlotPicker } from "./SlotPicker";
+import { couponDiscount, discountLine, normalizeCode, type CouponTerms } from "@/lib/orders/coupons";
 import { Price } from "./Price";
 import { Sheet } from "./Sheet";
 import { cn } from "@/utils/helpers";
@@ -164,7 +165,40 @@ export function CheckoutSheet() {
   const quote = zoned ? quoteDelivery(delivery, details.zoneId, cart, priceConfig.lbpRate) : null;
   const fee = quote ? quote.fee : null;
   const money = (amount: number) => formatPrice(amount, delivery.currency, priceConfig, lang).primary;
-  const total = quote ? formatTotal([...cart, ...feeLine(quote.fee, quote.currency)], priceConfig, lang) : cartTotal;
+  // Coupon: checked with the server when applied; the discount follows the basket (the server works it out again)
+  const [coupon, setCoupon] = useState<{ open: boolean; input: string; applied: CouponTerms | null; error: string | null; checking: boolean }>({
+    open: false,
+    input: "",
+    applied: null,
+    error: null,
+    checking: false,
+  });
+  const couponResult = coupon.applied ? couponDiscount(coupon.applied, cart, priceConfig.lbpRate) : null;
+  const discount = coupon.applied && couponResult?.ok ? { code: coupon.applied.code, amount: couponResult.discount, currency: couponResult.currency } : null;
+  const couponWarning =
+    coupon.applied && couponResult && !couponResult.ok
+      ? couponResult.problem === "below_minimum" && coupon.applied.min_order
+        ? t.couponMinimum(formatPrice(coupon.applied.min_order, coupon.applied.currency, priceConfig, lang).primary)
+        : t.couponProblems[couponResult.problem]
+      : null;
+  const total =
+    quote || discount
+      ? formatTotal([...cart, ...feeLine(quote?.fee, quote?.currency), ...discountLine(discount?.amount, discount?.currency)], priceConfig, lang)
+      : cartTotal;
+
+  const applyCoupon = async () => {
+    const code = normalizeCode(coupon.input);
+    if (!code) return;
+    setCoupon((prev) => ({ ...prev, checking: true, error: null }));
+    try {
+      const res = await fetch(`/api/c/${catalog.slug}/coupon/`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code }) });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) setCoupon((prev) => ({ ...prev, checking: false, applied: data.coupon, input: data.coupon.code }));
+      else setCoupon((prev) => ({ ...prev, checking: false, error: t.couponProblems[data.problem] ?? (res.status === 429 ? t.saveFailed : t.couponProblems.invalid) }));
+    } catch {
+      setCoupon((prev) => ({ ...prev, checking: false, error: t.saveFailed }));
+    }
+  };
 
   // Payment: asked only when the business offers more than one way, and never at the table
   const askPayment = payment.methods.length > 1 && !PAY_AT_TABLE.includes(orderType);
@@ -205,6 +239,9 @@ export function CheckoutSheet() {
         orderNumber,
         deliveryFee: fee,
         deliveryCurrency: quote?.currency,
+        discount: discount?.amount,
+        discountCurrency: discount?.currency,
+        couponCode: discount?.code,
         paymentMethod,
       },
       priceConfig,
@@ -251,6 +288,7 @@ export function CheckoutSheet() {
       area: details.area.trim(),
       zoneId: zoned ? details.zoneId : undefined,
       paymentMethod: paymentMethod ?? undefined,
+      couponCode: discount ? discount.code : undefined,
       date: askWhen ? when.date : "",
       time: askWhen ? when.time : "",
       note: notes.trim(),
@@ -268,6 +306,11 @@ export function CheckoutSheet() {
       setFailure(t.stockChanged);
       // Reload the items so sold-out and stock changes show
       router.refresh();
+      return;
+    }
+    if (result.code === "coupon") {
+      // The code ran out or changed since it was applied
+      setCoupon((prev) => ({ ...prev, open: true, applied: null, error: t.couponProblems[result.detail ?? "invalid"] ?? t.couponProblems.invalid }));
       return;
     }
     if (result.code === "slot_unavailable") {
@@ -345,16 +388,28 @@ export function CheckoutSheet() {
             )}
           </div>
         )}
-        {quote && (
+        {(quote || discount) && (
           <dl className="mb-2 space-y-1 text-sm">
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-menu-muted">{t.itemsSubtotal}</dt>
               <dd><Price value={cartTotal} /></dd>
             </div>
-            <div className="flex items-baseline justify-between gap-3">
-              <dt className="text-menu-muted">{t.deliveryFee}</dt>
-              <dd className="font-semibold">{quote.fee > 0 ? <Price amount={quote.fee} currency={quote.currency} /> : t.freeDelivery}</dd>
-            </div>
+            {quote && (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-menu-muted">{t.deliveryFee}</dt>
+                <dd className="font-semibold">{quote.fee > 0 ? <Price amount={quote.fee} currency={quote.currency} /> : t.freeDelivery}</dd>
+              </div>
+            )}
+            {discount && (
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="text-menu-muted">
+                  {t.msgDiscount} <bdi className="font-semibold">({discount.code})</bdi>
+                </dt>
+                <dd className="font-semibold">
+                  −<Price amount={discount.amount} currency={discount.currency} />
+                </dd>
+              </div>
+            )}
           </dl>
         )}
         <div className="mb-3 flex items-baseline justify-between gap-3">
@@ -574,6 +629,72 @@ export function CheckoutSheet() {
             />
           )}
         </Field>
+
+        {(settings?.has_coupons || coupon.applied) && (
+        <div>
+          {coupon.applied ? (
+            <div className="flex items-center justify-between gap-3 rounded-control border border-brand-ink bg-brand-soft px-4 py-3 text-sm">
+              <span>
+                <span className="font-semibold">
+                  <bdi>{t.couponApplied(coupon.applied.code)}</bdi>
+                </span>
+                {discount && (
+                  <span className="ms-2">
+                    −<Price amount={discount.amount} currency={discount.currency} />
+                  </span>
+                )}
+                {couponWarning && <span className="mt-1 block text-menu-danger">{couponWarning}</span>}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCoupon({ open: true, input: "", applied: null, error: null, checking: false })}
+                className="min-h-11 shrink-0 px-2 font-semibold underline underline-offset-4"
+              >
+                {t.couponRemove}
+              </button>
+            </div>
+          ) : coupon.open ? (
+            <Field label={t.couponLabel} error={coupon.error ?? undefined}>
+              {(props) => (
+                <div className="flex gap-2">
+                  <input
+                    {...props}
+                    value={coupon.input}
+                    onChange={(event) => setCoupon((prev) => ({ ...prev, input: event.target.value.slice(0, 24), error: null }))}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        applyCoupon();
+                      }
+                    }}
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    dir="ltr"
+                    className={cn(inputClass, "uppercase")}
+                  />
+                  <button
+                    type="button"
+                    onClick={applyCoupon}
+                    disabled={coupon.checking || !coupon.input.trim()}
+                    className="flex min-h-12 shrink-0 items-center gap-2 rounded-control border border-menu-input-border px-4 font-semibold disabled:opacity-60"
+                  >
+                    {coupon.checking && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                    {t.couponApply}
+                  </button>
+                </div>
+              )}
+            </Field>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCoupon((prev) => ({ ...prev, open: true }))}
+              className="min-h-11 text-sm font-semibold text-brand-ink underline underline-offset-4"
+            >
+              {t.couponLink}
+            </button>
+          )}
+        </div>
+        )}
 
         {askPayment && (
           <fieldset aria-describedby={errors.payment ? "payment-error" : undefined}>

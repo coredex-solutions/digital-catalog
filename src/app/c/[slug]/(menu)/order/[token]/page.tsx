@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getCatalogBySlug } from "@/lib/catalog/queries";
+import { getCatalogBySlug, getCatalogSettings } from "@/lib/catalog/queries";
+import { countFor, finishedOrdersByPhone, isRewardOrder, loyaltyProgress, parseLoyaltyConfig } from "@/lib/orders/loyalty";
 import { findByPublicToken } from "@/lib/orders/store";
 import { OrderStatusView, type PublicOrder } from "./OrderStatusView";
 
@@ -27,6 +28,16 @@ export default async function OrderStatusPage({ params }: { params: Promise<{ sl
   const order = await findByPublicToken(catalog.id, token);
   if (!order) notFound();
 
+  // Loyalty stamps for this phone number (finished orders), and whether this order earns the reward
+  const loyaltyConfig = parseLoyaltyConfig((await getCatalogSettings(catalog.id) as unknown as Record<string, unknown> | null)?.loyalty_config);
+  let loyalty: PublicOrder["loyalty"] = null;
+  if (loyaltyConfig.enabled && order.kind !== "booking") {
+    const finished = await finishedOrdersByPhone(catalog.id);
+    const total = countFor(finished, order.customer_phone);
+    const before = countFor(finished, order.customer_phone, order.created_at);
+    loyalty = { ...loyaltyProgress(total, loyaltyConfig.every), every: loyaltyConfig.every, rewardOrder: isRewardOrder(before, loyaltyConfig.every) };
+  }
+
   // Only what the customer needs to see; no phone number or address
   const publicOrder: PublicOrder = {
     number: order.number,
@@ -51,6 +62,10 @@ export default async function OrderStatusPage({ params }: { params: Promise<{ sl
     delivery_currency: order.delivery_currency,
     payment_method: order.payment_method,
     paid: Boolean(order.paid_at),
+    discount: order.discount,
+    discount_currency: order.discount_currency,
+    coupon_code: order.coupon_code,
+    loyalty,
     created_at: order.created_at,
   };
 

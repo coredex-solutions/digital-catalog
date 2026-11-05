@@ -49,6 +49,10 @@ export interface SavedOrder {
   public_token: string | null;
   /** How long a booking or appointment lasts (set times only) */
   duration_minutes: number | null;
+  /** Coupon discount on the items (taken off the total), in discount_currency */
+  discount: number | null;
+  discount_currency: string | null;
+  coupon_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -88,6 +92,9 @@ function toOrder(row: Record<string, unknown>): SavedOrder {
     paid_at: str(row.paid_at),
     public_token: str(row.public_token),
     duration_minutes: num(row.duration_minutes),
+    discount: num(row.discount),
+    discount_currency: str(row.discount_currency),
+    coupon_code: str(row.coupon_code),
     created_at: String(row.created_at ?? ""),
     updated_at: String(row.updated_at ?? ""),
   };
@@ -133,7 +140,7 @@ export async function setOrderPaid(catalogId: string, orderId: string, paid: boo
 
 export type CreateResult =
   | { ok: true; order: SavedOrder; repeated: boolean }
-  | { ok: false; code: "stock_changed" | "slot_taken" };
+  | { ok: false; code: "stock_changed" | "slot_taken" | "coupon_used_up" };
 
 export async function findByClientKey(catalogId: string, clientKey: string): Promise<SavedOrder | null> {
   const result = await getDb().execute({
@@ -188,6 +195,13 @@ export async function createOrder(
           args: [catalogId, order.kind, order.requestedFor, order.durationMinutes, order.durationMinutes, order.requestedFor, order.capacity],
         }
       : { sql: "1", args: [] };
+  // A coupon must still have uses left when the order is saved
+  const coupon = order.couponId
+    ? {
+        sql: "(SELECT is_active = 1 AND (max_uses IS NULL OR used_count < max_uses) FROM coupons WHERE id = ? AND catalog_id = ?) = 1",
+        args: [order.couponId, catalogId],
+      }
+    : { sql: "1", args: [] };
 
   statements.push({
     // The number is taken inside the INSERT so two orders can't get the same one
@@ -195,11 +209,12 @@ export async function createOrder(
             id, catalog_id, number, kind, status, order_type, customer_name, customer_phone,
             table_label, address, area, requested_for, party_size, lines, price_config, total_usd,
             note, lang, source, stock_reserved, client_key, delivery_fee, delivery_currency,
-            payment_method, public_token, duration_minutes, created_at, updated_at
+            payment_method, public_token, duration_minutes, discount, discount_currency, coupon_code,
+            created_at, updated_at
           ) SELECT
             ?, ?, (SELECT COALESCE(MAX(number), 0) + 1 FROM orders WHERE catalog_id = ?), ?, 'new', ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
-          WHERE ${slot.sql}
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
+          WHERE ${slot.sql} AND ${coupon.sql}
           RETURNING *`,
     args: [
       id,
@@ -227,9 +242,19 @@ export async function createOrder(
       order.paymentMethod,
       newPublicToken(),
       order.durationMinutes,
+      order.discount,
+      order.discountCurrency,
+      order.couponCode,
       ...slot.args,
+      ...coupon.args,
     ],
   });
+  if (order.couponId) {
+    statements.push({
+      sql: "UPDATE coupons SET used_count = used_count + 1 WHERE id = ? AND EXISTS (SELECT 1 FROM orders WHERE id = ?)",
+      args: [order.couponId, id],
+    });
+  }
   // Then its stock, only if the order was inserted. The menu_items_stock_not_negative trigger
   // aborts the whole batch (order included) if any item would go below zero.
   for (const [itemId, quantity] of reserve) {
@@ -243,7 +268,17 @@ export async function createOrder(
   try {
     const results = await getDb().batch(statements, "write");
     const row = rowsOf(results[0])[0];
-    if (!row) return { ok: false, code: "slot_taken" };
+    if (!row) {
+      // Not saved: the coupon ran out of uses, or the time was taken
+      if (order.couponId) {
+        const left = await getDb().execute({
+          sql: "SELECT is_active = 1 AND (max_uses IS NULL OR used_count < max_uses) AS ok FROM coupons WHERE id = ?",
+          args: [order.couponId],
+        });
+        if (!Number(left.rows[0]?.ok)) return { ok: false, code: "coupon_used_up" };
+      }
+      return { ok: false, code: "slot_taken" };
+    }
     return { ok: true, order: toOrder(row), repeated: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -361,6 +396,14 @@ export async function setOrderStatus(catalogId: string, orderId: string, status:
             WHERE id = ? AND catalog_id = ? AND stock_qty IS NOT NULL
               AND (SELECT stock_reserved = ? AND status = ? FROM orders WHERE id = ?) = 1`,
       args: [quantity, itemId, catalogId, giveBack ? 1 : 0, order.status, orderId],
+    });
+  }
+  // A cancelled order gives its coupon use back; reopening it uses it again
+  if (order.coupon_code && (giveBack || order.status === "cancelled")) {
+    statements.push({
+      sql: `UPDATE coupons SET used_count = MAX(used_count ${giveBack ? "- 1" : "+ 1"}, 0)
+            WHERE catalog_id = ? AND code = ? AND (SELECT status = ? FROM orders WHERE id = ?) = 1`,
+      args: [catalogId, order.coupon_code, order.status, orderId],
     });
   }
   const stockColumn = giveBack ? ", stock_reserved = 0" : takeAgain ? ", stock_reserved = 1" : "";
