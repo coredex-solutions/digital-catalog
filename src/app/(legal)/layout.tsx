@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowLeft, QrCode } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { BrandMark } from "../_landing/BrandMark";
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,9 +11,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
             <ArrowLeft className="h-5 w-5" aria-hidden />
           </Link>
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
-              <QrCode className="h-4 w-4" />
-            </span>
+            <BrandMark />
             <span className="whitespace-nowrap text-ui-primary">Core Commerce</span>
           </Link>
         </div>

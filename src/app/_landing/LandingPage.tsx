@@ -69,6 +69,7 @@ import { LanguageDemo } from "./LanguageDemo";
 import { HeroShowcase } from "./HeroShowcase";
 import { OrdersShowcase } from "./OrdersShowcase";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
+import { BrandMark } from "./BrandMark";
 
 /** Each language has its own address, so search engines can index both: / and /ar/ */
 export const LANDING_PATH: Record<SiteLang, string> = { en: "/", ar: "/ar/" };
@@ -317,9 +318,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
           <Link href={LANDING_PATH[lang]} className="flex items-center gap-2 font-semibold">
             {/* The logo square is left out on the narrowest phones, so the name and buttons fit */}
-            <span className="hidden h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white min-[400px]:flex" aria-hidden>
-              <QrCode className="h-4 w-4" />
-            </span>
+            <BrandMark className="hidden h-8 w-8 min-[400px]:flex" />
             <span dir="ltr" className="whitespace-nowrap text-ui-primary">Core Commerce</span>
           </Link>
           <nav aria-label="Main" className="ms-6 hidden items-center gap-1 lg:flex">
@@ -594,9 +593,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-xs">
             <Link href={LANDING_PATH[lang]} className="inline-flex items-center gap-2 font-semibold">
-              <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
-                <QrCode className="h-4 w-4" />
-              </span>
+              <BrandMark />
               <span dir="ltr" className="whitespace-nowrap text-ui-primary">Core Commerce</span>
             </Link>
             <p className="mt-3 text-sm text-ui-muted">{t.footer.tagline}</p>

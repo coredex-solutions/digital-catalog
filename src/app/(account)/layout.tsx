@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ArrowLeft, QrCode } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { SiteLanguageToggle } from "../_landing/SiteLanguageToggle";
 import { resolveSiteLang } from "../_landing/site-lang";
 import { getAccountCopy } from "./_copy";
+import { BrandMark } from "../_landing/BrandMark";
 
 // Sign-in, forgot-password and reset-password: one calm card, in the visitor's language
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
@@ -17,9 +18,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
           <ArrowLeft className="h-5 w-5 rtl:-scale-x-100" aria-hidden />
         </Link>
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
-            <QrCode className="h-4 w-4" />
-          </span>
+          <BrandMark />
           <span dir="ltr" className="whitespace-nowrap text-ui-primary">Core Commerce</span>
         </Link>
         <div className="ms-auto">
