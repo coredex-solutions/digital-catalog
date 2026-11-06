@@ -40,7 +40,7 @@ const en = {
   pausedBody: "Your plan has ended, so your page is offline and changes can't be saved. Renew your plan to bring it back.",
   goBilling: "Go to Plan & billing",
   whatsapp: "Contact us on WhatsApp",
-  whatsappText: (slug: string) => `Hello, I want to renew the Coredex plan for my page "${slug}".`,
+  whatsappText: (slug: string) => `Hello, I want to renew the Core Commerce plan for my page "${slug}".`,
   readOnly: "View dashboard (read-only)",
   reference: "Reference:",
   arrived: { order: "New order", booking: "New table booking", request: "New request" } as Record<string, string>,
@@ -67,7 +67,7 @@ const ar: typeof en = {
   arrived: { order: "طلب جديد", booking: "حجز طاولة جديد", request: "طلب موعد جديد" },
   goBilling: "الانتقال إلى الباقة والدفع",
   whatsapp: "تواصل معنا على واتساب",
-  whatsappText: (slug) => `مرحباً، أريد تجديد باقة Coredex لصفحتي "${slug}".`,
+  whatsappText: (slug) => `مرحباً، أريد تجديد باقة Core Commerce لصفحتي "${slug}".`,
   readOnly: "عرض لوحة التحكم (للقراءة فقط)",
   reference: "الرقم المرجعي:",
 };

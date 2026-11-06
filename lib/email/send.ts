@@ -154,7 +154,7 @@ export const emailTemplates = {
             <a href="${loginUrl}" class="button">Log In to Dashboard</a>
           </p>
           <div class="footer">
-            <p>Coredex</p>
+            <p>Core Commerce</p>
           </div>
         </div>
       </body>
@@ -192,7 +192,7 @@ export const emailTemplates = {
           <p>This link will expire in 1 hour.</p>
           <p>If you didn't request this, you can safely ignore this email.</p>
           <div class="footer">
-            <p>Coredex</p>
+            <p>Core Commerce</p>
           </div>
         </div>
       </body>
@@ -235,7 +235,7 @@ export const emailTemplates = {
             <a href="${renewUrl}" class="button">Renew Subscription</a>
           </p>
           <div class="footer">
-            <p>Coredex</p>
+            <p>Core Commerce</p>
           </div>
         </div>
       </body>
@@ -275,7 +275,7 @@ export const emailTemplates = {
             <p><strong>Admin Email:</strong> ${adminEmail}</p>
           </div>
           <div class="footer">
-            <p>Coredex</p>
+            <p>Core Commerce</p>
           </div>
         </div>
       </body>
@@ -328,7 +328,7 @@ export const emailTemplates = {
           <div class="container">
             <div class="header">
               <h1>🎉 Welcome Aboard!</h1>
-              <p>Your Coredex menu is ready</p>
+              <p>Your Core Commerce menu is ready</p>
             </div>
             <div class="content">
               <p class="greeting">Hello ${name},</p>
@@ -362,7 +362,7 @@ export const emailTemplates = {
 
             <div class="footer">
               <p>Need help? Just reply to this email.</p>
-              <p>© Coredex</p>
+              <p>© Core Commerce</p>
             </div>
           </div>
         </div>
@@ -384,6 +384,6 @@ Your Catalog: ${catalogUrl}
 
 Need help? Just reply to this email.
 
-© Coredex`,
+© Core Commerce`,
   }),
 };

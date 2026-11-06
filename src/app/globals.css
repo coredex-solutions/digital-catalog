@@ -74,7 +74,7 @@
 }
 /* ============================================
    Platform theme (marketing site, signup, merchant app)
-   Coredex Violet & Indigo (DESIGN.md §3). The five brand colours (#4028C9, #221E84, #9824F8,
+   Core Violet & Indigo (DESIGN.md §3). The five brand colours (#4028C9, #221E84, #9824F8,
    #326BDD, #3DBBD1) come from the Coredex Solutions logo; neutrals and hover shades are UI
    extensions. Scoped to .platform; Tailwind exposes them as ui-* colours.
    Never put white text on cyan (2.28:1); cyan takes indigo text.
@@ -285,10 +285,10 @@ body:has(.platform) {
 
 /* ============================================
    Diner menu theme (/c/[slug])
-   Cool Coredex neutrals (DESIGN.md §3) as the default guest theme. Scoped to .menu so the admin
+   Cool Core Commerce neutrals (DESIGN.md §3) as the default guest theme. Scoped to .menu so the admin
    and landing pages are unaffected. Each restaurant contributes only its brand colour: --brand,
    --brand-fg, --brand-ink-*, --brand-soft-* are injected by src/app/c/[slug]/_lib/theme.ts with
-   checked contrast (default brand: Coredex violet). Keep the light/dark backgrounds in sync
+   checked contrast (default brand: Core Commerce violet). Keep the light/dark backgrounds in sync
    with theme.ts.
    ============================================ */
 .menu {

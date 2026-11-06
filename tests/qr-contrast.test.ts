@@ -7,7 +7,7 @@ const level = (dark: string, light: string) => checkQrColors(dark, light)?.level
 
 test("dark codes on light backgrounds pass", () => {
   assert.equal(level("#000000", "#ffffff"), "good");
-  assert.equal(level("#4028C9", "#ffffff"), "good"); // Coredex violet, 8.9:1
+  assert.equal(level("#4028C9", "#ffffff"), "good"); // Core Commerce violet, 8.9:1
   assert.equal(level("#000000", "transparent"), "good"); // judged against white paper
 });
 

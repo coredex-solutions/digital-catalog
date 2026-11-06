@@ -2,20 +2,20 @@
 import type { SiteLang } from "../_landing/copy";
 
 const en = {
-  back: "Back to Coredex",
+  back: "Back to Core Commerce",
   language: "العربية",
   email: "Email",
   password: "Password",
   show: "Show password",
   hide: "Hide password",
   login: {
-    metaTitle: "Sign in · Coredex",
+    metaTitle: "Sign in · Core Commerce",
     title: "Sign in to your dashboard",
     body: "Use the email and password you signed up with, or the details the business owner gave you.",
     submit: "Sign in",
     busy: "Signing in…",
     forgot: "Forgot your password?",
-    noAccount: "New to Coredex?",
+    noAccount: "New to Core Commerce?",
     signup: "Start a free trial",
     choose: "Choose a restaurant",
     chooseBody: "This email signs in to more than one restaurant.",
@@ -23,18 +23,18 @@ const en = {
     roles: { owner: "Owner", editor: "Editor", viewer: "Viewer" } as Record<string, string>,
   },
   forgot: {
-    metaTitle: "Reset your password · Coredex",
+    metaTitle: "Reset your password · Core Commerce",
     title: "Reset your password",
     body: "Enter the email you sign in with. We'll send you a link to choose a new password.",
     submit: "Send reset link",
     busy: "Sending…",
     sentTitle: "Check your email",
     sentBody: (email: string) =>
-      `If ${email} has a Coredex account, a reset link is on its way. It expires in 30 minutes. Check your spam folder if you don't see it.`,
+      `If ${email} has a Core Commerce account, a reset link is on its way. It expires in 30 minutes. Check your spam folder if you don't see it.`,
     backToLogin: "Back to sign in",
   },
   signup: {
-    metaTitle: "Start your free trial · Coredex",
+    metaTitle: "Start your free trial · Core Commerce",
     steps: ["Your details", "Confirm your email", "Your business", "Colours"],
     stepOf: (n: number) => `Step ${n} of 3`,
     planBadge: (plan: string) => `${plan} plan · 14-day free trial`,
@@ -91,7 +91,7 @@ const en = {
     doneBody: (name: string) => `${name} is set up. Opening your dashboard…`,
     doneSignIn: "Your account is ready. Sign in to open your dashboard.",
     themes: {
-      "coredex-violet": ["Coredex Violet", "Violet buttons on calm, light neutrals."],
+      "coredex-violet": ["Core Violet", "Violet buttons on calm, light neutrals."],
       "botanical-mint": ["Mint", "Fresh greens. Suits cafés and healthy food."],
       "onyx-gold": ["Black & gold", "Dark and rich. Suits fine dining."],
       "silk-indigo": ["Indigo", "Deep blue, clean and modern."],
@@ -103,7 +103,7 @@ const en = {
     } as Record<string, [string, string]>,
   },
   reset: {
-    metaTitle: "Choose a new password · Coredex",
+    metaTitle: "Choose a new password · Core Commerce",
     title: "Choose a new password",
     forAccount: (email: string, restaurant: string) => `For ${email} at ${restaurant}.`,
     newPassword: "New password",
@@ -122,20 +122,20 @@ const en = {
 };
 
 const ar: typeof en = {
-  back: "العودة إلى Coredex",
+  back: "العودة إلى Core Commerce",
   language: "English",
   email: "البريد الإلكتروني",
   password: "كلمة المرور",
   show: "إظهار كلمة المرور",
   hide: "إخفاء كلمة المرور",
   login: {
-    metaTitle: "تسجيل الدخول · Coredex",
+    metaTitle: "تسجيل الدخول · Core Commerce",
     title: "تسجيل الدخول إلى لوحة التحكم",
     body: "استخدم البريد وكلمة المرور اللذين سجّلت بهما، أو البيانات التي أعطاك إياها صاحب النشاط.",
     submit: "تسجيل الدخول",
     busy: "جارٍ تسجيل الدخول…",
     forgot: "نسيت كلمة المرور؟",
-    noAccount: "جديد على Coredex؟",
+    noAccount: "جديد على Core Commerce؟",
     signup: "ابدأ تجربة مجانية",
     choose: "اختر المطعم",
     chooseBody: "هذا البريد مرتبط بأكثر من مطعم.",
@@ -143,18 +143,18 @@ const ar: typeof en = {
     roles: { owner: "مالك", editor: "محرّر", viewer: "مشاهد" },
   },
   forgot: {
-    metaTitle: "إعادة تعيين كلمة المرور · Coredex",
+    metaTitle: "إعادة تعيين كلمة المرور · Core Commerce",
     title: "إعادة تعيين كلمة المرور",
     body: "أدخل البريد الذي تسجّل الدخول به، وسنرسل لك رابطاً لاختيار كلمة مرور جديدة.",
     submit: "أرسل رابط إعادة التعيين",
     busy: "جارٍ الإرسال…",
     sentTitle: "تفقّد بريدك",
     sentBody: (email: string) =>
-      `إذا كان للبريد ${email} حساب في Coredex، فرابط إعادة التعيين في طريقه إليك. تنتهي صلاحيته بعد 30 دقيقة. تفقّد مجلد الرسائل غير المرغوب فيها إن لم تجده.`,
+      `إذا كان للبريد ${email} حساب في Core Commerce، فرابط إعادة التعيين في طريقه إليك. تنتهي صلاحيته بعد 30 دقيقة. تفقّد مجلد الرسائل غير المرغوب فيها إن لم تجده.`,
     backToLogin: "العودة إلى تسجيل الدخول",
   },
   signup: {
-    metaTitle: "ابدأ تجربتك المجانية · Coredex",
+    metaTitle: "ابدأ تجربتك المجانية · Core Commerce",
     steps: ["بياناتك", "تأكيد البريد", "مطعمك", "الألوان"],
     stepOf: (n: number) => `الخطوة ${n} من 3`,
     planBadge: (plan: string) => `خطة ${plan} · تجربة مجانية لمدة 14 يوماً`,
@@ -211,7 +211,7 @@ const ar: typeof en = {
     doneBody: (name: string) => `تم إعداد ${name}. جارٍ فتح لوحة التحكم…`,
     doneSignIn: "حسابك جاهز. سجّل الدخول لفتح لوحة التحكم.",
     themes: {
-      "coredex-violet": ["بنفسجي Coredex", "أزرار بنفسجية على ألوان فاتحة هادئة."],
+      "coredex-violet": ["بنفسجي Core Commerce", "أزرار بنفسجية على ألوان فاتحة هادئة."],
       "botanical-mint": ["نعناعي", "أخضر منعش. يناسب المقاهي والأكل الصحي."],
       "onyx-gold": ["أسود وذهبي", "داكن وفاخر. يناسب المطاعم الراقية."],
       "silk-indigo": ["نيلي", "أزرق داكن، نظيف وعصري."],
@@ -223,7 +223,7 @@ const ar: typeof en = {
     },
   },
   reset: {
-    metaTitle: "اختر كلمة مرور جديدة · Coredex",
+    metaTitle: "اختر كلمة مرور جديدة · Core Commerce",
     title: "اختر كلمة مرور جديدة",
     forAccount: (email: string, restaurant: string) => `للحساب ${email} في ${restaurant}.`,
     newPassword: "كلمة المرور الجديدة",

@@ -15,7 +15,7 @@ const AR: Record<string, string> = {
   "Enter your email and password.": "أدخل البريد الإلكتروني وكلمة المرور.",
   "That email and password don’t match.": "البريد الإلكتروني وكلمة المرور غير متطابقين.",
   "Your access has been paused. Ask the restaurant owner to turn it back on.": "تم إيقاف وصولك مؤقتاً. اطلب من صاحب المطعم إعادة تفعيله.",
-  "This restaurant is suspended. Contact Coredex.": "هذا المطعم موقوف حالياً. تواصل مع Coredex.",
+  "This restaurant is suspended. Contact Core Commerce.": "هذا المطعم موقوف حالياً. تواصل مع Core Commerce.",
   "Sign-in failed. Please try again.": "تعذّر تسجيل الدخول. حاول مرة أخرى.",
 
   // Forgot and reset password

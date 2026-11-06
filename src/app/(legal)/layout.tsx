@@ -6,14 +6,14 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
     <div lang="en" dir="ltr" className="platform min-h-screen">
       <header className="border-b border-ui-line bg-ui-bg">
         <div className="mx-auto flex h-16 max-w-3xl items-center gap-3 px-4 sm:px-6">
-          <Link href="/" aria-label="Back to Coredex" className="flex h-11 w-11 items-center justify-center rounded-control hover:bg-ui-subtle">
+          <Link href="/" aria-label="Back to Core Commerce" className="flex h-11 w-11 items-center justify-center rounded-control hover:bg-ui-subtle">
             <ArrowLeft className="h-5 w-5" aria-hidden />
           </Link>
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
               <QrCode className="h-4 w-4" />
             </span>
-            <span className="text-ui-primary">Coredex</span>
+            <span className="whitespace-nowrap text-ui-primary">Core Commerce</span>
           </Link>
         </div>
       </header>

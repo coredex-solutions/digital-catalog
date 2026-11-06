@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of service",
-  description: "The terms for businesses using Coredex for their online menu, store or services page.",
+  description: "The terms for businesses using Core Commerce for their online menu, store or services page.",
 };
 
 const UPDATED = "4 November 2026";
@@ -15,16 +15,16 @@ export default function TermsPage() {
 
       <p>
         These terms apply to restaurants, cafés, shops, service providers and other businesses (&ldquo;you&rdquo;)
-        that create a page with Coredex. By creating an account you agree to them. Questions:{" "}
+        that create a page with Core Commerce, a service run by Coredex Solutions (&ldquo;we&rdquo;). By creating an account you agree to them. Questions:{" "}
         <a href="mailto:info@coredex.solutions">info@coredex.solutions</a>.
       </p>
 
       <h2>The service</h2>
       <p>
-        Coredex lets you publish a menu, store or services page at a web address and QR code, in Arabic and English.
-        Customers can send you orders, bookings and appointment requests. Coredex saves them in your dashboard and
+        Core Commerce lets you publish a menu, store or services page at a web address and QR code, in Arabic and English.
+        Customers can send you orders, bookings and appointment requests. Core Commerce saves them in your dashboard and
         lets the customer send them to you on WhatsApp too. You decide whether to accept, prepare and deliver each
-        order; Coredex is not a party to the sale and does not process payments from customers.
+        order; Core Commerce is not a party to the sale and does not process payments from customers.
       </p>
 
       <h2>Your account</h2>
@@ -65,25 +65,25 @@ export default function TermsPage() {
 
       <h2>Acceptable use</h2>
       <p>
-        Do not use Coredex to break the law, to send spam, to try to access other accounts or to disrupt the service.
+        Do not use Core Commerce to break the law, to send spam, to try to access other accounts or to disrupt the service.
         We may suspend accounts that do.
       </p>
 
       <h2>Availability</h2>
       <p>
-        We work to keep Coredex available and secure, but we cannot promise it will never be interrupted. We may
+        We work to keep Core Commerce available and secure, but we cannot promise it will never be interrupted. We may
         change or improve features over time.
       </p>
 
       <h2>Liability</h2>
       <p>
-        Coredex is provided as is. To the extent the law allows, we are not liable for indirect losses, such as lost
+        Core Commerce is provided as is. To the extent the law allows, we are not liable for indirect losses, such as lost
         orders or profits, and our total liability is limited to the amount you paid us in the 12 months before the claim.
       </p>
 
       <h2>Ending the service</h2>
       <p>
-        You can stop using Coredex at any time and ask us to delete your account. We may end or suspend an account
+        You can stop using Core Commerce at any time and ask us to delete your account. We may end or suspend an account
         that breaks these terms, after notice where reasonable.
       </p>
 

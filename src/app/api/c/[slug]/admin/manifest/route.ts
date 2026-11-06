@@ -14,7 +14,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   return NextResponse.json(
     {
       id: base,
-      name: `${catalog.name} · Coredex`,
+      name: `${catalog.name} · Core Commerce`,
       short_name: catalog.name.slice(0, 20),
       start_url: `${base}orders/`,
       scope: base,

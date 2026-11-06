@@ -26,7 +26,7 @@ const db = createClient({
     authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
-// Orders and calls from the demos go to the Coredex sales number (same as the restaurant demo)
+// Orders and calls from the demos go to the Core Commerce sales number (same as the restaurant demo)
 const PHONE = '+966540679669';
 const LBP_RATE = 89500;
 
@@ -52,7 +52,7 @@ const DEMOS: Demo[] = [
     {
         slug: 'demo-cafe', id: 'demo-cafe-001', module: 'cafe', subType: 'cafe',
         name: { en: 'Fincan', ar: 'فنجان' },
-        description: { en: 'Coffee, sweets and morning bakes. A Coredex demo café.', ar: 'قهوة وحلويات ومخبوزات الصباح. مقهى تجريبي من Coredex.' },
+        description: { en: 'Coffee, sweets and morning bakes. A Core Commerce demo café.', ar: 'قهوة وحلويات ومخبوزات الصباح. مقهى تجريبي من Core Commerce.' },
         orderTypes: 'takeaway,dine_in,delivery', color: '#7A4B2A', hours: [7, 22],
         deliveryNote: { en: 'Delivery nearby. We confirm the fee on WhatsApp.', ar: 'توصيل إلى المناطق القريبة. نؤكد الرسم عبر واتساب.' },
         categories: [
@@ -75,7 +75,7 @@ const DEMOS: Demo[] = [
     {
         slug: 'demo-shop', id: 'demo-shop-001', module: 'shop', subType: 'gifts',
         name: { en: 'Souk Box', ar: 'صندوق السوق' },
-        description: { en: 'Lebanese gifts and home goods. A Coredex demo shop.', ar: 'هدايا ومنتجات منزلية لبنانية. متجر تجريبي من Coredex.' },
+        description: { en: 'Lebanese gifts and home goods. A Core Commerce demo shop.', ar: 'هدايا ومنتجات منزلية لبنانية. متجر تجريبي من Core Commerce.' },
         orderTypes: 'delivery,pickup', color: '#1F6F5C', hours: [10, 20], closedDays: ['Sunday'],
         deliveryNote: { en: 'Delivery across Lebanon in 1 to 3 days. We confirm the fee on WhatsApp.', ar: 'توصيل إلى كل لبنان خلال 1 إلى 3 أيام. نؤكد الرسم عبر واتساب.' },
         categories: [
@@ -105,7 +105,7 @@ const DEMOS: Demo[] = [
     {
         slug: 'demo-services', id: 'demo-services-001', module: 'services', subType: 'beauty',
         name: { en: 'Lina Beauty Studio', ar: 'ستوديو لينا للتجميل' },
-        description: { en: 'Hair, nails and skin care. A Coredex demo services page.', ar: 'شعر وأظافر وعناية بالبشرة. صفحة خدمات تجريبية من Coredex.' },
+        description: { en: 'Hair, nails and skin care. A Core Commerce demo services page.', ar: 'شعر وأظافر وعناية بالبشرة. صفحة خدمات تجريبية من Core Commerce.' },
         orderTypes: 'at_location,home_visit', color: '#9B2C6B', hours: [9, 19], closedDays: ['Sunday'],
         categories: [
             { id: 'svc-hair', en: 'Hair', ar: 'الشعر' },
@@ -124,7 +124,7 @@ const DEMOS: Demo[] = [
     {
         slug: 'demo-stays', id: 'demo-stays-001', module: 'stays', subType: 'guesthouse',
         name: { en: 'Beit Sama', ar: 'بيت سما' },
-        description: { en: 'A stone guesthouse and sea chalets in Batroun. A Coredex demo stay.', ar: 'بيت ضيافة حجري وشاليهات على البحر في البترون. إقامة تجريبية من Coredex.' },
+        description: { en: 'A stone guesthouse and sea chalets in Batroun. A Core Commerce demo stay.', ar: 'بيت ضيافة حجري وشاليهات على البحر في البترون. إقامة تجريبية من Core Commerce.' },
         orderTypes: 'stay', color: '#1F6F78', hours: [0, 24],
         stayConfig: { check_in: '14:00', check_out: '12:00', min_nights: 1, max_nights: 14, max_days: 365, deposit_percent: 30, blocked_dates: [] },
         categories: [
@@ -188,7 +188,7 @@ async function seed(demo: Demo) {
                   VALUES (?, ?, 'ar,en', 'en', 'USD', ?, ?, 1, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
             args: [demo.id, demo.color, LBP_RATE, now, demo.orderTypes,
                 demo.deliveryNote?.en ?? null, demo.deliveryNote?.ar ?? null, moduleDef.tableBooking ? 1 : 0,
-                `${demo.name.en} · Coredex demo`, demo.description.en, `${demo.name.ar} · تجربة Coredex`, demo.description.ar],
+                `${demo.name.en} · Core Commerce demo`, demo.description.en, `${demo.name.ar} · تجربة Core Commerce`, demo.description.ar],
         },
         {
             sql: `INSERT INTO catalog_contact (catalog_id, phone_primary, phone_whatsapp, email,

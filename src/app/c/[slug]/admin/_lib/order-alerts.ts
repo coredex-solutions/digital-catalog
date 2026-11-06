@@ -103,7 +103,7 @@ export function showOrderNotification(title: string, body: string, onOpen: () =>
   }
 }
 
-/** "(3) Orders | Coredex" while there are new orders; the plain title otherwise */
+/** "(3) Orders | Core Commerce" while there are new orders; the plain title otherwise */
 export function titleWithCount(title: string, count: number): string {
   const plain = title.replace(/^\(\d+\+?\)\s*/, "");
   return count > 0 ? `(${count > 99 ? "99+" : count}) ${plain}` : plain;

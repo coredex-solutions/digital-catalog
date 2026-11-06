@@ -75,7 +75,7 @@ export const LANDING_PATH: Record<SiteLang, string> = { en: "/", ar: "/ar/" };
 
 /** Share card for links in WhatsApp, social apps and search (made from the live demo menu) */
 export function shareImage(lang: SiteLang) {
-  return { url: `/og/coredex-${lang}.jpg`, width: 1200, height: 630, alt: getSiteCopy(lang).metaTitle };
+  return { url: `/og/core-commerce-${lang}.jpg`, width: 1200, height: 630, alt: getSiteCopy(lang).metaTitle };
 }
 
 export function landingMetadata(lang: SiteLang): Metadata {
@@ -94,7 +94,7 @@ export function landingMetadata(lang: SiteLang): Metadata {
       url: LANDING_PATH[lang],
       locale: lang === "ar" ? "ar_LB" : "en_US",
       alternateLocale: lang === "ar" ? "en_US" : "ar_LB",
-      siteName: "Coredex",
+      siteName: "Core Commerce",
       images: [shareImage(lang)],
     },
     twitter: { card: "summary_large_image", title: t.metaTitle, description: t.metaDescription, images: [shareImage(lang)] },
@@ -316,12 +316,13 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         <div aria-hidden className="h-[3px] bg-brand-gradient" />
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
           <Link href={LANDING_PATH[lang]} className="flex items-center gap-2 font-semibold">
-            <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
+            {/* The logo square is left out on the narrowest phones, so the name and buttons fit */}
+            <span className="hidden h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white min-[400px]:flex" aria-hidden>
               <QrCode className="h-4 w-4" />
             </span>
-            <span dir="ltr" className="text-ui-primary">Coredex</span>
+            <span dir="ltr" className="whitespace-nowrap text-ui-primary">Core Commerce</span>
           </Link>
-          <nav aria-label="Main" className="ms-6 hidden items-center gap-1 md:flex">
+          <nav aria-label="Main" className="ms-6 hidden items-center gap-1 lg:flex">
             {[
               ["#modules", t.nav.modules],
               ["#features", t.nav.features],
@@ -329,7 +330,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
               ["#pricing", t.nav.pricing],
               ["#faq", t.nav.faq],
             ].map(([href, label]) => (
-              <a key={href} href={href} className="rounded-control px-3 py-2 text-sm font-medium text-ui-muted transition-colors hover:text-ui-ink">
+              <a key={href} href={href} className="whitespace-nowrap rounded-control px-3 py-2 text-sm font-medium text-ui-muted transition-colors hover:text-ui-ink">
                 {label}
               </a>
             ))}
@@ -596,7 +597,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
               <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
                 <QrCode className="h-4 w-4" />
               </span>
-              <span dir="ltr" className="text-ui-primary">Coredex</span>
+              <span dir="ltr" className="whitespace-nowrap text-ui-primary">Core Commerce</span>
             </Link>
             <p className="mt-3 text-sm text-ui-muted">{t.footer.tagline}</p>
             <div className="mt-4 flex flex-col gap-2 text-sm">

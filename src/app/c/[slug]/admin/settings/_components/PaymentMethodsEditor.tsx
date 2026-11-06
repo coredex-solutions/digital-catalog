@@ -5,7 +5,7 @@ import { PAYMENT_METHODS, type PaymentConfig, type PaymentMethod } from "@/lib/o
 
 const en = {
   title: "Payment",
-  body: "How customers can pay you. Coredex never takes the money: customers pay you directly, and you mark orders as paid on the Orders page.",
+  body: "How customers can pay you. Core Commerce never takes the money: customers pay you directly, and you mark orders as paid on the Orders page.",
   methods: {
     cash: { label: "Cash", hint: "On delivery or at pickup" },
     card: { label: "Card", hint: "With your card machine, on delivery or at pickup" },
@@ -20,7 +20,7 @@ const en = {
 };
 const ar: typeof en = {
   title: "الدفع",
-  body: "كيف يمكن للزبائن الدفع لك. لا يستلم Coredex أي مبلغ: يدفع الزبائن لك مباشرة، وتُعلِّم الطلبات كمدفوعة في صفحة الطلبات.",
+  body: "كيف يمكن للزبائن الدفع لك. لا يستلم Core Commerce أي مبلغ: يدفع الزبائن لك مباشرة، وتُعلِّم الطلبات كمدفوعة في صفحة الطلبات.",
   methods: {
     cash: { label: "نقداً", hint: "عند التوصيل أو الاستلام" },
     card: { label: "بطاقة", hint: "بجهاز البطاقات لديك، عند التوصيل أو الاستلام" },

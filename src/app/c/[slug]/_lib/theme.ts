@@ -1,4 +1,4 @@
-// Server-side theme for the diner menu. The neutral palette (Coredex Violet & Indigo, DESIGN.md) lives
+// Server-side theme for the diner menu. The neutral palette (Core Violet & Indigo, DESIGN.md) lives
 // in globals.css under `.menu`; each restaurant contributes only its brand colour, from which
 // we derive variants that keep WCAG AA contrast on both the light and dark backgrounds.
 
@@ -6,7 +6,7 @@ import type { CSSProperties } from "react";
 
 const LIGHT_BG = "#F7F8FC"; // must match --menu-bg in globals.css
 const DARK_BG = "#100F1F"; // must match --menu-bg in [data-theme="dark"]
-const FALLBACK_BRAND = "#4028C9"; // Coredex violet
+const FALLBACK_BRAND = "#4028C9"; // Core Commerce violet
 
 type RGB = [number, number, number];
 

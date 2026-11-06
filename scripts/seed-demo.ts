@@ -22,7 +22,7 @@ const db = createClient({
 const SLUG = 'demo';
 const CATALOG_ID = 'demo-catalog-001';
 const ADMIN_EMAIL = 'demo@example.com';
-// Orders and calls from the demo go to the Coredex sales number
+// Orders and calls from the demo go to the Core Commerce sales number
 const PHONE = '+966540679669';
 const LBP_RATE = 89500;
 
@@ -137,8 +137,8 @@ const FAQS = [
         ar: ['هل يمكنني الدفع بالدولار أو بالليرة؟', 'الاثنان. الأسعار معروضة بالدولار وبالليرة حسب السعر المذكور في القائمة.'],
     },
     {
-        en: ['Is this a real restaurant?', 'No. This is a Coredex demo menu so you can try ordering. Orders sent from it go to the Coredex team.'],
-        ar: ['هل هذا مطعم حقيقي؟', 'لا. هذه قائمة تجريبية من Coredex لتجربة الطلب. الطلبات المرسلة منها تصل إلى فريق Coredex.'],
+        en: ['Is this a real restaurant?', 'No. This is a Core Commerce demo menu so you can try ordering. Orders sent from it go to the Coredex team.'],
+        ar: ['هل هذا مطعم حقيقي؟', 'لا. هذه قائمة تجريبية من Core Commerce لتجربة الطلب. الطلبات المرسلة منها تصل إلى فريق Core Commerce.'],
     },
 ];
 
@@ -169,9 +169,9 @@ async function seedDemo() {
                   VALUES (?, ?, ?, ?, ?, ?, 'restaurant', ?, ?, ?, ?, ?, 1, ?, ?)`,
             args: [
                 CATALOG_ID, SLUG, 'Sofra', 'Sofra', 'سفرة', '',
-                'Lebanese mezze, grills and sandwiches. A Coredex demo menu.',
-                'Lebanese mezze, grills and sandwiches. A Coredex demo menu.',
-                'مازة ومشاوي وسندويشات لبنانية. قائمة تجريبية من Coredex.',
+                'Lebanese mezze, grills and sandwiches. A Core Commerce demo menu.',
+                'Lebanese mezze, grills and sandwiches. A Core Commerce demo menu.',
+                'مازة ومشاوي وسندويشات لبنانية. قائمة تجريبية من Core Commerce.',
                 '',
                 '/landing/hummus.png', now, now,
             ],
@@ -194,8 +194,8 @@ async function seedDemo() {
                 CATALOG_ID, unsplash('photo-1767114915974-3481fa23cbb0', 1200, 600), LBP_RATE, now,
                 'Delivery within Beirut. We confirm the fee on WhatsApp.',
                 'توصيل داخل بيروت. نؤكد رسم التوصيل عبر واتساب.',
-                'Sofra · Coredex demo menu', 'Try a Coredex QR menu: Lebanese dishes priced in dollars and pounds, ordered through WhatsApp.',
-                'سفرة · قائمة Coredex التجريبية', 'جرّب قائمة QR من Coredex: أطباق لبنانية بالدولار والليرة، والطلب عبر واتساب.',
+                'Sofra · Core Commerce demo menu', 'Try a Core Commerce QR menu: Lebanese dishes priced in dollars and pounds, ordered through WhatsApp.',
+                'سفرة · قائمة Core Commerce التجريبية', 'جرّب قائمة QR من Core Commerce: أطباق لبنانية بالدولار والليرة، والطلب عبر واتساب.',
                 '', '',
             ],
         },

@@ -1,4 +1,4 @@
-// Coredex service worker: shows new-order notifications sent by the server (lib/push), and opens
+// Core Commerce service worker: shows new-order notifications sent by the server (lib/push), and opens
 // the Orders page when one is tapped. It does not cache or intercept pages.
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -11,7 +11,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = { body: event.data ? event.data.text() : "" };
   }
-  const title = data.title || "Coredex";
+  const title = data.title || "Core Commerce";
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || "",

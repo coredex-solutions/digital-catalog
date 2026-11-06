@@ -115,8 +115,8 @@ export interface CatalogTheme {
 export const CATALOG_THEMES: CatalogTheme[] = [
     {
         id: "coredex-violet",
-        name: "Coredex Violet",
-        description: "Violet buttons on cool, quiet neutrals. The default Coredex look.",
+        name: "Core Violet",
+        description: "Violet buttons on cool, quiet neutrals. The default Core Commerce look.",
         light: {
             primary: "#4028C9",
             secondary: "#221E84",

@@ -9,7 +9,7 @@ export const DEMO_PATH = "/c/demo/";
 export const SITE_LANG_COOKIE = "site_lang";
 
 const en = {
-  metaTitle: "Coredex: online menus, stores and service pages in Arabic and English",
+  metaTitle: "Core Commerce: online menus, stores and service pages in Arabic and English",
   metaDescription:
     "Your menu, store or services page, opened from a QR code or a link. Arabic and English, prices in dollars and Lebanese pounds, and every order saved and sent to your WhatsApp.",
   nav: { modules: "Who it's for", features: "Features", pricing: "Pricing", demo: "Live demo", faq: "Questions", start: "Start free trial", login: "Log in", language: "العربية" },
@@ -214,7 +214,7 @@ const en = {
 type SiteCopy = typeof en;
 
 const ar: SiteCopy = {
-  metaTitle: "Coredex: قوائم ومتاجر وصفحات خدمات بالعربية والإنجليزية",
+  metaTitle: "Core Commerce: قوائم ومتاجر وصفحات خدمات بالعربية والإنجليزية",
   metaDescription:
     "قائمتك أو متجرك أو صفحة خدماتك، تُفتح من رمز QR أو رابط. بالعربية والإنجليزية، الأسعار بالدولار والليرة اللبنانية، وكل طلب محفوظ ويصلك على واتساب.",
   nav: { modules: "لمن هو", features: "المزايا", pricing: "الأسعار", demo: "تجربة حيّة", faq: "أسئلة", start: "ابدأ التجربة المجانية", login: "تسجيل الدخول", language: "English" },

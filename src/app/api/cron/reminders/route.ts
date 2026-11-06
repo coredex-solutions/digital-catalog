@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     const email =
       kind === "ending_soon"
         ? {
-            subject: `Your Coredex ${plan} for ${name} ends on ${formatDate(expires)}`,
+            subject: `Your Core Commerce ${plan} for ${name} ends on ${formatDate(expires)}`,
             paragraphs: [
               `The ${plan} for ${name} ends on ${formatDate(expires)}.`,
               isTrial
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
             button: { label: isTrial ? "Choose a plan" : "Renew my plan", url: billing },
           }
         : {
-            subject: `Your Coredex ${plan} for ${name} has ended`,
+            subject: `Your Core Commerce ${plan} for ${name} has ended`,
             paragraphs: [
               `The ${plan} for ${name} ended on ${formatDate(expires)}.`,
               `Your menu stays online and you can keep editing until ${formatDate(offlineAt!)}. After that, guests who scan your QR code will see that the menu is unavailable.`,
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
 
     try {
       for (const to of owners) {
-        await sendBrandedEmail({ to, ...email, footer: "You're receiving this because you own this restaurant's Coredex menu." });
+        await sendBrandedEmail({ to, ...email, footer: "You're receiving this because you own this restaurant's Core Commerce menu." });
       }
       sent.push({ slug: String(row.slug), kind });
     } catch (error) {

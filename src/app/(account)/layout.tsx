@@ -20,7 +20,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
           <span className="flex h-8 w-8 items-center justify-center rounded-control bg-brand-gradient text-white" aria-hidden>
             <QrCode className="h-4 w-4" />
           </span>
-          <span dir="ltr" className="text-ui-primary">Coredex</span>
+          <span dir="ltr" className="whitespace-nowrap text-ui-primary">Core Commerce</span>
         </Link>
         <div className="ms-auto">
           <SiteLanguageToggle current={lang} label={t.language} />

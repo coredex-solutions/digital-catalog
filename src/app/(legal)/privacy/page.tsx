@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
-  description: "What Coredex collects from business owners and their customers, why, and who processes it.",
+  description: "What Core Commerce collects from business owners and their customers, why, and who processes it.",
 };
 
 const UPDATED = "4 November 2026";
@@ -14,9 +14,9 @@ export default function PrivacyPage() {
       <p className="text-ui-muted">Last updated {UPDATED}</p>
 
       <p>
-        Coredex lets restaurants, cafés, shops and service businesses publish an online page (a menu, a store or a
+        Core Commerce, run by Coredex Solutions, lets restaurants, cafés, shops and service businesses publish an online page (a menu, a store or a
         list of services) and receive orders, bookings and appointment requests. This policy explains what we collect
-        from business owners who use Coredex (&ldquo;owners&rdquo;) and from people who open a business&rsquo;s page
+        from business owners who use Core Commerce (&ldquo;owners&rdquo;) and from people who open a business&rsquo;s page
         (&ldquo;customers&rdquo;), what we use it for, and who processes it for us. Questions:{" "}
         <a href="mailto:info@coredex.solutions">info@coredex.solutions</a>.
       </p>

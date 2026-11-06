@@ -1,5 +1,5 @@
 // How customers can pay, set by the owner in Settings (catalog_settings.payment_config). No money
-// moves through Coredex: the customer pays cash or card when they receive the order, or sends the
+// moves through Core Commerce: the customer pays cash or card when they receive the order, or sends the
 // amount by Whish or OMT, and the team marks the order paid. Pure, used by the page and the server.
 
 export const PAYMENT_METHODS = ["cash", "card", "whish", "omt"] as const;

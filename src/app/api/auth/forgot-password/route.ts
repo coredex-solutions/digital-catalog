@@ -9,15 +9,15 @@ const PER_EMAIL = { windowMs: 60 * 60 * 1000, maxRequests: 3, keyPrefix: 'reset-
 
 const COPY = {
   en: {
-    subject: 'Reset your Coredex password',
-    intro: 'Someone asked to reset the password for this email on Coredex. If it was you, use the link below. It works once and expires in 30 minutes.',
+    subject: 'Reset your Core Commerce password',
+    intro: 'Someone asked to reset the password for this email on Core Commerce. If it was you, use the link below. It works once and expires in 30 minutes.',
     several: 'This email signs in to more than one restaurant. Each link resets the password for that restaurant only.',
     button: (name: string) => `Reset password for ${name}`,
     footer: "If you didn't ask for this, you can ignore this email. Your password stays the same.",
   },
   ar: {
-    subject: 'إعادة تعيين كلمة المرور في Coredex',
-    intro: 'طلب أحدهم إعادة تعيين كلمة المرور لهذا البريد في Coredex. إذا كنت أنت، استخدم الرابط أدناه. يعمل الرابط مرة واحدة وتنتهي صلاحيته بعد 30 دقيقة.',
+    subject: 'إعادة تعيين كلمة المرور في Core Commerce',
+    intro: 'طلب أحدهم إعادة تعيين كلمة المرور لهذا البريد في Core Commerce. إذا كنت أنت، استخدم الرابط أدناه. يعمل الرابط مرة واحدة وتنتهي صلاحيته بعد 30 دقيقة.',
     several: 'هذا البريد مرتبط بأكثر من مطعم. كل رابط يعيد تعيين كلمة المرور لمطعم واحد فقط.',
     button: (name: string) => `إعادة تعيين كلمة المرور لـ ${name}`,
     footer: 'إذا لم تطلب ذلك، تجاهل هذه الرسالة. كلمة المرور تبقى كما هي.',

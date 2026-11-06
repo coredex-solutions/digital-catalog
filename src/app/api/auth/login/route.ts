@@ -53,7 +53,7 @@ async function handler(request: NextRequest) {
     if (usable.length === 0) {
       const paused = matches.some((row) => !row.is_active);
       return NextResponse.json(
-        { error: paused ? 'Your access has been paused. Ask the restaurant owner to turn it back on.' : 'This restaurant is suspended. Contact Coredex.' },
+        { error: paused ? 'Your access has been paused. Ask the restaurant owner to turn it back on.' : 'This restaurant is suspended. Contact Core Commerce.' },
         { status: 403 }
       );
     }
