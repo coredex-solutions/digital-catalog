@@ -1,15 +1,15 @@
 import { notFound } from 'next/navigation';
-import { getFullCatalogData } from '@/lib/catalog/queries';
 import { getMenuData, isMenuPreview } from '../_lib/menu-data';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { CatalogProvider, type MenuData } from '../_providers/CatalogProvider';
 import AIWaiterBubble from '../_components/AIWaiterBubble';
 import { buildMenuTheme } from '../_lib/theme';
 import { getMenuLanguages, resolveMenuLanguage, resolveMenuTheme } from '../_lib/locale';
 import { getSiteUrl } from '@/lib/utils/base-url';
+import { catalogJsonLd, menuAlternates } from '../_lib/seo';
 import { getDictionary, localized } from '../_lib/i18n';
 import { readDishInfo } from '@/lib/catalog/dish-info';
-import { getModule, moduleInfo, schemaTypeFor } from '@/lib/modules/resolve';
+import { getModule, moduleInfo } from '@/lib/modules/resolve';
 import { isItemAvailable } from '@/lib/orders/context';
 import { hasUsableCoupons } from '@/lib/orders/coupons-store';
 import { beirutToday } from '@/lib/orders/validate';
@@ -30,7 +30,9 @@ export async function generateMetadata({
   }
 
   const { catalog, settings, subscription } = data;
-  const lang = await resolveMenuLanguage(slug, getMenuLanguages(settings?.enabled_languages, subscription), settings?.default_language);
+  const enabled = getMenuLanguages(settings?.enabled_languages, subscription);
+  const lang = await resolveMenuLanguage(slug, enabled, settings?.default_language);
+  const alternates = menuAlternates(catalog.slug, lang, enabled, settings?.default_language);
 
   const name = localized(catalog, 'name', lang) || catalog.name;
   const title = settings?.[`seo_title_${lang}` as const] || settings?.seo_title_en || name;
@@ -40,84 +42,41 @@ export async function generateMetadata({
 
   return {
     title: {
-      default: title,
+      absolute: title,
       template: `%s | ${name}`,
     },
     description,
     keywords: settings?.seo_keywords || undefined,
+    // One address per language, without table numbers or other query parts
+    alternates,
     openGraph: {
       title,
       description,
+      url: alternates.canonical,
+      siteName: name,
       images: image ? [image] : undefined,
       type: 'website',
       locale: lang === 'ar' ? 'ar_LB' : 'en_US',
     },
     twitter: {
-      card: 'summary_large_image',
+      card: image ? 'summary_large_image' : 'summary',
       title,
       description,
+      images: image ? [image] : undefined,
     },
     // An owner's preview of unpublished changes must never be indexed
     ...((await isMenuPreview(slug)) ? { robots: { index: false, follow: false } } : {}),
   };
 }
 
+// The phone browser bar matches the menu background (light or dark theme)
+export async function generateViewport(): Promise<Viewport> {
+  return { themeColor: (await resolveMenuTheme()) === 'dark' ? '#100F1F' : '#F7F8FC' };
+}
+
 /** Drop French columns (name_fr, about_content_fr…): the menu is only shown in Arabic and English */
 function withoutFrench<T extends object>(row: T): T {
   return Object.fromEntries(Object.entries(row).filter(([key]) => !key.endsWith('_fr'))) as T;
-}
-
-function formatSchemaHour(hour: number): string {
-  const normalized = ((Number(hour) % 24) + 24) % 24;
-  const h = Math.floor(normalized);
-  const m = Math.round((normalized - h) * 60);
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-}
-
-// JSON-LD Schema for SEO
-function generateJsonLd(data: NonNullable<Awaited<ReturnType<typeof getFullCatalogData>>>) {
-  const { catalog, settings, contact, operatingHours } = data;
-
-  const def = getModule(catalog);
-  const schemaType = schemaTypeFor(def, catalog.business_type);
-  const page = `${getSiteUrl()}/c/${catalog.slug}/`;
-
-  const schema: Record<string, unknown> = {
-    '@context': 'https://schema.org',
-    '@type': schemaType,
-    name: catalog.name,
-    description: catalog.description || settings?.seo_description_en,
-    image: settings?.hero_image_url || catalog.logo_url,
-    url: page,
-    // Food businesses have a menu; shops and services list what they offer on the same page
-    ...(def.id === 'restaurant' || def.id === 'cafe' ? { hasMenu: page } : {}),
-  };
-
-  if (contact) {
-    if (contact.phone_primary) schema.telephone = contact.phone_primary;
-    if (contact.email) schema.email = contact.email;
-    if (contact.address_en || contact.city_en) {
-      schema.address = {
-        '@type': 'PostalAddress',
-        streetAddress: contact.address_en,
-        addressLocality: contact.city_en,
-        addressCountry: contact.country_en || 'LB',
-      };
-    }
-  }
-
-  if (operatingHours && operatingHours.length > 0) {
-    schema.openingHoursSpecification = operatingHours
-      .filter(h => !h.is_closed)
-      .map(h => ({
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: h.day_name,
-        opens: formatSchemaHour(h.open_hour),
-        closes: formatSchemaHour(h.close_hour),
-      }));
-  }
-
-  return schema;
 }
 
 function parsePhoneList(value: unknown): string[] {
@@ -194,8 +153,7 @@ export default async function CatalogLayout({
     );
   }
 
-  // Escape "<" so restaurant-provided text can't close the script tag
-  const jsonLd = JSON.stringify(generateJsonLd(data)).replace(/</g, '\\u003c');
+  const jsonLd = catalogJsonLd(data, lang, `${getSiteUrl()}${menuAlternates(catalog.slug, lang, enabledLanguages, settings?.default_language).canonical}`);
 
   const menuData: MenuData = {
     catalog: {

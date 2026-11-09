@@ -7,5 +7,5 @@ export default async function CatalogMenuRedirect({
   params: Promise<{ slug: string; categoryId: string }>;
 }) {
   const { slug, categoryId } = await params;
-  permanentRedirect(`/c/${slug}?c=${encodeURIComponent(categoryId)}`);
+  permanentRedirect(`/c/${slug}/?c=${encodeURIComponent(categoryId)}`);
 }

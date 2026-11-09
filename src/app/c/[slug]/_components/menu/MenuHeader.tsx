@@ -54,10 +54,12 @@ export function MenuHeader() {
   });
 
   return (
-    <header>
+    <header className="relative isolate">
+      {/* Without a cover photo, a soft wash of the brand colour gives the top of the page some colour */}
+      {!cover && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-44 bg-[linear-gradient(180deg,var(--brand-soft)_0%,transparent_100%)]" />}
       {cover && (
         <div className="relative mx-auto h-28 w-full max-w-xl overflow-hidden bg-menu-raised sm:mt-4 sm:h-36 sm:rounded-panel">
-          <MenuImage src={cover} alt="" fill priority sizes="(max-width: 640px) 100vw, 576px" className="object-cover" />
+          <MenuImage src={cover} alt="" fill preload fetchPriority="high" sizes="(max-width: 640px) 100vw, 576px" className="object-cover" />
           <div className="absolute end-3 top-3">
             <LanguageToggle />
           </div>
@@ -69,7 +71,7 @@ export function MenuHeader() {
         <div className={cover ? "relative -mt-7 flex items-end gap-3" : "flex items-center gap-3 pt-4"}>
           <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-control border-2 border-[var(--menu-bg)] bg-menu-surface shadow-menu-sm">
             {catalog.logo_url ? (
-              <MenuImage src={catalog.logo_url} alt="" fill sizes="56px" className="object-cover" priority />
+              <MenuImage src={catalog.logo_url} alt="" fill sizes="56px" className="object-cover" loading="eager" />
             ) : (
               <span className="flex h-full w-full items-center justify-center bg-brand text-xl font-semibold text-brand-fg" aria-hidden>
                 {name.charAt(0)}

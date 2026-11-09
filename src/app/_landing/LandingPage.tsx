@@ -70,6 +70,8 @@ import { HeroShowcase } from "./HeroShowcase";
 import { OrdersShowcase } from "./OrdersShowcase";
 import { getCatalogBySlug } from "@/lib/catalog/queries";
 import { BrandMark } from "./BrandMark";
+import { MobileCtaBar } from "./MobileCtaBar";
+import { landingJsonLd } from "./structured-data";
 
 /** Each language has its own address, so search engines can index both: / and /ar/ */
 export const LANDING_PATH: Record<SiteLang, string> = { en: "/", ar: "/ar/" };
@@ -152,15 +154,19 @@ function SectionIntro({ eyebrow, title, body, center }: { eyebrow?: string; titl
 
 const MODULE_ICONS = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles, BedDouble };
 
-/** The four built-in modules, each with what it does and a signup link that preselects it */
+/**
+ * The built-in modules, each with what it does and a signup link that preselects it. On phones
+ * the cards sit side by side and swipe (the next card peeks in), instead of a five-card stack.
+ */
 function ModuleCards({ lang, t, demos }: { lang: SiteLang; t: ReturnType<typeof getSiteCopy>; demos: Partial<Record<ModuleId, string>> }) {
   return (
-    <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <>
+      <ul className="-mx-4 mt-8 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:mt-10 sm:grid sm:snap-none sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3">
       {MODULE_IDS.map((id, index) => {
         const definition = MODULES[id];
         const Icon = MODULE_ICONS[definition.icon];
         return (
-          <Reveal as="li" key={id} delay={index * 90}>
+          <Reveal as="li" key={id} delay={index * 90} className="w-[85%] max-w-sm shrink-0 snap-start sm:w-auto sm:max-w-none">
             <div className="group flex h-full flex-col rounded-panel border border-ui-line bg-ui-surface p-5 transition-[border-color,box-shadow] duration-200 hover:border-ui-primary/40 hover:shadow-[0_16px_32px_-20px_rgba(64,40,201,0.35)]">
               <div className="flex items-center gap-3">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-ui-subtle text-ui-primary transition-colors duration-200 group-hover:bg-ui-primary group-hover:text-ui-primary-fg">
@@ -209,14 +215,18 @@ function ModuleCards({ lang, t, demos }: { lang: SiteLang; t: ReturnType<typeof 
           </Reveal>
         );
       })}
-    </ul>
+      </ul>
+      <p className="mt-3 text-center text-sm text-ui-muted sm:hidden" aria-hidden>
+        {t.modules.swipe}
+      </p>
+    </>
   );
 }
 
 /** Features as a light list (no boxes): icon, title and a line of text */
 function FeatureList({ items, icons }: { items: { title: string; body: string }[]; icons: typeof GUEST_ICONS }) {
   return (
-    <ul className="mt-10 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="mt-8 grid gap-x-10 gap-y-6 sm:mt-10 sm:grid-cols-2 sm:gap-y-8 lg:grid-cols-3">
       {items.map((item, index) => {
         const Icon = icons[index];
         return (
@@ -237,17 +247,20 @@ function FeatureList({ items, icons }: { items: { title: string; body: string }[
 
 function FeatureGrid({ items, icons }: { items: { title: string; body: string }[]; icons: typeof GUEST_ICONS }) {
   return (
-    <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
       {items.map((item, index) => {
         const Icon = icons[index];
         return (
           <Reveal as="li" key={item.title} delay={(index % 3) * 90}>
-            <div className="group h-full rounded-panel border border-ui-line bg-ui-surface p-5 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_16px_32px_-20px_rgba(23,21,46,0.35)]">
-              <span className="flex h-11 w-11 items-center justify-center rounded-control bg-ui-subtle text-ui-primary transition-colors duration-200 group-hover:bg-ui-primary group-hover:text-ui-primary-fg">
+            {/* Phones: icon beside the text, so nine cards don't fill three screens */}
+            <div className="group flex h-full gap-4 rounded-panel border border-ui-line bg-ui-surface p-4 transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_16px_32px_-20px_rgba(23,21,46,0.35)] sm:block sm:p-5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-ui-subtle text-ui-primary transition-colors duration-200 group-hover:bg-ui-primary group-hover:text-ui-primary-fg">
                 <Icon className="h-5 w-5" aria-hidden />
               </span>
-              <h3 className="mt-4 font-semibold">{item.title}</h3>
-              <p className="mt-1 text-ui-muted">{item.body}</p>
+              <div className="min-w-0">
+                <h3 className="font-semibold sm:mt-4">{item.title}</h3>
+                <p className="mt-1 text-ui-muted">{item.body}</p>
+              </div>
             </div>
           </Reveal>
         );
@@ -261,7 +274,7 @@ function BusinessMarquee({ lang, t }: { lang: SiteLang; t: ReturnType<typeof get
   const kinds = MODULE_IDS.flatMap((id) => MODULES[id].subTypes.filter((sub) => SUB_TYPE_ICONS[sub.id]));
   const loop = [...kinds, ...kinds];
   return (
-    <section aria-label={t.marquee.label} className="border-y border-ui-line bg-ui-surface py-8">
+    <section aria-label={t.marquee.label} className="site-defer border-y border-ui-line bg-ui-surface py-8">
       <p className="mx-auto max-w-6xl px-4 text-sm font-medium text-ui-muted sm:px-6">{t.marquee.label}</p>
       <div className="site-marquee-wrap mt-4 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
         <ul className="site-marquee flex w-max gap-3 px-2">
@@ -308,6 +321,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
   return (
     <div lang={lang} dir={lang === "ar" ? "rtl" : "ltr"} className={`platform min-h-screen overflow-x-clip antialiased`}>
       <RememberSiteLang lang={lang} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: landingJsonLd(lang, LANDING_PATH[lang]) }} />
       <noscript>
         <style>{`.platform [data-reveal]{opacity:1!important;transform:none!important}`}</style>
       </noscript>
@@ -317,8 +331,8 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         <div aria-hidden className="h-[3px] bg-brand-gradient" />
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:gap-4 sm:px-6">
           <Link href={LANDING_PATH[lang]} className="flex items-center gap-2 font-semibold">
-            {/* The logo square is left out on the narrowest phones, so the name and buttons fit */}
-            <BrandMark className="hidden h-8 w-8 min-[400px]:flex" />
+            {/* The logo square is left out on the narrowest phones (under 360px), so the name and buttons fit */}
+            <BrandMark className="hidden h-8 w-8 min-[360px]:flex" />
             <span dir="ltr" className="whitespace-nowrap text-ui-primary">Core Commerce</span>
           </Link>
           <nav aria-label="Main" className="ms-6 hidden items-center gap-1 lg:flex">
@@ -339,7 +353,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
               {t.nav.login}
             </Link>
             <SiteLanguageToggle current={lang} label={t.nav.language} href={LANDING_PATH[lang === "ar" ? "en" : "ar"]} />
-            <Link href="/signup" className={`${primaryButton} hidden min-h-11 text-sm sm:inline-flex`}>
+            <Link href="/signup/" className={`${primaryButton} hidden min-h-11 text-sm sm:inline-flex`}>
               {t.nav.start}
             </Link>
           </div>
@@ -349,23 +363,23 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
       <main>
         {/* Hero (CSS-only entrance so text paints immediately) */}
         <section className="site-hero-bg relative">
-          <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-20 pt-12 sm:px-6 lg:grid-cols-[1fr_auto] lg:gap-24 lg:pt-20">
+          <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-14 pt-8 sm:px-6 sm:pb-20 sm:pt-12 lg:grid-cols-[1fr_auto] lg:gap-24 lg:pt-20">
             <div className="max-w-xl">
               <p className="site-pop inline-flex items-center gap-2 rounded-full border border-ui-line bg-ui-surface px-3 py-1 text-sm font-semibold text-ui-primary">
                 <span className="h-2 w-2 rounded-full bg-ui-primary" aria-hidden />
                 {t.hero.eyebrow}
               </p>
-              <h1 className="site-pop mt-5 text-[2.5rem] font-semibold leading-[1.1] sm:text-6xl" style={{ animationDelay: "60ms" }}>
+              <h1 className="site-rise mt-5 text-[2.5rem] font-semibold leading-[1.1] sm:text-6xl" style={{ animationDelay: "60ms" }}>
                 <span className="sr-only">{t.heroTitle.full}</span>
                 <span aria-hidden>{t.heroTitle.lead}</span>
                 <br aria-hidden />
                 <RotatingWords words={t.heroTitle.rotating} className="text-ui-primary" />
               </h1>
-              <p className="site-pop mt-6 text-lg text-ui-muted sm:text-xl" style={{ animationDelay: "120ms" }}>
+              <p className="site-rise mt-6 text-lg text-ui-muted sm:text-xl" style={{ animationDelay: "120ms" }}>
                 {t.hero.body}
               </p>
-              <div className="site-pop mt-8 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "180ms" }}>
-                <Link href="/signup" className={`${primaryButton} min-h-[52px] px-6 text-base`}>
+              <div id="hero-actions" className="site-pop mt-8 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "180ms" }}>
+                <Link href="/signup/" className={`${primaryButton} min-h-[52px] px-6 text-base`}>
                   {t.hero.primary}
                 </Link>
                 {hasDemo && (
@@ -385,7 +399,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
 
         {/* The four kinds of business */}
         <section id="modules" className="scroll-mt-20 border-t border-ui-line">
-          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <SectionIntro eyebrow={t.modules.eyebrow} title={t.modules.title} body={t.modules.body} />
             <ModuleCards lang={lang} t={t} demos={moduleDemos} />
           </div>
@@ -394,16 +408,16 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         <BusinessMarquee lang={lang} t={t} />
 
         {/* Guests */}
-        <section id="features" className="scroll-mt-20">
-          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <section id="features" className="site-defer scroll-mt-20">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <SectionIntro title={t.guests.title} />
             <FeatureList items={t.guests.items} icons={GUEST_ICONS} />
           </div>
         </section>
 
         {/* Showcase: dual pricing */}
-        <section className="border-t border-ui-line bg-ui-surface">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16">
+        <section className="site-defer border-t border-ui-line bg-ui-surface">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-16">
             <SectionIntro eyebrow={t.currency.eyebrow} title={t.currency.title} body={t.currency.body} />
             <Reveal delay={120}>
               <CurrencyDemo t={t.currency} lang={lang} />
@@ -412,8 +426,8 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         </section>
 
         {/* Showcase: languages */}
-        <section className="border-t border-ui-line">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:gap-16">
+        <section className="site-defer border-t border-ui-line">
+          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-2 lg:gap-16">
             <div className="lg:order-2">
               <SectionIntro eyebrow={t.language.eyebrow} title={t.language.title} body={t.language.body} />
             </div>
@@ -424,8 +438,8 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         </section>
 
         {/* Showcase: saved orders, and the same order on WhatsApp */}
-        <section className="border-t border-ui-line bg-ui-surface">
-          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <section className="site-defer border-t border-ui-line bg-ui-surface">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-end lg:gap-16">
               <SectionIntro eyebrow={t.whatsappDemo.eyebrow} title={t.whatsappDemo.title} body={t.whatsappDemo.body} />
               <Reveal as="ul" delay={80} className="space-y-3">
@@ -444,26 +458,30 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         </section>
 
         {/* Owners */}
-        <section className="border-t border-ui-line">
-          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <section className="site-defer border-t border-ui-line">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <SectionIntro title={t.owners.title} />
             <FeatureGrid items={t.owners.items} icons={OWNER_ICONS} />
           </div>
         </section>
 
         {/* Steps */}
-        <section className="border-t border-ui-line bg-ui-surface">
-          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <section className="site-defer border-t border-ui-line bg-ui-surface">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <SectionIntro title={t.steps.title} center />
-            <ol className="relative mt-12 grid gap-10 md:grid-cols-3 md:gap-6">
+            <ol className="relative mx-auto mt-8 grid max-w-md gap-7 sm:mt-12 md:max-w-none md:grid-cols-3 md:gap-6">
               <span className="absolute inset-x-[16%] top-6 hidden h-px bg-ui-line md:block" aria-hidden />
               {t.steps.items.map((step, index) => (
-                <Reveal as="li" key={step.title} delay={index * 120} className="relative text-center">
-                  <span className="relative mx-auto flex h-12 w-12 items-center justify-center rounded-full border-4 border-ui-surface bg-ui-primary text-lg font-semibold text-ui-primary-fg" aria-hidden>
+                <Reveal as="li" key={step.title} delay={index * 120} className="relative flex gap-4 md:block md:text-center">
+                  {/* Phones: a line down to the next step number */}
+                  {index < t.steps.items.length - 1 && <span className="absolute -bottom-7 start-6 top-12 w-px bg-ui-line md:hidden" aria-hidden />}
+                  <span className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-4 border-ui-surface bg-ui-primary text-lg font-semibold text-ui-primary-fg md:mx-auto" aria-hidden>
                     {index + 1}
                   </span>
-                  <h3 className="mt-4 text-lg font-semibold">{step.title}</h3>
-                  <p className="mx-auto mt-1 max-w-xs text-ui-muted">{step.body}</p>
+                  <div className="pt-2.5 md:pt-0">
+                    <h3 className="text-lg font-semibold md:mt-4">{step.title}</h3>
+                    <p className="mt-1 text-ui-muted md:mx-auto md:max-w-xs">{step.body}</p>
+                  </div>
                 </Reveal>
               ))}
             </ol>
@@ -471,10 +489,10 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         </section>
 
         {/* Pricing */}
-        <section id="pricing" className="scroll-mt-20 border-t border-ui-line">
-          <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <section id="pricing" className="site-defer scroll-mt-20 border-t border-ui-line">
+          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <SectionIntro title={t.pricing.title} body={t.pricing.body} center />
-            <div className="mt-12 grid gap-6 lg:grid-cols-3">
+            <div className="mt-8 grid gap-4 sm:mt-12 sm:gap-6 lg:grid-cols-3">
               {t.pricing.plans.map((plan, index) => {
                 const highlight = plan.id === "pro";
                 return (
@@ -505,7 +523,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
                         </li>
                       ))}
                     </ul>
-                    <Link href={`/signup?plan=${plan.id}`} className={`${highlight ? primaryButton : secondaryButton} mt-8 w-full`}>
+                    <Link href={`/signup/?plan=${plan.id}`} className={`${highlight ? primaryButton : secondaryButton} mt-8 w-full`}>
                       {t.pricing.choose}
                     </Link>
                   </Reveal>
@@ -516,8 +534,8 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         </section>
 
         {/* FAQ */}
-        <section id="faq" className="scroll-mt-20 border-t border-ui-line bg-ui-surface">
-          <div className="mx-auto max-w-3xl px-4 py-20 sm:px-6">
+        <section id="faq" className="site-defer scroll-mt-20 border-t border-ui-line bg-ui-surface">
+          <div className="mx-auto max-w-3xl px-4 py-14 sm:px-6 sm:py-20">
             <SectionIntro title={t.faq.title} center />
             <Reveal className="mt-8 divide-y divide-[var(--ui-line)] border-y border-ui-line">
               {t.faq.items.map((item) => (
@@ -536,13 +554,13 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         </section>
 
         {/* Closing call to action */}
-        <section id="contact" className="px-4 py-20 sm:px-6">
+        <section id="contact" className="site-defer px-4 py-14 sm:px-6 sm:py-20">
           <Reveal className="relative mx-auto max-w-6xl overflow-hidden rounded-[1.75rem] bg-ui-primary px-6 py-12 text-ui-primary-fg sm:px-12 sm:py-16">
             <div className="relative z-10 max-w-xl">
               <h2 className="text-[1.75rem] font-semibold leading-tight text-ui-primary-fg sm:text-4xl">{t.cta.title}</h2>
               <p className="mt-4 text-lg opacity-90">{t.cta.body}</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/signup" className="inline-flex min-h-[52px] items-center justify-center rounded-control bg-ui-surface px-6 font-semibold text-ui-ink transition-colors hover:bg-ui-subtle">
+                <Link href="/signup/" className="inline-flex min-h-[52px] items-center justify-center rounded-control bg-ui-surface px-6 font-semibold text-ui-ink transition-colors hover:bg-ui-subtle">
                   {t.cta.primary}
                 </Link>
                 <a
@@ -590,8 +608,8 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
       </main>
 
       <footer className="border-t border-ui-line bg-ui-surface">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div className="max-w-xs">
+        <div className="mx-auto grid max-w-6xl grid-cols-3 gap-x-4 gap-y-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-10">
+          <div className="col-span-3 max-w-xs md:col-span-1">
             <Link href={LANDING_PATH[lang]} className="inline-flex items-center gap-2 font-semibold">
               <BrandMark />
               <span dir="ltr" className="whitespace-nowrap text-ui-primary">Core Commerce</span>
@@ -621,7 +639,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
             {
               title: t.footer.account,
               links: [
-                { href: "/signup", label: t.footer.signup },
+                { href: "/signup/", label: t.footer.signup },
                 { href: "/login/", label: t.footer.login },
               ],
             },
@@ -655,7 +673,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
           ))}
         </div>
         <div className="border-t border-ui-line">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-5 text-sm text-ui-muted sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 pb-24 pt-5 text-sm text-ui-muted sm:px-6 sm:pb-5">
             <p>{t.footer.rights}</p>
             <a href={LANDING_PATH[lang === "ar" ? "en" : "ar"]} lang={lang === "ar" ? "en" : "ar"} className="inline-flex min-h-9 items-center gap-2 font-medium hover:text-ui-ink">
               <Languages className="h-4 w-4" aria-hidden />
@@ -664,6 +682,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
           </div>
         </div>
       </footer>
+      <MobileCtaBar start={t.nav.start} whatsappLabel={t.cta.secondary} whatsappHref={whatsappHref} />
     </div>
   );
 }

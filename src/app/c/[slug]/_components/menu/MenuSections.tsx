@@ -7,6 +7,7 @@ import { sectionId } from "./CategoryNav";
 import { ItemRow } from "./ItemRow";
 import { ItemCard } from "./ItemCard";
 import { UnitCard } from "./UnitCard";
+import type { ImagePriority } from "./MenuImage";
 
 /** Categories that actually have dishes, in the owner's order, with their dishes */
 export function useMenuSections(categories: MenuCategory[], items: MenuItem[]) {
@@ -25,10 +26,17 @@ export function useMenuSections(categories: MenuCategory[], items: MenuItem[]) {
 }
 
 export function MenuSections({ sections }: { sections: ReturnType<typeof useMenuSections> }) {
-  const { lang, module } = useCatalog();
+  const { lang, module, settings } = useCatalog();
   // Cafés and shops show photo cards in two columns; restaurants and services a list
   const grid = module.itemLayout === "grid";
+  // Photos on the first screen load straight away. Without a cover photo the first item photo is
+  // likely the largest thing on screen, so it gets high priority (see imageLoading).
+  const noCover = !settings?.hero_image_url;
   let rendered = 0;
+  const nextPriority = (firstScreen: number): ImagePriority => {
+    const index = rendered++;
+    return index === 0 && noCover ? "lcp" : index < firstScreen;
+  };
 
   return (
     <div className="mx-auto max-w-xl px-4">
@@ -42,19 +50,19 @@ export function MenuSections({ sections }: { sections: ReturnType<typeof useMenu
             {module.nights ? (
               <div className="mt-3 space-y-4">
                 {items.map((item) => (
-                  <UnitCard key={item.id} item={item} priority={rendered++ < 2} />
+                  <UnitCard key={item.id} item={item} priority={nextPriority(2)} />
                 ))}
               </div>
             ) : grid ? (
               <div className="mt-3 grid grid-cols-2 gap-3">
                 {items.map((item) => (
-                  <ItemCard key={item.id} item={item} priority={rendered++ < 4} />
+                  <ItemCard key={item.id} item={item} priority={nextPriority(4)} />
                 ))}
               </div>
             ) : (
               <div className="mt-1 divide-y divide-[var(--menu-line)]">
                 {items.map((item) => (
-                  <ItemRow key={item.id} item={item} priority={rendered++ < 4} />
+                  <ItemRow key={item.id} item={item} priority={nextPriority(4)} />
                 ))}
               </div>
             )}

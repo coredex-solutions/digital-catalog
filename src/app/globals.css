@@ -230,6 +230,12 @@ body:has(.platform) {
   to { opacity: 1; transform: none; }
 }
 
+/* Hero headline and text: a lift only, never invisible, so they count as painted on the first frame */
+@keyframes site-rise {
+  from { transform: translateY(12px); }
+  to { transform: none; }
+}
+
 @keyframes site-word {
   from { opacity: 0; transform: translateY(0.4em); }
   to { opacity: 1; transform: none; }
@@ -247,6 +253,10 @@ body:has(.platform) {
 .platform .site-marquee-wrap:hover .site-marquee { animation-play-state: paused; }
 .platform .site-scan { animation: site-scan 3.2s ease-in-out infinite; }
 .platform .site-pop { animation: site-pop 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.platform .site-rise { animation: site-rise 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+/* Long-page sections below the first screen: the browser skips their layout and paint until they
+   come near the screen (much less work on phones). The size is a first guess, then remembered. */
+.platform .site-defer { content-visibility: auto; contain-intrinsic-size: auto 900px; }
 .platform .site-word { animation: site-word 450ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
 .platform .site-dot { animation: site-dot 1.2s ease-in-out infinite; }
 .platform .site-progress { animation: site-progress linear both; }
@@ -277,6 +287,7 @@ body:has(.platform) {
   .platform .site-marquee,
   .platform .site-scan,
   .platform .site-pop,
+  .platform .site-rise,
   .platform .site-word,
   .platform .site-dot,
   .platform .site-progress,

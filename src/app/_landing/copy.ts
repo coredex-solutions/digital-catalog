@@ -34,6 +34,7 @@ const en = {
     start: "Start free trial",
     startAs: (label: string) => `Start a free trial as: ${label}`,
     demo: "See a demo",
+    swipe: "Swipe to see each type",
     demoOf: (label: string) => `See a demo: ${label}`,
     points: {
       restaurant: ["Menu with dish photos, options and allergens", "Dine-in with table QR codes, takeaway and delivery", "Table bookings, at set times if you want"],
@@ -239,6 +240,7 @@ const ar: SiteCopy = {
     start: "ابدأ التجربة المجانية",
     startAs: (label) => `ابدأ تجربة مجانية كـ: ${label}`,
     demo: "شاهد تجربة",
+    swipe: "اسحب لرؤية كل الأنواع",
     demoOf: (label) => `شاهد تجربة: ${label}`,
     points: {
       restaurant: ["قائمة مع صور الأطباق والخيارات ومسببات الحساسية", "طلبات على الطاولة مع رموز QR، وسفري وتوصيل", "حجز الطاولات، بأوقات محددة إن أردت"],

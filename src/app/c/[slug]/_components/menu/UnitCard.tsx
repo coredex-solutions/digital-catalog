@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleSlash, Loader2, Star, Users } from "lucide-react";
-import { MenuImage } from "./MenuImage";
+import { MenuImage, imageLoading, type ImagePriority } from "./MenuImage";
 import { cartQuantityOf, needsVariant, useCatalog, type MenuItem } from "../../_providers/CatalogProvider";
 import { lowestVariantPrice } from "@/lib/catalog/dish-info";
 import { stayLinePrice, stayNights } from "@/lib/orders/stays";
@@ -16,7 +16,7 @@ import { cn } from "@/utils/helpers";
  * One room or chalet (stays): a wide photo, who it sleeps and the price per night. Once dates
  * are chosen it says whether it's free and what the whole stay costs; booking it needs dates.
  */
-export function UnitCard({ item, priority }: { item: MenuItem; priority?: boolean }) {
+export function UnitCard({ item, priority }: { item: MenuItem; priority?: ImagePriority }) {
   const { lang, t, stay, stayAvailability, stayLoading, openDates, openItem, addToCart, cart, updateLineQuantity, orderingEnabled, priceConfig } = useCatalog();
   const name = localized(item, "name", lang);
   const description = localized(item, "description", lang);
@@ -80,7 +80,7 @@ export function UnitCard({ item, priority }: { item: MenuItem; priority?: boolea
     <article className="relative overflow-hidden rounded-panel border border-menu-line bg-menu-surface">
       {item.image_url && (
         <div className={cn("relative aspect-[16/10] bg-menu-raised", (soldOut || free === 0) && "opacity-60")}>
-          <MenuImage src={item.image_url} alt="" fill sizes="(max-width: 640px) 100vw, 576px" priority={priority} className="object-cover" />
+          <MenuImage src={item.image_url} alt="" fill sizes="(max-width: 640px) 100vw, 576px" {...imageLoading(priority)} className="object-cover" />
           {item.image_is_illustrative && (
             <span className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-center text-xs font-medium text-white">{t.illustrativeShort}</span>
           )}

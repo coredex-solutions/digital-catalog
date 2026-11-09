@@ -1,6 +1,6 @@
 "use client";
 
-import { MenuImage } from "./MenuImage";
+import { MenuImage, imageLoading, type ImagePriority } from "./MenuImage";
 import { CircleSlash, Plus, Star } from "lucide-react";
 import { cartQuantityOf, needsVariant, remainingFor, useCatalog, type MenuItem } from "../../_providers/CatalogProvider";
 import { ItemFacts, WasPrice } from "./ItemMeta";
@@ -12,7 +12,7 @@ import { cn } from "@/utils/helpers";
 interface ItemRowProps {
   item: MenuItem;
   /** Load the photo eagerly (first rows on screen) */
-  priority?: boolean;
+  priority?: ImagePriority;
 }
 
 /**
@@ -104,7 +104,7 @@ export function ItemRow({ item, priority }: ItemRowProps) {
               alt=""
               fill
               sizes="96px"
-              priority={priority}
+              {...imageLoading(priority)}
               className="object-cover"
             />
             {item.image_is_illustrative && (

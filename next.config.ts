@@ -30,6 +30,9 @@ const nextConfig = {
   // The app folder is the root, even when a package-lock.json sits in a parent folder
   // (otherwise Turbopack watches that whole folder and recompiles on unrelated changes)
   turbopack: { root: process.cwd() },
+  // `npm run dev` opened through a Cloudflare quick tunnel (cloudflared tunnel --url ...);
+  // without this, Next.js blocks the dev scripts for any address other than localhost
+  allowedDevOrigins: ['*.trycloudflare.com'],
 };
 
 module.exports = nextConfig;

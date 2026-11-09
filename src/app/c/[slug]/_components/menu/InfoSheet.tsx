@@ -11,6 +11,7 @@ import { whatsappLink } from "../../_lib/whatsapp";
 import { CurrencyNote } from "./CurrencyNote";
 import { LanguageToggle } from "./LanguageToggle";
 import { Sheet } from "./Sheet";
+import { PoweredBy } from "./PoweredBy";
 import { cn } from "@/utils/helpers";
 
 const DAY_INDEX: Record<string, number> = {
@@ -189,7 +190,7 @@ export function InfoSheet() {
       )}
 
       <Section title={t.about}>
-        <Link href={`/c/${catalog.slug}/about`} className="inline-flex min-h-11 items-center font-semibold text-brand-ink underline-offset-4 hover:underline">
+        <Link href={`/c/${catalog.slug}/about/`} className="inline-flex min-h-11 items-center font-semibold text-brand-ink underline-offset-4 hover:underline">
           {t.about} {name}
         </Link>
       </Section>
@@ -208,7 +209,7 @@ export function InfoSheet() {
           </button>
         </div>
         <CurrencyNote className="mt-4" />
-        <p className="mt-6 text-center text-xs text-menu-muted">{t.poweredBy}</p>
+        <PoweredBy className="mt-6" />
       </Section>
     </Sheet>
   );

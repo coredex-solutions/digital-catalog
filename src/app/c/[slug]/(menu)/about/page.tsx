@@ -37,6 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     return {
         title: getDictionary(lang).about,
+        alternates: { canonical: `/c/${encodeURIComponent(data.catalog.slug)}/about/` },
         description: about ? String(about).slice(0, 160) : `${name}`,
         openGraph: {
             title: name,
@@ -63,10 +64,10 @@ export default async function AboutPage({ params }: Props) {
         <main className="mx-auto max-w-xl pb-16">
             <div className="relative h-56 w-full overflow-hidden bg-brand-soft sm:rounded-b-3xl">
                 {settings?.hero_image_url && (
-                    <Image src={settings.hero_image_url} alt="" fill priority sizes="(max-width: 640px) 100vw, 576px" className="object-cover" />
+                    <Image src={settings.hero_image_url} alt="" fill preload fetchPriority="high" sizes="(max-width: 640px) 100vw, 576px" className="object-cover" />
                 )}
                 <Link
-                    href={`/c/${slug}`}
+                    href={`/c/${slug}/`}
                     className="absolute start-4 top-4 inline-flex min-h-10 items-center gap-1.5 rounded-control bg-menu-surface px-3.5 text-sm font-semibold text-menu-ink shadow-menu-sm"
                 >
                     <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
@@ -83,7 +84,7 @@ export default async function AboutPage({ params }: Props) {
                 {about && <p className="mt-6 whitespace-pre-line text-[1.0625rem] leading-relaxed">{about}</p>}
 
                 <Link
-                    href={`/c/${slug}`}
+                    href={`/c/${slug}/`}
                     className="mt-8 flex min-h-12 w-full items-center justify-center rounded-control bg-brand px-4 font-semibold text-brand-fg"
                 >
                     {localized(settings || {}, "cta_menu_label", lang) || t.viewMenu}

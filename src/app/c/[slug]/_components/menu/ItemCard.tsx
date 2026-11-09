@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleSlash, Plus, Star } from "lucide-react";
-import { MenuImage } from "./MenuImage";
+import { MenuImage, imageLoading, type ImagePriority } from "./MenuImage";
 import { cartQuantityOf, needsVariant, remainingFor, useCatalog, type MenuItem } from "../../_providers/CatalogProvider";
 import { lowestVariantPrice } from "@/lib/catalog/dish-info";
 import { localized } from "../../_lib/i18n";
@@ -13,7 +13,7 @@ import { cn } from "@/utils/helpers";
  * One item as a photo card, for the two-column grid that cafés and shops use. Like ItemRow,
  * the whole card opens the item sheet and the add button puts it straight in the cart.
  */
-export function ItemCard({ item, priority }: { item: MenuItem; priority?: boolean }) {
+export function ItemCard({ item, priority }: { item: MenuItem; priority?: ImagePriority }) {
   const { lang, t, openItem, addToCart, cart, orderingEnabled } = useCatalog();
   const name = localized(item, "name", lang);
   const inCart = cartQuantityOf(cart, item.id);
@@ -26,7 +26,7 @@ export function ItemCard({ item, priority }: { item: MenuItem; priority?: boolea
     <article className="relative flex flex-col overflow-hidden rounded-panel border border-menu-line bg-menu-surface">
       <div className={cn("relative aspect-square bg-menu-raised", soldOut && "opacity-60")}>
         {item.image_url ? (
-          <MenuImage src={item.image_url} alt="" fill sizes="(max-width: 640px) 50vw, 288px" priority={priority} className="object-cover" />
+          <MenuImage src={item.image_url} alt="" fill sizes="(max-width: 640px) 50vw, 288px" {...imageLoading(priority)} className="object-cover" />
         ) : (
           // No photo: the first letter on a soft brand tile keeps the grid even
           <span className="flex h-full w-full items-center justify-center bg-brand-soft text-4xl font-semibold text-brand-ink" aria-hidden>

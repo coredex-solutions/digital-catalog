@@ -10,6 +10,7 @@ import { CheckoutSheet } from "./CheckoutSheet";
 import { InfoSheet } from "./InfoSheet";
 import { ItemSheet } from "./ItemSheet";
 import { MenuHeader } from "./MenuHeader";
+import { PoweredBy } from "./PoweredBy";
 import { MenuSections, useMenuSections } from "./MenuSections";
 import { ReservationSheet } from "./ReservationSheet";
 import { SearchSheet } from "./SearchSheet";
@@ -55,7 +56,7 @@ export function MenuView() {
           </div>
         )}
 
-        <p className="mx-auto mt-12 max-w-xl px-4 text-center text-xs text-menu-muted">{t.poweredBy}</p>
+        <PoweredBy className="mx-auto mt-12 max-w-xl px-4" />
       </main>
 
       <CartBar />

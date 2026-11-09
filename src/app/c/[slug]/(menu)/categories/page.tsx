@@ -7,5 +7,5 @@ export default async function CatalogCategoriesRedirect({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  permanentRedirect(`/c/${slug}`);
+  permanentRedirect(`/c/${slug}/`);
 }

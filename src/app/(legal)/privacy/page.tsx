@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy policy",
+  alternates: { canonical: "/privacy/" },
   description: "What Core Commerce collects from business owners and their customers, why, and who processes it.",
 };
 

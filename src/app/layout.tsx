@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { fontStack, inter } from "./fonts";
 import { documentLang } from "./document-lang";
 import "./globals.css";
@@ -19,7 +19,6 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "/",
     title: "Core Commerce: online menus, stores and service pages in Arabic and English",
     description: "Menus, stores and service pages in Arabic and English, with dollar and pound prices and orders saved and sent to WhatsApp.",
     siteName: "Core Commerce",
@@ -31,6 +30,11 @@ export const metadata: Metadata = {
     title: "Core Commerce",
     description: "Online menus, stores and service pages for restaurants, cafés, shops and services.",
   },
+};
+
+// The phone browser bar takes the page background, so the top of the screen reads as one surface
+export const viewport: Viewport = {
+  themeColor: "#F7F8FC",
 };
 
 export default async function RootLayout({

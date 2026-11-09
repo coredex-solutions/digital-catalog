@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Terms of service",
+  alternates: { canonical: "/terms/" },
   description: "The terms for businesses using Core Commerce for their online menu, store or services page.",
 };
 
