@@ -23,7 +23,10 @@ const SLUG = 'demo';
 const CATALOG_ID = 'demo-catalog-001';
 const ADMIN_EMAIL = 'demo@example.com';
 // Orders and calls from the demo go to the Core Commerce sales number
-const PHONE = '+966540679669';
+// (NEXT_PUBLIC_SALES_WHATSAPP in .env, the same number as the marketing site; read after dotenv)
+const SALES_DIGITS = (process.env.NEXT_PUBLIC_SALES_WHATSAPP || '').replace(/\D/g, '');
+if (!SALES_DIGITS) console.warn('NEXT_PUBLIC_SALES_WHATSAPP is not set: the demo pages get the old placeholder number.');
+const PHONE = `+${SALES_DIGITS || '966540679669'}`;
 const LBP_RATE = 89500;
 
 // Free photos from Unsplash (unsplash.com/license) or the local landing images
