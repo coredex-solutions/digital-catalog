@@ -9,7 +9,7 @@ import { localized } from "../../_lib/i18n";
 import { formatPrice } from "@/lib/catalog/price";
 import { Price } from "./Price";
 import { QuantityStepper } from "./QuantityStepper";
-import { freeFor } from "./StayDatesSheet";
+import { freeFor } from "./stay-availability";
 import { cn } from "@/utils/helpers";
 
 /**

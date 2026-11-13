@@ -16,7 +16,7 @@ import { isTransfer, parsePaymentConfig } from "@/lib/orders/payment";
 import { parseBookingConfig } from "@/lib/orders/slots";
 import { discountLine } from "@/lib/orders/coupons";
 import { parseLoyaltyConfig, rewardText } from "@/lib/orders/loyalty";
-import { depositInstructions } from "../../../_components/menu/CheckoutSheet";
+import { depositInstructions } from "../../../_components/menu/form-parts";
 import { parseMarketingConfig } from "@/lib/marketing";
 import { cn } from "@/utils/helpers";
 

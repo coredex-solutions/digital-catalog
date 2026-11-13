@@ -8,7 +8,7 @@ import { localized } from "../../_lib/i18n";
 import { buildReservationMessage, whatsappLink } from "../../_lib/whatsapp";
 import { newClientKey, sendOrder, type SentOrder } from "../../_lib/send-order";
 import { trackSent } from "../../_lib/tracking";
-import { depositInstructions, Field, inputClass, SavedNotice, todayInBeirut } from "./CheckoutSheet";
+import { depositInstructions, Field, inputClass, SavedNotice, todayInBeirut } from "./form-parts";
 import { SlotPicker } from "./SlotPicker";
 import { parseBookingConfig } from "@/lib/orders/slots";
 import { parsePaymentConfig } from "@/lib/orders/payment";

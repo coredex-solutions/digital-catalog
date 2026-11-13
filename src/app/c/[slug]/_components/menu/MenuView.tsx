@@ -1,27 +1,78 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, type ComponentType } from "react";
+import dynamic from "next/dynamic";
 import { BedDouble, Coffee, ShoppingBag, Sparkles, UtensilsCrossed } from "lucide-react";
-import { useCatalog } from "../../_providers/CatalogProvider";
+import { useCatalog, type MenuSheet } from "../../_providers/CatalogProvider";
 import { CartBar } from "./CartBar";
-import { CartSheet } from "./CartSheet";
 import { CategoryNav, scrollToCategory } from "./CategoryNav";
-import { CheckoutSheet } from "./CheckoutSheet";
-import { InfoSheet } from "./InfoSheet";
-import { ItemSheet } from "./ItemSheet";
 import { MenuHeader } from "./MenuHeader";
 import { PoweredBy } from "./PoweredBy";
 import { MenuSections, useMenuSections } from "./MenuSections";
-import { ReservationSheet } from "./ReservationSheet";
-import { SearchSheet } from "./SearchSheet";
 import { StayBar } from "./StayBar";
-import { StayDatesSheet } from "./StayDatesSheet";
+
+// The sheets (item, basket, checkout, search, info, booking, dates) are not needed to show the
+// page, so their code stays out of the first download: it is fetched quietly once the page has
+// settled, or straight away when the customer first touches the page, and each sheet is mounted
+// the first time it opens (then kept, so it can slide closed).
+const SHEET_CODE = {
+  item: () => import("./ItemSheet").then((m) => m.ItemSheet),
+  cart: () => import("./CartSheet").then((m) => m.CartSheet),
+  checkout: () => import("./CheckoutSheet").then((m) => m.CheckoutSheet),
+  search: () => import("./SearchSheet").then((m) => m.SearchSheet),
+  info: () => import("./InfoSheet").then((m) => m.InfoSheet),
+  reservation: () => import("./ReservationSheet").then((m) => m.ReservationSheet),
+  dates: () => import("./StayDatesSheet").then((m) => m.StayDatesSheet),
+} satisfies Record<MenuSheet, () => Promise<ComponentType>>;
+
+const SHEETS = Object.fromEntries(
+  Object.entries(SHEET_CODE).map(([name, load]) => [name, dynamic(load, { ssr: false })])
+) as Record<MenuSheet, ComponentType>;
+
+function preloadSheets() {
+  for (const load of Object.values(SHEET_CODE)) void load();
+}
+
+/** Mounts each sheet from its first opening on, and fetches the sheets' code ahead of time */
+function useSheets(): MenuSheet[] {
+  const { activeSheet } = useCatalog();
+  const [mounted, setMounted] = useState<MenuSheet[]>([]);
+  // Updating state while rendering (React's pattern for following a changing value), so the
+  // sheet mounts in the same render that opens it
+  if (activeSheet && !mounted.includes(activeSheet)) setMounted([...mounted, activeSheet]);
+
+  useEffect(() => {
+    let done = false;
+    const events = ["pointerdown", "keydown", "touchstart", "scroll"] as const;
+    const run = () => {
+      if (done) return;
+      done = true;
+      for (const name of events) window.removeEventListener(name, run);
+      clearTimeout(timer);
+      preloadSheets();
+    };
+    for (const name of events) window.addEventListener(name, run, { passive: true, once: true });
+    // Otherwise a few seconds after loading, when the phone is idle
+    const timer = setTimeout(() => {
+      if ("requestIdleCallback" in window) window.requestIdleCallback(run, { timeout: 2000 });
+      else run();
+    }, 6000);
+    return () => {
+      done = true;
+      for (const name of events) window.removeEventListener(name, run);
+      clearTimeout(timer);
+    };
+  }, []);
+
+  return mounted;
+}
 
 /** The whole catalog on one page: header, sticky categories, items, order bar, sheets */
 export function MenuView() {
   const { categories, menuItems, t, bookingEnabled, cartItemCount, orderingEnabled, module } = useCatalog();
   const EmptyIcon = { UtensilsCrossed, Coffee, ShoppingBag, Sparkles, BedDouble }[module.icon];
   const sections = useMenuSections(categories, menuItems);
+  const mountedSheets = useSheets();
 
   // Old per-category links redirect here with ?c=<id>; open the menu at that section
   useEffect(() => {
@@ -60,13 +111,12 @@ export function MenuView() {
       </main>
 
       <CartBar />
-      <ItemSheet />
-      <CartSheet />
-      <CheckoutSheet />
-      <SearchSheet />
-      <InfoSheet />
-      {bookingEnabled && <ReservationSheet />}
-      {module.nights && <StayDatesSheet />}
+      {mountedSheets
+        .filter((name) => (name === "reservation" ? bookingEnabled : name === "dates" ? module.nights : true))
+        .map((name) => {
+          const SheetView = SHEETS[name];
+          return <SheetView key={name} />;
+        })}
     </>
   );
 }

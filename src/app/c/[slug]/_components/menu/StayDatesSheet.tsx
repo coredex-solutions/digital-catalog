@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Minus, Plus } from "lucide-react";
-import { needsVariant, useCatalog, type StayAvailability } from "../../_providers/CatalogProvider";
-import { addDays, freeUnits, nightsBetween, stayNights, MAX_GUESTS } from "@/lib/orders/stays";
+import { needsVariant, useCatalog } from "../../_providers/CatalogProvider";
+import { addDays, nightsBetween, stayNights, MAX_GUESTS } from "@/lib/orders/stays";
+import { freeFor } from "./stay-availability";
 import { localized } from "../../_lib/i18n";
 import { stayDate } from "../../_lib/whatsapp";
 import { Sheet } from "./Sheet";
@@ -12,12 +13,6 @@ import { cn } from "@/utils/helpers";
 /** Today in Beirut (YYYY-MM-DD) */
 function beirutToday(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Beirut" }).format(new Date());
-}
-
-/** Rooms of one item free for every given night (unknown availability counts as free) */
-export function freeFor(availability: StayAvailability | null, itemId: string, units: number, nights: string[]): number {
-  if (!availability) return units;
-  return freeUnits(availability.units[itemId] ?? units, availability.booked[itemId], nights);
 }
 
 const monthOf = (date: string) => date.slice(0, 7);

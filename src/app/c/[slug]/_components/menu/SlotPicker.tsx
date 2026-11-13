@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { beirutNow, openingFor, type BookingConfig, type SlotsResult } from "@/lib/orders/slots";
 import { cn } from "@/utils/helpers";
-import { inputClass } from "./CheckoutSheet";
+import { inputClass } from "./form-parts";
 
 /** Days shown as chips; customers can book up to the owner's limit, the first few weeks are listed */
 const MAX_DAY_CHIPS = 21;

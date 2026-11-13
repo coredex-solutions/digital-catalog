@@ -11,7 +11,7 @@ import { localized } from "../../_lib/i18n";
 import { Price } from "./Price";
 import { QuantityStepper } from "./QuantityStepper";
 import { Sheet } from "./Sheet";
-import { freeFor } from "./StayDatesSheet";
+import { freeFor } from "./stay-availability";
 import { stayLinePrice, stayNights } from "@/lib/orders/stays";
 import { Users } from "lucide-react";
 
