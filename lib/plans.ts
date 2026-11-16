@@ -25,6 +25,8 @@ export const PLAN_CONFIG = {
             booking_enabled: true,
             analytics_enabled: true,
             custom_domain_enabled: false,
+            orders_enabled: true,
+            ai_assistant_enabled: true,
         },
         display_features: [
             'Up to 200 items',
@@ -32,6 +34,36 @@ export const PLAN_CONFIG = {
             '5 AI photo enhancements/mo',
             'Arabic and English',
             'Visit and order-click analytics',
+        ],
+    },
+    // A menu page only: no orders, bookings, coupons or loyalty, and no AI assistant or AI
+    // photos. Customers reach the business by WhatsApp or phone. The cheap way in.
+    starter: {
+        id: 'starter',
+        name: 'Starter',
+        price: 49,
+        currency: 'USD',
+        period: 'year',
+        durationDays: null,
+        limits: {
+            max_items: 100,
+            max_categories: 15,
+            ai_image_enhancement_limit: 0,
+        },
+        features: {
+            multi_language_enabled: true,
+            booking_enabled: false,
+            analytics_enabled: true,
+            custom_domain_enabled: false,
+            orders_enabled: false,
+            ai_assistant_enabled: false,
+        },
+        display_features: [
+            'Menu page only, no ordering',
+            'Up to 100 items',
+            'Up to 15 categories',
+            'Arabic and English',
+            'Visit analytics',
         ],
     },
     essential: {
@@ -51,6 +83,8 @@ export const PLAN_CONFIG = {
             booking_enabled: true,
             analytics_enabled: true,
             custom_domain_enabled: false,
+            orders_enabled: true,
+            ai_assistant_enabled: true,
         },
         display_features: [
             'Up to 200 items',
@@ -77,6 +111,8 @@ export const PLAN_CONFIG = {
             booking_enabled: true,
             analytics_enabled: true,
             custom_domain_enabled: false,
+            orders_enabled: true,
+            ai_assistant_enabled: true,
         },
         display_features: [
             'Up to 1,000 items',
@@ -102,6 +138,8 @@ export const PLAN_CONFIG = {
             booking_enabled: true,
             analytics_enabled: true,
             custom_domain_enabled: false,
+            orders_enabled: true,
+            ai_assistant_enabled: true,
         },
         display_features: [
             'Up to 10,000 items',
@@ -116,12 +154,12 @@ export type PlanId = keyof typeof PLAN_CONFIG;
 export type PlanConfig = (typeof PLAN_CONFIG)[PlanId];
 
 /** Plans an owner can request and pay for (everything except the trial) */
-export const PAID_PLAN_IDS = ['essential', 'pro', 'enterprise'] as const;
+export const PAID_PLAN_IDS = ['starter', 'essential', 'pro', 'enterprise'] as const;
 export type PaidPlanId = (typeof PAID_PLAN_IDS)[number];
 
 /** Every value catalog_subscriptions.subscription_type may hold, including legacy durations */
 export const SUBSCRIPTION_TYPES: readonly SubscriptionType[] = [
-    'trial', 'essential', 'pro', 'enterprise', 'yearly', 'forever', 'custom_years',
+    'trial', 'starter', 'essential', 'pro', 'enterprise', 'yearly', 'forever', 'custom_years',
 ];
 
 export function isPaidPlanId(value: unknown): value is PaidPlanId {
@@ -142,6 +180,16 @@ export function getPlanConfig(planId: string): PlanConfig | null {
  */
 export function getPlanForSubscriptionType(type: string | null | undefined): PlanConfig {
     return (type && getPlanConfig(type)) || PLAN_CONFIG.essential;
+}
+
+/** Whether customers can order and book on this subscription (Starter is a menu page only) */
+export function planTakesOrders(type: string | null | undefined): boolean {
+    return getPlanForSubscriptionType(type).features.orders_enabled;
+}
+
+/** Whether the AI assistant can answer customers on this subscription */
+export function planHasAiAssistant(type: string | null | undefined): boolean {
+    return getPlanForSubscriptionType(type).features.ai_assistant_enabled;
 }
 
 export function getPlanPrice(planId: string): number | null {

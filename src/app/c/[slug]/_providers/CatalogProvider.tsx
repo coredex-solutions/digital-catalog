@@ -162,6 +162,8 @@ export interface MenuBranch {
 export type MenuSheet = "item" | "cart" | "checkout" | "search" | "info" | "reservation" | "dates";
 
 export interface MenuData extends CatalogUIData {
+  /** False on Starter (a menu page only): no ordering or bookings, whatever the settings say */
+  takesOrders?: boolean;
   menuItems: MenuItem[];
   categories: MenuCategory[];
   faqs: MenuFaq[];
@@ -303,8 +305,10 @@ export function CatalogProvider({
 
   // Orders and bookings are saved for the owner's dashboard, so they work without a WhatsApp
   // number too (WhatsApp is then simply not offered after sending)
-  const bookingEnabled = module.tableBooking && Boolean(Number(settings?.booking_enabled ?? 1));
-  const orderingEnabled = Boolean(Number(settings?.whatsapp_order_enabled ?? 1)) && orderTypes.length > 0;
+  // The plan comes first: Starter shows the menu only
+  const planTakesOrders = data.takesOrders !== false;
+  const bookingEnabled = planTakesOrders && module.tableBooking && Boolean(Number(settings?.booking_enabled ?? 1));
+  const orderingEnabled = planTakesOrders && Boolean(Number(settings?.whatsapp_order_enabled ?? 1)) && orderTypes.length > 0;
 
   // Storage key unique to this catalog (same key as before, so existing carts survive)
   const storagePrefix = `catalog_${catalog.slug}_`;

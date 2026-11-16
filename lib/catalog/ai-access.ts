@@ -1,5 +1,5 @@
 import { getDb } from '../db/client';
-import { getSubscriptionState } from '../plans';
+import { getSubscriptionState, planHasAiAssistant } from '../plans';
 
 export interface AiWaiterCatalog {
   id: string;
@@ -25,6 +25,8 @@ export async function getAiWaiterCatalog(slug: string): Promise<AiWaiterCatalog 
       SELECT c.id, c.name, c.business_type, c.module, s.ai_waiter_enabled,
         (SELECT sub.expires_at FROM catalog_subscriptions sub
           WHERE sub.catalog_id = c.id AND sub.is_active = 1 LIMIT 1) as expires_at,
+        (SELECT sub.subscription_type FROM catalog_subscriptions sub
+          WHERE sub.catalog_id = c.id AND sub.is_active = 1 LIMIT 1) as subscription_type,
         (SELECT COUNT(*) FROM catalog_subscriptions sub
           WHERE sub.catalog_id = c.id AND sub.is_active = 1) as active_subscriptions
       FROM catalogs c
@@ -45,7 +47,8 @@ export async function getAiWaiterCatalog(slug: string): Promise<AiWaiterCatalog 
     name: String(row.name),
     business_type: String(row.business_type || ''),
     module: row.module == null ? null : String(row.module),
-    aiWaiterEnabled: Number(row.ai_waiter_enabled || 0) === 1,
+    // Switched on in settings, on a plan that includes it (not Starter)
+    aiWaiterEnabled: Number(row.ai_waiter_enabled || 0) === 1 && planHasAiAssistant(row.subscription_type == null ? null : String(row.subscription_type)),
     subscriptionLive: Number(row.active_subscriptions || 0) > 0 && notExpired,
   };
 }

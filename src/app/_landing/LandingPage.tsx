@@ -492,7 +492,7 @@ export async function LandingPage({ lang }: { lang: SiteLang }) {
         <section id="pricing" className="site-defer scroll-mt-20 border-t border-ui-line">
           <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-20">
             <SectionIntro title={t.pricing.title} body={t.pricing.body} center />
-            <div className="mt-8 grid gap-4 sm:mt-12 sm:gap-6 lg:grid-cols-3">
+            <div className="mt-8 grid gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
               {t.pricing.plans.map((plan, index) => {
                 const highlight = plan.id === "pro";
                 return (

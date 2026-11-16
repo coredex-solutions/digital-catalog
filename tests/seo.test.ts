@@ -65,6 +65,6 @@ test("the home page lists the company, the product with its yearly prices and th
   const types = graph.map((node: { "@type": string }) => node["@type"]);
   assert.deepEqual(types, ["Organization", "WebSite", "WebPage", "SoftwareApplication", "FAQPage"]);
   const product = graph[3];
-  assert.deepEqual(product.offers.map((o: { price: number }) => o.price), [99, 299, 399]);
+  assert.deepEqual(product.offers.map((o: { price: number }) => o.price), [49, 99, 299, 399]);
   assert.ok(graph[4].mainEntity.length > 0);
 });

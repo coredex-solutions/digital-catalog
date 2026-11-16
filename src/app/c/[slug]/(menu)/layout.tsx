@@ -15,6 +15,7 @@ import { hasUsableCoupons } from '@/lib/orders/coupons-store';
 import { beirutToday } from '@/lib/orders/validate';
 import { parseMarketingConfig } from '@/lib/marketing';
 import { MarketingTags } from '../_components/MarketingTags';
+import { planHasAiAssistant, planTakesOrders } from '@/lib/plans';
 
 // Generate metadata for SEO
 export async function generateMetadata({
@@ -156,6 +157,7 @@ export default async function CatalogLayout({
   const jsonLd = catalogJsonLd(data, lang, `${getSiteUrl()}${menuAlternates(catalog.slug, lang, enabledLanguages, settings?.default_language).canonical}`);
 
   const menuData: MenuData = {
+    takesOrders: planTakesOrders(data.subscriptionType),
     catalog: {
       id: catalog.id,
       slug: catalog.slug,
@@ -267,7 +269,7 @@ export default async function CatalogLayout({
         </div>
       )}
       {children}
-      {menuData.settings?.ai_waiter_enabled && <AIWaiterBubble />}
+      {menuData.settings?.ai_waiter_enabled && planHasAiAssistant(data.subscriptionType) && <AIWaiterBubble />}
       {/* The owner's Meta Pixel and Google Analytics; not while they preview unpublished changes */}
       {!preview && <MarketingTags config={parseMarketingConfig((settings as unknown as Record<string, unknown> | null)?.marketing_config)} />}
     </CatalogProvider>

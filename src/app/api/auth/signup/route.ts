@@ -7,12 +7,12 @@ import { withRateLimit, RATE_LIMITS } from "@/lib/rate-limit/middleware";
 import { v4 as uuidv4 } from "uuid";
 import { CATALOG_THEMES, DEFAULT_THEME_ID } from "@/config/themes";
 import { newCatalogModuleColumns, newCatalogSettings } from "@/lib/modules/resolve";
-import { PLAN_CONFIG } from "@/lib/plans";
+import { PAID_PLAN_IDS, PLAN_CONFIG } from "@/lib/plans";
 import { initialVersionStatement } from "@/lib/catalog/publishing";
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // Any paid plan picked at signup is queued for approval; the account starts on the trial
-const PAID_PLANS = ["essential", "pro", "enterprise"];
+const PAID_PLANS: readonly string[] = PAID_PLAN_IDS;
 const MIN_PASSWORD_LENGTH = 8;
 
 async function handler(request: NextRequest) {

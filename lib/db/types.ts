@@ -9,7 +9,7 @@ import type { ModuleId } from '../modules/registry';
 export type BusinessType = string;
 
 // Subscription types
-export type SubscriptionType = 'trial' | 'essential' | 'pro' | 'enterprise' | 'yearly' | 'forever' | 'custom_years';
+export type SubscriptionType = 'trial' | 'starter' | 'essential' | 'pro' | 'enterprise' | 'yearly' | 'forever' | 'custom_years';
 
 // Languages supported
 export type Language = 'ar' | 'en';

@@ -158,6 +158,13 @@ const en = {
     popular: "Most complete for one business",
     plans: [
       {
+        id: "starter",
+        name: "Starter",
+        price: "$49",
+        summary: "A menu page only, without ordering.",
+        features: ["Up to 100 items", "Up to 15 categories", "Arabic and English", "Dollar and pound prices", "WhatsApp and call buttons", "QR code and visit analytics"],
+      },
+      {
         id: "essential",
         name: "Essential",
         price: "$99",
@@ -363,6 +370,13 @@ const ar: SiteCopy = {
     choose: "ابدأ التجربة المجانية",
     popular: "الأكمل لنشاط واحد",
     plans: [
+      {
+        id: "starter",
+        name: "Starter",
+        price: "$49",
+        summary: "صفحة قائمة فقط، من دون طلبات.",
+        features: ["حتى 100 صنف", "حتى 15 قسماً", "بالعربية والإنجليزية", "أسعار بالدولار والليرة", "زرّا واتساب واتصال", "رمز QR وإحصاءات الزيارات"],
+      },
       {
         id: "essential",
         name: "Essential",

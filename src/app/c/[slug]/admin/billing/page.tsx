@@ -132,6 +132,10 @@ const ar: typeof en = {
     sendFailedShort: "تعذّر إرسال الطلب.",
     status: { pending: "بانتظار الدفع", approved: "تمت الموافقة", rejected: "مغلق" },
     features: {
+        "Menu page only, no ordering": "صفحة قائمة فقط، من دون طلبات",
+        "Up to 100 items": "حتى 100 صنف",
+        "Up to 15 categories": "حتى 15 قسماً",
+        "Visit analytics": "إحصاءات الزيارات",
         "Up to 200 items": "حتى 200 صنف",
         "Up to 20 categories": "حتى 20 قسماً",
         "5 AI photo enhancements/mo": "5 تحسينات صور بالذكاء الاصطناعي شهرياً",
@@ -405,7 +409,7 @@ function BillingPageContent() {
                     )}
                     {!isOwner && <p className="mb-6 text-sm text-ui-muted">{t.ownerOnly}</p>}
 
-                    <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4">
                         {PLANS.map((plan) => {
                             const isCurrent = currentId === plan.id;
                             return (

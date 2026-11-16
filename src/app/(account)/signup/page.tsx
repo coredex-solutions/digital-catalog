@@ -4,7 +4,7 @@ import { getAccountCopy } from "../_copy";
 import { SignupForm } from "../_components/SignupForm";
 import { isModuleId } from "@/lib/modules/resolve";
 
-const PLANS = ["essential", "pro", "enterprise"];
+const PLANS = ["starter", "essential", "pro", "enterprise"];
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: { absolute: getAccountCopy(await resolveSiteLang()).signup.metaTitle }, robots: { index: false } };

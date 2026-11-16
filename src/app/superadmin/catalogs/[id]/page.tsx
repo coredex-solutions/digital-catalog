@@ -634,6 +634,7 @@ export default function CatalogDetailsPage({ params }: { params: Promise<{ id: s
                       className="w-full px-5 py-4 bg-ui-surface border border-ui-input rounded-control text-ui-ink focus:outline-none focus:border-ui-primary focus:ring-2 focus:ring-ui-primary transition-all appearance-none cursor-pointer font-bold"
                     >
                       <option value="trial">Free Trial</option>
+                      <option value="starter">Starter (menu only)</option>
                       <option value="essential">Essential</option>
                       <option value="pro">Pro</option>
                       <option value="enterprise">Enterprise</option>

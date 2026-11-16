@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCatalogAdmin } from '@/lib/auth/catalog-admin-middleware';
 import { getCatalogBySlug, getCatalogSettings, getCatalogSubscription } from '@/lib/catalog/queries';
-import { getPlanForSubscriptionType, getSubscriptionState } from '@/lib/plans';
+import { getPlanForSubscriptionType, getSubscriptionState, planHasAiAssistant, planTakesOrders } from '@/lib/plans';
 import { getDb } from '@/lib/db/client';
 import { moduleInfo } from '@/lib/modules/resolve';
 
@@ -83,6 +83,9 @@ export async function GET(
       plan_ended_at: subscriptionState === 'active' ? null : expiresAt?.toISOString() ?? null,
       offline_at: offlineAt?.toISOString() ?? null,
       subscription_type: subscription?.subscription_type || 'essential',
+      // Starter is a menu page only: no orders, bookings or AI assistant
+      orders_enabled: planTakesOrders(subscription?.subscription_type),
+      ai_assistant_enabled: planHasAiAssistant(subscription?.subscription_type),
     },
   });
 }

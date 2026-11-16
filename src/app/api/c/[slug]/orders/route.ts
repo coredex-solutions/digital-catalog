@@ -13,6 +13,7 @@ import { notifyNewOrder } from "@/lib/push";
 import { getSiteUrl } from "@/lib/utils/base-url";
 import { findCouponByCode } from "@/lib/orders/coupons-store";
 import { normalizeCode } from "@/lib/orders/coupons";
+import { planTakesOrders } from "@/lib/plans";
 
 /** The customer's status page for an order (path only; null for orders saved before it existed) */
 function statusPath(slug: string, order: SavedOrder): string | null {
@@ -114,7 +115,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (existing) return reply(existing, 200);
   }
 
-  if (data.isExpired) return NextResponse.json({ error: "This page is not taking orders", code: "closed" }, { status: 403 });
+  // An ended plan, or Starter (a menu page only), takes no orders or bookings
+  if (data.isExpired || !planTakesOrders(data.subscriptionType)) {
+    return NextResponse.json({ error: "This page is not taking orders", code: "closed" }, { status: 403 });
+  }
 
   // A typed coupon code is looked up here; the rules are checked with the order
   const code = normalizeCode(body.couponCode);

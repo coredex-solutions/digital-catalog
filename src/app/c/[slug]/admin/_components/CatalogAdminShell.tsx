@@ -31,6 +31,9 @@ const en = {
   pausedShort: "Your page is paused.",
   pausedShortBody: "It is offline and changes can't be saved until you renew.",
   renew: "Renew plan",
+  starterShort: "Your Starter plan shows your menu only.",
+  starterBody: "Customers can't order or book yet. Move to Essential to take orders, bookings, coupons and loyalty.",
+  upgrade: "See plans",
   endedShort: "Your plan has ended.",
   endedBody: (date: string) => `Your page stays online until ${date}. Renew before then to keep it running.`,
   changes: (n: number, lang: AdminLang) => plural(lang, n, { one: "# unpublished change.", other: "# unpublished changes." }),
@@ -50,6 +53,9 @@ const ar: typeof en = {
   pausedShort: "صفحتك متوقفة.",
   pausedShortBody: "هي غير متاحة للزبائن ولا يمكن حفظ التعديلات حتى تجدّد باقتك.",
   renew: "تجديد الباقة",
+  starterShort: "باقة Starter تعرض قائمتك فقط.",
+  starterBody: "لا يمكن للزبائن الطلب أو الحجز بعد. انتقل إلى Essential لتستقبل الطلبات والحجوزات ورموز الخصم وبطاقة الولاء.",
+  upgrade: "عرض الباقات",
   endedShort: "انتهت باقتك.",
   endedBody: (date) => `تبقى صفحتك متاحة حتى ${date}. جدّد قبل ذلك لتبقى تعمل.`,
   changes: (n, lang) =>
@@ -100,6 +106,8 @@ interface Features {
   plan_ended_at?: string | null;
   offline_at?: string | null;
   subscription_type: string;
+  /** False on Starter: customers can't order or book */
+  orders_enabled?: boolean;
 }
 
 interface AdminUser {
@@ -163,6 +171,10 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
   const [pausedDismissed, setPausedDismissed] = useState(false);
   const onBillingPage = pathname?.startsWith(`/c/${slug}/admin/billing`) ?? false;
   const showPausedModal = !!features?.is_expired && !pausedDismissed && !onBillingPage;
+  // Starter is a menu page only: say so where owners would look for orders and bookings
+  const orderPages = ["orders", "offers", "customers", "calendar", "settings"];
+  const showStarterNotice = features?.orders_enabled === false && !features.is_expired
+    && orderPages.some((page) => pathname?.startsWith(`/c/${slug}/admin/${page}`));
 
   // One stable function, so pages that load data with it don't refetch on every shell render.
   // The APIs answer in English; in Arabic, their error and message texts are translated here.
@@ -385,6 +397,25 @@ export function CatalogAdminShell({ children }: CatalogAdminShellProps) {
         <CatalogAdminSidebar catalog={catalog} features={features} newOrders={newOrders} />
         <div className="flex-1 min-w-0 lg:ms-64 relative min-h-screen pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0">
           <CatalogAdminTopBar slug={slug} catalogName={catalog.name} />
+
+          {showStarterNotice && (
+            <div
+              role="status"
+              className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-ui-line bg-ui-surface px-4 py-3 sm:px-6 lg:px-10"
+            >
+              <CreditCard className="h-5 w-5 shrink-0 text-ui-primary" aria-hidden />
+              <p className="min-w-0 flex-1 text-sm text-ui-ink">
+                <span className="font-semibold">{t.starterShort}</span>{" "}
+                <span className="text-ui-muted">{t.starterBody}</span>
+              </p>
+              <Link
+                href={`/c/${slug}/admin/billing`}
+                className="inline-flex min-h-11 items-center gap-2 rounded-control bg-ui-primary px-4 text-sm font-semibold text-ui-primary-fg hover:bg-ui-primary-hover"
+              >
+                {t.upgrade}
+              </Link>
+            </div>
+          )}
 
           {features?.is_expired && !showPausedModal && (
             <div
