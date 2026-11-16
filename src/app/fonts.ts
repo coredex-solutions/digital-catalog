@@ -8,16 +8,17 @@ export const inter = Inter({
   display: "swap",
 });
 
-// Preloaded: nearly every page shows Arabic letters from the start (the Arabic pages, and the
-// "عربي" / "العربية" language buttons on English ones), so the file is downloaded anyway. Asking
-// for it early stops Arabic text being laid out once in a stand-in font and again when it arrives.
+// Not preloaded: the file is 160 KB, and a preload makes every page download it, English ones
+// included, where it competes with the cover photo on a slow connection. The browser fetches it
+// by itself as soon as a page lays out Arabic text. The "عربي" language buttons on English pages
+// use the phone's own font (`font-system`) so they don't pull it in.
 // No metric-adjusted fallback of its own: that is a local Arial, which would catch characters
 // meant for the fonts after it.
 export const notoArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
   weight: ["400", "500", "600"],
   display: "swap",
-  preload: true,
+  preload: false,
   adjustFontFallback: false,
 });
 
