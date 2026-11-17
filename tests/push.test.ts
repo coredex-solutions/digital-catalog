@@ -73,6 +73,9 @@ const order: SavedOrder = {
   discount_currency: null,
   coupon_code: null,
   check_out: null,
+  staff_id: null,
+  staff_name: null,
+  reminded_at: null,
   created_at: "2026-11-05 10:00:00",
   updated_at: "2026-11-05 10:00:00",
 };

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, X } from "lucide-react";
 import { useAdminLang, useCopy, useFormat } from "../../_lib/i18n";
 import { MAX_BLOCKED_DATES, MAX_CAPACITY, SLOT_STEPS, type BookingConfig } from "@/lib/orders/slots";
+import { StaffEditor } from "./StaffEditor";
 
 /** As edited: numbers may be text while typing; the server cleans them (lib/orders/slots.ts) */
 export type BookingTimesDraft = Omit<BookingConfig, "capacity" | "deposit"> & { capacity: number | string; deposit: number | string | null };
@@ -18,6 +19,7 @@ const en = {
   minutes: (n: number) => `${n} minutes`,
   capacity: "Bookings at the same time",
   capacityHint: "For example the number of tables, chairs or staff.",
+  capacityStaff: "Each person on your staff takes one booking at a time (see Staff below).",
   lead: "Earliest booking",
   leadOptions: { 0: "Any time", 30: "30 minutes ahead", 60: "1 hour ahead", 120: "2 hours ahead", 240: "4 hours ahead", 1440: "1 day ahead" } as Record<number, string>,
   ahead: "Customers can book up to",
@@ -42,6 +44,7 @@ const ar: typeof en = {
   minutes: (n) => `${n} دقيقة`,
   capacity: "عدد الحجوزات في الوقت نفسه",
   capacityHint: "مثلاً عدد الطاولات أو الكراسي أو الموظفين.",
+  capacityStaff: "يأخذ كل شخص في فريقك حجزاً واحداً في الوقت نفسه (انظر «الفريق» أدناه).",
   lead: "أقرب موعد للحجز",
   leadOptions: { 0: "في أي وقت", 30: "قبل 30 دقيقة", 60: "قبل ساعة", 120: "قبل ساعتين", 240: "قبل 4 ساعات", 1440: "قبل يوم" },
   ahead: "يمكن الحجز حتى",
@@ -84,6 +87,8 @@ export function BookingTimesEditor({
       </select>
     </div>
   );
+  // With staff set up (services), each person takes one booking at a time instead
+  const byPerson = forServices && (value.staff ?? []).some((person) => person.active);
   // Keep a saved value that isn't in the usual list
   const withCurrent = (list: number[], current: number) => [...new Set([...list, current])].sort((a, b) => a - b);
 
@@ -106,6 +111,12 @@ export function BookingTimesEditor({
         <>
           <div className="grid gap-4 sm:grid-cols-2">
             {select("booking-step", t.step, value.slot_minutes, SLOT_STEPS.map((n) => [n, t.minutes(n)]), "slot_minutes")}
+            {byPerson ? (
+              <div className="space-y-1.5">
+                <p className="text-sm font-semibold text-ui-ink">{t.capacity}</p>
+                <p className="text-sm text-ui-muted">{t.capacityStaff}</p>
+              </div>
+            ) : (
             <div className="space-y-1.5">
               <label htmlFor="booking-capacity" className="block text-sm font-semibold text-ui-ink">{t.capacity}</label>
               <input
@@ -122,12 +133,15 @@ export function BookingTimesEditor({
               />
               <p id="booking-capacity-hint" className="text-xs text-ui-muted">{t.capacityHint}</p>
             </div>
+            )}
             {select("booking-lead", t.lead, value.lead_minutes, withCurrent([0, 30, 60, 120, 240, 1440], value.lead_minutes).map((n) => [n, t.leadOptions[n] ?? t.minutes(n)]), "lead_minutes")}
             {select("booking-ahead", t.ahead, value.max_days, withCurrent([7, 14, 30, 60, 90], value.max_days).map((n) => [n, t.days(n)]), "max_days")}
             {forServices
               ? select("booking-service", t.serviceLength, value.default_minutes, withCurrent([15, 30, 45, 60, 90, 120], value.default_minutes).map((n) => [n, t.minutes(n)]), "default_minutes")
               : select("booking-table", t.tableLength, value.table_minutes, withCurrent([60, 90, 120, 150, 180], value.table_minutes).map((n) => [n, t.minutes(n)]), "table_minutes")}
           </div>
+
+          {forServices && <StaffEditor value={value.staff ?? []} onChange={(next) => set("staff", next)} />}
 
           <div className="space-y-2">
             <p className="text-sm font-semibold text-ui-ink">{t.closedDays}</p>

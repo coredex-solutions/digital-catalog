@@ -9,7 +9,8 @@ import { readVariants } from "../catalog/dish-info";
 import type { PriceConfig } from "../catalog/price";
 import { feeLine, quoteDelivery, zoneName, type DeliveryConfig } from "./delivery";
 import { PAY_AT_TABLE, type PaymentConfig, type PaymentMethod } from "./payment";
-import { fitsSlot, requestMinutes, type BeirutNow, type BookingConfig, type HoursRow } from "./slots";
+import { fitsSlot, requestMinutes, staffChoices, staffForTime, usesStaff, type BeirutNow, type BookingConfig, type HoursRow } from "./slots";
+import { toPick, type StaffPick } from "./staff";
 import { couponDiscount, couponUsable, discountLine, normalizeCode, type Coupon, type CouponProblem } from "./coupons";
 import { checkStayDates, freeUnits, stayLinePrice, stayNights, unitsOf, MAX_GUESTS, type StayConfig, type StayDateProblem } from "./stays";
 
@@ -119,6 +120,11 @@ export interface ValidOrder {
   checkOut: string | null;
   /** Stays: rooms asked per item and how many the item has, for the "still free" check when saving */
   units: { itemId: string; quantity: number; count: number }[] | null;
+  /**
+   * Appointments booked by person: who can take it, in order of preference (the one asked for, or
+   * everyone free for "anyone"). Saving gives it to the first one still free. Null = no staff.
+   */
+  staff: StaffPick[] | null;
 }
 
 /**
@@ -251,6 +257,7 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
         clientKey,
         checkOut: null,
         units: null,
+        staff: null,
       },
     };
   }
@@ -372,13 +379,22 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
 
   // Appointments with set times: the time must be one of them (still free is checked when saving)
   let durationMinutes: number | null = null;
+  let staff: StaffPick[] | null = null;
   const slotted = ctx.module.schedule === "required" && ctx.booking.enabled && requestedFor !== null;
   if (slotted) {
     durationMinutes = requestMinutes(
       lines.map((line) => ({ duration_minutes: byId.get(line.item_id)?.duration_minutes ?? null, quantity: line.quantity })),
       ctx.booking
     );
-    if (!fitsSlot(ctx.booking, ctx.hours, requestedFor!.slice(0, 10), requestedFor!.slice(11), durationMinutes, ctx.now)) {
+    const date = requestedFor!.slice(0, 10);
+    const time = requestedFor!.slice(11);
+    if (usesStaff(ctx.booking) && !ctx.module.nights) {
+      // By person: someone who does all these services (or the one asked for) must work at that time
+      const asked = typeof input.staffId === "string" ? input.staffId : null;
+      const people = staffForTime(ctx.booking, ctx.hours, staffChoices(ctx.booking, [...wantedPerItem.keys()], asked), date, time, durationMinutes, ctx.now);
+      if (people.length === 0) return fail("slot_unavailable", "This time can't be booked", "when");
+      staff = people.map(toPick);
+    } else if (!fitsSlot(ctx.booking, ctx.hours, date, time, durationMinutes, ctx.now)) {
       return fail("slot_unavailable", "This time can't be booked", "when");
     }
   }
@@ -427,7 +443,7 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
       paymentMethod,
       totalUsd: totalInUsd([...lines, ...feeLine(deliveryFee, deliveryCurrency), ...discountLine(discount, discountCurrency)], ctx.priceConfig),
       durationMinutes,
-      capacity: slotted ? ctx.booking.capacity : null,
+      capacity: slotted ? (staff ? 1 : ctx.booking.capacity) : null,
       discount,
       discountCurrency,
       couponId: discount !== null ? ctx.coupon!.id : null,
@@ -435,6 +451,7 @@ export function validateOrder(body: unknown, ctx: OrderContext): OrderValidation
       clientKey,
       checkOut: stay ? stay.checkOut : null,
       units,
+      staff,
     },
   };
 }

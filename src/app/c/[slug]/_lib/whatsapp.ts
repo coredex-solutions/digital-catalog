@@ -69,6 +69,8 @@ export interface OrderDetails {
   checkOut?: string | null;
   /** Stays: how many guests */
   guests?: number | null;
+  /** Appointments booked by person: who it is with */
+  staff?: string | null;
 }
 
 /** "Fri 12 Jun" / "الجمعة 12 حزيران": a stay's dates, with Western digits */
@@ -112,6 +114,7 @@ export function buildOrderMessage(
     if (details.area) out.push(`*${t.msgArea}:* ${details.area}`);
   }
   if (details.when && !stay) out.push(`*${t.msgWhen}:* ${formatWhen(details.when)}`);
+  if (details.staff) out.push(`*${t.msgWith}:* ${details.staff}`);
   out.push(`*${t.msgName}:* ${details.name}`);
   out.push(`*${t.msgPhone}:* ${details.phone}`);
   out.push("");
@@ -180,7 +183,7 @@ export function buildCustomerUpdate(
 
 /** A reminder of a booking or appointment, in the customer's language: "Sat 8 Nov" at "14:30" */
 export function buildReminder(
-  order: { requested_for: string | null; lang: string | null },
+  order: { requested_for: string | null; lang: string | null; staff_name?: string | null },
   businessName: string,
   module: ModuleId
 ): string | null {
@@ -193,7 +196,7 @@ export function buildReminder(
     month: "long",
     timeZone: "UTC",
   }).format(new Date(`${order.requested_for.slice(0, 10)}T12:00:00Z`));
-  return t.custReminder(businessName, date, order.requested_for.slice(11, 16));
+  return t.custReminder(businessName, date, order.requested_for.slice(11, 16), order.staff_name);
 }
 
 export interface ReservationDetails {

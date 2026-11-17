@@ -33,6 +33,15 @@ const EXACT: Record<string, string> = {
 
   // Orders
   "Order not found": "الطلب غير موجود.",
+  // Appointments calendar
+  "Only businesses that take appointments have this calendar": "هذا التقويم للأعمال التي تستقبل مواعيد فقط.",
+  "Choose a date and time": "اختر التاريخ والوقت.",
+  "Choose a day from today on": "اختر يوماً من اليوم فصاعداً.",
+  "Choose at least one service": "اختر خدمة واحدة على الأقل.",
+  "No one on your staff does all of these services": "لا أحد في فريقك يقدّم كل هذه الخدمات.",
+  "This person doesn't do all of these services": "هذا الشخص لا يقدّم كل هذه الخدمات.",
+  "This person is already booked at that time": "هذا الشخص محجوز في هذا الوقت.",
+  "This time is already fully booked": "هذا الوقت محجوز بالكامل.",
   "Stock must be a whole number of 0 or more": "المخزون يجب أن يكون عدداً صحيحاً يساوي 0 أو أكثر.",
   "The old price must be a number of 0 or more": "السعر القديم يجب أن يكون رقماً يساوي 0 أو أكثر.",
   "Duration must be between 5 minutes and 24 hours": "المدة يجب أن تكون بين 5 دقائق و24 ساعة.",

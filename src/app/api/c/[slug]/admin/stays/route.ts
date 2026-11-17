@@ -174,6 +174,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     clientKey: null,
     checkOut,
     units: [{ itemId: unit.id, quantity, count: unit.unit_count }],
+    staff: null,
   };
 
   const saved = await createOrder(catalogId, order, priceConfig, "admin", "confirmed");

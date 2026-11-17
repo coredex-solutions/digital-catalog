@@ -51,6 +51,7 @@ const en = {
   table: "Table",
   guests: (n: number, lang: AdminLang) => plural(lang, n, { one: "1 guest", other: "# guests" }),
   when: "For",
+  withStaff: "with",
   note: "Note",
   total: "Total",
   emptyNew: "No new orders. New ones appear here by themselves.",
@@ -119,6 +120,7 @@ const ar: typeof en = {
   table: "الطاولة",
   guests: (n, lang) => plural(lang, n, { one: "شخص واحد", two: "شخصان", few: "# أشخاص", many: "# شخصاً", other: "# شخص" }),
   when: "الموعد",
+  withStaff: "مع",
   note: "ملاحظة",
   total: "المجموع",
   emptyNew: "لا طلبات جديدة. تظهر الطلبات الجديدة هنا تلقائياً.",
@@ -297,6 +299,12 @@ function OrderCard({
           <li className="flex items-center gap-2">
             <CalendarClock className="h-4 w-4 text-ui-muted" aria-hidden />
             {t.when}: <strong dir="ltr">{order.requested_for}</strong>
+            {order.staff_name && (
+              <>
+                {" · "}
+                {t.withStaff} <strong>{order.staff_name}</strong>
+              </>
+            )}
           </li>
         )}
         {order.party_size != null && (

@@ -47,6 +47,8 @@ type Demo = {
     deliveryNote?: { en: string; ar: string };
     /** Stays: catalog_settings.stay_config */
     stayConfig?: Record<string, unknown>;
+    /** Set booking times (and staff, for services): catalog_settings.booking_config */
+    bookingConfig?: Record<string, unknown>;
     categories: { id: string; en: string; ar: string }[];
     items: DemoItem[];
 };
@@ -110,6 +112,15 @@ const DEMOS: Demo[] = [
         name: { en: 'Lina Beauty Studio', ar: 'ستوديو لينا للتجميل' },
         description: { en: 'Hair, nails and skin care. A Core Commerce demo services page.', ar: 'شعر وأظافر وعناية بالبشرة. صفحة خدمات تجريبية من Core Commerce.' },
         orderTypes: 'at_location,home_visit', color: '#9B2C6B', hours: [9, 19], closedDays: ['Sunday'],
+        // Three people, so the demo shows choosing a person and each one's free times
+        bookingConfig: {
+            enabled: true, slot_minutes: 30, capacity: 1, lead_minutes: 60, max_days: 30, default_minutes: 30,
+            staff: [
+                { id: 'demo-lina', name_en: 'Lina', name_ar: 'لينا', service_ids: [] },
+                { id: 'demo-rita', name_en: 'Rita', name_ar: 'ريتا', service_ids: ['svc-cut', 'svc-colour'], days_off: [1] },
+                { id: 'demo-joanna', name_en: 'Joanna', name_ar: 'جوانا', service_ids: ['svc-manicure', 'svc-pedicure', 'svc-facial'], from: '12:00', to: '19:00' },
+            ],
+        },
         categories: [
             { id: 'svc-hair', en: 'Hair', ar: 'الشعر' },
             { id: 'svc-nails', en: 'Nails', ar: 'الأظافر' },
@@ -225,6 +236,9 @@ async function seed(demo: Demo) {
         })),
         ...(demo.stayConfig
             ? [{ sql: 'UPDATE catalog_settings SET stay_config = ? WHERE catalog_id = ?', args: [JSON.stringify(demo.stayConfig), demo.id] }]
+            : []),
+        ...(demo.bookingConfig
+            ? [{ sql: 'UPDATE catalog_settings SET booking_config = ? WHERE catalog_id = ?', args: [JSON.stringify(demo.bookingConfig), demo.id] }]
             : []),
         ...DAYS.map((day) => ({
             sql: `INSERT INTO operating_hours (catalog_id, day_name, open_hour, close_hour, is_closed) VALUES (?, ?, ?, ?, ?)`,

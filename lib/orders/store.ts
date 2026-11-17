@@ -9,6 +9,7 @@ import { getDb } from "../db/client";
 import type { PriceConfig } from "../catalog/price";
 import { stockToReserve, type OrderLineSnapshot, type ValidOrder } from "./validate";
 import type { StayBooking } from "./stays";
+import { staffName, type StaffPick } from "./staff";
 
 export const ORDER_STATUSES = ["new", "confirmed", "ready", "completed", "cancelled"] as const;
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
@@ -56,6 +57,11 @@ export interface SavedOrder {
   coupon_code: string | null;
   /** Stays: the day guests leave (check-in is the date in requested_for, guests in party_size) */
   check_out: string | null;
+  /** Appointments booked by person: who it is with (the name as it was when booked) */
+  staff_id: string | null;
+  staff_name: string | null;
+  /** When the team sent the customer a reminder */
+  reminded_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -99,6 +105,9 @@ function toOrder(row: Record<string, unknown>): SavedOrder {
     discount_currency: str(row.discount_currency),
     coupon_code: str(row.coupon_code),
     check_out: str(row.check_out),
+    staff_id: str(row.staff_id),
+    staff_name: str(row.staff_name),
+    reminded_at: str(row.reminded_at),
     created_at: String(row.created_at ?? ""),
     updated_at: String(row.updated_at ?? ""),
   };
@@ -158,14 +167,39 @@ export async function findByClientKey(catalogId: string, clientKey: string): Pro
 /** Bookings of a kind on a date (not cancelled), for working out the free times */
 export async function takenBookings(catalogId: string, kind: "booking" | "request", date: string, fallbackMinutes: number) {
   const result = await getDb().execute({
-    sql: `SELECT requested_for, duration_minutes FROM orders
+    sql: `SELECT requested_for, duration_minutes, staff_id FROM orders
           WHERE catalog_id = ? AND kind = ? AND status != 'cancelled' AND requested_for >= ? AND requested_for < ?`,
     args: [catalogId, kind, `${date} 00:00`, `${date} 99:99`],
   });
   return result.rows.map((row) => ({
     start: String(row.requested_for),
     minutes: row.duration_minutes == null ? fallbackMinutes : Number(row.duration_minutes),
+    staff_id: row.staff_id == null ? null : String(row.staff_id),
   }));
+}
+
+/** Appointments (service requests, not cancelled, not stays) on a date, for the calendar */
+export async function appointmentsOn(catalogId: string, date: string): Promise<(SavedOrder & { source: string })[]> {
+  const result = await getDb().execute({
+    sql: `SELECT * FROM orders
+          WHERE catalog_id = ? AND kind = 'request' AND check_out IS NULL AND status != 'cancelled'
+            AND requested_for >= ? AND requested_for < ?
+          ORDER BY requested_for ASC, number ASC LIMIT 300`,
+    args: [catalogId, `${date} 00:00`, `${date} 99:99`],
+  });
+  return rowsOf(result).map((row) => ({ ...toOrder(row), source: String(row.source ?? "page") }));
+}
+
+/** The people in their order, the ones with the fewest appointments that day first (ties keep the order) */
+async function leastBusyFirst(catalogId: string, people: StaffPick[], date: string): Promise<StaffPick[]> {
+  const result = await getDb().execute({
+    sql: `SELECT staff_id, COUNT(*) AS n FROM orders
+          WHERE catalog_id = ? AND staff_id IS NOT NULL AND status != 'cancelled' AND requested_for >= ? AND requested_for < ?
+          GROUP BY staff_id`,
+    args: [catalogId, `${date} 00:00`, `${date} 99:99`],
+  });
+  const load = new Map(result.rows.map((row) => [String(row.staff_id), Number(row.n)]));
+  return [...people].sort((a, b) => (load.get(a.id) ?? 0) - (load.get(b.id) ?? 0));
 }
 
 /** Stays that overlap the nights from `from` to `to` (not cancelled), for working out free rooms */
@@ -187,6 +221,8 @@ export async function stayBookings(catalogId: string, from: string, to: string):
 /**
  * Save a validated order and take its stock. A repeated request (same client key) returns the
  * first order. Fails with stock_changed when an item no longer has enough left.
+ * Appointments booked by person go to the first of `order.staff` still free at that time (for
+ * "anyone", the least busy that day first); slot_taken when none is.
  */
 export async function createOrder(
   catalogId: string,
@@ -200,21 +236,50 @@ export async function createOrder(
     const existing = await findByClientKey(catalogId, order.clientKey);
     if (existing) return { ok: true, order: existing, repeated: true };
   }
+  if (!order.staff || order.staff.length === 0) return insertOrder(catalogId, order, priceConfig, source, status, null);
 
+  const people = order.staff.length > 1 && order.requestedFor ? await leastBusyFirst(catalogId, order.staff, order.requestedFor.slice(0, 10)) : order.staff;
+  for (const person of people) {
+    const result = await insertOrder(catalogId, order, priceConfig, source, status, person);
+    if (result.ok || result.code !== "slot_taken") return result;
+  }
+  return { ok: false, code: "slot_taken" };
+}
+
+async function insertOrder(
+  catalogId: string,
+  order: ValidOrder,
+  priceConfig: PriceConfig,
+  source: "page" | "ai" | "admin",
+  status: "new" | "confirmed",
+  person: StaffPick | null
+): Promise<CreateResult> {
   const id = uuidv4();
   const reserve = stockToReserve(order.lines);
   const statements: InStatement[] = [];
 
   // Set booking times: the order is only inserted while fewer than `capacity` bookings of the
-  // same kind overlap its time, checked inside the INSERT so two customers can't take the last one
+  // same kind overlap its time, checked inside the INSERT so two customers can't take the last one.
+  // Booked by person: only that person's appointments count, and they take one at a time.
   const slot =
     order.capacity !== null && order.requestedFor && order.durationMinutes
       ? {
           sql: `(SELECT COUNT(*) FROM orders
                  WHERE catalog_id = ? AND kind = ? AND status != 'cancelled' AND requested_for IS NOT NULL
+                   AND (? IS NULL OR staff_id = ?)
                    AND datetime(requested_for) < datetime(?, '+' || ? || ' minutes')
                    AND datetime(requested_for, '+' || COALESCE(duration_minutes, ?) || ' minutes') > datetime(?)) < ?`,
-          args: [catalogId, order.kind, order.requestedFor, order.durationMinutes, order.durationMinutes, order.requestedFor, order.capacity],
+          args: [
+            catalogId,
+            order.kind,
+            person?.id ?? null,
+            person?.id ?? null,
+            order.requestedFor,
+            order.durationMinutes,
+            order.durationMinutes,
+            order.requestedFor,
+            person ? 1 : order.capacity,
+          ],
         }
       : { sql: "1", args: [] };
   // Stays: for each room asked, the rooms already taken on any of its nights plus this booking
@@ -248,10 +313,10 @@ export async function createOrder(
             table_label, address, area, requested_for, party_size, lines, price_config, total_usd,
             note, lang, source, stock_reserved, client_key, delivery_fee, delivery_currency,
             payment_method, public_token, duration_minutes, discount, discount_currency, coupon_code,
-            check_out, created_at, updated_at
+            check_out, staff_id, staff_name, created_at, updated_at
           ) SELECT
             ?, ?, (SELECT COALESCE(MAX(number), 0) + 1 FROM orders WHERE catalog_id = ?), ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now')
           WHERE ${slot.sql} AND ${coupon.sql} AND ${stay.sql}
           RETURNING *`,
     args: [
@@ -285,6 +350,8 @@ export async function createOrder(
       order.discountCurrency,
       order.couponCode,
       order.checkOut,
+      person?.id ?? null,
+      person ? staffName(person, order.lang) || null : null,
       ...slot.args,
       ...coupon.args,
       ...stay.args,

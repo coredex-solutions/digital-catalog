@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useCatalog } from "../../_providers/CatalogProvider";
 import { beirutNow, openingFor, type BookingConfig, type SlotsResult } from "@/lib/orders/slots";
+import { worksOn, type StaffMember } from "@/lib/orders/staff";
 import { cn } from "@/utils/helpers";
 import { inputClass } from "./form-parts";
 
@@ -19,6 +20,8 @@ function addDays(date: string, days: number): string {
 /**
  * Set booking times: a row of days, then the free times on the chosen day (from the slots API,
  * so times already booked don't show). `minutes` is the appointment's length (ignored for tables).
+ * Booking by person: `staff` holds the people asked for (one, or everyone for "anyone") and the
+ * chosen services; days none of them work can't be chosen.
  */
 export function SlotPicker({
   config,
@@ -28,6 +31,7 @@ export function SlotPicker({
   onChange,
   error,
   refreshKey = 0,
+  staff,
 }: {
   config: BookingConfig;
   date: string;
@@ -37,6 +41,7 @@ export function SlotPicker({
   error?: string;
   /** Bump to load the times again (e.g. after a time was just taken) */
   refreshKey?: number;
+  staff?: { people: StaffMember[]; asked: string; itemIds: string[] };
 }) {
   const { catalog, operatingHours, lang, t } = useCatalog();
   const [result, setResult] = useState<SlotsResult | { state: "loading" } | { state: "failed" }>({ state: "loading" });
@@ -49,18 +54,23 @@ export function SlotPicker({
     return Array.from({ length: count }, (_, i) => {
       const value = addDays(today, i);
       const d = new Date(`${value}T12:00:00Z`);
-      const closed = config.blocked_dates.includes(value) || openingFor(operatingHours, value) === null;
+      const closed =
+        config.blocked_dates.includes(value) ||
+        openingFor(operatingHours, value) === null ||
+        (staff !== undefined && !staff.people.some((person) => worksOn(person, value)));
       const top = i === 0 ? t.slotsToday : i === 1 ? t.slotsTomorrow : new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(d);
       const bottom = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", timeZone: "UTC" }).format(d);
       return { value, top, bottom, closed };
     });
-  }, [config, operatingHours, lang, t]);
+  }, [config, operatingHours, lang, t, staff]);
 
-  // Start on the first open day
-  const chosen = date || days.find((d) => !d.closed)?.value || "";
+  // Start on the first open day (and move off a day the newly chosen person doesn't work)
+  const current = days.find((d) => d.value === date);
+  const chosen = (current && !current.closed ? date : "") || days.find((d) => !d.closed)?.value || "";
   useEffect(() => {
-    if (!date && chosen) onChange({ date: chosen, time: "" });
+    if (chosen && date !== chosen) onChange({ date: chosen, time: "" });
   }, [date, chosen, onChange]);
+  const staffParams = staff ? `${staff.asked}|${staff.itemIds.join(",")}` : "";
 
   useEffect(() => {
     if (!chosen) return;
@@ -68,6 +78,11 @@ export function SlotPicker({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- shows the spinner while the day's times load
     setResult({ state: "loading" });
     const params = new URLSearchParams({ date: chosen, minutes: String(Math.round(minutes || config.default_minutes)) });
+    if (staffParams) {
+      const [asked, items] = staffParams.split("|");
+      params.set("staff", asked);
+      params.set("items", items);
+    }
     fetch(`/api/c/${catalog.slug}/slots/?${params}`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data: SlotsResult | { state: "off" }) => {
@@ -78,7 +93,7 @@ export function SlotPicker({
     return () => {
       cancelled = true;
     };
-  }, [catalog.slug, chosen, minutes, config.default_minutes, refreshKey]);
+  }, [catalog.slug, chosen, minutes, config.default_minutes, refreshKey, staffParams]);
 
   // A time that is no longer free is cleared
   useEffect(() => {
@@ -149,7 +164,7 @@ export function SlotPicker({
           </div>
         ) : (
           <p className="rounded-control bg-menu-subtle px-4 py-3 text-sm text-menu-muted">
-            {result.state === "failed" ? t.slotsFailed : t.slotsNone}
+            {result.state === "failed" ? t.slotsFailed : result.state === "closed" && result.reason === "no_staff" ? t.noStaffForServices : t.slotsNone}
           </p>
         )}
       </div>

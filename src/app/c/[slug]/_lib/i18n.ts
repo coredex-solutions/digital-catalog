@@ -137,6 +137,7 @@ const en = {
   msgGuests: "Guests",
   msgOrderNumber: "Order",
   msgWhen: "When",
+  msgWith: "With",
   // Order types beyond the restaurant ones
   pickup: "Pickup",
   at_location: "At the shop",
@@ -232,10 +233,15 @@ const en = {
   slotsNone: "No free times on this day. Try another day.",
   slotsFailed: "Couldn't load the times. Check your connection.",
   slotTaken: "That time was just booked. Please choose another.",
+  pickStaff: "Who would you like?",
+  anyStaff: "Anyone",
+  withStaff: (name: string) => `With ${name}`,
+  noStaffForServices: "No one here does all of these services in one visit. Please book them separately.",
   depositNote: (amount: string) => `A deposit of ${amount} confirms your booking.`,
   custDepositWhish: (amount: string, phone: string) => `To confirm, send the ${amount} deposit on Whish to ${phone}.`,
   custDepositOmt: (amount: string, to: string) => `To confirm, send the ${amount} deposit by OMT to ${to}.`,
-  custReminder: (business: string, date: string, time: string) => `Reminder: your booking at ${business} is on ${date} at ${time}. See you soon!`,
+  // staff: who an appointment is with (services with staff set up)
+  custReminder: (business: string, date: string, time: string, staff?: string | null) => `Reminder: your booking at ${business} is on ${date} at ${time}${staff ? ` with ${staff}` : ""}. See you soon!`,
   // Coupon codes
   msgDiscount: "Discount",
   couponLink: "Have a discount code?",
@@ -433,6 +439,7 @@ const ar: Dictionary = {
   msgGuests: "عدد الأشخاص",
   msgOrderNumber: "الطلب",
   msgWhen: "الموعد",
+  msgWith: "مع",
   pickup: "استلام من المحل",
   at_location: "في المحل",
   home_visit: "زيارة منزلية",
@@ -517,10 +524,14 @@ const ar: Dictionary = {
   slotsNone: "لا أوقات متاحة في هذا اليوم. جرّب يوماً آخر.",
   slotsFailed: "تعذّر تحميل الأوقات. تحقق من الاتصال.",
   slotTaken: "حُجز هذا الوقت للتو. يرجى اختيار وقت آخر.",
+  pickStaff: "مع من تودّ الحجز؟",
+  anyStaff: "أيّ شخص متاح",
+  withStaff: (name) => `مع ${name}`,
+  noStaffForServices: "لا أحد هنا يقدّم كل هذه الخدمات في زيارة واحدة. يرجى حجزها كلّاً على حدة.",
   depositNote: (amount: string) => `يُثبَّت حجزك بعربون قدره ${amount}.`,
   custDepositWhish: (amount: string, phone: string) => `لتثبيت الحجز، حوّل العربون ${amount} عبر Whish إلى ${phone}.`,
   custDepositOmt: (amount: string, to: string) => `لتثبيت الحجز، حوّل العربون ${amount} عبر OMT إلى ${to}.`,
-  custReminder: (business: string, date: string, time: string) => `تذكير: موعد حجزك لدى ${business} يوم ${date} الساعة ${time}. بانتظارك!`,
+  custReminder: (business: string, date: string, time: string, staff?: string | null) => `تذكير: موعد حجزك لدى ${business} يوم ${date} الساعة ${time}${staff ? ` مع ${staff}` : ""}. بانتظارك!`,
   msgDiscount: "الخصم",
   couponLink: "لديك رمز خصم؟",
   couponLabel: "رمز الخصم",
@@ -745,7 +756,8 @@ const MODULE_COPY: Record<Exclude<ModuleId, "restaurant">, Overrides> = {
         new: (n: number, business: string) => `We received your request #${n} at ${business}.`,
       },
       custTrack: (url: string) => `Follow your request: ${url}`,
-      custReminder: (business: string, date: string, time: string) => `Reminder: your appointment at ${business} is on ${date} at ${time}. See you soon!`,
+      custReminder: (business: string, date: string, time: string, staff?: string | null) =>
+        `Reminder: your appointment at ${business} is on ${date} at ${time}${staff ? ` with ${staff}` : ""}. See you soon!`,
       trackOrder: "Follow your request",
     },
     ar: {
@@ -808,7 +820,8 @@ const MODULE_COPY: Record<Exclude<ModuleId, "restaurant">, Overrides> = {
       },
       custTrack: (url: string) => `تابع طلبك: ${url}`,
       trackOrder: "تابع طلبك",
-      custReminder: (business: string, date: string, time: string) => `تذكير: موعدك لدى ${business} يوم ${date} الساعة ${time}. بانتظارك!`,
+      custReminder: (business: string, date: string, time: string, staff?: string | null) =>
+        `تذكير: موعدك لدى ${business} يوم ${date} الساعة ${time}${staff ? ` مع ${staff}` : ""}. بانتظارك!`,
     },
   },
   stays: {

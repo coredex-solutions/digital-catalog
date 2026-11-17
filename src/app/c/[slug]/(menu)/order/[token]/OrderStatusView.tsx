@@ -31,6 +31,8 @@ export interface PublicOrder {
   party_size: number | null;
   /** Stays: the day guests leave (check-in is the date in requested_for) */
   check_out: string | null;
+  /** Appointments booked by person: who it is with */
+  staff_name?: string | null;
   lines: { name_en: string; name_ar: string; variant_en: string | null; variant_ar: string | null; price: number; currency: string; quantity: number }[];
   price_config: PriceConfig | null;
   delivery_fee: number | null;
@@ -244,6 +246,12 @@ export function OrderStatusView({ order }: { order: PublicOrder }) {
               <div className="flex justify-between gap-3">
                 <dt className="text-menu-muted">{t.msgWhen}</dt>
                 <dd dir="ltr" className="font-semibold">{order.requested_for}</dd>
+              </div>
+            )}
+            {order.staff_name && (
+              <div className="flex justify-between gap-3">
+                <dt className="text-menu-muted">{t.msgWith}</dt>
+                <dd className="font-semibold">{order.staff_name}</dd>
               </div>
             )}
             {order.party_size != null && (

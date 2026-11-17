@@ -11,6 +11,7 @@ import { useModule } from "../_lib/module";
 import { whatsappLink } from "../../_lib/whatsapp";
 import { addDays, nightsBetween } from "@/lib/orders/stays";
 import { clsx } from "clsx";
+import { AppointmentsCalendar } from "./_components/AppointmentsCalendar";
 
 interface Unit {
   id: string;
@@ -519,10 +520,16 @@ function CalendarView() {
   );
 }
 
+/** Stays: rooms by night. Businesses that take appointments: each person's day. */
+function CalendarForModule() {
+  const { module } = useModule();
+  return module.nights ? <CalendarView /> : <AppointmentsCalendar />;
+}
+
 export default function CalendarPage() {
   return (
     <CatalogAdminShell>
-      <CalendarView />
+      <CalendarForModule />
     </CatalogAdminShell>
   );
 }

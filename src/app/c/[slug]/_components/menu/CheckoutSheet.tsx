@@ -14,7 +14,8 @@ import { ADDRESS_ORDER_TYPES } from "@/lib/modules/registry";
 import { formatPrice, formatTotal } from "@/lib/catalog/price";
 import { feeLine, parseDeliveryConfig, quoteDelivery, zoneName } from "@/lib/orders/delivery";
 import { PAY_AT_TABLE, parsePaymentConfig, type PaymentMethod } from "@/lib/orders/payment";
-import { parseBookingConfig, requestMinutes } from "@/lib/orders/slots";
+import { parseBookingConfig, requestMinutes, usesStaff } from "@/lib/orders/slots";
+import { bookableStaff, staffName } from "@/lib/orders/staff";
 import { SlotPicker } from "./SlotPicker";
 import { depositInstructions, Field, inputClass, SavedNotice, todayInBeirut } from "./form-parts";
 import { couponDiscount, discountLine, normalizeCode, type CouponTerms } from "@/lib/orders/coupons";
@@ -166,6 +167,17 @@ export function CheckoutSheet() {
   const useSlots = whenRequired && booking.enabled;
   const appointmentMinutes = requestMinutes(cart, booking);
   const [slotsKey, setSlotsKey] = useState(0);
+  // Booking by person: everyone who does all the chosen services; "any" lets the business choose
+  const byPerson = useSlots && usesStaff(booking) && !module.nights;
+  const cartItemIds = useMemo(() => [...new Set(cart.map((line) => line.id))], [cart]);
+  const staffPool = useMemo(() => (byPerson ? bookableStaff(booking.staff, cartItemIds) : []), [byPerson, booking.staff, cartItemIds]);
+  const [staffChoice, setStaffChoice] = useState("any");
+  const askedStaff = staffPool.length === 1 ? staffPool[0].id : staffPool.some((person) => person.id === staffChoice) ? staffChoice : "any";
+  const pickerStaff = useMemo(
+    () => (byPerson ? { people: askedStaff === "any" ? staffPool : staffPool.filter((person) => person.id === askedStaff), asked: askedStaff, itemIds: cartItemIds } : undefined),
+    [byPerson, askedStaff, staffPool, cartItemIds]
+  );
+  const askedStaffName = askedStaff !== "any" ? staffPool.find((person) => person.id === askedStaff) : undefined;
   const depositText = useSlots ? depositInstructions(booking, payment, priceConfig, lang, t) : null;
 
   // Stays: a deposit as a part of the total, when every room is priced in the same currency
@@ -207,6 +219,7 @@ export function CheckoutSheet() {
         discountCurrency: discount?.currency,
         couponCode: discount?.code,
         paymentMethod,
+        staff: askedStaffName ? staffName(askedStaffName, lang) : undefined,
         ...(module.nights && stay ? { when: `${stay.checkIn} ${stayRules.check_in}`, checkOut: stay.checkOut, guests: stay.guests } : {}),
       },
       priceConfig,
@@ -266,6 +279,7 @@ export function CheckoutSheet() {
       couponCode: discount ? discount.code : undefined,
       date: askWhen ? when.date : "",
       time: askWhen ? when.time : "",
+      staffId: byPerson ? askedStaff : undefined,
       ...(module.nights && stay ? { checkIn: stay.checkIn, checkOut: stay.checkOut, guests: stay.guests } : {}),
       note: notes.trim(),
       lang,
@@ -579,15 +593,46 @@ export function CheckoutSheet() {
 
         {useSlots && (
           <div>
-            <SlotPicker
-              config={booking}
-              date={when.date}
-              time={when.time}
-              minutes={appointmentMinutes}
-              onChange={setWhen}
-              error={errors.when}
-              refreshKey={slotsKey}
-            />
+            {byPerson && staffPool.length > 1 && (
+              <fieldset className="mb-4 min-w-0">
+                <legend className="text-sm font-semibold">{t.pickStaff}</legend>
+                <div className="mt-1.5 flex flex-wrap gap-2" role="radiogroup" aria-label={t.pickStaff}>
+                  {[{ id: "any", label: t.anyStaff }, ...staffPool.map((person) => ({ id: person.id, label: staffName(person, lang) }))].map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={askedStaff === option.id}
+                      onClick={() => {
+                        setStaffChoice(option.id);
+                        setWhen((prev) => ({ ...prev, time: "" }));
+                      }}
+                      className={cn(
+                        "min-h-11 rounded-full border px-4 text-sm",
+                        askedStaff === option.id ? "border-brand bg-brand font-semibold text-brand-fg" : "border-menu-input-border bg-menu-surface"
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+            )}
+            {byPerson && staffPool.length === 1 && <p className="mb-3 text-sm font-semibold">{t.withStaff(staffName(staffPool[0], lang))}</p>}
+            {byPerson && staffPool.length === 0 ? (
+              <p role="alert" className="rounded-control bg-menu-subtle px-4 py-3 text-sm text-menu-muted">{t.noStaffForServices}</p>
+            ) : (
+              <SlotPicker
+                config={booking}
+                date={when.date}
+                time={when.time}
+                minutes={appointmentMinutes}
+                onChange={setWhen}
+                error={errors.when}
+                refreshKey={slotsKey}
+                staff={pickerStaff}
+              />
+            )}
             {depositText && <p className="mt-3 rounded-2xl bg-brand-soft px-4 py-3 text-sm leading-relaxed"><bdi>{depositText}</bdi></p>}
           </div>
         )}

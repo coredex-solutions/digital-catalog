@@ -2,6 +2,9 @@
 // (catalog_settings.booking_config); times come from the opening hours, every slot_minutes, and a
 // time is free while fewer than `capacity` bookings overlap it. Pure, so the page, the slots API
 // and the order check agree. The final "is it still free" check happens when saving (store.ts).
+// With staff set up (staff.ts), each person takes one appointment at a time: see staffSlots.
+
+import { bookableStaff, parseStaffList, staffWindow, worksOn, type StaffMember } from "./staff";
 
 export interface BookingConfig {
   /** Offer set times instead of a free date and time */
@@ -23,6 +26,8 @@ export interface BookingConfig {
   /** Deposit asked to confirm a booking (paid by Whish or OMT); null = none */
   deposit: number | null;
   deposit_currency: "USD" | "LBP";
+  /** The people who take appointments (services only); empty = no staff, `capacity` applies */
+  staff: StaffMember[];
 }
 
 export const SLOT_STEPS = [15, 30, 60] as const;
@@ -40,6 +45,7 @@ export const DEFAULT_BOOKING: BookingConfig = {
   blocked_dates: [],
   deposit: null,
   deposit_currency: "USD",
+  staff: [],
 };
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -76,6 +82,7 @@ export function parseBookingConfig(raw: unknown): BookingConfig {
     blocked_dates: blocked,
     deposit: input.deposit !== null && input.deposit !== "" && Number.isFinite(deposit) && deposit > 0 && deposit < 100_000_000 ? Math.round(deposit * 100) / 100 : null,
     deposit_currency: input.deposit_currency === "LBP" ? "LBP" : "USD",
+    staff: parseStaffList(input.staff),
   };
 }
 
@@ -143,8 +150,8 @@ const toTime = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart
 export type SlotsResult =
   /** The free start times (HH:MM), possibly none */
   | { state: "open"; times: string[] }
-  /** Closed that day, blocked, in the past or too far ahead */
-  | { state: "closed" }
+  /** Closed that day, blocked, in the past or too far ahead; no_staff: nobody does all the chosen services */
+  | { state: "closed"; reason?: "no_staff" }
   /** No opening hours set: the customer picks any time, as without set times */
   | { state: "free" };
 
@@ -159,6 +166,8 @@ export function availableSlots(input: {
   minutes: number;
   now: BeirutNow;
   taken: TakenBooking[];
+  /** A person's working hours (minutes since midnight), within the opening hours */
+  window?: [number, number] | null;
 }): SlotsResult {
   const { config, date, now } = input;
   if (!DATE.test(date)) return { state: "closed" };
@@ -176,7 +185,11 @@ export function availableSlots(input: {
     .map((b) => ({ from: toMinutes(b.start.slice(11, 16)), to: toMinutes(b.start.slice(11, 16)) + b.minutes }));
 
   const times: string[] = [];
-  const [open, close] = opening;
+  let [open, close] = opening;
+  if (input.window) {
+    open = Math.max(open, input.window[0]);
+    close = Math.min(close, input.window[1]);
+  }
   // Times line up on the step from the opening time (9:00, 9:30… or 9:15, 9:45… for 9:15)
   for (let start = open; start + length <= close; start += config.slot_minutes) {
     if (start + ahead * 24 * 60 < earliest) continue;
@@ -199,4 +212,68 @@ export function requestMinutes(lines: { duration_minutes?: number | null; quanti
 export function fitsSlot(config: BookingConfig, hours: HoursRow[], date: string, time: string, minutes: number, now: BeirutNow): boolean {
   const result = availableSlots({ config, hours, date, minutes, now, taken: [] });
   return result.state === "free" || (result.state === "open" && result.times.includes(time.slice(0, 5)));
+}
+
+/** Does this business book appointments by person (set times on, someone active on the staff)? */
+export function usesStaff(config: BookingConfig): boolean {
+  return config.enabled && config.staff.some((person) => person.active);
+}
+
+/** A booking already taken, with who it is with (null: no one, or booked before staff were set up) */
+export interface StaffTakenBooking extends TakenBooking {
+  staff_id: string | null;
+}
+
+/**
+ * Free start times on a date when booking by person: a time shows while at least one of `staff`
+ * (the people asked for, or everyone who does the chosen services) is working and has no
+ * appointment overlapping it. `free` lists who is free at each time.
+ */
+export function staffSlots(input: {
+  config: BookingConfig;
+  hours: HoursRow[];
+  date: string;
+  minutes: number;
+  now: BeirutNow;
+  taken: StaffTakenBooking[];
+  staff: StaffMember[];
+}): SlotsResult & { free?: Record<string, string[]> } {
+  if (input.staff.length === 0) return { state: "closed", reason: "no_staff" };
+  const one = { ...input.config, capacity: 1 };
+  const free: Record<string, string[]> = {};
+  let working = false;
+  for (const person of input.staff) {
+    if (!worksOn(person, input.date)) continue;
+    const result = availableSlots({
+      config: one,
+      hours: input.hours,
+      date: input.date,
+      minutes: input.minutes,
+      now: input.now,
+      taken: input.taken.filter((booking) => booking.staff_id === person.id),
+      window: staffWindow(person),
+    });
+    // No opening hours: the customer picks any time, as without set times
+    if (result.state === "free") return { state: "free" };
+    if (result.state !== "open") continue;
+    working = true;
+    for (const time of result.times) (free[time] ??= []).push(person.id);
+  }
+  if (!working) return { state: "closed" };
+  return { state: "open", times: Object.keys(free).sort(), free };
+}
+
+/** The people (of `staff`) whose hours allow this time; whether they are still free is checked when saving */
+export function staffForTime(config: BookingConfig, hours: HoursRow[], staff: StaffMember[], date: string, time: string, minutes: number, now: BeirutNow): StaffMember[] {
+  return staff.filter((person) => {
+    if (!worksOn(person, date)) return false;
+    const result = availableSlots({ config: { ...config, capacity: 1 }, hours, date, minutes, now, taken: [], window: staffWindow(person) });
+    return result.state === "free" || (result.state === "open" && result.times.includes(time.slice(0, 5)));
+  });
+}
+
+/** The people a customer can choose for these services: everyone who does them all, or the one asked for */
+export function staffChoices(config: BookingConfig, itemIds: string[], asked?: string | null): StaffMember[] {
+  const pool = bookableStaff(config.staff, itemIds);
+  return asked && asked !== "any" ? pool.filter((person) => person.id === asked) : pool;
 }

@@ -141,8 +141,11 @@ export function getAdminNavItems(
   return [
     { key: "dashboard", href: basePath, label: l.dashboard, shortLabel: l.home, icon: LayoutDashboard, exact: true },
     { key: "orders", href: `${basePath}/orders`, label: l.orders, icon: Inbox, badgeKey: "newOrders" },
-    // Stays: which rooms are taken on which nights, and bookings that came by phone
-    ...(module.nights ? [{ key: "calendar" as const, href: `${basePath}/calendar`, label: l.calendar, icon: CalendarDays }] : []),
+    // Stays: which rooms are taken on which nights. Appointments (services): each person's day.
+    // Both take bookings that came by phone.
+    ...(module.nights || module.schedule === "required"
+      ? [{ key: "calendar" as const, href: `${basePath}/calendar`, label: l.calendar, icon: CalendarDays }]
+      : []),
     { key: "customers", href: `${basePath}/customers`, label: l.customers, icon: Contact },
     { key: "offers", href: `${basePath}/offers`, label: l.offers, icon: TicketPercent },
     { key: "publish", href: `${basePath}/publish`, label: l.publish, icon: Rocket },
