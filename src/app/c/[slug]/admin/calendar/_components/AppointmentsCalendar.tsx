@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Bell, Check, ChevronLeft, ChevronRight, Loader2, MessageCircle, Phone, Plus, X } from "lucide-react";
+import { Bell, Check, ChevronLeft, ChevronRight, Hourglass, Loader2, MessageCircle, Phone, Plus, X } from "lucide-react";
 import { clsx } from "clsx";
 import { useCatalogAdmin } from "../../_components/CatalogAdminShell";
 import { CatalogAdminContent, CatalogAdminHeader } from "../../_components/CatalogAdminSidebar";
 import { adminNavLabels } from "../../_components/adminNav";
 import { useAdminLang, useCopy, useFormat } from "../../_lib/i18n";
 import { useModule } from "../../_lib/module";
-import { buildReminder, whatsappLink } from "../../../_lib/whatsapp";
+import { buildReminder, buildSpotOpened, whatsappLink } from "../../../_lib/whatsapp";
 import { MAX_REPEATS, REPEAT_WEEKS } from "@/lib/orders/appointments";
 import { addDays } from "@/lib/orders/stays";
 import { doesServices, staffName, type StaffMember } from "@/lib/orders/staff";
@@ -40,6 +40,17 @@ interface Appointment {
   reminded_at: string | null;
 }
 
+interface WaitlistItem {
+  id: string;
+  date: string;
+  name: string;
+  phone: string;
+  lang: "ar" | "en";
+  services: { id: string; name_en: string; name_ar: string }[];
+  staff_name: string | null;
+  status: "waiting" | "contacted" | "removed";
+}
+
 interface DayData {
   date: string;
   today: string;
@@ -51,6 +62,8 @@ interface DayData {
   staff: (StaffMember & { works: boolean })[];
   services: Service[];
   appointments: Appointment[];
+  waitlist: WaitlistItem[];
+  waitlistDays: { date: string; waiting: number }[];
 }
 
 /** Height of one hour in the day grid */
@@ -116,6 +129,14 @@ const en = {
   failed: "Couldn't load the calendar. Check your connection.",
   saveFailed: "Couldn't save the booking.",
   loading: "Loading…",
+  waitlistTitle: "Waiting list",
+  waitlistBody: "People who found this day fully booked. When a time opens up, for example after a cancellation, message them: the text is ready in their language.",
+  waitlistMessage: "Message: a time opened",
+  waitlistContacted: "Messaged",
+  waitlistRemove: "Remove",
+  waitlistWants: "Wants",
+  waitlistOtherDays: "Waiting lists on other days",
+  waitlistCount: { one: "1 waiting", other: "# waiting" } as { one: string; other: string; zero?: string; two?: string; few?: string; many?: string },
 };
 const ar: typeof en = {
   intro: "مواعيد كل شخص في اليوم. أضف الحجوزات التي أخذتها بالهاتف، وأرسل لكل زبون تذكيراً على واتساب قبل يوم.",
@@ -175,6 +196,14 @@ const ar: typeof en = {
   failed: "تعذّر تحميل التقويم. تحقق من الاتصال.",
   saveFailed: "تعذّر حفظ الحجز.",
   loading: "جارٍ التحميل…",
+  waitlistTitle: "قائمة الانتظار",
+  waitlistBody: "أشخاص وجدوا هذا اليوم محجوزاً بالكامل. حين يتوفّر موعد، مثلاً بعد إلغاء، راسلهم: النص جاهز بلغتهم.",
+  waitlistMessage: "مراسلة: توفّر موعد",
+  waitlistContacted: "تمت المراسلة",
+  waitlistRemove: "إزالة",
+  waitlistWants: "يريد",
+  waitlistOtherDays: "قوائم انتظار في أيام أخرى",
+  waitlistCount: { zero: "لا أحد ينتظر", one: "شخص واحد ينتظر", two: "شخصان ينتظران", few: "# أشخاص ينتظرون", many: "# شخصاً ينتظرون", other: "# شخص ينتظرون" },
 };
 
 const input =
@@ -256,9 +285,11 @@ export function AppointmentsCalendar() {
     [fetchWithAuth, slug]
   );
 
+  // First load: the day in the address (from a notification or the Orders page), else today
   useEffect(() => {
     let cancelled = false;
-    fetchWithAuth(`/api/c/${slug}/admin/appointments/`)
+    const asked = new URLSearchParams(window.location.search).get("date");
+    fetchWithAuth(`/api/c/${slug}/admin/appointments/${asked && /^\d{4}-\d{2}-\d{2}$/.test(asked) ? `?date=${asked}` : ""}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((next: DayData) => {
         if (cancelled) return;
@@ -369,6 +400,31 @@ export function AppointmentsCalendar() {
       setForm((prev) => ({ ...prev, saving: false, error: t.saveFailed }));
     }
   };
+
+  const setWaitlistStatus = async (entry: WaitlistItem, status: WaitlistItem["status"]) => {
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            waitlist: status === "removed" ? prev.waitlist.filter((w) => w.id !== entry.id) : prev.waitlist.map((w) => (w.id === entry.id ? { ...w, status } : w)),
+            waitlistDays: prev.waitlistDays
+              .map((d) => (d.date === entry.date && entry.status === "waiting" ? { ...d, waiting: d.waiting - 1 } : d))
+              .filter((d) => d.waiting > 0),
+          }
+        : prev
+    );
+    try {
+      await fetchWithAuth(`/api/c/${slug}/admin/waitlist/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: entry.id, status }),
+      });
+    } catch {
+      // Shown here already; it is saved again with the next change
+    }
+  };
+  const spotOpenedLink = (entry: WaitlistItem) => whatsappLink(entry.phone, buildSpotOpened(entry, catalog?.name || slug, module.id));
+  const otherWaitlistDays = (data?.waitlistDays ?? []).filter((d) => d.date !== date);
 
   const reminders = data && data.date >= data.today ? data.appointments.filter((a) => a.status !== "completed") : [];
   const sent = reminders.filter((a) => a.reminded_at).length;
@@ -728,6 +784,76 @@ export function AppointmentsCalendar() {
                 ))}
               </ul>
             </section>
+          )}
+          {/* The day's waiting list */}
+          {data && data.waitlist.length > 0 && (
+            <section className="space-y-3" aria-labelledby="waitlist-title">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h3 id="waitlist-title" className="flex items-center gap-2 text-base font-semibold text-ui-heading">
+                  <Hourglass className="h-4 w-4" aria-hidden />
+                  {t.waitlistTitle}
+                </h3>
+                <span className="text-sm text-ui-muted">{f.plural(data.waitlist.filter((w) => w.status === "waiting").length, t.waitlistCount)}</span>
+              </div>
+              <p className="max-w-2xl text-sm text-ui-muted">{t.waitlistBody}</p>
+              <ul className="divide-y divide-ui-line rounded-panel border border-ui-line bg-ui-surface">
+                {data.waitlist.map((entry) => (
+                  <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold">
+                        {entry.name} · <bdi dir="ltr">{entry.phone}</bdi>
+                      </p>
+                      {(entry.services.length > 0 || entry.staff_name) && (
+                        <p className="truncate text-sm text-ui-muted">
+                          {t.waitlistWants}: {entry.services.map(serviceName).join(lang === "ar" ? "، " : ", ")}
+                          {entry.staff_name ? ` · ${t.with} ${entry.staff_name}` : ""}
+                        </p>
+                      )}
+                    </div>
+                    {canEdit && (
+                      <span className="flex flex-wrap items-center gap-2">
+                        {entry.status === "contacted" ? (
+                          <span className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-ui-success">
+                            <Check className="h-4 w-4" aria-hidden />
+                            {t.waitlistContacted}
+                          </span>
+                        ) : (
+                          <a
+                            href={spotOpenedLink(entry)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setWaitlistStatus(entry, "contacted")}
+                            className="inline-flex min-h-10 items-center gap-1.5 rounded-control bg-ui-primary px-3 text-sm font-semibold text-ui-primary-fg hover:bg-ui-primary-hover"
+                          >
+                            <MessageCircle className="h-4 w-4" aria-hidden />
+                            {t.waitlistMessage}
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setWaitlistStatus(entry, "removed")}
+                          className="min-h-10 rounded-control border border-ui-line px-3 text-sm font-medium hover:bg-ui-subtle"
+                        >
+                          {t.waitlistRemove}
+                        </button>
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {data && otherWaitlistDays.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">{t.waitlistOtherDays}</p>
+              <div className="flex flex-wrap gap-2">
+                {otherWaitlistDays.map((d) => (
+                  <button key={d.date} type="button" onClick={() => load(d.date)} className="min-h-10 rounded-full border border-ui-line px-3 text-sm hover:bg-ui-subtle">
+                    {shortDay(d.date)} · {f.plural(d.waiting, t.waitlistCount)}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
           {data && date === data.today && (
             <button type="button" onClick={() => load(addDays(data.today, 1))} className="inline-flex min-h-11 items-center gap-2 rounded-control border border-ui-line px-4 text-sm font-semibold hover:bg-ui-subtle">

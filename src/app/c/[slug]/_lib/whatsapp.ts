@@ -190,13 +190,20 @@ export function buildReminder(
   if (!order.requested_for) return null;
   const lang = order.lang === "ar" ? "ar" : "en";
   const t = getDictionary(lang, module);
-  const date = new Intl.DateTimeFormat(lang === "ar" ? "ar-LB-u-nu-latn" : "en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(new Date(`${order.requested_for.slice(0, 10)}T12:00:00Z`));
-  return t.custReminder(businessName, date, order.requested_for.slice(11, 16), order.staff_name);
+  return t.custReminder(businessName, longDay(order.requested_for.slice(0, 10), lang), order.requested_for.slice(11, 16), order.staff_name);
+}
+
+/** "Monday 23 November" / "الاثنين 23 تشرين الثاني", with Western digits */
+function longDay(date: string, lang: Language): string {
+  return new Intl.DateTimeFormat(lang === "ar" ? "ar-LB-u-nu-latn" : "en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(
+    new Date(`${date}T12:00:00Z`)
+  );
+}
+
+/** What the team sends someone on a day's waiting list when a time opens up, in their language */
+export function buildSpotOpened(entry: { date: string; lang: string | null; name: string }, businessName: string, module: ModuleId): string {
+  const lang = entry.lang === "ar" ? "ar" : "en";
+  return getDictionary(lang, module).custSpotOpened(businessName, longDay(entry.date, lang), entry.name);
 }
 
 export interface ReservationDetails {

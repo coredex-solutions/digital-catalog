@@ -178,6 +178,50 @@ export function CheckoutSheet() {
     [byPerson, askedStaff, staffPool, cartItemIds]
   );
   const askedStaffName = askedStaff !== "any" ? staffPool.find((person) => person.id === askedStaff) : undefined;
+  // Waiting list: offered when the chosen day is open but every time is taken
+  const [fullDay, setFullDay] = useState<string | null>(null);
+  const [waitlist, setWaitlist] = useState<{ sending: boolean; joined: string | null; error: string | null }>({ sending: false, joined: null, error: null });
+  const dayLabel = (date: string) =>
+    new Intl.DateTimeFormat(lang === "ar" ? "ar-LB-u-nu-latn" : "en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
+  const joinWaitlist = async () => {
+    if (!fullDay || waitlist.sending) return;
+    const next: typeof errors = {};
+    if (!details.name.trim()) next.name = t.required;
+    if (details.phone.replace(/\D/g, "").length < 7) next.phone = t.required;
+    if (Object.keys(next).length > 0) {
+      setErrors(next);
+      setWaitlist((prev) => ({ ...prev, error: t.waitlistNeedDetails }));
+      return;
+    }
+    // Both filled in now: clear what an earlier tap marked
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.name;
+      delete next.phone;
+      return next;
+    });
+    setWaitlist((prev) => ({ ...prev, sending: true, error: null }));
+    try {
+      const res = await fetch(`/api/c/${catalog.slug}/waitlist/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: fullDay, name: details.name.trim(), phone: details.phone.trim(), itemIds: cartItemIds, staffId: byPerson ? askedStaff : undefined, lang }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setWaitlist((prev) => ({ ...prev, sending: false, error: data.code === "full" ? t.waitlistFull : t.waitlistFailed }));
+        return;
+      }
+      try {
+        localStorage.setItem(DETAILS_KEY, JSON.stringify(details));
+      } catch {
+        // Storage unavailable; the waiting list still works
+      }
+      setWaitlist({ sending: false, joined: fullDay, error: null });
+    } catch {
+      setWaitlist((prev) => ({ ...prev, sending: false, error: t.waitlistFailed }));
+    }
+  };
   const depositText = useSlots ? depositInstructions(booking, payment, priceConfig, lang, t) : null;
 
   // Stays: a deposit as a part of the total, when every room is priced in the same currency
@@ -631,7 +675,34 @@ export function CheckoutSheet() {
                 error={errors.when}
                 refreshKey={slotsKey}
                 staff={pickerStaff}
+                onFullDay={setFullDay}
               />
+            )}
+            {fullDay && (
+              <div className="mt-3 rounded-2xl border border-menu-input-border bg-menu-surface px-4 py-3">
+                {waitlist.joined === fullDay ? (
+                  <p role="status" className="text-sm font-semibold">{t.waitlistJoined(dayLabel(fullDay))}</p>
+                ) : (
+                  <>
+                    <p className="text-sm font-semibold">{t.waitlistTitle}</p>
+                    <p className="mt-1 text-sm text-menu-muted">{t.waitlistBody(businessName)}</p>
+                    {waitlist.error && (
+                      <p role="alert" className="mt-1 text-sm text-menu-danger">
+                        {waitlist.error}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={joinWaitlist}
+                      disabled={waitlist.sending}
+                      className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-control border border-brand px-4 text-sm font-semibold disabled:opacity-60"
+                    >
+                      {waitlist.sending && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
+                      {t.waitlistJoin}
+                    </button>
+                  </>
+                )}
+              </div>
             )}
             {depositText && <p className="mt-3 rounded-2xl bg-brand-soft px-4 py-3 text-sm leading-relaxed"><bdi>{depositText}</bdi></p>}
           </div>

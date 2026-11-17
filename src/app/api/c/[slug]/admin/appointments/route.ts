@@ -9,6 +9,7 @@ import { beirutToday, totalInUsd, type OrderLineSnapshot, type ValidOrder } from
 import { openingFor, parseBookingConfig, requestMinutes, staffChoices, usesStaff } from "@/lib/orders/slots";
 import { toPick, worksOn } from "@/lib/orders/staff";
 import { repeatDates } from "@/lib/orders/appointments";
+import { upcomingWaitlists, waitlistFor } from "@/lib/orders/waitlist";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -75,7 +76,8 @@ function toAppointment(order: SavedOrder & { source?: string }, fallbackMinutes:
 
 /**
  * GET ?date=YYYY-MM-DD: the day's appointments (not cancelled), the staff, the opening hours that
- * day and the services, for the calendar. Viewers can read it.
+ * day, the services, the day's waiting list and the days ahead with people waiting, for the
+ * calendar. Viewers can read it.
  */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -86,11 +88,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const today = beirutToday();
   const date = isRealDate(search.get("date")) ? search.get("date")! : today;
 
-  const [settings, hours, services, orders] = await Promise.all([
+  const [settings, hours, services, orders, waitlist, waitlistDays] = await Promise.all([
     getCatalogSettings(catalogId),
     getCatalogOperatingHours(catalogId),
     loadServices(catalogId),
     appointmentsOn(catalogId, date),
+    waitlistFor(catalogId, date),
+    upcomingWaitlists(catalogId, today),
   ]);
   const booking = parseBookingConfig((settings as unknown as Record<string, unknown> | null)?.booking_config);
   const appointments = orders.map((order) => toAppointment(order, booking.default_minutes));
@@ -110,6 +114,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     staff: booking.staff.map((person) => ({ ...person, works: worksOn(person, date) })),
     services,
     appointments,
+    waitlist,
+    waitlistDays,
   });
 }
 

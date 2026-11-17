@@ -237,9 +237,19 @@ const en = {
   anyStaff: "Anyone",
   withStaff: (name: string) => `With ${name}`,
   noStaffForServices: "No one here does all of these services in one visit. Please book them separately.",
+  waitlistTitle: "This day is fully booked",
+  waitlistBody: (business: string) => `Join the waiting list and ${business} will message you on WhatsApp if a time opens up.`,
+  waitlistJoin: "Join the waiting list",
+  waitlistNeedDetails: "Enter your name and phone number below first.",
+  waitlistJoined: (day: string) => `You're on the waiting list for ${day}. You'll get a WhatsApp message if a time opens up.`,
+  waitlistFull: "The waiting list for this day is full. Please try another day.",
+  waitlistFailed: "Couldn't join the waiting list. Please try again.",
   depositNote: (amount: string) => `A deposit of ${amount} confirms your booking.`,
   custDepositWhish: (amount: string, phone: string) => `To confirm, send the ${amount} deposit on Whish to ${phone}.`,
   custDepositOmt: (amount: string, to: string) => `To confirm, send the ${amount} deposit by OMT to ${to}.`,
+  // Sent by the team to someone on a waiting list when a time opens up
+  custSpotOpened: (business: string, date: string, name: string) =>
+    `Hello${name ? ` ${name}` : ""}, good news: a time has opened up at ${business} on ${date}. Would you like to book it? Reply here and we'll confirm.`,
   // staff: who an appointment is with (services with staff set up)
   custReminder: (business: string, date: string, time: string, staff?: string | null) => `Reminder: your booking at ${business} is on ${date} at ${time}${staff ? ` with ${staff}` : ""}. See you soon!`,
   // Coupon codes
@@ -528,9 +538,18 @@ const ar: Dictionary = {
   anyStaff: "أيّ شخص متاح",
   withStaff: (name) => `مع ${name}`,
   noStaffForServices: "لا أحد هنا يقدّم كل هذه الخدمات في زيارة واحدة. يرجى حجزها كلّاً على حدة.",
+  waitlistTitle: "هذا اليوم محجوز بالكامل",
+  waitlistBody: (business) => `انضمّ إلى قائمة الانتظار وسيراسلك ${business} على واتساب إن توفّر موعد.`,
+  waitlistJoin: "انضمّ إلى قائمة الانتظار",
+  waitlistNeedDetails: "أدخل اسمك ورقم هاتفك في الأسفل أولاً.",
+  waitlistJoined: (day) => `أنت على قائمة الانتظار ليوم ${day}. ستصلك رسالة على واتساب إن توفّر موعد.`,
+  waitlistFull: "قائمة الانتظار لهذا اليوم ممتلئة. جرّب يوماً آخر.",
+  waitlistFailed: "تعذّر الانضمام إلى قائمة الانتظار. حاول مرة أخرى.",
   depositNote: (amount: string) => `يُثبَّت حجزك بعربون قدره ${amount}.`,
   custDepositWhish: (amount: string, phone: string) => `لتثبيت الحجز، حوّل العربون ${amount} عبر Whish إلى ${phone}.`,
   custDepositOmt: (amount: string, to: string) => `لتثبيت الحجز، حوّل العربون ${amount} عبر OMT إلى ${to}.`,
+  custSpotOpened: (business: string, date: string, name: string) =>
+    `مرحباً${name ? ` ${name}` : ""}، خبر سار: توفّر موعد لدى ${business} يوم ${date}. هل تودّ حجزه؟ ردّ هنا وسنؤكّد لك.`,
   custReminder: (business: string, date: string, time: string, staff?: string | null) => `تذكير: موعد حجزك لدى ${business} يوم ${date} الساعة ${time}${staff ? ` مع ${staff}` : ""}. بانتظارك!`,
   msgDiscount: "الخصم",
   couponLink: "لديك رمز خصم؟",

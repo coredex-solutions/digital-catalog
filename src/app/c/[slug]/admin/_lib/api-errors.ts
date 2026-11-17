@@ -42,6 +42,12 @@ const EXACT: Record<string, string> = {
   "This person doesn't do all of these services": "هذا الشخص لا يقدّم كل هذه الخدمات.",
   "This person is already booked at that time": "هذا الشخص محجوز في هذا الوقت.",
   "This time is already fully booked": "هذا الوقت محجوز بالكامل.",
+  // Waiting lists
+  "Not on the waiting list": "هذا الشخص ليس على قائمة الانتظار.",
+  "A valid phone number is required": "أدخل رقم هاتف صحيحاً.",
+  "This page has no waiting list": "لا قائمة انتظار لهذه الصفحة.",
+  "Choose another day": "اختر يوماً آخر.",
+  "The waiting list for this day is full": "قائمة الانتظار لهذا اليوم ممتلئة.",
   "Stock must be a whole number of 0 or more": "المخزون يجب أن يكون عدداً صحيحاً يساوي 0 أو أكثر.",
   "The old price must be a number of 0 or more": "السعر القديم يجب أن يكون رقماً يساوي 0 أو أكثر.",
   "Duration must be between 5 minutes and 24 hours": "المدة يجب أن تكون بين 5 دقائق و24 ساعة.",

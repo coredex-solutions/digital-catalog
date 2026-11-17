@@ -99,6 +99,33 @@ export function notificationFor(order: SavedOrder, lang: "en" | "ar", slug: stri
  * notification must not fail the order. Devices the push service no longer knows are removed.
  */
 export async function notifyNewOrder(catalogId: string, slug: string, order: SavedOrder): Promise<void> {
+  await notifyTeam(catalogId, (lang) => notificationFor(order, lang, slug), "high");
+}
+
+/** "Waiting list: Rami for Thu 19 Nov", opening the calendar on that day */
+export function waitlistNotification(date: string, name: string, lang: "en" | "ar", slug: string) {
+  const day = new Intl.DateTimeFormat(lang === "ar" ? "ar-LB-u-nu-latn" : "en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(
+    new Date(`${date}T12:00:00Z`)
+  );
+  return {
+    title: lang === "ar" ? "قائمة الانتظار" : "Waiting list",
+    body: lang === "ar" ? `${name} ينتظر موعداً يوم ${day}` : `${name} is waiting for a time on ${day}`,
+    url: `/c/${slug}/admin/calendar/?date=${date}`,
+    tag: `waitlist-${slug}-${date}`,
+  };
+}
+
+/** Tell the team someone joined a day's waiting list. Never throws. */
+export async function notifyWaitlist(catalogId: string, slug: string, date: string, name: string): Promise<void> {
+  await notifyTeam(catalogId, (lang) => waitlistNotification(date, name, lang, slug), "normal");
+}
+
+/** Send a notification (worded per device language) to every team device that follows this catalog */
+async function notifyTeam(
+  catalogId: string,
+  payloadFor: (lang: "en" | "ar") => { title: string; body: string; url: string; tag: string },
+  urgency: "high" | "normal"
+): Promise<void> {
   const config = pushConfig();
   if (!config) return;
   try {
@@ -119,12 +146,12 @@ export async function notifyNewOrder(catalogId: string, slug: string, order: Sav
     await Promise.all(
       result.rows.map(async (row) => {
         const lang = row.lang === "ar" ? "ar" : "en";
-        const payload = JSON.stringify(notificationFor(order, lang, slug));
+        const payload = JSON.stringify(payloadFor(lang));
         try {
           await webpush.sendNotification(
             { endpoint: String(row.endpoint), keys: { p256dh: String(row.p256dh), auth: String(row.auth) } },
             payload,
-            { TTL: 60 * 60, urgency: "high", timeout: 10000 }
+            { TTL: 60 * 60, urgency, timeout: 10000 }
           );
           sent.push(String(row.id));
         } catch (error) {

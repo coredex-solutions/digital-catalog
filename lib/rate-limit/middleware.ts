@@ -30,6 +30,8 @@ export const RATE_LIMITS = {
   // Customers sending orders and bookings from a catalog page (per address+catalog, per phone+catalog)
   order: { windowMs: 10 * 60 * 1000, maxRequests: 15, keyPrefix: 'order' },
   orderPerPhone: { windowMs: 10 * 60 * 1000, maxRequests: 8, keyPrefix: 'order-phone' },
+  // Joining a waiting list for a fully booked day (per address+catalog)
+  waitlist: { windowMs: 60 * 60 * 1000, maxRequests: 10, keyPrefix: 'waitlist' },
   // Free booking times, checked as customers flip through dates
   slots: { windowMs: 5 * 60 * 1000, maxRequests: 120, keyPrefix: 'slots' },
   // Coupon codes typed at checkout (low, so codes can't be guessed)

@@ -32,6 +32,7 @@ export function SlotPicker({
   error,
   refreshKey = 0,
   staff,
+  onFullDay,
 }: {
   config: BookingConfig;
   date: string;
@@ -42,6 +43,8 @@ export function SlotPicker({
   /** Bump to load the times again (e.g. after a time was just taken) */
   refreshKey?: number;
   staff?: { people: StaffMember[]; asked: string; itemIds: string[] };
+  /** Told the chosen day when it is open but fully booked (for the waiting list), else null */
+  onFullDay?: (date: string | null) => void;
 }) {
   const { catalog, operatingHours, lang, t } = useCatalog();
   const [result, setResult] = useState<SlotsResult | { state: "loading" } | { state: "failed" }>({ state: "loading" });
@@ -94,6 +97,11 @@ export function SlotPicker({
       cancelled = true;
     };
   }, [catalog.slug, chosen, minutes, config.default_minutes, refreshKey, staffParams]);
+
+  useEffect(() => {
+    if (result.state === "loading") return;
+    onFullDay?.(result.state === "open" && result.times.length === 0 ? chosen : null);
+  }, [result, chosen, onFullDay]);
 
   // A time that is no longer free is cleared
   useEffect(() => {

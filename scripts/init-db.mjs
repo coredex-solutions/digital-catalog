@@ -34,6 +34,7 @@ const FILES = [
   "lib/db/migrations/20261109_stays.sql",
   "lib/db/migrations/20261110_marketing.sql",
   "lib/db/migrations/20261117_staff_bookings.sql",
+  "lib/db/migrations/20261118_waitlist.sql",
 ];
 
 // Tables that were only ever created by one-off scripts or at runtime

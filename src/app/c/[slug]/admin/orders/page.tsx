@@ -64,6 +64,8 @@ const en = {
   stockBack: "Stock is given back when you cancel.",
   reopen: "Reopen",
   undo: "Undo",
+  waitingForDay: (n: number) => (n === 1 ? "1 person is waiting for this day." : `${n} people are waiting for this day.`),
+  seeWaitlist: "See the waiting list",
   moved: (number: number, status: string) => `#${number} is now: ${status}`,
   undone: (number: number) => `#${number} is back as it was`,
   changeFailed: "Couldn't change the order. Check your connection.",
@@ -133,6 +135,8 @@ const ar: typeof en = {
   stockBack: "تُعاد الكمية إلى المخزون عند الإلغاء.",
   reopen: "إعادة فتح",
   undo: "تراجع",
+  waitingForDay: (n) => (n === 1 ? "شخص واحد ينتظر هذا اليوم." : n === 2 ? "شخصان ينتظران هذا اليوم." : n <= 10 ? `${n} أشخاص ينتظرون هذا اليوم.` : `${n} شخصاً ينتظرون هذا اليوم.`),
+  seeWaitlist: "عرض قائمة الانتظار",
   moved: (number, status) => `الطلب #${number} أصبح: ${status}`,
   undone: (number) => `أُعيد الطلب #${number} كما كان`,
   changeFailed: "تعذّر تغيير الطلب. تحقق من الاتصال.",
@@ -539,6 +543,8 @@ function OrdersView() {
     undo?: { order: SavedOrder; from: OrderStatus };
     /** WhatsApp link with a ready message telling the customer about the change */
     tell?: string;
+    /** A cancelled appointment: people waiting for that day (see the calendar) */
+    waiting?: { date: string; count: number };
     busy?: boolean;
   } | null>(null);
   const request = useRef(0);
@@ -657,6 +663,16 @@ function OrdersView() {
         );
         await load({ quiet: true });
         refreshNewOrders();
+        // A time just opened: say if anyone is on that day's waiting list
+        const day = updated.requested_for?.slice(0, 10);
+        if (!isUndo && status === "cancelled" && updated.kind === "request" && !updated.check_out && day && day >= today) {
+          const waiting = await fetchWithAuth(`/api/c/${slug}/admin/waitlist/?date=${day}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null);
+          if (waiting?.waiting > 0) {
+            setNotice((prev) => (prev?.undo?.order.id === updated.id ? { ...prev, text: `${prev.text}. ${t.waitingForDay(waiting.waiting)}`, waiting: { date: day, count: waiting.waiting } } : prev));
+          }
+        }
       } else {
         const data = await res.json().catch(() => ({}));
         setNotice({ text: data.error || t.changeFailed });
@@ -850,6 +866,14 @@ function OrdersView() {
                 <MessageCircle className="h-4 w-4" aria-hidden />
                 {t.tellCustomer}
               </a>
+            )}
+            {notice.waiting && (
+              <Link
+                href={`/c/${slug}/admin/calendar/?date=${notice.waiting.date}`}
+                className="inline-flex min-h-11 shrink-0 items-center rounded-control px-2 font-semibold underline-offset-2 hover:underline"
+              >
+                {t.seeWaitlist}
+              </Link>
             )}
             {notice.undo && (
               <button
