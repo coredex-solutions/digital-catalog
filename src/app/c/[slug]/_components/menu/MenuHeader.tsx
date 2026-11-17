@@ -59,7 +59,8 @@ export function MenuHeader() {
       {!cover && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-44 bg-[linear-gradient(180deg,var(--brand-soft)_0%,transparent_100%)]" />}
       {cover && (
         <div className="relative mx-auto h-28 w-full max-w-xl overflow-hidden bg-menu-raised sm:mt-4 sm:h-36 sm:rounded-panel">
-          <MenuImage src={cover} alt="" fill preload fetchPriority="high" sizes="(max-width: 640px) 100vw, 576px" className="object-cover" />
+          {/* The largest thing on the first screen: a slightly lower quality (see images.qualities) makes it arrive sooner */}
+          <MenuImage src={cover} alt="" fill preload fetchPriority="high" quality={60} sizes="(max-width: 640px) 100vw, 576px" className="object-cover" />
           <div className="absolute end-3 top-3">
             <LanguageToggle />
           </div>

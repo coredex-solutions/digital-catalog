@@ -19,7 +19,11 @@ const nextConfig = {
     unoptimized: false, // Enable image optimization
     formats: ['image/avif', 'image/webp'], // Modern formats for better compression
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // Responsive breakpoints
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 512, 768], // Icon/thumbnail sizes (added larger sizes for categories)
+    // Icon/thumbnail sizes. 192 and 288 fit the 96px dish photos on 2x and 3x phone screens, which
+    // otherwise download at 256 or 384 (about half the bytes again).
+    imageSizes: [16, 32, 48, 64, 96, 128, 192, 256, 288, 384, 512, 768],
+    // 75 is the default; 60 is for the business page cover, a wide decorative banner
+    qualities: [60, 75],
     minimumCacheTTL: 31536000, // Cache optimized images for 1 year (images don't change often)
     dangerouslyAllowSVG: false, // Security: don't allow SVG
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;", // Security policy
