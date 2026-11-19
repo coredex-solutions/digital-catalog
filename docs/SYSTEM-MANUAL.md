@@ -113,7 +113,7 @@ No features are missing for launch. What is missing is the live setup, a few bus
 | Lebanese (+961) sales WhatsApp number | The site and the demo pages still use the old +966 number | You |
 | Whish and OMT payment details | The billing page cannot tell owners where to pay | You |
 | Run the update script (deploy/update.sh) | Creates the new database parts: delivery, payments, bookings, staff, waiting list, stays, marketing | You |
-| Reload the demo pages | The demo salon gets its staff and the demos get the right phone number | You |
+| Reload the demo pages | The demo salon gets its staff, the demos get the right phone number, and they show delivery areas, Whish and a coupon code | You |
 | Test on a real iPhone and a real Android phone | Phone alerts have never reached a real device; WhatsApp ordering and Arabic need checking on real phones | You, with Claude's test list |
 | Backups and uptime alert: confirm Turso backups and add a free uptime monitor | You learn about an outage from a monitor, not from a customer | You |
 
@@ -122,7 +122,7 @@ No features are missing for launch. What is missing is the live setup, a few bus
 | What is missing | Why it matters | Who |
 | --- | --- | --- |
 | AI keys (Google Gemini, Groq) | Without Gemini, AI photos, menu import and the AI assistant are off; without Groq, About-page writing and voice questions are off | You |
-| Demo pages show no delivery areas, Whish or OMT, coupons or loyalty card | Businesses trying the demos don't see what sets Core Commerce apart | Claude |
+| Demo pages have no loyalty card or OMT yet (delivery areas, Whish and coupons are set up) | Businesses trying the demos see most, not all, of what sets Core Commerce apart | Claude, if wanted |
 | Subscription receipts | Owners paying by Whish or OMT will ask for a receipt; today this is manual | You decide, Claude can build |
 | 5 to 10 pilot businesses | Real quotes and photos for the landing page, which has no testimonials yet | You |
 | Sales materials: the pitch decks and launch checklist were deleted | Needed for meetings with businesses | Claude can rebuild |

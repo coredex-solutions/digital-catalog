@@ -11,6 +11,8 @@
 //
 // Each admin password comes from DEMO_ADMIN_PASSWORD, or is generated and printed once.
 // No photos: the pages show a lettered tile instead, so there are no borrowed images to break.
+// Each demo gets payment choices (Whish to the demo number) and a coupon named in its description;
+// the café and the shop also get delivery areas with fees.
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 dotenv.config();
@@ -20,6 +22,9 @@ import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { publishMenu } from '../lib/catalog/publishing';
 import { MODULES, type ModuleId } from '../lib/modules/registry';
+import { parseDeliveryConfig } from '../lib/orders/delivery';
+import { parsePaymentConfig, type PaymentMethod } from '../lib/orders/payment';
+import { parseCouponInput } from '../lib/orders/coupons';
 
 const db = createClient({
     url: process.env.TURSO_DATABASE_URL!,
@@ -49,6 +54,14 @@ type Demo = {
     stayConfig?: Record<string, unknown>;
     /** Set booking times (and staff, for services): catalog_settings.booking_config */
     bookingConfig?: Record<string, unknown>;
+    /** Delivery areas: catalog_settings.delivery_config (lib/orders/delivery.ts) */
+    delivery?: Record<string, unknown>;
+    /** How customers can pay; Whish goes to the demo phone number */
+    payments: PaymentMethod[];
+    /** Coupon codes (table coupons), named in the page description */
+    coupons: { code: string; kind: 'percent' | 'amount'; value: number; min_order?: number }[];
+    /** Added to the page description (not the search description) so visitors can try the code */
+    offer: { en: string; ar: string };
     categories: { id: string; en: string; ar: string }[];
     items: DemoItem[];
 };
@@ -59,7 +72,18 @@ const DEMOS: Demo[] = [
         name: { en: 'Fincan', ar: 'فنجان' },
         description: { en: 'Coffee, sweets and morning bakes. A Core Commerce demo café.', ar: 'قهوة وحلويات ومخبوزات الصباح. مقهى تجريبي من Core Commerce.' },
         orderTypes: 'takeaway,dine_in,delivery', color: '#7A4B2A', hours: [7, 22],
-        deliveryNote: { en: 'Delivery nearby. We confirm the fee on WhatsApp.', ar: 'توصيل إلى المناطق القريبة. نؤكد الرسم عبر واتساب.' },
+        deliveryNote: { en: 'We deliver near Hamra from 7 am to 10 pm.', ar: 'نوصل إلى المناطق القريبة من الحمرا من 7 صباحاً حتى 10 مساءً.' },
+        delivery: {
+            currency: 'USD', free_over: 25,
+            zones: [
+                { id: 'hamra', name_en: 'Hamra', name_ar: 'الحمرا', fee: 1, min_order: 5, eta_minutes: 20 },
+                { id: 'ras-beirut', name_en: 'Ras Beirut', name_ar: 'رأس بيروت', fee: 1.5, min_order: 5, eta_minutes: 25 },
+                { id: 'verdun', name_en: 'Verdun', name_ar: 'فردان', fee: 2, min_order: 10, eta_minutes: 30 },
+            ],
+        },
+        payments: ['cash', 'whish'],
+        coupons: [{ code: 'FINCAN15', kind: 'percent', value: 15, min_order: 8 }],
+        offer: { en: ' Try the code FINCAN15 for 15% off orders of $8 or more.', ar: ' جرّب الرمز FINCAN15 لخصم 15% على الطلبات من 8$ وما فوق.' },
         categories: [
             { id: 'cafe-coffee', en: 'Coffee', ar: 'قهوة' },
             { id: 'cafe-sweets', en: 'Sweets', ar: 'حلويات' },
@@ -82,7 +106,20 @@ const DEMOS: Demo[] = [
         name: { en: 'Souk Box', ar: 'صندوق السوق' },
         description: { en: 'Lebanese gifts and home goods. A Core Commerce demo shop.', ar: 'هدايا ومنتجات منزلية لبنانية. متجر تجريبي من Core Commerce.' },
         orderTypes: 'delivery,pickup', color: '#1F6F5C', hours: [10, 20], closedDays: ['Sunday'],
-        deliveryNote: { en: 'Delivery across Lebanon in 1 to 3 days. We confirm the fee on WhatsApp.', ar: 'توصيل إلى كل لبنان خلال 1 إلى 3 أيام. نؤكد الرسم عبر واتساب.' },
+        deliveryNote: { en: 'Delivery across Lebanon in 1 to 3 days. Free on orders of $60 or more.', ar: 'توصيل إلى كل لبنان خلال 1 إلى 3 أيام. مجاني للطلبات من 60$ وما فوق.' },
+        delivery: {
+            currency: 'USD', free_over: 60,
+            zones: [
+                { id: 'beirut', name_en: 'Beirut', name_ar: 'بيروت', fee: 3 },
+                { id: 'mount-lebanon', name_en: 'Mount Lebanon', name_ar: 'جبل لبنان', fee: 4 },
+                { id: 'north', name_en: 'North', name_ar: 'الشمال', fee: 5 },
+                { id: 'south', name_en: 'South', name_ar: 'الجنوب', fee: 5 },
+                { id: 'bekaa', name_en: 'Bekaa', name_ar: 'البقاع', fee: 5 },
+            ],
+        },
+        payments: ['cash', 'card', 'whish'],
+        coupons: [{ code: 'SOUK5', kind: 'amount', value: 5, min_order: 40 }],
+        offer: { en: ' Try the code SOUK5 for $5 off orders of $40 or more.', ar: ' جرّب الرمز SOUK5 لخصم 5$ على الطلبات من 40$ وما فوق.' },
         categories: [
             { id: 'shop-home', en: 'Home', ar: 'المنزل' },
             { id: 'shop-pantry', en: 'Pantry', ar: 'المؤونة' },
@@ -112,6 +149,9 @@ const DEMOS: Demo[] = [
         name: { en: 'Lina Beauty Studio', ar: 'ستوديو لينا للتجميل' },
         description: { en: 'Hair, nails and skin care. A Core Commerce demo services page.', ar: 'شعر وأظافر وعناية بالبشرة. صفحة خدمات تجريبية من Core Commerce.' },
         orderTypes: 'at_location,home_visit', color: '#9B2C6B', hours: [9, 19], closedDays: ['Sunday'],
+        payments: ['cash', 'card', 'whish'],
+        coupons: [{ code: 'FIRSTVISIT', kind: 'percent', value: 15 }],
+        offer: { en: ' First visit? Try the code FIRSTVISIT for 15% off.', ar: ' أول زيارة؟ جرّبي الرمز FIRSTVISIT لخصم 15%.' },
         // Three people, so the demo shows choosing a person and each one's free times
         bookingConfig: {
             enabled: true, slot_minutes: 30, capacity: 1, lead_minutes: 60, max_days: 30, default_minutes: 30,
@@ -140,6 +180,10 @@ const DEMOS: Demo[] = [
         name: { en: 'Beit Sama', ar: 'بيت سما' },
         description: { en: 'A stone guesthouse and sea chalets in Batroun. A Core Commerce demo stay.', ar: 'بيت ضيافة حجري وشاليهات على البحر في البترون. إقامة تجريبية من Core Commerce.' },
         orderTypes: 'stay', color: '#1F6F78', hours: [0, 24],
+        // The deposit is usually sent by Whish
+        payments: ['whish', 'cash'],
+        coupons: [{ code: 'SAMA20', kind: 'amount', value: 20, min_order: 200 }],
+        offer: { en: ' Try the code SAMA20 for $20 off stays of $200 or more.', ar: ' جرّب الرمز SAMA20 لخصم 20$ على الإقامات من 200$ وما فوق.' },
         stayConfig: { check_in: '14:00', check_out: '12:00', min_nights: 1, max_nights: 14, max_days: 365, deposit_percent: 30, blocked_dates: [] },
         categories: [
             { id: 'stay-rooms', en: 'Guesthouse rooms', ar: 'غرف بيت الضيافة' },
@@ -180,12 +224,20 @@ async function seed(demo: Demo) {
     const moduleDef = MODULES[demo.module];
     // Row ids are unique across all catalogs, so each demo prefixes its own
     const rowId = (id: string) => `${demo.slug}-${id}`;
+    // Cleaned the same way as the Settings and Offers forms, so a demo holds only what the app accepts
+    const delivery = demo.delivery ? parseDeliveryConfig(demo.delivery) : null;
+    const payment = parsePaymentConfig({ methods: demo.payments, whish_phone: PHONE });
+    const coupons = demo.coupons.map((raw) => {
+        const parsed = parseCouponInput({ ...raw, currency: 'USD', is_active: true });
+        if (!parsed.ok) throw new Error(`${demo.slug} coupon ${raw.code}: ${parsed.error}`);
+        return parsed.coupon;
+    });
 
     // Child tables first, so an old copy is fully removed even without ON DELETE CASCADE
     const old = await db.execute({ sql: 'SELECT id FROM catalogs WHERE slug = ?', args: [demo.slug] });
     const cleanup: InStatement[] = old.rows.flatMap((row) => [
         ...['orders', 'catalog_menu_versions', 'menu_items', 'categories', 'operating_hours', 'faqs', 'social_media', 'catalog_contact',
-            'catalog_settings', 'catalog_admins', 'catalog_subscriptions'].map((table) => ({
+            'coupons', 'catalog_settings', 'catalog_admins', 'catalog_subscriptions'].map((table) => ({
             sql: `DELETE FROM ${table} WHERE catalog_id = ?`, args: [row.id as string],
         })),
         { sql: 'DELETE FROM catalogs WHERE id = ?', args: [row.id as string] },
@@ -198,7 +250,7 @@ async function seed(demo: Demo) {
                     description, description_en, description_ar, description_fr, is_active, created_at, updated_at)
                   VALUES (?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, '', 1, ?, ?)`,
             args: [demo.id, demo.slug, demo.name.en, demo.name.en, demo.name.ar, demo.subType, demo.module, moduleDef.defaultAddons.join(','),
-                demo.description.en, demo.description.en, demo.description.ar, now, now],
+                demo.description.en + demo.offer.en, demo.description.en + demo.offer.en, demo.description.ar + demo.offer.ar, now, now],
         },
         {
             sql: `INSERT INTO catalog_subscriptions (id, catalog_id, subscription_type, starts_at, expires_at,
@@ -210,11 +262,12 @@ async function seed(demo: Demo) {
         {
             sql: `INSERT INTO catalog_settings (catalog_id, color_primary, enabled_languages, default_language,
                     currency_primary, lbp_exchange_rate, lbp_rate_updated_at, show_dual_currency, order_types,
-                    delivery_note_en, delivery_note_ar, booking_enabled, whatsapp_order_enabled,
+                    delivery_note_en, delivery_note_ar, booking_enabled, whatsapp_order_enabled, delivery_config, payment_config,
                     seo_title_en, seo_description_en, seo_title_ar, seo_description_ar)
-                  VALUES (?, ?, 'ar,en', 'en', 'USD', ?, ?, 1, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
+                  VALUES (?, ?, 'ar,en', 'en', 'USD', ?, ?, 1, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`,
             args: [demo.id, demo.color, LBP_RATE, now, demo.orderTypes,
                 demo.deliveryNote?.en ?? null, demo.deliveryNote?.ar ?? null, moduleDef.tableBooking ? 1 : 0,
+                delivery ? JSON.stringify(delivery) : null, JSON.stringify(payment),
                 `${demo.name.en} · Core Commerce demo`, demo.description.en, `${demo.name.ar} · تجربة Core Commerce`, demo.description.ar],
         },
         {
@@ -253,6 +306,12 @@ async function seed(demo: Demo) {
         ...(demo.bookingConfig
             ? [{ sql: 'UPDATE catalog_settings SET booking_config = ? WHERE catalog_id = ?', args: [JSON.stringify(withRowIds(demo.bookingConfig, rowId)), demo.id] }]
             : []),
+        ...coupons.map((coupon, i) => ({
+            sql: `INSERT INTO coupons (id, catalog_id, code, kind, value, currency, min_order, starts_on, ends_on, max_uses, is_active)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [`${demo.id}-coupon-${i}`, demo.id, coupon.code, coupon.kind, coupon.value, coupon.currency, coupon.min_order,
+                coupon.starts_on, coupon.ends_on, coupon.max_uses, coupon.is_active ? 1 : 0],
+        })),
         ...DAYS.map((day) => ({
             sql: `INSERT INTO operating_hours (catalog_id, day_name, open_hour, close_hour, is_closed) VALUES (?, ?, ?, ?, ?)`,
             args: [demo.id, day, demo.hours[0], demo.hours[1], demo.closedDays?.includes(day) ? 1 : 0],

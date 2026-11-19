@@ -1,5 +1,6 @@
 // Seeds the public demo menu at /c/demo: a sample Lebanese restaurant with
-// dual USD/LBP prices, dine-in/takeaway/delivery ordering, Arabic and English text.
+// dual USD/LBP prices, dine-in/takeaway/delivery ordering, Arabic and English text,
+// delivery areas with fees, cash/card/Whish payment and a coupon (WELCOME10).
 // Re-running replaces the demo catalog (and only the demo catalog).
 //
 //   npx tsx scripts/seed-demo.ts
@@ -13,6 +14,9 @@ import { createClient, type InStatement } from '@libsql/client';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { publishMenu } from '../lib/catalog/publishing';
+import { parseDeliveryConfig } from '../lib/orders/delivery';
+import { parsePaymentConfig } from '../lib/orders/payment';
+import { parseCouponInput } from '../lib/orders/coupons';
 
 const db = createClient({
     url: process.env.TURSO_DATABASE_URL!,
@@ -28,6 +32,29 @@ const SALES_DIGITS = (process.env.NEXT_PUBLIC_SALES_WHATSAPP || '').replace(/\D/
 if (!SALES_DIGITS) console.warn('NEXT_PUBLIC_SALES_WHATSAPP is not set: the demo pages get the old placeholder number.');
 const PHONE = `+${SALES_DIGITS || '966540679669'}`;
 const LBP_RATE = 89500;
+
+// Delivery areas in Beirut with their own fee, minimum and time; free over $40
+const DELIVERY = parseDeliveryConfig({
+    currency: 'USD', free_over: 40,
+    zones: [
+        { id: 'hamra', name_en: 'Hamra', name_ar: 'الحمرا', fee: 1, min_order: 8, eta_minutes: 25 },
+        { id: 'ras-beirut', name_en: 'Ras Beirut', name_ar: 'رأس بيروت', fee: 1.5, min_order: 10, eta_minutes: 30 },
+        { id: 'verdun', name_en: 'Verdun', name_ar: 'فردان', fee: 2, min_order: 12, eta_minutes: 35 },
+        { id: 'achrafieh', name_en: 'Achrafieh', name_ar: 'الأشرفية', fee: 3, min_order: 15, eta_minutes: 45 },
+        { id: 'mar-mikhael', name_en: 'Mar Mikhael', name_ar: 'مار مخايل', fee: 3, min_order: 15, eta_minutes: 45 },
+    ],
+});
+// Whish goes to the same demo number as the WhatsApp orders
+const PAYMENT = parsePaymentConfig({ methods: ['cash', 'card', 'whish'], whish_phone: PHONE });
+// Named in the description, so visitors can try one at checkout
+const COUPONS = [
+    { code: 'WELCOME10', kind: 'percent', value: 10, min_order: 15 },
+].map((raw) => {
+    const parsed = parseCouponInput({ ...raw, currency: 'USD', is_active: true });
+    if (!parsed.ok) throw new Error(`Demo coupon ${raw.code}: ${parsed.error}`);
+    return parsed.coupon;
+});
+const OFFER = { en: ' Try the code WELCOME10 for 10% off orders of $15 or more.', ar: ' جرّب الرمز WELCOME10 لخصم 10% على الطلبات من 15$ وما فوق.' };
 
 // Free photos from Unsplash (unsplash.com/license) or the local landing images
 const unsplash = (id: string, w = 600, h = 450) =>
@@ -132,12 +159,12 @@ const ITEMS: Item[] = [
 
 const FAQS = [
     {
-        en: ['Do you deliver?', 'Yes, within Beirut. Choose “Delivery” when you send your order and we confirm the fee on WhatsApp.'],
-        ar: ['هل لديكم توصيل؟', 'نعم، داخل بيروت. اختر "توصيل" عند إرسال طلبك ونؤكد رسم التوصيل عبر واتساب.'],
+        en: ['Do you deliver?', 'Yes, within Beirut. Choose “Delivery” and your area to see the fee and the time. Delivery is free on orders of $40 or more.'],
+        ar: ['هل لديكم توصيل؟', 'نعم، داخل بيروت. اختر "توصيل" ومنطقتك لترى رسم التوصيل والوقت. التوصيل مجاني للطلبات من 40$ وما فوق.'],
     },
     {
-        en: ['Can I pay in dollars or Lebanese pounds?', 'Both. Prices show in dollars and in pounds at the rate on the menu.'],
-        ar: ['هل يمكنني الدفع بالدولار أو بالليرة؟', 'الاثنان. الأسعار معروضة بالدولار وبالليرة حسب السعر المذكور في القائمة.'],
+        en: ['How can I pay?', 'Cash in dollars or pounds, card on delivery, or Whish. Prices show in dollars and in pounds at the rate on the menu.'],
+        ar: ['كيف يمكنني الدفع؟', 'نقداً بالدولار أو بالليرة، أو بالبطاقة عند التسليم، أو عبر Whish. الأسعار معروضة بالدولار وبالليرة حسب السعر المذكور في القائمة.'],
     },
     {
         en: ['Is this a real restaurant?', 'No. This is a Core Commerce demo menu so you can try ordering. Orders sent from it go to the Coredex team.'],
@@ -157,7 +184,7 @@ async function seedDemo() {
     const old = await db.execute({ sql: 'SELECT id FROM catalogs WHERE slug = ?', args: [SLUG] });
     const cleanup: InStatement[] = old.rows.flatMap((row) => [
         ...['catalog_menu_versions', 'menu_items', 'categories', 'operating_hours', 'branches', 'faqs', 'social_media', 'catalog_contact',
-            'catalog_settings', 'catalog_admins', 'catalog_subscriptions'].map((table) => ({
+            'coupons', 'catalog_settings', 'catalog_admins', 'catalog_subscriptions'].map((table) => ({
             sql: `DELETE FROM ${table} WHERE catalog_id = ?`, args: [row.id as string],
         })),
         { sql: 'DELETE FROM catalogs WHERE id = ?', args: [row.id as string] },
@@ -172,9 +199,9 @@ async function seedDemo() {
                   VALUES (?, ?, ?, ?, ?, ?, 'restaurant', ?, ?, ?, ?, ?, 1, ?, ?)`,
             args: [
                 CATALOG_ID, SLUG, 'Sofra', 'Sofra', 'سفرة', '',
-                'Lebanese mezze, grills and sandwiches. A Core Commerce demo menu.',
-                'Lebanese mezze, grills and sandwiches. A Core Commerce demo menu.',
-                'مازة ومشاوي وسندويشات لبنانية. قائمة تجريبية من Core Commerce.',
+                `Lebanese mezze, grills and sandwiches. A Core Commerce demo menu.${OFFER.en}`,
+                `Lebanese mezze, grills and sandwiches. A Core Commerce demo menu.${OFFER.en}`,
+                `مازة ومشاوي وسندويشات لبنانية. قائمة تجريبية من Core Commerce.${OFFER.ar}`,
                 '',
                 '/landing/hummus.png', now, now,
             ],
@@ -189,14 +216,15 @@ async function seedDemo() {
         {
             sql: `INSERT INTO catalog_settings (catalog_id, color_primary, hero_image_url, enabled_languages, default_language,
                     currency_primary, lbp_exchange_rate, lbp_rate_updated_at, show_dual_currency, order_types,
-                    delivery_note_en, delivery_note_ar, booking_enabled, whatsapp_order_enabled,
+                    delivery_note_en, delivery_note_ar, booking_enabled, whatsapp_order_enabled, delivery_config, payment_config,
                     seo_title_en, seo_description_en, seo_title_ar, seo_description_ar, seo_title_fr, seo_description_fr)
                   VALUES (?, '#4028C9', ?, 'ar,en', 'en', 'USD', ?, ?, 1, 'dine_in,takeaway,delivery',
-                    ?, ?, 1, 1, ?, ?, ?, ?, ?, ?)`,
+                    ?, ?, 1, 1, ?, ?, ?, ?, ?, ?, ?, ?)`,
             args: [
                 CATALOG_ID, unsplash('photo-1767114915974-3481fa23cbb0', 1200, 600), LBP_RATE, now,
-                'Delivery within Beirut. We confirm the fee on WhatsApp.',
-                'توصيل داخل بيروت. نؤكد رسم التوصيل عبر واتساب.',
+                'We deliver within Beirut every day until closing.',
+                'نوصل داخل بيروت كل يوم حتى الإغلاق.',
+                JSON.stringify(DELIVERY), JSON.stringify(PAYMENT),
                 'Sofra · Core Commerce demo menu', 'Try a Core Commerce QR menu: Lebanese dishes priced in dollars and pounds, ordered through WhatsApp.',
                 'سفرة · قائمة Core Commerce التجريبية', 'جرّب قائمة QR من Core Commerce: أطباق لبنانية بالدولار والليرة، والطلب عبر واتساب.',
                 '', '',
@@ -252,6 +280,12 @@ async function seedDemo() {
             sql: `INSERT INTO faqs (id, catalog_id, question_en, answer_en, question_ar, answer_ar, question_fr, answer_fr, display_order, is_active)
                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
             args: [`demo-faq-${i}`, CATALOG_ID, faq.en[0], faq.en[1], faq.ar[0], faq.ar[1], '', '', i],
+        })),
+        ...COUPONS.map((coupon, i) => ({
+            sql: `INSERT INTO coupons (id, catalog_id, code, kind, value, currency, min_order, starts_on, ends_on, max_uses, is_active)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [`demo-coupon-${i}`, CATALOG_ID, coupon.code, coupon.kind, coupon.value, coupon.currency, coupon.min_order,
+                coupon.starts_on, coupon.ends_on, coupon.max_uses, coupon.is_active ? 1 : 0],
         })),
     ];
 
