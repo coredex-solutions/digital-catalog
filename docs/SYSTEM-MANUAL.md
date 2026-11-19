@@ -71,6 +71,22 @@ Every new business starts on a free 14-day trial with Essential features, then p
 
 If a plan runs out and is not renewed, the page goes offline after 7 days. Owners pay by Whish or OMT, and you switch on their plan from the staff dashboard.
 
+## Demo pages
+
+Five demo businesses show prospects what Core Commerce does, one for each business type. Orders sent from them go to the Coredex sales WhatsApp number, and Whish payments name the same number.
+
+| Demo | Address | What to try |
+| --- | --- | --- |
+| Sofra, restaurant | /c/demo | Delivery to five Beirut areas, each with its own fee, minimum order and time; free delivery over $40; table bookings; code **WELCOME10** (10% off $15 or more) |
+| Fincan, café | /c/demo-cafe | Delivery near Hamra, free over $25; sizes on coffees; code **FINCAN15** (15% off $8 or more) |
+| Souk Box, shop | /c/demo-shop | Delivery across Lebanon by region, free over $60; stock counts and a sale price; code **SOUK5** ($5 off $40 or more) |
+| Lina Beauty Studio, services | /c/demo-services | Pick a staff member or "Anyone" and a free time; waiting list on full days; code **FIRSTVISIT** (15% off) |
+| Beit Sama, stays | /c/demo-stays | Check-in and check-out dates, weekend prices, a 30% deposit; code **SAMA20** ($20 off stays of $200 or more) |
+
+Every demo takes cash and Whish; the restaurant, shop and salon also take card. Each code is named on the demo's About page and typed at checkout under "Have a discount code?". The demos have no loyalty card or OMT yet.
+
+Each demo has an owner login (demo@example.com, demo-cafe@example.com and so on), with the password printed when the demos are reloaded ([scripts/seed-demo.ts](../scripts/seed-demo.ts) and [scripts/seed-demo-modules.ts](../scripts/seed-demo-modules.ts)). Reloading replaces the demo pages, including any orders placed on them.
+
 ## Behind the scenes
 
 The app runs on one rented server. The data and photos are stored with outside services, so the server can be rebuilt at any time without losing anything.
@@ -110,7 +126,7 @@ No features are missing for launch. What is missing is the live setup, a few bus
 | Server settings file (.env.local): Turso, R2, JWT secret, site address, email (SMTP) | Without these the app does not start, or signups get no email code | You |
 | Daily-job secret and crontab line | Plan-ending reminder emails are not sent | You |
 | Phone-alert keys (VAPID) | Owners only get alerts while the dashboard is open | You |
-| Lebanese (+961) sales WhatsApp number | The site and the demo pages still use the old +966 number | You |
+| Lebanese (+961) sales WhatsApp number | The site and the demo pages, including Whish on the demos, still use the old +966 number | You |
 | Whish and OMT payment details | The billing page cannot tell owners where to pay | You |
 | Run the update script (deploy/update.sh) | Creates the new database parts: delivery, payments, bookings, staff, waiting list, stays, marketing | You |
 | Reload the demo pages | The demo salon gets its staff, the demos get the right phone number, and they show delivery areas, Whish and a coupon code | You |
@@ -153,7 +169,7 @@ Tick each step as you go. The full server instructions are in [deploy/README.md]
 - [ ] Create the settings file with all the keys (step 4)
 - [ ] Build and start the app, then add HTTPS (steps 5 and 6)
 - [ ] Run deploy/update.sh so the database is up to date
-- [ ] Reload the demo pages and create the staff login (step 7)
+- [ ] Reload the demo pages once the +961 number is set, and create the staff login (step 7)
 - [ ] Add the daily reminder job (step 8)
 - [ ] Add an uptime monitor and confirm Turso backups
 - [ ] Test on a real iPhone and Android: sign up, add items, order, book, join a waiting list, get the phone alert
