@@ -1,6 +1,6 @@
 # Core Commerce: System Manual
 
-As of 17 November 2026 (latest commit 300ab0b). Live, editable copy: https://claude.ai/artifact/N6cNK36efMs4q4gEe9hQBW
+As of 19 November 2026. Live, editable copy: https://claude.ai/artifact/N6cNK36efMs4q4gEe9hQBW
 
 ## What Core Commerce is
 
@@ -84,23 +84,23 @@ The app runs on one rented server. The data and photos are stored with outside s
 | Daily job | Server crontab | Sends plan-ending reminder emails every morning | Yes |
 | Phone alerts | Web Push (free, needs two keys) | New-order and waiting-list alerts on the owner's phone | Strongly recommended |
 | AI photos and menu import | Google Gemini | Enhances photos, reads printed menus | Optional |
-| AI assistant | Groq (Gemini as a backup) | Chats with customers on the business page | Optional |
+| AI assistant | Google Gemini (same key as AI photos); voice questions use Groq | Chats with customers on the business page | Optional |
 
 **Security:**
 
 - Logins use signed tokens.
 - Every dashboard request checks the owner's role.
 - Prices, fees, stock and booking times are checked on the server, never trusted from the customer's phone.
-- Order, booking and waiting-list forms are rate limited against spam.
+- Order, booking, waiting-list and login forms are rate limited against spam and password guessing. Every page sends standard browser security headers.
 
 **Quality:**
 
 - 123 automatic tests cover orders, delivery, payments, bookings, staff, the waiting list, coupons, plans and Arabic wording.
-- Browser tests on a copy of the site check the main customer and owner flows.
+- A full launch test on 19 November 2026 opened 255 pages in both languages at phone width, ran 51 order and booking checks and 14 email checks on a production build, and found no known security problems in the packages.
 
 ## What is missing before production
 
-No features are missing for launch. What is missing is the live setup, a few business details, and real-phone testing. The code on GitHub (latest commit 300ab0b) is not yet on the live site.
+No features are missing for launch. What is missing is the live setup, a few business details, and real-phone testing. The latest code on GitHub is not yet on the live site.
 
 **Must do before the first paying customer:**
 
@@ -121,8 +121,8 @@ No features are missing for launch. What is missing is the live setup, a few bus
 
 | What is missing | Why it matters | Who |
 | --- | --- | --- |
-| AI keys (Google Gemini, Groq) | AI photos, menu import and the AI assistant stay switched off without them | You |
-| Add the Groq key to the settings template (.env.example) | It is used by the AI assistant but missing from the template, so it is easy to forget | Claude |
+| AI keys (Google Gemini, Groq) | Without Gemini, AI photos, menu import and the AI assistant are off; without Groq, About-page writing and voice questions are off | You |
+| Demo pages show no delivery areas, Whish or OMT, coupons or loyalty card | Businesses trying the demos don't see what sets Core Commerce apart | Claude |
 | Subscription receipts | Owners paying by Whish or OMT will ask for a receipt; today this is manual | You decide, Claude can build |
 | 5 to 10 pilot businesses | Real quotes and photos for the landing page, which has no testimonials yet | You |
 | Sales materials: the pitch decks and launch checklist were deleted | Needed for meetings with businesses | Claude can rebuild |

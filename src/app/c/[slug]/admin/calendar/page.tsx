@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Loader2, MessageCircle, Phone, Plus, X } from "lucide-react";
 import { CatalogAdminShell, useCatalogAdmin } from "../_components/CatalogAdminShell";
 import { CatalogAdminContent, CatalogAdminHeader } from "../_components/CatalogAdminSidebar";
@@ -520,9 +521,17 @@ function CalendarView() {
   );
 }
 
-/** Stays: rooms by night. Businesses that take appointments: each person's day. */
+/** Stays: rooms by night. Businesses that take appointments: each person's day. Others have no
+ *  calendar (the menu doesn't list it), so an old link or typed address goes to Orders. */
 function CalendarForModule() {
   const { module } = useModule();
+  const { slug } = useCatalogAdmin();
+  const router = useRouter();
+  const hasCalendar = module.nights || module.schedule === "required";
+  useEffect(() => {
+    if (!hasCalendar) router.replace(`/c/${slug}/admin/orders`);
+  }, [hasCalendar, router, slug]);
+  if (!hasCalendar) return null;
   return module.nights ? <CalendarView /> : <AppointmentsCalendar />;
 }
 

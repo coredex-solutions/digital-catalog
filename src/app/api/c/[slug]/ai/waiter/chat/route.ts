@@ -9,7 +9,7 @@ import { getModule } from "@/lib/modules/resolve";
 import { AI_MODELS } from "@/lib/ai/models";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 const MAX_HISTORY_MESSAGES = 10;
 const MAX_USER_TEXT_LENGTH = 500;
@@ -65,7 +65,8 @@ export async function POST(
       if (audio.size > 2 * 1024 * 1024) {
         return NextResponse.json({ error: "Audio file too large" }, { status: 400 });
       }
-      if (!OPENAI_API_KEY) {
+      // Speech to text runs on Groq (lib/ai-voice.ts)
+      if (!GROQ_API_KEY) {
         return NextResponse.json({ error: "Voice messages are not configured on this server" }, { status: 503 });
       }
       const audioBuffer = Buffer.from(await audio.arrayBuffer());

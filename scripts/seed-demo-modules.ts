@@ -158,6 +158,19 @@ const DEMOS: Demo[] = [
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+/** Staff service lists name items by their short ids; saved rows carry the demo's prefix */
+function withRowIds(config: Record<string, unknown>, rowId: (id: string) => string) {
+    const staff = Array.isArray(config.staff) ? (config.staff as Record<string, unknown>[]) : null;
+    if (!staff) return config;
+    return {
+        ...config,
+        staff: staff.map((person) => ({
+            ...person,
+            service_ids: Array.isArray(person.service_ids) ? (person.service_ids as string[]).map(rowId) : [],
+        })),
+    };
+}
+
 async function seed(demo: Demo) {
     const adminEmail = `${demo.slug}@example.com`;
     const adminPassword = process.env.DEMO_ADMIN_PASSWORD || randomBytes(12).toString('base64url');
@@ -238,7 +251,7 @@ async function seed(demo: Demo) {
             ? [{ sql: 'UPDATE catalog_settings SET stay_config = ? WHERE catalog_id = ?', args: [JSON.stringify(demo.stayConfig), demo.id] }]
             : []),
         ...(demo.bookingConfig
-            ? [{ sql: 'UPDATE catalog_settings SET booking_config = ? WHERE catalog_id = ?', args: [JSON.stringify(demo.bookingConfig), demo.id] }]
+            ? [{ sql: 'UPDATE catalog_settings SET booking_config = ? WHERE catalog_id = ?', args: [JSON.stringify(withRowIds(demo.bookingConfig, rowId)), demo.id] }]
             : []),
         ...DAYS.map((day) => ({
             sql: `INSERT INTO operating_hours (catalog_id, day_name, open_hour, close_hour, is_closed) VALUES (?, ?, ?, ?, ?)`,
